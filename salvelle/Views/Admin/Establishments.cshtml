@@ -1,0 +1,591 @@
+@{
+    ViewData["Title"] = "Estabelecimentos";
+    ViewData["Subtitle"] = "Gerenciar estabelecimentos cadastrados";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<!-- Filters -->
+<div class="admin-card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Buscar</label>
+                <input type="text" class="form-control" id="searchInput" 
+                       placeholder="Nome, CNPJ ou e-mail..." 
+                       onkeyup="debounceSearch()">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Status</label>
+                <select class="form-select" id="statusFilter" onchange="loadEstablishments()">
+                    <option value="">Todos</option>
+                    <option value="ACTIVE">Ativos</option>
+                    <option value="INACTIVE">Inativos</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Assinatura</label>
+                <select class="form-select" id="subscriptionFilter" onchange="loadEstablishments()">
+                    <option value="">Todas</option>
+                    <option value="ACTIVE">Ativa</option>
+                    <option value="TRIALING">Trial</option>
+                    <option value="PAST_DUE">Inadimplente</option>
+                    <option value="CANCELED">Cancelada</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" onclick="loadEstablishments()">
+                    <i class="bi bi-search me-1"></i> Filtrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="admin-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+            <i class="bi bi-building me-2"></i>
+            <span id="totalCount">0</span> estabelecimentos encontrados
+        </span>
+        <button class="btn btn-sm btn-outline-success" onclick="exportToCSV()">
+            <i class="bi bi-download me-1"></i> Exportar
+        </button>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Estabelecimento</th>
+                        <th>CNPJ</th>
+                        <th>Cidade/UF</th>
+                        <th>Status</th>
+                        <th>Assinatura</th>
+                        <th>Cadastro</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="establishmentsTable">
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="spinner-border spinner-border-sm me-2"></div>
+                            Carregando...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <div class="text-muted small">
+        Mostrando <span id="showingFrom">0</span> - <span id="showingTo">0</span> de <span id="totalItems">0</span>
+    </div>
+    <nav>
+        <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+    </nav>
+</div>
+
+<!-- Detail/Edit Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Detalhes do Estabelecimento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailModalBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border"></div>
+                </div>
+            </div>
+            <div class="modal-footer" id="modalFooter" style="display: none;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" id="btnEdit" onclick="enableEdit()">
+                    <i class="bi bi-pencil me-1"></i>Editar
+                </button>
+                <button type="button" class="btn btn-success" id="btnSave" onclick="saveEstablishment()" style="display: none;">
+                    <i class="bi bi-check me-1"></i>Salvar
+                </button>
+                <a href="#" id="btnFullPage" class="btn btn-outline-primary">
+                    <i class="bi bi-box-arrow-up-right me-1"></i>Página Completa
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentPage = 0;
+    let pageSize = 20;
+    let searchTimeout = null;
+    let currentEstablishment = null;
+    let editMode = false;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadEstablishments();
+    });
+
+    function debounceSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => loadEstablishments(), 300);
+    }
+
+    async function loadEstablishments() {
+        const search = document.getElementById('searchInput').value;
+        const status = document.getElementById('statusFilter').value;
+        const subscription = document.getElementById('subscriptionFilter').value;
+
+        const params = new URLSearchParams({
+            skip: currentPage * pageSize,
+            take: pageSize
+        });
+
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+
+        try {
+            const response = await fetch(`/api/admin/establishments?${params}`);
+            if (response.ok) {
+                const data = await response.json();
+                renderTable(data.establishments);
+                updatePagination(data.total);
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    }
+
+    function renderTable(establishments) {
+        const tbody = document.getElementById('establishmentsTable');
+
+        if (!establishments || establishments.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        Nenhum estabelecimento encontrado
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = establishments.map(e => `
+            <tr>
+                <td>
+                    <strong>${e.nomeFantasia || '-'}</strong>
+                    <br><small class="text-muted">${e.email || '-'}</small>
+                </td>
+                <td><small>${formatCnpj(e.cnpj) || '-'}</small></td>
+                <td>${e.city || '-'}/${e.state || '-'}</td>
+                <td>
+                    <span class="status-badge ${e.isActive ? 'active' : 'inactive'}">
+                        ${e.isActive ? 'Ativo' : 'Inativo'}
+                    </span>
+                </td>
+                <td>
+                    <span class="status-badge ${getSubscriptionClass(e.subscriptionStatus)}">
+                        ${getSubscriptionLabel(e.subscriptionStatus)}
+                    </span>
+                </td>
+                <td><small>${formatDate(e.createdAt)}</small></td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="viewDetails('${e.id}')" title="Ver detalhes">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        ${e.isActive ? `
+                            <button class="btn btn-outline-danger" onclick="blockEstablishment('${e.id}')" title="Bloquear">
+                                <i class="bi bi-lock"></i>
+                            </button>
+                        ` : `
+                            <button class="btn btn-outline-success" onclick="unblockEstablishment('${e.id}')" title="Desbloquear">
+                                <i class="bi bi-unlock"></i>
+                            </button>
+                        `}
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function updatePagination(total) {
+        document.getElementById('totalCount').textContent = total;
+        document.getElementById('totalItems').textContent = total;
+        
+        const from = total > 0 ? (currentPage * pageSize) + 1 : 0;
+        const to = Math.min((currentPage + 1) * pageSize, total);
+        
+        document.getElementById('showingFrom').textContent = from;
+        document.getElementById('showingTo').textContent = to;
+
+        const totalPages = Math.ceil(total / pageSize);
+        const pagination = document.getElementById('pagination');
+        
+        let html = '';
+        
+        html += `<li class="page-item ${currentPage === 0 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToPage(${currentPage - 1})">«</a>
+        </li>`;
+
+        for (let i = 0; i < Math.min(totalPages, 5); i++) {
+            html += `<li class="page-item ${currentPage === i ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="goToPage(${i})">${i + 1}</a>
+            </li>`;
+        }
+
+        html += `<li class="page-item ${currentPage >= totalPages - 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToPage(${currentPage + 1})">»</a>
+        </li>`;
+
+        pagination.innerHTML = html;
+    }
+
+    function goToPage(page) {
+        if (page < 0) return;
+        currentPage = page;
+        loadEstablishments();
+    }
+
+    async function viewDetails(id) {
+        editMode = false;
+        const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+        const body = document.getElementById('detailModalBody');
+        
+        document.getElementById('modalTitle').textContent = 'Detalhes do Estabelecimento';
+        document.getElementById('btnEdit').style.display = 'inline-block';
+        document.getElementById('btnSave').style.display = 'none';
+        document.getElementById('modalFooter').style.display = 'none';
+        
+        body.innerHTML = '<div class="text-center py-4"><div class="spinner-border"></div></div>';
+        modal.show();
+
+        try {
+            const response = await fetch(`/api/admin/establishments/${id}`);
+            if (response.ok) {
+                const data = await response.json();
+                currentEstablishment = data;
+                renderDetails(data, false);
+                document.getElementById('modalFooter').style.display = 'flex';
+                document.getElementById('btnFullPage').href = `/admin/establishments/${id}`;
+            }
+        } catch (error) {
+            body.innerHTML = '<div class="alert alert-danger">Erro ao carregar detalhes</div>';
+        }
+    }
+
+    function renderDetails(data, editable) {
+        const e = data.establishment;
+        const s = e.subscription;
+
+        const readonly = editable ? '' : 'readonly';
+        const disabled = editable ? '' : 'disabled';
+
+        document.getElementById('detailModalBody').innerHTML = `
+            <form id="editForm">
+                <input type="hidden" id="editId" value="${e.id}">
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3">
+                            <i class="bi bi-building me-2"></i>Informações da Empresa
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small">Nome Fantasia</label>
+                            <input type="text" class="form-control" id="editNomeFantasia" 
+                                   value="${e.nomeFantasia || ''}" ${readonly}>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small">Razão Social</label>
+                            <input type="text" class="form-control" id="editRazaoSocial" 
+                                   value="${e.razaoSocial || ''}" ${readonly}>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small">CNPJ</label>
+                            <input type="text" class="form-control" id="editCnpj" 
+                                   value="${formatCnpj(e.cnpj) || ''}" ${readonly}>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small">E-mail</label>
+                            <input type="email" class="form-control" id="editEmail" 
+                                   value="${e.email || ''}" ${readonly}>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small">WhatsApp</label>
+                            <input type="text" class="form-control" id="editWhatsApp" 
+                                   value="${e.whatsApp || ''}" ${readonly}>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-8 mb-3">
+                                <label class="form-label small">Cidade</label>
+                                <input type="text" class="form-control" id="editCity" 
+                                       value="${e.city || ''}" ${readonly}>
+                            </div>
+                            <div class="col-4 mb-3">
+                                <label class="form-label small">UF</label>
+                                <input type="text" class="form-control" id="editState" 
+                                       value="${e.state || ''}" maxlength="2" ${readonly}>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small">Cadastro</label>
+                            <input type="text" class="form-control" value="${formatDateTime(e.createdAt)}" readonly>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small">Funcionários</label>
+                            <input type="text" class="form-control" value="${data.employeesCount}" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3">
+                            <i class="bi bi-credit-card me-2"></i>Assinatura
+                        </h6>
+                        
+                        ${s ? `
+                            <div class="bg-light rounded p-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong>${s.planName}</strong>
+                                    <span class="status-badge ${getSubscriptionClass(s.status)}">
+                                        ${getSubscriptionLabel(s.status)}
+                                    </span>
+                                </div>
+                                <div class="small text-muted">
+                                    <div class="mb-1">
+                                        <i class="bi bi-arrow-repeat me-2"></i>
+                                        Ciclo: ${s.billingCycle === 'YEARLY' ? 'Anual' : 'Mensal'}
+                                    </div>
+                                    <div class="mb-1">
+                                        <i class="bi bi-currency-dollar me-2"></i>
+                                        Valor: ${formatCurrency(s.amount)}
+                                    </div>
+                                    <div>
+                                        <i class="bi bi-calendar me-2"></i>
+                                        Período: ${formatDate(s.currentPeriodStart)} - ${formatDate(s.currentPeriodEnd)}
+                                    </div>
+                                </div>
+                            </div>
+                            <a href="/admin/subscriptions/${s.id}" class="btn btn-outline-primary btn-sm w-100">
+                                <i class="bi bi-arrow-right me-1"></i>Ver Assinatura
+                            </a>
+                        ` : `
+                            <div class="text-center py-4 text-muted">
+                                <i class="bi bi-credit-card-2-back fs-1 d-block mb-2"></i>
+                                Sem assinatura ativa
+                            </div>
+                        `}
+                        
+                        <hr class="my-4">
+                        
+                        <h6 class="text-muted mb-3">
+                            <i class="bi bi-sliders me-2"></i>Limites
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small">Limite de Funcionários</label>
+                            <input type="number" class="form-control" id="editMaxEmployees" 
+                                   value="${e.maxEmployeesLimit || ''}" ${readonly}>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small">Limite de Pedidos/Mês</label>
+                            <input type="number" class="form-control" id="editMaxOrders" 
+                                   value="${e.maxOrdersLimit || ''}" ${readonly}>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <h6 class="text-muted mb-3">
+                            <i class="bi bi-toggle-on me-2"></i>Status
+                        </h6>
+                        
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="editIsActive" 
+                                   ${e.isActive ? 'checked' : ''} ${disabled}>
+                            <label class="form-check-label">Estabelecimento Ativo</label>
+                        </div>
+                        
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="editOnboarding" 
+                                   ${e.onboardingCompleted ? 'checked' : ''} ${disabled}>
+                            <label class="form-check-label">Onboarding Completo</label>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        `;
+    }
+
+    function enableEdit() {
+        editMode = true;
+        document.getElementById('modalTitle').textContent = 'Editar Estabelecimento';
+        document.getElementById('btnEdit').style.display = 'none';
+        document.getElementById('btnSave').style.display = 'inline-block';
+        
+        // Habilitar campos
+        renderDetails(currentEstablishment, true);
+    }
+
+    async function saveEstablishment() {
+        const id = document.getElementById('editId').value;
+        
+        const data = {
+            nomeFantasia: document.getElementById('editNomeFantasia').value,
+            razaoSocial: document.getElementById('editRazaoSocial').value,
+            cnpj: document.getElementById('editCnpj').value.replace(/\D/g, ''),
+            email: document.getElementById('editEmail').value,
+            whatsApp: document.getElementById('editWhatsApp').value,
+            city: document.getElementById('editCity').value,
+            state: document.getElementById('editState').value.toUpperCase(),
+            maxEmployeesLimit: parseInt(document.getElementById('editMaxEmployees').value) || null,
+            maxOrdersLimit: parseInt(document.getElementById('editMaxOrders').value) || null,
+            isActive: document.getElementById('editIsActive').checked,
+            onboardingCompleted: document.getElementById('editOnboarding').checked
+        };
+
+        const btn = document.getElementById('btnSave');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+
+        try {
+            const response = await fetch(`/api/admin/establishments/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
+                showToast('Estabelecimento atualizado com sucesso!', 'success');
+                loadEstablishments();
+            } else {
+                const error = await response.json();
+                showToast('Erro: ' + (error.message || 'Erro ao salvar'), 'danger');
+            }
+        } catch (error) {
+            showToast('Erro ao salvar estabelecimento', 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check me-1"></i>Salvar';
+        }
+    }
+
+    async function blockEstablishment(id) {
+        const reason = prompt('Motivo do bloqueio:');
+        if (!reason) return;
+
+        try {
+            const response = await fetch(`/api/admin/establishments/${id}/block`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason })
+            });
+
+            if (response.ok) {
+                showToast('Estabelecimento bloqueado', 'success');
+                loadEstablishments();
+            }
+        } catch (error) {
+            showToast('Erro ao bloquear', 'danger');
+        }
+    }
+
+    async function unblockEstablishment(id) {
+        if (!confirm('Desbloquear este estabelecimento?')) return;
+
+        try {
+            const response = await fetch(`/api/admin/establishments/${id}/unblock`, {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                showToast('Estabelecimento desbloqueado', 'success');
+                loadEstablishments();
+            }
+        } catch (error) {
+            showToast('Erro ao desbloquear', 'danger');
+        }
+    }
+
+    function showToast(message, type = 'info') {
+        let container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '1100';
+            document.body.appendChild(container);
+        }
+
+        const toastId = 'toast-' + Date.now();
+        const iconMap = {
+            success: 'bi-check-circle-fill text-success',
+            danger: 'bi-x-circle-fill text-danger',
+            warning: 'bi-exclamation-triangle-fill text-warning',
+            info: 'bi-info-circle-fill text-primary'
+        };
+
+        const toastHtml = `
+            <div id="${toastId}" class="toast align-items-center border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi ${iconMap[type] || iconMap.info} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', toastHtml);
+        const toastEl = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    function getSubscriptionClass(status) {
+        switch (status?.toUpperCase()) {
+            case 'ACTIVE': return 'active';
+            case 'TRIALING': return 'trialing';
+            case 'PAST_DUE': return 'past-due';
+            case 'CANCELED': return 'canceled';
+            default: return 'inactive';
+        }
+    }
+
+    function getSubscriptionLabel(status) {
+        switch (status?.toUpperCase()) {
+            case 'ACTIVE': return 'Ativa';
+            case 'TRIALING': return 'Trial';
+            case 'PAST_DUE': return 'Inadimplente';
+            case 'CANCELED': return 'Cancelada';
+            default: return 'Sem assinatura';
+        }
+    }
+
+    function formatCnpj(cnpj) {
+        if (!cnpj) return null;
+        cnpj = cnpj.replace(/\D/g, '');
+        if (cnpj.length !== 14) return cnpj;
+        return cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+    }
+
+    function exportToCSV() {
+        window.location.href = '/api/admin/establishments/export';
+    }
+</script>
+}

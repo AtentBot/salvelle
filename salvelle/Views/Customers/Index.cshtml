@@ -1,0 +1,428 @@
+@{
+    ViewData["Title"] = "Clientes";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0">
+                    <i class="bi bi-people text-primary me-2"></i>
+                    Gestão de Clientes
+                </h2>
+                <p class="text-muted mb-0">Cadastro e controle de clientes da farmácia</p>
+            </div>
+            <div>
+                <a href="/Customers/Create" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Novo Cliente
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Status</label>
+                <select id="filterStatus" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="ATIVO" selected>Ativos</option>
+                    <option value="INATIVO">Inativos</option>
+                    <option value="BLOQUEADO">Bloqueados</option>
+                </select>
+            </div>
+            <div class="col-md-8">
+                <label class="form-label">Buscar</label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" id="searchInput" class="form-control" 
+                           placeholder="Nome, CPF ou telefone...">
+                    <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Total de Clientes</p>
+                        <h3 class="mb-0" id="totalClientes">0</h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-people text-primary fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Ativos</p>
+                        <h3 class="mb-0 text-success" id="totalAtivos">0</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-check-circle text-success fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Inativos</p>
+                        <h3 class="mb-0 text-warning" id="totalInativos">0</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-pause-circle text-warning fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Bloqueados</p>
+                        <h3 class="mb-0 text-danger" id="totalBloqueados">0</h3>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-x-circle text-danger fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Clientes -->
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" id="customersTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Código</th>
+                        <th>Nome</th>
+                        <th>CPF</th>
+                        <th>Telefone</th>
+                        <th>WhatsApp</th>
+                        <th>Cidade</th>
+                        <th>Status</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="customersTableBody">
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+        transition: all 0.3s ease;
+    }
+
+    .table tbody tr {
+        cursor: pointer;
+    }
+
+    .table tbody tr:hover {
+        background-color: rgba(0,0,0,0.02);
+    }
+
+    .action-btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+</style>
+
+@section Scripts {
+<script>
+    let customers = [];
+    let currentFilter = { status: 'ATIVO', search: '' };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCustomers();
+        setupFilters();
+    });
+
+    function setupFilters() {
+        document.getElementById('filterStatus').addEventListener('change', function() {
+            currentFilter.status = this.value;
+            loadCustomers();
+        });
+
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentFilter.search = this.value;
+                loadCustomers();
+            }, 500);
+        });
+    }
+
+    async function loadCustomers() {
+        try {
+            const params = new URLSearchParams();
+            if (currentFilter.status) params.append('status', currentFilter.status);
+            if (currentFilter.search) params.append('search', currentFilter.search);
+
+            const response = await fetch(`/api/Customers?${params.toString()}`, {
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao carregar clientes');
+            }
+
+            customers = await response.json();
+            renderCustomers();
+            updateStats();
+
+        } catch (error) {
+            console.error('Erro:', error);
+            showError('Erro ao carregar clientes');
+        }
+    }
+
+    function renderCustomers() {
+        const tbody = document.getElementById('customersTableBody');
+
+        if (customers.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        Nenhum cliente encontrado
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = customers.map(customer => `
+            <tr onclick="viewCustomer('${customer.id}')">
+                <td><strong>${customer.code}</strong></td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-circle bg-primary bg-opacity-10 text-primary me-2">
+                            ${customer.fullName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <div>${customer.fullName}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>${formatCpf(customer.cpf)}</td>
+                <td>${formatPhone(customer.phone)}</td>
+                <td>
+                    ${customer.whatsApp ? 
+                        `<a href="https://wa.me/55${customer.whatsApp}" target="_blank" 
+                            onclick="event.stopPropagation()" class="text-success">
+                            <i class="bi bi-whatsapp"></i> ${formatPhone(customer.whatsApp)}
+                        </a>` : 
+                        '<span class="text-muted">-</span>'
+                    }
+                </td>
+                <td>${customer.city || '-'}</td>
+                <td>${getStatusBadge(customer.status)}</td>
+                <td class="text-center">
+                    <div class="btn-group btn-group-sm" onclick="event.stopPropagation()">
+                        <a href="/Customers/Details/${customer.id}" 
+                           class="btn btn-outline-primary action-btn" 
+                           title="Visualizar">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="/Customers/Edit/${customer.id}" 
+                           class="btn btn-outline-warning action-btn" 
+                           title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        ${customer.status === 'ATIVO' ? 
+                            `<button onclick="confirmBlock('${customer.id}')" 
+                                class="btn btn-outline-danger action-btn" 
+                                title="Bloquear">
+                                <i class="bi bi-lock"></i>
+                            </button>` : 
+                            customer.status === 'BLOQUEADO' ?
+                            `<button onclick="unblockCustomer('${customer.id}')" 
+                                class="btn btn-outline-success action-btn" 
+                                title="Desbloquear">
+                                <i class="bi bi-unlock"></i>
+                            </button>` : ''
+                        }
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function updateStats() {
+        try {
+            const response = await fetch('/api/Customers', {
+                credentials: 'include'
+            });
+            const allCustomers = await response.json();
+
+            const stats = {
+                total: allCustomers.length,
+                ativos: allCustomers.filter(c => c.status === 'ATIVO').length,
+                inativos: allCustomers.filter(c => c.status === 'INATIVO').length,
+                bloqueados: allCustomers.filter(c => c.status === 'BLOQUEADO').length
+            };
+
+            document.getElementById('totalClientes').textContent = stats.total;
+            document.getElementById('totalAtivos').textContent = stats.ativos;
+            document.getElementById('totalInativos').textContent = stats.inativos;
+            document.getElementById('totalBloqueados').textContent = stats.bloqueados;
+
+        } catch (error) {
+            console.error('Erro ao atualizar estatísticas:', error);
+        }
+    }
+
+    function viewCustomer(id) {
+        window.location.href = `/Customers/Details/${id}`;
+    }
+
+    function confirmBlock(id) {
+        const reason = prompt('Motivo do bloqueio (mínimo 10 caracteres):');
+        if (reason && reason.length >= 10) {
+            blockCustomer(id, reason);
+        } else if (reason !== null) {
+            alert('O motivo deve ter no mínimo 10 caracteres');
+        }
+    }
+
+    async function blockCustomer(id, reason) {
+        try {
+            const response = await fetch(`/api/Customers/${id}/block`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ reason })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showSuccess(result.message);
+                loadCustomers();
+            } else {
+                showError(result.message || 'Erro ao bloquear cliente');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showError('Erro ao bloquear cliente');
+        }
+    }
+
+    async function unblockCustomer(id) {
+        if (!confirm('Deseja realmente desbloquear este cliente?')) return;
+
+        try {
+            const response = await fetch(`/api/Customers/${id}/unblock`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showSuccess(result.message);
+                loadCustomers();
+            } else {
+                showError(result.message || 'Erro ao desbloquear cliente');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showError('Erro ao desbloquear cliente');
+        }
+    }
+
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        currentFilter.search = '';
+        loadCustomers();
+    }
+
+    function getStatusBadge(status) {
+        const badges = {
+            'ATIVO': '<span class="badge bg-success">Ativo</span>',
+            'INATIVO': '<span class="badge bg-warning">Inativo</span>',
+            'BLOQUEADO': '<span class="badge bg-danger">Bloqueado</span>'
+        };
+        return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
+    }
+
+    function formatCpf(cpf) {
+        if (!cpf) return '-';
+        return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    }
+
+    function formatPhone(phone) {
+        if (!phone) return '-';
+        if (phone.length === 11) {
+            return phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        }
+        return phone.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    }
+
+    function showSuccess(message) {
+        alert(message);
+    }
+
+    function showError(message) {
+        alert(message);
+    }
+</script>
+
+<style>
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+</style>
+}

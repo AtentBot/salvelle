@@ -1,0 +1,128 @@
+@model List<Models.Controlled.AuditorAccessRequest>
+@{
+    ViewData["Title"] = "Solicitações de Acesso Pendentes";
+}
+
+@section Styles {
+<style>
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card-head { padding: 14px 18px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .ds-card-body { padding: 18px; }
+    .ds-card-foot { padding: 14px 18px; border-top: 1px solid var(--rule); }
+
+    .ds-banner { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-radius: var(--r-md); margin-bottom: 16px; border: 1px solid var(--rule); background: var(--surface); font-size: 14px; color: var(--ink-2); }
+    .ds-banner i { font-size: 18px; flex-shrink: 0; }
+    .ds-banner.is-ok { border-color: var(--ok-border); background: var(--ok-soft); }
+    .ds-banner.is-ok i { color: var(--ok); }
+    .ds-banner.is-danger { border-color: var(--danger-border); background: var(--danger-soft); }
+    .ds-banner.is-danger i { color: var(--danger); }
+
+    .req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+    .req-name { font-size: 16px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 10px; color: var(--ink); }
+    .req-fields { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ink-2); }
+    .req-fields b { color: var(--ink-3); font-weight: 500; }
+    .req-fields .mono { color: var(--ink); }
+    .reason-box { background: var(--bg-subtle); border: 1px solid var(--rule); border-radius: var(--r-sm); padding: 12px 14px; margin-top: 14px; }
+    .reason-box label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; margin-bottom: 4px; }
+    .reason-box p { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+    .report-tags { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .approve-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .approve-form .select { width: auto; min-width: 120px; }
+    .approve-form .btn { flex: 1; justify-content: center; }
+
+    .empty-state { text-align: center; padding: 56px 24px; }
+    .empty-state i { font-size: 44px; display: block; margin-bottom: 12px; color: var(--ink-5); }
+    .empty-state h3 { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+    .empty-state p { margin: 0 0 16px; font-size: 14px; color: var(--ink-3); }
+
+    @@media (max-width: 900px) { .req-grid { grid-template-columns: 1fr; } }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">AUDITORIA · ACESSO EXTERNO</div>
+            <h1>Solicitações de Acesso</h1>
+            <p>Auditores externos aguardando aprovação de acesso temporário.</p>
+        </div>
+        <div class="row">
+            <a href="/Audit" class="btn btn-secondary"><i class="bi bi-arrow-left"></i>Voltar</a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="ds-banner is-ok"><i class="bi bi-check-circle-fill"></i><div>@TempData["Success"]</div></div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="ds-banner is-danger"><i class="bi bi-x-circle-fill"></i><div>@TempData["Error"]</div></div>
+    }
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="req-grid">
+            @foreach (var request in Model)
+            {
+                <div class="ds-card">
+                    <div class="ds-card-head">
+                        <span class="badge badge-warn badge-no-dot">Pendente</span>
+                        <small class="mono" style="color:var(--ink-3);">@request.RequestedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                    </div>
+                    <div class="ds-card-body">
+                        <h3 class="req-name">@request.AuditorName</h3>
+                        <div class="req-fields">
+                            <div><b>Instituição:</b> @request.AuditorInstitution</div>
+                            <div><b>CPF:</b> <span class="mono">@request.AuditorDocument</span></div>
+                            @if (!string.IsNullOrEmpty(request.AuditorCredential))
+                            {
+                                <div><b>Credencial:</b> <span class="mono">@request.AuditorCredential</span></div>
+                            }
+                        </div>
+
+                        <div class="reason-box">
+                            <label>Motivo</label>
+                            <p>@request.AccessReason</p>
+                        </div>
+
+                        @if (request.RequestedReports != null && request.RequestedReports.Any())
+                        {
+                            <div class="report-tags">
+                                @foreach (var report in request.RequestedReports)
+                                {
+                                    <span class="badge badge-petrol badge-no-dot">@report</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                    <div class="ds-card-foot">
+                        <form asp-action="ApproveAccess" asp-route-id="@request.Id" method="post" class="approve-form">
+                            @Html.AntiForgeryToken()
+                            <select name="validityHours" class="select">
+                                <option value="4">4 horas</option>
+                                <option value="8">8 horas</option>
+                                <option value="24" selected>24 horas</option>
+                                <option value="48">48 horas</option>
+                                <option value="72">72 horas</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i>Aprovar acesso</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="ds-card">
+            <div class="empty-state">
+                <i class="bi bi-inbox"></i>
+                <h3>Nenhuma solicitação pendente</h3>
+                <p>Não há auditores aguardando aprovação de acesso.</p>
+                <a href="/Audit" class="btn btn-secondary"><i class="bi bi-arrow-left"></i>Voltar ao portal</a>
+            </div>
+        </div>
+    }
+</div>

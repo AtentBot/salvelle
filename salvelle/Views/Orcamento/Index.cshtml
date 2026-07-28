@@ -1,0 +1,965 @@
+﻿@model DTOs.Prescriptions.PrescriptionQuoteDto
+@{
+    Layout = null;
+    ViewData["Title"] = $"Orçamento {Model.Code}";
+    var isExpired = Model.ValidUntil < DateTime.UtcNow && Model.Status == "PENDENTE";
+    var canApprove = Model.Status == "PENDENTE" && !isExpired;
+}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - @(Model.PharmacyName ?? "Farmácia de Manipulação")</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2C5F2D;
+            --secondary-color: #97BC62;
+            --accent-color: #F1F1E6;
+            --success-color: var(--ok);
+            --danger-color: var(--danger);
+            --warning-color: var(--amber-500);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-subtle) 0%, var(--bg-subtle) 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 0;
+            margin: 0;
+        }
+
+        .quote-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        .pharmacy-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 25px 20px;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+
+        .pharmacy-logo {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: white;
+            padding: 8px;
+            margin-bottom: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pharmacy-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .quote-code {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .quote-card {
+            background: white;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .quote-body {
+            padding: 25px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .status-pendente {
+            background: var(--warn-soft);
+            color: var(--warn);
+        }
+
+        .status-aprovado {
+            background: var(--ok-soft);
+            color: var(--ok);
+        }
+
+        .status-recusado {
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        .status-expirado {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .status-convertido {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .info-section {
+            background: var(--bg-subtle);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+
+        .info-section h6 {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: var(--ink-3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--ink);
+        }
+
+        .component-table-wrapper {
+            overflow-x: auto;
+            margin: 0 -18px;
+            padding: 0 18px;
+        }
+
+        .component-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 400px;
+        }
+
+        .component-table th {
+            background: var(--primary-color);
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .component-table th:first-child {
+            border-radius: 8px 0 0 0;
+        }
+
+        .component-table th:last-child {
+            border-radius: 0 8px 0 0;
+            text-align: right;
+        }
+
+        .component-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--rule);
+            font-size: 0.9rem;
+        }
+
+        .component-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .component-table tr:last-child td:first-child {
+            border-radius: 0 0 0 8px;
+        }
+
+        .component-table tr:last-child td:last-child {
+            border-radius: 0 0 8px 0;
+        }
+
+        .controlled-badge {
+            background: var(--danger);
+            color: white;
+            font-size: 9px;
+            padding: 2px 5px;
+            border-radius: 4px;
+            margin-left: 5px;
+            font-weight: 600;
+            vertical-align: middle;
+        }
+
+        .pricing-summary {
+            background: linear-gradient(135deg, var(--bg-subtle), var(--bg-subtle));
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed var(--rule);
+            font-size: 0.95rem;
+        }
+
+        .price-row:last-child {
+            border-bottom: none;
+        }
+
+        .price-row.total {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--primary-color);
+            padding-top: 15px;
+            margin-top: 10px;
+            border-top: 2px solid var(--primary-color);
+            border-bottom: none;
+        }
+
+        .price-row.discount {
+            color: var(--success-color);
+        }
+
+        .info-box {
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .info-box i {
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .info-box-content {
+            flex: 1;
+        }
+
+        .info-box-title {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .info-box-text {
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .deadline-box {
+            background: #d1ecf1;
+            border-left: 4px solid var(--info);
+        }
+
+        .deadline-box i {
+            color: var(--info);
+        }
+
+        .validity-box {
+            background: var(--warn-soft);
+            border-left: 4px solid var(--amber-500);
+        }
+
+        .validity-box i {
+            color: var(--amber-500);
+        }
+
+        .expired-box {
+            background: var(--danger-soft);
+            border-left: 4px solid var(--danger);
+        }
+
+        .expired-box i {
+            color: var(--danger);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .btn-approve {
+            flex: 1;
+            background: linear-gradient(135deg, var(--success-color), var(--ok));
+            border: none;
+            color: white;
+            padding: 16px 25px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-approve:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
+            color: white;
+        }
+
+        .btn-approve:active {
+            transform: translateY(0);
+        }
+
+        .btn-reject {
+            background: white;
+            border: 2px solid var(--danger);
+            color: var(--danger);
+            padding: 16px 25px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-reject:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .contact-footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid var(--rule);
+        }
+
+        .contact-footer p {
+            margin-bottom: 15px;
+            color: var(--ink-2);
+        }
+
+        .contact-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .contact-btn-call {
+            background: white;
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+        }
+
+        .contact-btn-call:hover {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .contact-btn-whatsapp {
+            background: var(--ok);
+            border: 1px solid var(--ok);
+            color: white;
+        }
+
+        .contact-btn-whatsapp:hover {
+            background: #128C7E;
+            border-color: #128C7E;
+            color: white;
+        }
+
+        .alert-status {
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .alert-status i {
+            font-size: 2rem;
+        }
+
+        .alert-status-content {
+            flex: 1;
+        }
+
+        .alert-status-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .alert-success-custom {
+            background: var(--ok-soft);
+            border: 1px solid var(--ok-border);
+            color: var(--ok);
+        }
+
+        .alert-danger-custom {
+            background: var(--danger-soft);
+            border: 1px solid #f5c6cb;
+            color: var(--danger);
+        }
+
+        .alert-info-custom {
+            background: #cce5ff;
+            border: 1px solid #b8daff;
+            color: #004085;
+        }
+
+        /* Modal customization */
+        .modal-header {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .modal-header .btn-close {
+            filter: brightness(0) invert(1);
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        /* Pulse animation */
+        @@keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(40, 167, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Responsive */
+        @@media (max-width: 576px) {
+            .quote-container {
+                padding: 10px;
+            }
+
+            .pharmacy-header {
+                padding: 20px 15px;
+            }
+
+            .pharmacy-name {
+                font-size: 1.3rem;
+            }
+
+            .quote-body {
+                padding: 18px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn-approve, .btn-reject {
+                width: 100%;
+            }
+
+            .price-row.total {
+                font-size: 1.2em;
+            }
+
+            .contact-btn {
+                width: 100%;
+                justify-content: center;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="quote-container">
+        <!-- Header da Farmácia -->
+        <div class="pharmacy-header">
+            <div class="pharmacy-logo">
+                <i class="bi bi-capsule" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+            </div>
+            <div class="pharmacy-name">@(Model.PharmacyName ?? "Farmácia de Manipulação")</div>
+            <div class="quote-code">Orçamento <strong>@Model.Code</strong></div>
+        </div>
+
+        <!-- Card Principal -->
+        <div class="quote-card">
+            <div class="quote-body">
+                <!-- Status -->
+                <div class="text-center">
+                    @if (isExpired)
+                    {
+                        <span class="status-badge status-expirado">
+                            <i class="bi bi-clock-history"></i> Expirado
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="status-badge status-@Model.Status.ToLower()">
+                            @switch (Model.Status)
+                            {
+                                case "PENDENTE":
+                                    <i class="bi bi-hourglass-split"></i>
+                                    <text>Aguardando Aprovação</text>
+                                    break;
+                                case "APROVADO":
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <text>Aprovado</text>
+                                    break;
+                                case "RECUSADO":
+                                    <i class="bi bi-x-circle-fill"></i>
+                                    <text>Recusado</text>
+                                    break;
+                                case "CONVERTIDO":
+                                    <i class="bi bi-bag-check-fill"></i>
+                                    <text>Em Produção</text>
+                                    break;
+                                default:
+                                    @Model.Status
+                                    break;
+                            }
+                        </span>
+                    }
+                </div>
+
+                <!-- Dados do Cliente -->
+                <div class="info-section">
+                    <h6><i class="bi bi-person-fill"></i> Dados do Cliente</h6>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Nome</span>
+                            <span class="info-value">@Model.CustomerName</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.CustomerPhone))
+                        {
+                            <div class="info-item">
+                                <span class="info-label">Telefone</span>
+                                <span class="info-value">@Model.CustomerPhone</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Dados do Prescritor -->
+                <div class="info-section">
+                    <h6><i class="bi bi-prescription2"></i> Prescritor</h6>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Nome</span>
+                            <span class="info-value">Dr(a). @Model.DoctorName</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.DoctorCrm))
+                        {
+                            <div class="info-item">
+                                <span class="info-label">CRM</span>
+                                <span class="info-value">@Model.DoctorCrm @(!string.IsNullOrEmpty(Model.DoctorCrmState) ? $"/{Model.DoctorCrmState}" : "")</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Dados da Fórmula -->
+                <div class="info-section">
+                    <h6><i class="bi bi-capsule"></i> Fórmula</h6>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Uso</span>
+                            <span class="info-value">@Model.UsageType</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Forma Farmacêutica</span>
+                            <span class="info-value">@Model.PharmaceuticalForm</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Quantidade</span>
+                            <span class="info-value">@Model.TotalQuantity</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.Instructions))
+                        {
+                            <div class="info-item" style="grid-column: 1 / -1;">
+                                <span class="info-label">Posologia</span>
+                                <span class="info-value">@Model.Instructions</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Componentes -->
+                <div class="info-section">
+                    <h6><i class="bi bi-list-check"></i> Componentes</h6>
+                    <div class="component-table-wrapper">
+                        <table class="component-table">
+                            <thead>
+                                <tr>
+                                    <th>Ingrediente</th>
+                                    <th class="text-center">Quantidade</th>
+                                    <th class="text-end">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Components != null && Model.Components.Any())
+                                {
+                                    foreach (var comp in Model.Components)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @comp.Name
+                                                @if (comp.IsControlled)
+                                                {
+                                                    <span class="controlled-badge">CONTROLADO</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                @if (comp.IsQsp)
+                                                {
+                                                    <text>qsp</text>
+                                                }
+                                                else
+                                                {
+                                                    @comp.Quantity.ToString("N2") @comp.Unit
+                                                }
+                                            </td>
+                                            <td class="text-end">R$ @comp.TotalCost.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">Componentes não disponíveis</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Resumo de Preços -->
+                <div class="pricing-summary">
+                    <div class="price-row">
+                        <span>Matérias-primas</span>
+                        <span>R$ @Model.MaterialsCost.ToString("N2")</span>
+                    </div>
+                    <div class="price-row">
+                        <span>Manipulação</span>
+                        <span>R$ @Model.MarkupValue.ToString("N2")</span>
+                    </div>
+                    <div class="price-row">
+                        <span>Mão de obra</span>
+                        <span>R$ @Model.LaborCost.ToString("N2")</span>
+                    </div>
+                    <div class="price-row">
+                        <span>Embalagem</span>
+                        <span>R$ @Model.PackagingCost.ToString("N2")</span>
+                    </div>
+                    @if (Model.DiscountValue > 0)
+                    {
+                        <div class="price-row discount">
+                            <span><i class="bi bi-tag-fill"></i> Desconto (@Model.DiscountPercentage.ToString("N0")%)</span>
+                            <span>- R$ @Model.DiscountValue.ToString("N2")</span>
+                        </div>
+                    }
+                    <div class="price-row total">
+                        <span>TOTAL</span>
+                        <span>R$ @Model.FinalPrice.ToString("N2")</span>
+                    </div>
+                </div>
+
+                <!-- Informações de Prazo -->
+                <div class="info-box deadline-box">
+                    <i class="bi bi-truck"></i>
+                    <div class="info-box-content">
+                        <div class="info-box-title">Prazo de Entrega</div>
+                        <p class="info-box-text">@Model.EstimatedDays dias úteis após aprovação</p>
+                    </div>
+                </div>
+
+                @if (canApprove)
+                {
+                    <!-- Validade -->
+                    <div class="info-box validity-box">
+                        <i class="bi bi-calendar-event"></i>
+                        <div class="info-box-content">
+                            <div class="info-box-title">Validade do Orçamento</div>
+                            <p class="info-box-text">Válido até @Model.ValidUntil.ToLocalTime().ToString("dd/MM/yyyy 'às' HH:mm")</p>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="action-buttons">
+                        <button class="btn-approve pulse" onclick="approveQuote()">
+                            <i class="bi bi-check-lg"></i>
+                            Aprovar Orçamento
+                        </button>
+                        <button class="btn-reject" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                            <i class="bi bi-x-lg"></i> Recusar
+                        </button>
+                    </div>
+                }
+                else if (isExpired)
+                {
+                    <div class="info-box expired-box">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <div class="info-box-content">
+                            <div class="info-box-title">Orçamento Expirado</div>
+                            <p class="info-box-text">
+                                Este orçamento expirou em @Model.ValidUntil.ToLocalTime().ToString("dd/MM/yyyy").
+                                <br>Entre em contato para solicitar um novo orçamento.
+                            </p>
+                        </div>
+                    </div>
+                }
+                else if (Model.Status == "APROVADO")
+                {
+                    <div class="alert-status alert-success-custom">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <div class="alert-status-content">
+                            <div class="alert-status-title">Orçamento Aprovado!</div>
+                            <p class="mb-0">
+                                Sua fórmula está em produção. Entraremos em contato em breve.
+                                @if (Model.ApprovedAt.HasValue)
+                                {
+                                    <br><small>Aprovado em @Model.ApprovedAt.Value.ToLocalTime().ToString("dd/MM/yyyy 'às' HH:mm")</small>
+                                }
+                            </p>
+                        </div>
+                    </div>
+                }
+                else if (Model.Status == "RECUSADO")
+                {
+                    <div class="alert-status alert-danger-custom">
+                        <i class="bi bi-x-circle-fill"></i>
+                        <div class="alert-status-content">
+                            <div class="alert-status-title">Orçamento Recusado</div>
+                            @if (!string.IsNullOrEmpty(Model.RejectionReason))
+                            {
+                                <p class="mb-0">Motivo: @Model.RejectionReason</p>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (Model.Status == "CONVERTIDO")
+                {
+                    <div class="alert-status alert-info-custom">
+                        <i class="bi bi-gear-fill"></i>
+                        <div class="alert-status-content">
+                            <div class="alert-status-title">Fórmula em Produção!</div>
+                            <p class="mb-0">Sua fórmula está sendo preparada. Avisaremos quando estiver pronta para retirada.</p>
+                        </div>
+                    </div>
+                }
+
+                <!-- Contato -->
+                <div class="contact-footer">
+                    <p><strong>Dúvidas? Entre em contato!</strong></p>
+                    @if (!string.IsNullOrEmpty(Model.PharmacyPhone))
+                    {
+                        <a href="tel:@Model.PharmacyPhone" class="contact-btn contact-btn-call">
+                            <i class="bi bi-telephone-fill"></i> Ligar
+                        </a>
+                        <a href="https://wa.me/55@(Model.PharmacyPhone?.Replace("(", "").Replace(")", "").Replace("-", "").Replace(" ", ""))?text=Olá! Tenho dúvidas sobre o orçamento @Model.Code"
+                           class="contact-btn contact-btn-whatsapp" target="_blank">
+                            <i class="bi bi-whatsapp"></i> WhatsApp
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Rodapé -->
+        <div class="text-center text-muted mt-3 mb-4" style="font-size: 0.8rem;">
+            <p class="mb-1">@(Model.PharmacyName ?? "Farmácia de Manipulação")</p>
+            <p class="mb-0">Powered by D&W Consultoria em Ltda</p>
+        </div>
+    </div>
+
+    <!-- Modal de Rejeição -->
+    <div class="modal fade" id="rejectModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-x-circle me-2"></i>Recusar Orçamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Por favor, informe o motivo da recusa para que possamos melhorar nossos serviços:</p>
+                    <textarea id="rejectReason" class="form-control" rows="3" 
+                              placeholder="Ex: Valor acima do esperado, encontrei em outra farmácia, não preciso mais..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" onclick="rejectQuote()">
+                        <i class="bi bi-x-lg me-1"></i> Confirmar Recusa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner-border text-light" style="width: 3rem; height: 3rem;"></div>
+        <div class="loading-text">Processando...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const token = '@Model.PublicToken';
+
+        function showLoading(text) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (text) {
+                overlay.querySelector('.loading-text').textContent = text;
+            }
+            overlay.classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+
+        async function approveQuote() {
+            if (!confirm('✅ Confirma a APROVAÇÃO deste orçamento?\n\nAo aprovar, sua fórmula entrará em produção imediatamente.')) {
+                return;
+            }
+
+            showLoading('Aprovando orçamento...');
+
+            try {
+                const response = await fetch(`/api/PrescriptionQuotes/public/${token}/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        token: token,
+                        customerObservations: '' 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('✅ Orçamento aprovado com sucesso!\n\nSua fórmula entrará em produção. Avisaremos quando estiver pronta!');
+                    window.location.reload();
+                } else {
+                    alert('❌ Erro: ' + (data.message || 'Falha ao aprovar orçamento'));
+                }
+            } catch (error) {
+                alert('❌ Erro de conexão. Verifique sua internet e tente novamente.');
+                console.error(error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function rejectQuote() {
+            const reason = document.getElementById('rejectReason').value.trim();
+            
+            if (!reason) {
+                alert('Por favor, informe o motivo da recusa.');
+                document.getElementById('rejectReason').focus();
+                return;
+            }
+
+            showLoading('Enviando...');
+
+            try {
+                const response = await fetch(`/api/PrescriptionQuotes/public/${token}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        token: token,
+                        reason: reason 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Orçamento recusado.\n\nAgradecemos seu feedback!');
+                    window.location.reload();
+                } else {
+                    alert('❌ Erro: ' + (data.message || 'Falha ao recusar orçamento'));
+                }
+            } catch (error) {
+                alert('❌ Erro de conexão. Verifique sua internet e tente novamente.');
+                console.error(error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Prevenir duplo clique nos botões
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (this.disabled) return;
+                this.disabled = true;
+                setTimeout(() => this.disabled = false, 2000);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+@using Models.Pharmacy
+@model ManipulationOrder
+@{
+    ViewData["Title"] = "Aprovar Ordem - Controlados";
+    var controlledComponents = ViewBag.ControlledComponents as List<FormulaComponent>;
+}
+
+@section Styles {
+<style>
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card.pad { padding: 20px; }
+    .ds-card + .ds-card { margin-top: 24px; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; gap: 10px; }
+    .ds-card-head.danger { background: var(--danger-soft); border-bottom-color: var(--danger-border); }
+    .ds-card-head.danger i { color: var(--danger); }
+    .ds-card-eyebrow { font-family: var(--font-mono); font-size: 11px; color: var(--petrol-500); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ds-card-title { font-size: 16px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+    .ds-card-body { padding: 20px; }
+    .list-badge { font-family: var(--font-mono); font-weight: 600; font-size: 12px; }
+
+    .approve-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start; }
+    .approve-side { position: sticky; top: 16px; }
+
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+    .field label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; margin-bottom: 3px; }
+    .field p { margin: 0; font-size: 14px; color: var(--ink); }
+    .field p.strong { font-weight: 600; }
+
+    .check-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--rule); cursor: pointer; }
+    .check-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .check-item input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--petrol-500); flex-shrink: 0; cursor: pointer; }
+    .check-item .check-label { font-size: 14px; color: var(--ink); font-weight: 500; }
+    .check-item .check-hint { display: block; font-size: 12px; color: var(--ink-3); font-weight: 400; margin-top: 1px; }
+    .check-req { color: var(--danger); font-weight: 600; }
+
+    .decision-actions { display: flex; flex-direction: column; gap: 10px; }
+    .btn-block { width: 100%; justify-content: center; }
+    .decision-divider { border: none; border-top: 1px solid var(--rule); margin: 4px 0; }
+    .legal-note { font-size: 12px; color: var(--ink-3); line-height: 1.55; margin: 0; }
+    .legal-note b { color: var(--ink-2); }
+
+    @@media (max-width: 900px) {
+        .approve-grid { grid-template-columns: 1fr; }
+        .approve-side { position: static; }
+        .field-grid { grid-template-columns: 1fr; }
+    }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">SNGPC · APROVAÇÃO</div>
+            <h1>Aprovação Farmacêutica</h1>
+            <p>Ordem #@Model.OrderNumber — contém substâncias controladas.</p>
+        </div>
+        <div class="row">
+            <a class="btn btn-secondary" href="/Controlled/PendingApprovals"><i class="bi bi-arrow-left"></i>Voltar</a>
+        </div>
+    </div>
+
+    <form method="post" asp-action="ApproveConfirm" asp-route-id="@Model.Id">
+        @Html.AntiForgeryToken()
+
+        <div class="approve-grid">
+            <div>
+                <div class="ds-card">
+                    <div class="ds-card-head danger">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <div>
+                            <div class="ds-card-title">Dados da ordem</div>
+                        </div>
+                    </div>
+                    <div class="ds-card-body">
+                        <div class="field-grid">
+                            <div class="field">
+                                <label>Número da ordem</label>
+                                <p class="strong mono">#@Model.OrderNumber</p>
+                            </div>
+                            <div class="field">
+                                <label>Data do pedido</label>
+                                <p class="mono">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                            </div>
+                            <div class="field">
+                                <label>Fórmula</label>
+                                <p class="strong">@(Model.Formula?.Name ?? "N/A")</p>
+                            </div>
+                            <div class="field">
+                                <label>Status atual</label>
+                                <p><span class="badge badge-warn badge-no-dot">@Model.Status</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (controlledComponents != null && controlledComponents.Count > 0)
+                {
+                    <div class="ds-card">
+                        <div class="ds-card-head">
+                            <i class="bi bi-capsule" style="color:var(--danger);"></i>
+                            <div class="ds-card-title">Substâncias controladas na fórmula</div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Substância</th>
+                                        <th>Lista</th>
+                                        <th class="text-end">Quantidade</th>
+                                        <th>Unidade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var comp in controlledComponents)
+                                    {
+                                        var controlType = comp.RawMaterial?.ControlType ?? "";
+                                        var listBadge = "badge-neutral";
+                                        if (controlType.StartsWith("A")) listBadge = "badge-danger";
+                                        else if (controlType.StartsWith("B")) listBadge = "badge-petrol";
+
+                                        <tr>
+                                            <td style="color:var(--ink);font-weight:500;">@(comp.RawMaterial?.Name ?? "N/A")</td>
+                                            <td><span class="badge @listBadge badge-no-dot list-badge">@controlType</span></td>
+                                            <td class="text-end mono">@comp.Quantity.ToString("N3")</td>
+                                            <td>@comp.Unit</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                <div class="ds-card">
+                    <div class="ds-card-head">
+                        <i class="bi bi-check2-square" style="color:var(--ok);"></i>
+                        <div class="ds-card-title">Checklist de aprovação (obrigatório)</div>
+                    </div>
+                    <div class="ds-card-body">
+                        <label class="check-item">
+                            <input type="checkbox" name="PrescriptionValid" value="true" required>
+                            <span class="check-label">Receita válida e legível
+                                <span class="check-hint">Verificar carimbo, assinatura e dados do prescritor</span>
+                            </span>
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="PrescriptionWithinValidity" value="true" required>
+                            <span class="check-label">Receita dentro da validade
+                                <span class="check-hint">Máximo 30 dias para listas A e B</span>
+                            </span>
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="DoseWithinLimits" value="true" required>
+                            <span class="check-label">Dosagem dentro dos limites terapêuticos
+                                <span class="check-hint">Verificar doses máximas por substância</span>
+                            </span>
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="NoInteractionsDetected" value="true">
+                            <span class="check-label">Sem interações medicamentosas relevantes
+                                <span class="check-hint">Opcional — verificar interações conhecidas</span>
+                            </span>
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="PatientDataComplete" value="true" required>
+                            <span class="check-label">Dados do paciente completos
+                                <span class="check-hint">Nome completo, endereço e documento de identificação</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="ds-card">
+                    <div class="ds-card-head">
+                        <i class="bi bi-chat-text" style="color:var(--ink-3);"></i>
+                        <div class="ds-card-title">Observações</div>
+                    </div>
+                    <div class="ds-card-body">
+                        <textarea name="Observations" class="textarea" rows="3" placeholder="Observações técnicas (opcional)…"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="approve-side">
+                <div class="ds-card">
+                    <div class="ds-card-head">
+                        <i class="bi bi-shield-check" style="color:var(--petrol-500);"></i>
+                        <div class="ds-card-title">Decisão final</div>
+                    </div>
+                    <div class="ds-card-body">
+                        <div class="decision-actions">
+                            <button type="submit" name="Approved" value="true" class="btn btn-primary btn-lg btn-block">
+                                <i class="bi bi-check-circle"></i>Aprovar manipulação
+                            </button>
+                            <button type="button" class="btn btn-danger btn-lg btn-block" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                                <i class="bi bi-x-circle"></i>Rejeitar
+                            </button>
+                            <hr class="decision-divider">
+                            <a href="/Controlled/PendingApprovals" class="btn btn-secondary btn-block">Cancelar</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ds-card">
+                    <div class="ds-card-head">
+                        <i class="bi bi-info-circle" style="color:var(--info);"></i>
+                        <div class="ds-card-title">Legislação</div>
+                    </div>
+                    <div class="ds-card-body">
+                        <p class="legal-note">
+                            Esta aprovação segue os requisitos da <b>Portaria 344/98</b> e <b>RDC 67/2007</b>.
+                            O Farmacêutico Responsável Técnico é responsável pela validação técnica da manipulação de substâncias controladas.
+                            Todos os registros são mantidos para fins de auditoria e transmissão ao SNGPC.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="ApproveConfirm" asp-route-id="@Model.Id">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Approved" value="false">
+                <input type="hidden" name="PrescriptionValid" value="false">
+                <input type="hidden" name="PrescriptionWithinValidity" value="false">
+                <input type="hidden" name="DoseWithinLimits" value="false">
+                <input type="hidden" name="PatientDataComplete" value="false">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-x-circle me-2"></i>Rejeitar Ordem</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <label class="input-label">Motivo da rejeição <span class="check-req">*</span></label>
+                        <textarea name="RejectionReason" class="textarea" rows="4" required placeholder="Descreva detalhadamente o motivo da rejeição…"></textarea>
+                        <div class="input-hint">Este motivo será registrado para auditoria.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle"></i>Confirmar rejeição</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

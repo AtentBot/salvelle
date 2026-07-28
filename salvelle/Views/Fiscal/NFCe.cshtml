@@ -1,0 +1,463 @@
+﻿@model ViewModels.Fiscal.NFCeViewModel
+@{
+    Layout = null;
+    var isMock = Model.IsMock;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>NFC-e @Model.Numero</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            line-height: 1.3;
+            background: var(--bg-subtle);
+            padding: 20px;
+        }
+        
+        .cupom {
+            width: 300px;
+            margin: 0 auto;
+            background: white;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .header .fantasia { font-size: 14px; font-weight: bold; }
+        .header .razao { font-size: 9px; }
+        
+        .titulo-documento {
+            text-align: center;
+            font-weight: bold;
+            font-size: 11px;
+            margin: 10px 0;
+            padding: 5px;
+            background: #000;
+            color: #fff;
+        }
+        
+        .titulo-contingencia {
+            background: #ff9800 !important;
+            color: #000 !important;
+        }
+        
+        .titulo-cancelada {
+            background: #f44336 !important;
+        }
+        
+        .secao {
+            border-bottom: 1px dashed #000;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .secao-titulo {
+            font-weight: bold;
+            font-size: 9px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        
+        .linha {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .item-linha { margin-bottom: 8px; }
+        .item-desc { font-size: 9px; margin-bottom: 2px; }
+        .item-valores { display: flex; font-size: 8px; color: var(--ink-2); }
+        .item-valores span { margin-right: 10px; }
+        .item-total { text-align: right; font-weight: bold; }
+        
+        .totais { margin: 10px 0; }
+        .totais .linha { font-size: 10px; margin-bottom: 3px; }
+        .totais .total-final {
+            font-size: 14px;
+            font-weight: bold;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+            margin-top: 5px;
+        }
+        
+        .pagamento {
+            background: var(--bg);
+            padding: 8px;
+            margin: 10px 0;
+        }
+        
+        .qrcode-area {
+            text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px dashed var(--ink-5);
+        }
+        
+        .qrcode-area img {
+            max-width: 150px;
+            height: auto;
+        }
+        
+        .qrcode-placeholder {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+            background: var(--bg-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: var(--ink-3);
+            border: 1px solid var(--rule);
+        }
+        
+        .chave-acesso {
+            font-size: 8px;
+            text-align: center;
+            word-break: break-all;
+            margin: 10px 0;
+            padding: 5px;
+            background: var(--bg);
+        }
+        
+        .tributos {
+            font-size: 8px;
+            text-align: center;
+            padding: 8px;
+            background: #fffde7;
+            margin: 10px 0;
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 8px;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px dashed #000;
+        }
+        
+        .footer .protocolo { font-size: 9px; margin-top: 5px; }
+        
+        .msg-consumidor {
+            text-align: center;
+            font-size: 9px;
+            margin: 10px 0;
+            padding: 8px;
+            border: 1px solid #4caf50;
+            background: var(--ok-soft);
+        }
+        
+        .mock-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #ff5722;
+            color: white;
+            padding: 10px 20px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .cancelada-marca {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 40px;
+            color: rgba(244, 67, 54, 0.3);
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .cupom-wrapper {
+            position: relative;
+        }
+        
+        @@media print {
+            body { background: white; padding: 0; }
+            .cupom { box-shadow: none; width: 80mm; }
+            .mock-badge, .btn-acoes { display: none; }
+        }
+        
+        .btn-acoes {
+            text-align: center;
+            margin-top: 20px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .btn-acoes button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .btn-imprimir { background: #2196f3; color: white; }
+        .btn-voltar { background: #757575; color: white; }
+        .btn-pdf { background: #4caf50; color: white; }
+    </style>
+</head>
+<body>
+    @if (isMock)
+    {
+        <div class="mock-badge">
+            ⚠️ DOCUMENTO MOCK - SEM VALIDADE FISCAL
+        </div>
+    }
+
+    <div class="cupom-wrapper">
+        @if (Model.Status == "CANCELADA")
+        {
+            <div class="cancelada-marca">CANCELADA</div>
+        }
+        
+        <div class="cupom">
+            <!-- HEADER - Dados do Emitente -->
+            <div class="header">
+                <div class="fantasia">@Model.Emitente.NomeFantasia</div>
+                <div class="razao">@Model.Emitente.RazaoSocial</div>
+                <div>CNPJ: @Model.Emitente.CNPJ</div>
+                @if (!string.IsNullOrEmpty(Model.Emitente.IE))
+                {
+                    <div>IE: @Model.Emitente.IE</div>
+                }
+                <div>@Model.Emitente.Endereco - @Model.Emitente.Bairro</div>
+                <div>@Model.Emitente.Cidade/@Model.Emitente.UF - CEP: @Model.Emitente.CEP</div>
+                @if (!string.IsNullOrEmpty(Model.Emitente.Fone))
+                {
+                    <div>Fone: @Model.Emitente.Fone</div>
+                }
+            </div>
+
+            <!-- TÍTULO DO DOCUMENTO -->
+            <div class="titulo-documento @(Model.EmitidaEmContingencia ? "titulo-contingencia" : "") @(Model.Status == "CANCELADA" ? "titulo-cancelada" : "")">
+                @if (Model.EmitidaEmContingencia)
+                {
+                    <span>⚠️ EMITIDA EM CONTINGÊNCIA</span>
+                    <br>
+                }
+                DOCUMENTO AUXILIAR DA NOTA FISCAL DE CONSUMIDOR ELETRÔNICA
+            </div>
+
+            <!-- DADOS DO CONSUMIDOR -->
+            <div class="secao">
+                <div class="secao-titulo">Consumidor</div>
+                <div>@(string.IsNullOrEmpty(Model.Destinatario.Nome) ? "CONSUMIDOR NÃO IDENTIFICADO" : Model.Destinatario.Nome)</div>
+                @if (!string.IsNullOrEmpty(Model.Destinatario.CPF))
+                {
+                    <div>CPF: @Model.Destinatario.CPF</div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Destinatario.Endereco))
+                {
+                    <div>@Model.Destinatario.Endereco</div>
+                }
+            </div>
+
+            <!-- ITENS -->
+            <div class="secao">
+                <div class="secao-titulo">Itens</div>
+                
+                @{ var seq = 1; }
+                @foreach (var item in Model.Itens)
+                {
+                    <div class="item-linha">
+                        <div class="item-desc">
+                            <strong>@(seq++)</strong> @item.Codigo - @item.Descricao
+                        </div>
+                        <div class="item-valores">
+                            <span>QTD: @item.Quantidade.ToString("N3")</span>
+                            <span>UN: @item.Unidade</span>
+                            <span>VL.UN: @item.ValorUnitario.ToString("N2")</span>
+                            <span class="item-total">@item.ValorTotal.ToString("N2")</span>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- TOTAIS -->
+            <div class="totais">
+                <div class="linha">
+                    <span>Qtd. Total de Itens:</span>
+                    <span>@Model.Itens.Count</span>
+                </div>
+                <div class="linha">
+                    <span>Subtotal:</span>
+                    <span>R$ @Model.Totais.Subtotal.ToString("N2")</span>
+                </div>
+                @if (Model.Totais.Desconto > 0)
+                {
+                    <div class="linha">
+                        <span>Desconto:</span>
+                        <span>R$ @Model.Totais.Desconto.ToString("N2")</span>
+                    </div>
+                }
+                @if (Model.Totais.Frete > 0)
+                {
+                    <div class="linha">
+                        <span>Frete:</span>
+                        <span>R$ @Model.Totais.Frete.ToString("N2")</span>
+                    </div>
+                }
+                <div class="linha total-final">
+                    <span>TOTAL:</span>
+                    <span>R$ @Model.Totais.Total.ToString("N2")</span>
+                </div>
+            </div>
+
+            <!-- FORMA DE PAGAMENTO -->
+            <div class="pagamento secao">
+                <div class="secao-titulo">Forma de Pagamento</div>
+                @foreach (var pag in Model.Pagamentos)
+                {
+                    <div class="linha">
+                        <span>@pag.Descricao</span>
+                        <span>R$ @pag.Valor.ToString("N2")</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(pag.Detalhes))
+                    {
+                        <div style="font-size: 8px; color: var(--ink-3);">@pag.Detalhes</div>
+                    }
+                }
+                @if (Model.Totais.Troco > 0)
+                {
+                    <div class="linha" style="margin-top: 5px;">
+                        <span><strong>Troco:</strong></span>
+                        <span><strong>R$ @Model.Totais.Troco.ToString("N2")</strong></span>
+                    </div>
+                }
+            </div>
+
+            <!-- TRIBUTOS (Lei 12.741/2012) -->
+            @if (Model.Tributos != null && Model.Tributos.Total > 0)
+            {
+                <div class="tributos">
+                    <strong>INFORMAÇÃO DOS TRIBUTOS TOTAIS INCIDENTES</strong><br>
+                    (Lei Federal 12.741/2012)<br><br>
+                    Federal: R$ @Model.Tributos.Federal.ToString("N2") |
+                    Estadual: R$ @Model.Tributos.Estadual.ToString("N2") |
+                    Municipal: R$ @Model.Tributos.Municipal.ToString("N2")<br>
+                    <strong>Total Aprox.: R$ @Model.Tributos.Total.ToString("N2") (@Model.Tributos.Percentual.ToString("N2")%)</strong><br>
+                    <small>Fonte: IBPT</small>
+                </div>
+            }
+
+            <!-- MENSAGEM CONSUMIDOR -->
+            <div class="msg-consumidor">
+                <strong>CONSUMIDOR - CONSULTE PELA CHAVE DE ACESSO EM:</strong><br>
+                @Model.UrlConsulta
+            </div>
+
+            <!-- QR CODE -->
+            <div class="qrcode-area">
+                @if (!string.IsNullOrEmpty(Model.QRCodeBase64))
+                {
+                    <img src="data:image/png;base64,@Model.QRCodeBase64" alt="QR Code" />
+                }
+                else if (!string.IsNullOrEmpty(Model.QRCodeUrl))
+                {
+                    <img src="@Model.QRCodeUrl" alt="QR Code" />
+                }
+                else
+                {
+                    <div class="qrcode-placeholder">
+                        [QR CODE]<br>
+                        Consulta via<br>
+                        chave de acesso
+                    </div>
+                }
+            </div>
+
+            <!-- CHAVE DE ACESSO -->
+            <div class="chave-acesso">
+                <strong>CHAVE DE ACESSO</strong><br>
+                @Model.ChaveAcessoFormatada
+            </div>
+
+            <!-- DADOS DA NFC-e -->
+            <div class="secao" style="text-align: center;">
+                <div>NFC-e nº @Model.Numero Série @Model.Serie</div>
+                <div>Emissão: @Model.DataEmissao.ToString("dd/MM/yyyy HH:mm:ss")</div>
+            </div>
+
+            <!-- PROTOCOLO -->
+            <div class="footer">
+                @if (!string.IsNullOrEmpty(Model.Protocolo))
+                {
+                    <div class="protocolo">
+                        <strong>Protocolo de Autorização:</strong><br>
+                        @Model.Protocolo<br>
+                        @Model.DataAutorizacao?.ToString("dd/MM/yyyy HH:mm:ss")
+                    </div>
+                }
+                else if (isMock)
+                {
+                    <div class="protocolo">
+                        <strong>⚠️ DOCUMENTO MOCK</strong><br>
+                        Sem protocolo de autorização<br>
+                        Apenas para visualização
+                    </div>
+                }
+                <br>
+                <div style="font-size: 7px; color: var(--ink-3);">
+                    @Model.MensagemFiscal
+                </div>
+            </div>
+
+            <!-- INFORMAÇÕES ADICIONAIS -->
+            @if (!string.IsNullOrEmpty(Model.InformacoesAdicionais))
+            {
+                <div style="font-size: 8px; margin-top: 10px; padding: 5px; background: var(--bg-subtle);">
+                    <strong>Informações Adicionais:</strong><br>
+                    @Model.InformacoesAdicionais
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Botões de Ação -->
+    <div class="btn-acoes">
+        <button class="btn-imprimir" onclick="window.print()">
+            🖨️ Imprimir
+        </button>
+        @if (!isMock && !string.IsNullOrEmpty(Model.ChaveAcesso))
+        {
+            <button class="btn-pdf" onclick="baixarPDF()">
+                📄 Baixar PDF
+            </button>
+        }
+        <button class="btn-voltar" onclick="history.back()">
+            ← Voltar
+        </button>
+    </div>
+
+    <script>
+        // Auto-print se solicitado
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('autoprint') === 'true') {
+            window.onload = () => setTimeout(() => window.print(), 500);
+        }
+        
+        function baixarPDF() {
+            window.open('/api/Fiscal/nfce/@Model.Id/pdf', '_blank');
+        }
+    </script>
+</body>
+</html>

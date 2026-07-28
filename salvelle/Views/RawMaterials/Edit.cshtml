@@ -1,0 +1,540 @@
+@{
+    ViewData["Title"] = "Editar Matéria-Prima";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var materialId = ViewBag.RawMaterialId;
+}
+
+<div class="container py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex align-items-center mb-4">
+        <a href="/materias-primas" class="btn btn-link text-dark p-0 me-3">
+            <i class="bi bi-arrow-left fs-4"></i>
+        </a>
+        <div>
+            <h4 class="mb-0" id="pageTitle">Editar Matéria-Prima</h4>
+            <p class="text-muted mb-0 small" id="pageSubtitle">Carregando...</p>
+        </div>
+    </div>
+
+    <form id="editForm">
+        <div class="row">
+            <!-- Coluna Principal -->
+            <div class="col-lg-8">
+                <!-- Informações Básicas -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Informações Básicas
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Nome *</label>
+                                <input type="text" class="form-control" id="name" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Código CAS *</label>
+                                <input type="text" class="form-control" id="casNumber" readonly>
+                                <div class="form-text">Não editável</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Código DCB</label>
+                                <input type="text" class="form-control" id="dcbCode" readonly>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Código DCI</label>
+                                <input type="text" class="form-control" id="dciCode" readonly>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Descrição</label>
+                                <textarea class="form-control" id="description" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Categoria</label>
+                                <input type="text" class="form-control" id="category" 
+                                       list="categoryList" placeholder="Ex: Vitaminas, Minerais...">
+                                <datalist id="categoryList">
+                                    <option value="Vitaminas"></option>
+                                    <option value="Minerais"></option>
+                                    <option value="Aminoácidos"></option>
+                                    <option value="Fitoterápicos"></option>
+                                    <option value="Hormônios"></option>
+                                    <option value="Anti-inflamatórios"></option>
+                                    <option value="Antioxidantes"></option>
+                                    <option value="Excipientes"></option>
+                                    <option value="Bases"></option>
+                                    <option value="Conservantes"></option>
+                                </datalist>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo de Controle *</label>
+                                <select class="form-select" id="controlType" required>
+                                    <option value="COMUM">Comum</option>
+                                    <option value="LISTA_A">Lista A</option>
+                                    <option value="LISTA_B">Lista B</option>
+                                    <option value="LISTA_C1">Lista C1</option>
+                                    <option value="LISTA_C2">Lista C2</option>
+                                    <option value="ANTIMICROBIANO">Antimicrobiano</option>
+                                    <option value="HORMONIO">Hormônio</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Sinônimos</label>
+                                <input type="text" class="form-control" id="synonyms" 
+                                       placeholder="Nomes alternativos separados por vírgula">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Indicações Terapêuticas</label>
+                                <textarea class="form-control" id="indications" rows="2"
+                                          placeholder="Ex: Ossos, imunidade, absorção de cálcio"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estoque e Medidas -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-box me-2"></i>
+                            Estoque e Medidas
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Unidade *</label>
+                                <select class="form-select" id="unit" required>
+                                    <option value="g">g (grama)</option>
+                                    <option value="mg">mg (miligrama)</option>
+                                    <option value="mcg">mcg (micrograma)</option>
+                                    <option value="ml">mL (mililitro)</option>
+                                    <option value="ui">UI (unidade internacional)</option>
+                                    <option value="un">un (unidade)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Fator de Pureza</label>
+                                <input type="number" class="form-control" id="purityFactor" 
+                                       step="0.0001" min="0.0001" max="1" value="1">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Estoque Mínimo</label>
+                                <input type="number" class="form-control" id="minimumStock" 
+                                       step="0.01" min="0">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Estoque Máximo</label>
+                                <input type="number" class="form-control" id="maximumStock" 
+                                       step="0.01" min="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Estoque Atual</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control bg-light" id="currentStock" readonly>
+                                    <span class="input-group-text" id="stockUnit">g</span>
+                                </div>
+                                <div class="form-text">Gerenciado por lotes</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Status</label>
+                                <div id="stockStatusBadge" class="mt-2"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Popularidade (1-100)</label>
+                                <input type="number" class="form-control" id="popularity" 
+                                       min="1" max="100" value="50">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Armazenamento -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-thermometer-half me-2"></i>
+                            Armazenamento
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Condições de Armazenamento</label>
+                                <input type="text" class="form-control" id="storageConditions" 
+                                       placeholder="Ex: Manter em local fresco e seco">
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="requiresRefrigeration">
+                                    <label class="form-check-label" for="requiresRefrigeration">
+                                        <i class="bi bi-snow text-info me-1"></i>
+                                        Requer Refrigeração
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="lightSensitive">
+                                    <label class="form-check-label" for="lightSensitive">
+                                        <i class="bi bi-sun text-warning me-1"></i>
+                                        Sensível à Luz
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="humiditySensitive">
+                                    <label class="form-check-label" for="humiditySensitive">
+                                        <i class="bi bi-droplet text-primary me-1"></i>
+                                        Sensível à Umidade
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Lateral - PREÇOS -->
+            <div class="col-lg-4">
+                <!-- Card de Precificação -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-currency-dollar me-2"></i>
+                            Precificação
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <!-- Status do Preço -->
+                        <div class="mb-4 p-3 rounded" id="priceStatusCard">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="fs-4 me-2" id="priceStatusIcon">🔴</span>
+                                <div>
+                                    <div class="fw-bold" id="priceStatusText">Preço Base</div>
+                                    <div class="small text-muted" id="priceStatusDesc">Nunca adquirido</div>
+                                </div>
+                            </div>
+                            <div class="fs-3 fw-bold" id="currentPriceDisplay">R$ 0,00</div>
+                            <div class="small text-muted">por <span id="priceUnit">g</span></div>
+                        </div>
+
+                        <!-- Preço Base -->
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Preço Base (R$/unidade)
+                                <i class="bi bi-info-circle text-muted ms-1" 
+                                   data-bs-toggle="tooltip" 
+                                   title="Preço de referência usado quando não há estoque nem histórico de compras"></i>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="basePrice" 
+                                       step="0.0001" min="0" placeholder="0,0000">
+                            </div>
+                        </div>
+
+                        <!-- Último Preço Pago (readonly) -->
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Último Preço Pago</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">R$</span>
+                                <input type="text" class="form-control bg-light" id="lastKnownPrice" readonly>
+                            </div>
+                            <div class="form-text" id="lastPriceDateText">-</div>
+                        </div>
+
+                        <!-- Último Lote (readonly) -->
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Preço do Último Lote</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">R$</span>
+                                <input type="text" class="form-control bg-light" id="lastBatchPrice" readonly>
+                            </div>
+                            <div class="form-text" id="lastBatchDateText">-</div>
+                        </div>
+
+                        <!-- Indicadores -->
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            <span class="badge bg-success-subtle text-success" id="badgeInStock" style="display:none">
+                                <i class="bi bi-check-circle me-1"></i>Em Estoque
+                            </span>
+                            <span class="badge bg-secondary-subtle text-secondary" id="badgeVirtual" style="display:none">
+                                <i class="bi bi-cloud me-1"></i>Virtual
+                            </span>
+                            <span class="badge bg-warning-subtle text-warning" id="badgeOutdated" style="display:none">
+                                <i class="bi bi-clock me-1"></i>Preço Desatualizado
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Histórico de Preços -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="bi bi-graph-up me-2"></i>
+                            Lotes Ativos
+                        </h6>
+                        <a href="/materias-primas/@materialId/lotes" class="btn btn-sm btn-outline-primary">
+                            Ver todos
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush" id="activeBatchesList">
+                            <div class="list-group-item text-center text-muted py-3">
+                                Carregando...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ações -->
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-check-lg me-2"></i>
+                        Salvar Alterações
+                    </button>
+                    <a href="/materias-primas/@materialId" class="btn btn-outline-secondary">
+                        Cancelar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+    const materialId = '@materialId';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadMaterial();
+        
+        // Tooltips
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+
+        // Form submit
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await saveMaterial();
+        });
+
+        // Atualizar unidade no card de preço
+        document.getElementById('unit').addEventListener('change', (e) => {
+            document.getElementById('priceUnit').textContent = e.target.value;
+            document.getElementById('stockUnit').textContent = e.target.value;
+        });
+    });
+
+    async function loadMaterial() {
+        try {
+            const response = await fetch(`/api/RawMaterials/${materialId}`);
+            const result = await response.json();
+
+            if (!result.success) {
+                alert(result.error || 'Erro ao carregar');
+                return;
+            }
+
+            const m = result.data;
+
+            // Título
+            document.getElementById('pageSubtitle').textContent = m.name;
+
+            // Campos básicos
+            document.getElementById('name').value = m.name || '';
+            document.getElementById('casNumber').value = m.casNumber || '';
+            document.getElementById('dcbCode').value = m.dcbCode || '';
+            document.getElementById('dciCode').value = m.dciCode || '';
+            document.getElementById('description').value = m.description || '';
+            document.getElementById('category').value = m.category || '';
+            document.getElementById('controlType').value = m.controlType || 'COMUM';
+            document.getElementById('synonyms').value = m.synonyms || '';
+            document.getElementById('indications').value = m.indications || '';
+
+            // Estoque
+            document.getElementById('unit').value = m.unit || 'g';
+            document.getElementById('purityFactor').value = m.purityFactor || 1;
+            document.getElementById('minimumStock').value = m.minimumStock || 0;
+            document.getElementById('maximumStock').value = m.maximumStock || 0;
+            document.getElementById('currentStock').value = formatNumber(m.currentStock);
+            document.getElementById('stockUnit').textContent = m.unit || 'g';
+            document.getElementById('popularity').value = m.popularity || 50;
+
+            // Status do estoque
+            const stockStatus = document.getElementById('stockStatusBadge');
+            if (m.currentStock <= 0) {
+                stockStatus.innerHTML = '<span class="badge bg-danger">Sem Estoque</span>';
+            } else if (m.currentStock <= m.minimumStock) {
+                stockStatus.innerHTML = '<span class="badge bg-warning">Estoque Baixo</span>';
+            } else {
+                stockStatus.innerHTML = '<span class="badge bg-success">Normal</span>';
+            }
+
+            // Armazenamento
+            document.getElementById('storageConditions').value = m.storageConditions || '';
+            document.getElementById('requiresRefrigeration').checked = m.requiresRefrigeration;
+            document.getElementById('lightSensitive').checked = m.lightSensitive;
+            document.getElementById('humiditySensitive').checked = m.humiditySensitive;
+
+            // PREÇOS
+            document.getElementById('basePrice').value = m.basePrice || '';
+            document.getElementById('lastKnownPrice').value = m.lastKnownPrice ? formatNumber(m.lastKnownPrice, 4) : '-';
+            document.getElementById('lastBatchPrice').value = m.lastBatchPrice ? formatNumber(m.lastBatchPrice, 4) : '-';
+            document.getElementById('priceUnit').textContent = m.unit || 'g';
+
+            // Data do último preço
+            if (m.lastPriceDate) {
+                const date = new Date(m.lastPriceDate);
+                document.getElementById('lastPriceDateText').textContent = `em ${date.toLocaleDateString('pt-BR')}`;
+            }
+            if (m.lastBatchDate) {
+                const date = new Date(m.lastBatchDate);
+                document.getElementById('lastBatchDateText').textContent = `em ${date.toLocaleDateString('pt-BR')}`;
+            }
+
+            // Status do preço
+            updatePriceStatus(m);
+
+            // Badges
+            if (m.currentStock > 0) {
+                document.getElementById('badgeInStock').style.display = 'inline-block';
+            }
+            if (m.isVirtual) {
+                document.getElementById('badgeVirtual').style.display = 'inline-block';
+            }
+            if (m.lastPriceDate) {
+                const daysSince = Math.floor((Date.now() - new Date(m.lastPriceDate)) / (1000 * 60 * 60 * 24));
+                if (daysSince > 180) {
+                    document.getElementById('badgeOutdated').style.display = 'inline-block';
+                }
+            }
+
+            // Lotes ativos
+            renderActiveBatches(m.activeBatches);
+
+        } catch (e) {
+            console.error('Erro:', e);
+            alert('Erro ao carregar matéria-prima');
+        }
+    }
+
+    function updatePriceStatus(m) {
+        const card = document.getElementById('priceStatusCard');
+        const icon = document.getElementById('priceStatusIcon');
+        const text = document.getElementById('priceStatusText');
+        const desc = document.getElementById('priceStatusDesc');
+        const price = document.getElementById('currentPriceDisplay');
+
+        if (m.priceStatus === 'ESTOQUE') {
+            card.className = 'mb-4 p-3 rounded bg-success-subtle';
+            icon.textContent = '🟢';
+            text.textContent = 'Preço de Estoque';
+            desc.textContent = 'Baseado em lotes ativos';
+            price.textContent = `R$ ${formatNumber(m.currentPrice, 4)}`;
+        } else if (m.priceStatus === 'HISTORICO') {
+            card.className = 'mb-4 p-3 rounded bg-warning-subtle';
+            icon.textContent = '🟡';
+            text.textContent = 'Último Preço Conhecido';
+            desc.textContent = 'Sem estoque atual';
+            price.textContent = `R$ ${formatNumber(m.lastKnownPrice || 0, 4)}`;
+        } else {
+            card.className = 'mb-4 p-3 rounded bg-danger-subtle';
+            icon.textContent = '🔴';
+            text.textContent = 'Preço Base';
+            desc.textContent = m.basePrice ? 'Referência de mercado' : 'Não definido';
+            price.textContent = m.basePrice ? `R$ ${formatNumber(m.basePrice, 4)}` : 'R$ 0,00';
+        }
+    }
+
+    function renderActiveBatches(batches) {
+        const list = document.getElementById('activeBatchesList');
+
+        if (!batches || batches.length === 0) {
+            list.innerHTML = `
+                <div class="list-group-item text-center text-muted py-3">
+                    <i class="bi bi-inbox d-block mb-1"></i>
+                    Nenhum lote ativo
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = batches.slice(0, 5).map(b => {
+            const expDate = new Date(b.expirationDate);
+            const daysToExp = Math.floor((expDate - Date.now()) / (1000 * 60 * 60 * 24));
+            let expClass = 'text-success';
+            if (daysToExp < 30) expClass = 'text-danger';
+            else if (daysToExp < 90) expClass = 'text-warning';
+
+            return `
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong class="small">${b.batchNumber}</strong>
+                            <div class="small text-muted">${formatNumber(b.currentQuantity)} un</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="small">R$ ${formatNumber(b.unitCost || 0, 4)}</div>
+                            <div class="small ${expClass}">
+                                ${expDate.toLocaleDateString('pt-BR')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function saveMaterial() {
+        const data = {
+            name: document.getElementById('name').value,
+            description: document.getElementById('description').value,
+            category: document.getElementById('category').value,
+            controlType: document.getElementById('controlType').value,
+            synonyms: document.getElementById('synonyms').value,
+            indications: document.getElementById('indications').value,
+            unit: document.getElementById('unit').value,
+            purityFactor: parseFloat(document.getElementById('purityFactor').value) || 1,
+            minimumStock: parseFloat(document.getElementById('minimumStock').value) || 0,
+            maximumStock: parseFloat(document.getElementById('maximumStock').value) || 0,
+            basePrice: parseFloat(document.getElementById('basePrice').value) || null,
+            popularity: parseInt(document.getElementById('popularity').value) || 50,
+            storageConditions: document.getElementById('storageConditions').value,
+            requiresRefrigeration: document.getElementById('requiresRefrigeration').checked,
+            lightSensitive: document.getElementById('lightSensitive').checked,
+            humiditySensitive: document.getElementById('humiditySensitive').checked
+        };
+
+        try {
+            const response = await fetch(`/api/RawMaterials/${materialId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                window.location.href = `/materias-primas/${materialId}`;
+            } else {
+                alert(result.error || 'Erro ao salvar');
+            }
+        } catch (e) {
+            console.error('Erro:', e);
+            alert('Erro ao salvar alterações');
+        }
+    }
+
+    function formatNumber(value, decimals = 2) {
+        return (value || 0).toLocaleString('pt-BR', { 
+            minimumFractionDigits: decimals, 
+            maximumFractionDigits: decimals 
+        });
+    }
+</script>
+}

@@ -1,0 +1,608 @@
+@{
+    ViewData["Title"] = "Detalhes da Matéria-Prima";
+    var rawMaterialId = ViewBag.RawMaterialId;
+}
+
+<div id="loading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Carregando...</span>
+    </div>
+    <p class="mt-2 text-muted">Carregando dados...</p>
+</div>
+
+<div id="content" style="display: none;">
+    <!-- Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-0"><i class="bi bi-box-seam me-2"></i><span id="materialName">-</span></h2>
+                    <p class="text-muted mb-0" id="materialCodes"></p>
+                </div>
+                <div>
+                    <a href="/materias-primas" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left me-1"></i> Voltar
+                    </a>
+                    <a href="/materias-primas/@rawMaterialId/editar" class="btn btn-primary">
+                        <i class="bi bi-pencil me-1"></i> Editar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Estoque Atual</p>
+                            <h3 class="mb-0" id="currentStock">-</h3>
+                            <small class="text-muted" id="stockUnit">-</small>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-box text-primary fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Lotes Ativos</p>
+                            <h3 class="mb-0" id="activeBatches">-</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-boxes text-success fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Status</p>
+                            <div id="stockStatus">-</div>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-speedometer text-warning fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Controle</p>
+                            <div id="controlBadge">-</div>
+                        </div>
+                        <div class="bg-danger bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-shield-check text-danger fs-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informações Gerais -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informações Gerais</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td width="40%" class="text-muted">Código CAS:</td>
+                            <td><strong id="casNumber">-</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Código DCB:</td>
+                            <td><strong id="dcbCode">-</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Código DCI:</td>
+                            <td><strong id="dciCode">-</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Unidade:</td>
+                            <td><strong id="unit">-</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Fator de Pureza:</td>
+                            <td><strong id="purityFactor">-</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Categoria:</td>
+                            <td><strong id="category">-</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Preço Atual:</td>
+                            <td><strong id="currentPrice" class="text-success">-</strong></td>
+                        </tr>
+                    </table>
+                    <div id="descriptionSection" style="display: none;">
+                        <hr>
+                        <p class="mb-0"><strong>Descrição:</strong><br><span id="description"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estoque e Condições -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-thermometer-half me-2"></i>Estoque e Condições</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-muted">Níveis de Estoque</h6>
+                    <table class="table table-borderless mb-3">
+                        <tr>
+                            <td width="40%">Estoque Atual:</td>
+                            <td><strong id="stockCurrent">-</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Estoque Mínimo:</td>
+                            <td><strong id="stockMin">-</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Estoque Máximo:</td>
+                            <td><strong id="stockMax">-</strong></td>
+                        </tr>
+                    </table>
+
+                    <h6 class="text-muted">Condições de Armazenamento</h6>
+                    <div class="mb-3" id="storageConditions">
+                        <span class="text-muted">Carregando...</span>
+                    </div>
+                    <div id="storageNotes" style="display: none;">
+                        <p class="mb-0"><strong>Observações:</strong><br><span id="storageNotesText"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lotes -->
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-boxes me-2"></i>Lotes Ativos</h5>
+                    <a href="/materias-primas/@rawMaterialId/lotes" class="btn btn-sm btn-outline-primary">
+                        Ver Todos
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Lote</th>
+                                    <th>Fornecedor</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Qtd. Recebida</th>
+                                    <th class="text-end">Qtd. Atual</th>
+                                    <th>Validade</th>
+                                    <th>Recebimento</th>
+                                </tr>
+                            </thead>
+                            <tbody id="batchesTable">
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                        <span class="ms-2">Carregando lotes...</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movimentações Recentes -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>Movimentações Recentes</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Tipo</th>
+                                    <th>Lote</th>
+                                    <th class="text-end">Quantidade</th>
+                                    <th>Motivo</th>
+                                    <th>Funcionário</th>
+                                </tr>
+                            </thead>
+                            <tbody id="movementsTable">
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                        <span class="ms-2">Carregando movimentações...</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="error" class="alert alert-danger" style="display: none;">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    <span id="errorMessage">Erro ao carregar dados</span>
+</div>
+
+@section Scripts {
+<script>
+const materialId = '@rawMaterialId';
+let materialData = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadMaterialData();
+});
+
+async function loadMaterialData() {
+    try {
+        const response = await fetch(`/api/RawMaterials/${materialId}`, {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Matéria-prima não encontrada');
+        }
+        
+        const result = await response.json();
+        
+        // API retorna { success: true, data: {...} }
+        if (result.success && result.data) {
+            materialData = result.data;
+        } else if (result.id) {
+            // Caso retorne diretamente o objeto
+            materialData = result;
+        } else {
+            throw new Error('Formato de resposta inválido');
+        }
+        
+        console.log('Material carregado:', materialData);
+        renderMaterialData();
+        loadBatches();
+        loadMovements();
+        
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+        
+    } catch (error) {
+        console.error('Erro:', error);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('errorMessage').textContent = error.message;
+        document.getElementById('error').style.display = 'block';
+    }
+}
+
+function renderMaterialData() {
+    const m = materialData;
+    
+    // Helper para pegar propriedade ignorando case
+    const get = (obj, ...keys) => {
+        for (const key of keys) {
+            if (obj[key] !== undefined) return obj[key];
+            // Tenta camelCase e PascalCase
+            const camel = key.charAt(0).toLowerCase() + key.slice(1);
+            const pascal = key.charAt(0).toUpperCase() + key.slice(1);
+            if (obj[camel] !== undefined) return obj[camel];
+            if (obj[pascal] !== undefined) return obj[pascal];
+        }
+        return null;
+    };
+    
+    // Header
+    document.getElementById('materialName').textContent = get(m, 'name', 'Name') || '-';
+    let codes = [];
+    if (get(m, 'dciCode', 'DciCode')) codes.push(`DCI: ${get(m, 'dciCode', 'DciCode')}`);
+    if (get(m, 'dcbCode', 'DcbCode')) codes.push(`DCB: ${get(m, 'dcbCode', 'DcbCode')}`);
+    document.getElementById('materialCodes').textContent = codes.join(' | ');
+    
+    // Cards
+    const currentStock = get(m, 'currentStock', 'CurrentStock') || 0;
+    document.getElementById('currentStock').textContent = currentStock.toFixed(2);
+    document.getElementById('stockUnit').textContent = get(m, 'unit', 'Unit') || '-';
+    
+    // Status do estoque
+    const min = get(m, 'minimumStock', 'MinimumStock') || 0;
+    const max = get(m, 'maximumStock', 'MaximumStock') || 999999;
+    
+    let statusHtml;
+    if (currentStock <= 0) {
+        statusHtml = '<span class="badge bg-dark">Sem Estoque</span>';
+    } else if (currentStock <= min) {
+        statusHtml = '<span class="badge bg-danger">Estoque Baixo</span>';
+    } else if (currentStock >= max) {
+        statusHtml = '<span class="badge bg-warning">Em Excesso</span>';
+    } else {
+        statusHtml = '<span class="badge bg-success">Normal</span>';
+    }
+    document.getElementById('stockStatus').innerHTML = statusHtml;
+    
+    // Controle
+    const controlType = get(m, 'controlType', 'ControlType') || 'COMUM';
+    if (controlType === 'COMUM') {
+        document.getElementById('controlBadge').innerHTML = '<span class="badge bg-secondary">Comum</span>';
+    } else {
+        document.getElementById('controlBadge').innerHTML = `<span class="badge bg-danger">${controlType}</span>`;
+    }
+    
+    // Informações Gerais
+    document.getElementById('casNumber').textContent = get(m, 'casNumber', 'CasNumber') || '-';
+    document.getElementById('dcbCode').textContent = get(m, 'dcbCode', 'DcbCode') || '-';
+    document.getElementById('dciCode').textContent = get(m, 'dciCode', 'DciCode') || '-';
+    document.getElementById('unit').textContent = get(m, 'unit', 'Unit') || '-';
+    document.getElementById('purityFactor').textContent = (get(m, 'purityFactor', 'PurityFactor') || 1).toFixed(4);
+    document.getElementById('category').textContent = get(m, 'category', 'Category') || '-';
+    
+    const currentPrice = get(m, 'currentPrice', 'CurrentPrice');
+    if (currentPrice && currentPrice > 0) {
+        document.getElementById('currentPrice').textContent = `R$ ${currentPrice.toFixed(4)}/${get(m, 'unit', 'Unit') || 'un'}`;
+    } else {
+        document.getElementById('currentPrice').innerHTML = '<span class="text-danger">Não definido</span>';
+    }
+    
+    const description = get(m, 'description', 'Description');
+    if (description) {
+        document.getElementById('description').textContent = description;
+        document.getElementById('descriptionSection').style.display = 'block';
+    }
+    
+    // Estoque
+    document.getElementById('stockCurrent').textContent = `${currentStock.toFixed(2)} ${get(m, 'unit', 'Unit') || ''}`;
+    document.getElementById('stockMin').textContent = `${min.toFixed(2)} ${get(m, 'unit', 'Unit') || ''}`;
+    document.getElementById('stockMax').textContent = `${max.toFixed(2)} ${get(m, 'unit', 'Unit') || ''}`;
+    
+    // Condições de armazenamento
+    let conditions = [];
+    if (get(m, 'requiresRefrigeration', 'RequiresRefrigeration')) {
+        conditions.push('<span class="badge bg-info me-1"><i class="bi bi-thermometer-snow"></i> Refrigeração</span>');
+    }
+    if (get(m, 'lightSensitive', 'LightSensitive')) {
+        conditions.push('<span class="badge bg-warning me-1"><i class="bi bi-brightness-high"></i> Sensível à Luz</span>');
+    }
+    if (get(m, 'humiditySensitive', 'HumiditySensitive')) {
+        conditions.push('<span class="badge bg-primary me-1"><i class="bi bi-droplet"></i> Sensível à Umidade</span>');
+    }
+    
+    if (conditions.length === 0) {
+        document.getElementById('storageConditions').innerHTML = '<span class="text-muted">Nenhuma condição especial</span>';
+    } else {
+        document.getElementById('storageConditions').innerHTML = conditions.join('');
+    }
+    
+    const storageNotes = get(m, 'storageConditions', 'StorageConditions');
+    if (storageNotes) {
+        document.getElementById('storageNotesText').textContent = storageNotes;
+        document.getElementById('storageNotes').style.display = 'block';
+    }
+}
+
+async function loadBatches() {
+    try {
+        // Primeiro tenta usar os lotes que vieram junto com os dados do material
+        if (materialData && materialData.activeBatches && materialData.activeBatches.length > 0) {
+            console.log('Usando lotes do material:', materialData.activeBatches);
+            document.getElementById('activeBatches').textContent = materialData.activeBatches.length;
+            renderBatchesFromMaterial(materialData.activeBatches);
+            return;
+        }
+        
+        // Se não tiver, busca pela API de lotes
+        const response = await fetch(`/api/Batches?rawMaterialId=${materialId}`, {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) throw new Error('Erro ao carregar lotes');
+        
+        const result = await response.json();
+        
+        // API pode retornar { success: true, data: [...] } ou array direto
+        let batches = [];
+        if (Array.isArray(result)) {
+            batches = result;
+        } else if (result.data && Array.isArray(result.data)) {
+            batches = result.data;
+        } else if (result.items && Array.isArray(result.items)) {
+            batches = result.items;
+        }
+        
+        console.log('Lotes carregados via API:', batches);
+        const activeBatches = batches.filter(b => (b.currentQuantity || b.CurrentQuantity || 0) > 0);
+        
+        document.getElementById('activeBatches').textContent = activeBatches.length;
+        renderBatches(activeBatches);
+        
+    } catch (error) {
+        console.error('Erro ao carregar lotes:', error);
+        document.getElementById('batchesTable').innerHTML = 
+            '<tr><td colspan="7" class="text-center text-muted py-4">Nenhum lote encontrado</td></tr>';
+        document.getElementById('activeBatches').textContent = '0';
+    }
+}
+
+function renderBatchesFromMaterial(batches) {
+    const tbody = document.getElementById('batchesTable');
+    
+    if (!batches || batches.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Nenhum lote ativo</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = batches.map(b => `
+        <tr>
+            <td><strong>${b.batchNumber || '-'}</strong></td>
+            <td><small>-</small></td>
+            <td><span class="badge bg-success">Ativo</span></td>
+            <td class="text-end">-</td>
+            <td class="text-end"><strong>${(b.currentQuantity || 0).toFixed(2)}</strong></td>
+            <td><small>-</small></td>
+            <td><small>${formatDate(b.receivedDate)}</small></td>
+        </tr>
+    `).join('');
+}
+
+function renderBatches(batches) {
+    const tbody = document.getElementById('batchesTable');
+    
+    if (!batches || batches.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Nenhum lote ativo</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = batches.slice(0, 10).map(b => {
+        // Helper para pegar propriedade
+        const get = (obj, ...keys) => {
+            for (const key of keys) {
+                if (obj[key] !== undefined) return obj[key];
+            }
+            return null;
+        };
+        
+        const status = get(b, 'status', 'Status') || 'ATIVO';
+        const statusBadge = status === 'APROVADO' 
+            ? '<span class="badge bg-success">Aprovado</span>'
+            : status === 'QUARENTENA'
+            ? '<span class="badge bg-warning">Quarentena</span>'
+            : `<span class="badge bg-secondary">${status}</span>`;
+        
+        const batchNumber = get(b, 'batchNumber', 'BatchNumber') || '-';
+        const supplierName = b.supplier?.tradeName || b.supplier?.companyName || 
+                            get(b, 'supplierName', 'SupplierName') || '-';
+        const receivedQty = get(b, 'receivedQuantity', 'ReceivedQuantity') || 0;
+        const currentQty = get(b, 'currentQuantity', 'CurrentQuantity') || 0;
+        const expiryDate = get(b, 'expiryDate', 'ExpiryDate');
+        const receivedDate = get(b, 'receivedDate', 'ReceivedDate');
+            
+        return `
+            <tr>
+                <td><strong>${batchNumber}</strong></td>
+                <td><small>${supplierName}</small></td>
+                <td>${statusBadge}</td>
+                <td class="text-end">${receivedQty.toFixed(2)}</td>
+                <td class="text-end"><strong>${currentQty.toFixed(2)}</strong></td>
+                <td><small>${formatDate(expiryDate)}</small></td>
+                <td><small>${formatDate(receivedDate)}</small></td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function loadMovements() {
+    try {
+        const response = await fetch(`/api/StockMovements/by-raw-material/${materialId}?days=30`, {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) throw new Error('Erro ao carregar movimentações');
+        
+        const result = await response.json();
+        
+        // API pode retornar { success: true, data: [...] } ou array direto
+        let movements = [];
+        if (Array.isArray(result)) {
+            movements = result;
+        } else if (result.data && Array.isArray(result.data)) {
+            movements = result.data;
+        } else if (result.items && Array.isArray(result.items)) {
+            movements = result.items;
+        }
+        
+        console.log('Movimentações carregadas:', movements);
+        renderMovements(movements);
+        
+    } catch (error) {
+        console.error('Erro ao carregar movimentações:', error);
+        document.getElementById('movementsTable').innerHTML = 
+            '<tr><td colspan="6" class="text-center text-muted py-4">Nenhuma movimentação recente</td></tr>';
+    }
+}
+
+function renderMovements(movements) {
+    const tbody = document.getElementById('movementsTable');
+    
+    if (!movements || movements.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">Nenhuma movimentação nos últimos 30 dias</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = movements.slice(0, 10).map(m => {
+        // Helper para pegar propriedade
+        const get = (obj, ...keys) => {
+            for (const key of keys) {
+                if (obj[key] !== undefined) return obj[key];
+            }
+            return null;
+        };
+        
+        const movementType = get(m, 'movementType', 'MovementType') || 'OUTRO';
+        const typeBadge = {
+            'ENTRADA': '<span class="badge bg-success">Entrada</span>',
+            'SAIDA': '<span class="badge bg-danger">Saída</span>',
+            'AJUSTE': '<span class="badge bg-warning">Ajuste</span>',
+            'PERDA': '<span class="badge bg-secondary">Perda</span>',
+            'TRANSFERENCIA': '<span class="badge bg-info">Transferência</span>'
+        }[movementType] || `<span class="badge bg-secondary">${movementType}</span>`;
+        
+        const quantity = get(m, 'quantity', 'Quantity') || 0;
+        const qtyClass = quantity > 0 ? 'text-success' : 'text-danger';
+        const qtyPrefix = quantity > 0 ? '+' : '';
+        
+        const movementDate = get(m, 'movementDate', 'MovementDate');
+        const batchNumber = get(m, 'batchNumber', 'BatchNumber') || '-';
+        const reason = get(m, 'reason', 'Reason') || '-';
+        const employeeName = get(m, 'performedByEmployeeName', 'PerformedByEmployeeName') || '-';
+        
+        return `
+            <tr>
+                <td><small>${formatDateTime(movementDate)}</small></td>
+                <td>${typeBadge}</td>
+                <td><small>${batchNumber}</small></td>
+                <td class="text-end"><strong class="${qtyClass}">${qtyPrefix}${quantity.toFixed(2)}</strong></td>
+                <td><small>${reason}</small></td>
+                <td><small>${employeeName}</small></td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('pt-BR');
+}
+
+function formatDateTime(dateStr) {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+</script>
+}

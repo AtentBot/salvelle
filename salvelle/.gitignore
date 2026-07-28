@@ -1,0 +1,27 @@
+# Build results
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.csproj.user
+
+# Secrets - NUNCA commitar
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Claude
+.claude/

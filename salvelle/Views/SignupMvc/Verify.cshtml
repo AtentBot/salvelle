@@ -1,0 +1,528 @@
+﻿@{
+    ViewData["Title"] = "Verificar Código";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Verificação - Salvelle</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/signup.css"/>
+    <style>
+        .code-inputs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .code-input {
+            width: 50px;
+            height: 60px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            border: 2px solid var(--petrol-500);
+            border-radius: 10px;
+            background: white;
+            color: var(--ink-2);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .code-input:focus {
+            border-color: var(--petrol-700);
+            outline: none;
+            background: var(--bg-subtle);
+            box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.25);
+        }
+        .code-input::placeholder {
+            color: var(--ink-5);
+        }
+        .code-input:disabled {
+            background: var(--bg-subtle);
+            border-color: var(--ink-4);
+            cursor: not-allowed;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .step.completed {
+            background: var(--ok);
+            color: white;
+        }
+        .step.active {
+            background: white;
+            color: var(--petrol-500);
+        }
+        .step-line {
+            width: 50px;
+            height: 2px;
+            background: rgba(255,255,255,0.3);
+            align-self: center;
+        }
+        .step-line.completed {
+            background: var(--ok);
+        }
+        
+        /* Timer Section */
+        .timer-section {
+            text-align: center;
+            margin-top: 25px;
+            padding: 15px;
+            background: var(--petrol-500) !important;
+            border-radius: 12px;
+        }
+        .expiration-timer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 1rem;
+            color: #fff !important;
+            margin-bottom: 12px;
+        }
+        .expiration-timer .time {
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            background: rgba(255,255,255,0.25) !important;
+            color: #fff !important;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+        .expiration-timer.warning .time {
+            color: #fff !important;
+            background: rgba(255, 193, 7, 0.5) !important;
+            border: 1px solid var(--amber-500);
+        }
+        .expiration-timer.expired {
+            color: #ffcdd2 !important;
+        }
+        .expiration-timer.expired .time {
+            color: #fff !important;
+            background: rgba(244, 67, 54, 0.5) !important;
+            border: 1px solid #f44336;
+        }
+        
+        .resend-section {
+            margin-top: 12px;
+        }
+        .btn-resend {
+            background: rgba(255,255,255,0.2) !important;
+            border: 1px solid rgba(255,255,255,0.5) !important;
+            color: #fff !important;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .btn-resend:hover:not(:disabled) {
+            background: rgba(255,255,255,0.35) !important;
+            border-color: #fff !important;
+            color: #fff !important;
+        }
+        .btn-resend:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            color: rgba(255,255,255,0.7) !important;
+        }
+        .resend-cooldown {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.9) !important;
+            margin-top: 10px;
+        }
+        
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .back-link a {
+            color: var(--petrol-500) !important;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .back-link a:hover {
+            color: var(--petrol-700) !important;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="signup-wrapper">
+    <div class="signup-container">
+        <!-- Indicador de passos -->
+        <div class="step-indicator">
+            <div class="step completed"><i class="bi bi-check"></i></div>
+            <div class="step-line completed"></div>
+            <div class="step active">2</div>
+            <div class="step-line"></div>
+            <div class="step">3</div>
+        </div>
+
+        <div class="signup-header">
+            <h1><i class="bi bi-shield-check me-2"></i>Verificar Código</h1>
+            <p>Digite o código de 6 dígitos enviado para seu WhatsApp</p>
+        </div>
+
+        <div class="signup-body">
+            <form id="verifyForm">
+                <input type="hidden" id="whatsapp" value="@ViewBag.WhatsApp" />
+                
+                <div class="code-inputs" role="group" aria-label="Código de verificação de 6 dígitos">
+                    <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="Dígito 1 do código"/>
+                    <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="Dígito 2 do código"/>
+                    <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="Dígito 3 do código"/>
+                    <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="Dígito 4 do código"/>
+                    <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="Dígito 5 do código"/>
+                    <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]" aria-label="Dígito 6 do código"/>
+                </div>
+
+                <!-- Alert de erro -->
+                <div id="errorAlert" class="alert alert-danger d-none" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <span id="errorMessage"></span>
+                </div>
+
+                <!-- Alert de sucesso -->
+                <div id="successAlert" class="alert alert-success d-none" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <span id="successMessage"></span>
+                </div>
+
+                <button type="submit" class="btn btn-signup w-100" id="submitBtn">
+                    <span id="btnText">Verificar</span>
+                    <span id="btnSpinner" class="spinner-border spinner-border-sm d-none ms-2" role="status"></span>
+                </button>
+            </form>
+
+            <!-- Timer de expiração e reenvio -->
+            <div class="timer-section">
+                <div class="expiration-timer" id="expirationTimer">
+                    <i class="bi bi-clock"></i>
+                    <span>Código expira em:</span>
+                    <span class="time" id="expirationTime">05:00</span>
+                </div>
+                
+                <div class="resend-section">
+                    <button type="button" class="btn btn-resend" id="resendBtn" disabled>
+                        <i class="bi bi-arrow-repeat me-1"></i>
+                        <span id="resendText">Reenviar código</span>
+                    </button>
+                    <div class="resend-cooldown" id="resendCooldown">Aguarde 60s para reenviar</div>
+                </div>
+            </div>
+
+            <div class="back-link">
+                <a href="/signup"><i class="bi bi-arrow-left me-1"></i>Voltar ao cadastro</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('verifyForm');
+    const inputs = document.querySelectorAll('.code-input');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+    const successAlert = document.getElementById('successAlert');
+    const successMessage = document.getElementById('successMessage');
+    const whatsappInput = document.getElementById('whatsapp');
+    
+    // Timer elements
+    const expirationTimerEl = document.getElementById('expirationTimer');
+    const expirationTimeEl = document.getElementById('expirationTime');
+    const resendBtn = document.getElementById('resendBtn');
+    const resendText = document.getElementById('resendText');
+    const resendCooldown = document.getElementById('resendCooldown');
+
+    // Configurações (em segundos)
+    const CODE_EXPIRATION = 5 * 60; // 5 minutos
+    const RESEND_COOLDOWN = 60;     // 60 segundos
+
+    let expirationSeconds = CODE_EXPIRATION;
+    let resendSeconds = RESEND_COOLDOWN;
+    let expirationInterval;
+    let resendInterval;
+    let codeExpired = false;
+
+    // Iniciar timers
+    startExpirationTimer();
+    startResendCooldown();
+
+    // Timer de expiração do código
+    function startExpirationTimer() {
+        expirationSeconds = CODE_EXPIRATION;
+        codeExpired = false;
+        updateExpirationDisplay();
+        
+        expirationInterval = setInterval(() => {
+            expirationSeconds--;
+            updateExpirationDisplay();
+            
+            if (expirationSeconds <= 0) {
+                clearInterval(expirationInterval);
+                codeExpired = true;
+                expirationTimerEl.classList.add('expired');
+                expirationTimerEl.innerHTML = '<i class="bi bi-exclamation-circle"></i> <span>Código expirado! Solicite um novo.</span>';
+                disableForm(true);
+            }
+        }, 1000);
+    }
+
+    function updateExpirationDisplay() {
+        const mins = Math.floor(expirationSeconds / 60);
+        const secs = expirationSeconds % 60;
+        expirationTimeEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        
+        // Warning quando menos de 1 minuto
+        if (expirationSeconds <= 60 && expirationSeconds > 0) {
+            expirationTimerEl.classList.add('warning');
+        } else {
+            expirationTimerEl.classList.remove('warning');
+        }
+    }
+
+    // Cooldown para reenvio
+    function startResendCooldown() {
+        resendSeconds = RESEND_COOLDOWN;
+        resendBtn.disabled = true;
+        resendCooldown.style.display = 'block';
+        resendCooldown.textContent = `Aguarde ${resendSeconds}s para reenviar`;
+        
+        resendInterval = setInterval(() => {
+            resendSeconds--;
+            resendCooldown.textContent = `Aguarde ${resendSeconds}s para reenviar`;
+            
+            if (resendSeconds <= 0) {
+                clearInterval(resendInterval);
+                resendBtn.disabled = false;
+                resendCooldown.style.display = 'none';
+            }
+        }, 1000);
+    }
+
+    function disableForm(disabled) {
+        inputs.forEach(i => i.disabled = disabled);
+        submitBtn.disabled = disabled;
+    }
+
+    // Auto-focus e navegação entre inputs
+    inputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+            const value = e.target.value;
+            e.target.value = value.replace(/\D/g, '');
+            
+            if (value && index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            }
+            
+            // Auto-submit quando todos preenchidos
+            const code = Array.from(inputs).map(i => i.value).join('');
+            if (code.length === 6) {
+                form.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                inputs[index - 1].focus();
+            }
+        });
+
+        // Permitir colar código completo
+        input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+            pastedData.split('').forEach((char, i) => {
+                if (inputs[i]) inputs[i].value = char;
+            });
+            if (pastedData.length === 6) {
+                inputs[5].focus();
+                setTimeout(() => form.dispatchEvent(new Event('submit')), 100);
+            }
+        });
+    });
+
+    // Focar no primeiro input
+    inputs[0].focus();
+
+    function showError(message) {
+        successAlert.classList.add('d-none');
+        errorMessage.textContent = message;
+        errorAlert.classList.remove('d-none');
+    }
+
+    function showSuccess(message) {
+        errorAlert.classList.add('d-none');
+        successMessage.textContent = message;
+        successAlert.classList.remove('d-none');
+    }
+
+    function setLoading(loading) {
+        submitBtn.disabled = loading || codeExpired;
+        btnText.textContent = loading ? 'Verificando...' : 'Verificar';
+        btnSpinner.classList.toggle('d-none', !loading);
+        inputs.forEach(i => i.disabled = loading || codeExpired);
+    }
+
+    // Submit do formulário
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (codeExpired) {
+            showError('Código expirado. Solicite um novo código.');
+            return;
+        }
+        
+        const code = Array.from(inputs).map(i => i.value).join('');
+        const whatsapp = whatsappInput.value;
+
+        if (code.length !== 6) {
+            showError('Digite o código completo de 6 dígitos');
+            return;
+        }
+
+        if (!whatsapp) {
+            showError('WhatsApp não informado');
+            return;
+        }
+
+        setLoading(true);
+        errorAlert.classList.add('d-none');
+
+        try {
+            const response = await fetch('/api/signup/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code, whatsApp: whatsapp })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showError(data.message || 'Código inválido');
+                setLoading(false);
+                inputs.forEach(i => i.value = '');
+                inputs[0].focus();
+                return;
+            }
+
+            // Sucesso
+            clearInterval(expirationInterval);
+            showSuccess('Código verificado! Redirecionando...');
+            
+            setTimeout(() => {
+                window.location.href = data.redirectTo || `/signup/complete-profile?establishmentId=${data.establishmentId}`;
+            }, 1000);
+
+        } catch (error) {
+            console.error('Erro:', error);
+            showError('Erro de conexão. Tente novamente.');
+            setLoading(false);
+        }
+    });
+
+    // Reenviar código
+    resendBtn.addEventListener('click', async function() {
+        const whatsapp = whatsappInput.value;
+        
+        if (!whatsapp) {
+            showError('WhatsApp não informado');
+            return;
+        }
+
+        resendBtn.disabled = true;
+        resendText.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...';
+
+        try {
+            const response = await fetch('/api/signup/resend-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ whatsApp: whatsapp })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showError(data.message || 'Erro ao reenviar código');
+                resendBtn.disabled = false;
+            } else {
+                showSuccess('Novo código enviado! Verifique seu WhatsApp.');
+                
+                // Resetar timer de expiração
+                clearInterval(expirationInterval);
+                expirationTimerEl.classList.remove('expired', 'warning');
+                expirationTimerEl.innerHTML = '<i class="bi bi-clock"></i> <span>Código expira em:</span> <span class="time" id="expirationTime">05:00</span>';
+                
+                // Re-selecionar o elemento após recriar o HTML
+                const newExpirationTimeEl = document.getElementById('expirationTime');
+                
+                // Reiniciar timer
+                expirationSeconds = CODE_EXPIRATION;
+                codeExpired = false;
+                
+                expirationInterval = setInterval(() => {
+                    expirationSeconds--;
+                    const mins = Math.floor(expirationSeconds / 60);
+                    const secs = expirationSeconds % 60;
+                    newExpirationTimeEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                    
+                    if (expirationSeconds <= 60 && expirationSeconds > 0) {
+                        expirationTimerEl.classList.add('warning');
+                    }
+                    
+                    if (expirationSeconds <= 0) {
+                        clearInterval(expirationInterval);
+                        codeExpired = true;
+                        expirationTimerEl.classList.add('expired');
+                        expirationTimerEl.innerHTML = '<i class="bi bi-exclamation-circle"></i> <span>Código expirado! Solicite um novo.</span>';
+                        disableForm(true);
+                    }
+                }, 1000);
+                
+                // Reabilitar form e limpar inputs
+                disableForm(false);
+                inputs.forEach(i => i.value = '');
+                inputs[0].focus();
+                
+                // Reiniciar cooldown de reenvio
+                startResendCooldown();
+            }
+
+            resendText.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Reenviar código';
+
+        } catch (error) {
+            console.error('Erro:', error);
+            showError('Erro de conexão. Tente novamente.');
+            resendBtn.disabled = false;
+            resendText.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Reenviar código';
+        }
+    });
+});
+</script>
+@await Html.PartialAsync("_SupportChat")
+</body>
+</html>

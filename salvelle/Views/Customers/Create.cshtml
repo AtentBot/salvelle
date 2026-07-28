@@ -1,0 +1,417 @@
+@{
+    ViewData["Title"] = "Novo Cliente";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0">
+                    <i class="bi bi-person-plus text-primary me-2"></i>
+                    Cadastrar Novo Cliente
+                </h2>
+                <p class="text-muted mb-0">Preencha os dados do cliente</p>
+            </div>
+            <div>
+                <a href="/Customers" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="customerForm">
+    <!-- Dados Pessoais -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-person me-2"></i>
+                Dados Pessoais
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="fullName" required 
+                           minlength="3" maxlength="200">
+                    <div class="invalid-feedback">Nome completo é obrigatório (mín. 3 caracteres)</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">CPF</label>
+                    <input type="text" class="form-control" id="cpf" 
+                           placeholder="000.000.000-00" maxlength="14">
+                    <div class="invalid-feedback">CPF inválido</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">RG</label>
+                    <input type="text" class="form-control" id="rg" maxlength="20">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Data de Nascimento</label>
+                    <input type="date" class="form-control" id="birthDate">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Gênero</label>
+                    <select class="form-select" id="gender">
+                        <option value="">Selecione</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Feminino</option>
+                        <option value="O">Outro</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contato -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-telephone me-2"></i>
+                Contato
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Telefone</label>
+                    <input type="text" class="form-control" id="phone" 
+                           placeholder="(00) 0000-0000" maxlength="15">
+                    <div class="invalid-feedback">Telefone deve ter 10 ou 11 dígitos</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">WhatsApp</label>
+                    <input type="text" class="form-control" id="whatsApp" 
+                           placeholder="(00) 00000-0000" maxlength="15">
+                    <div class="invalid-feedback">WhatsApp deve ter 10 ou 11 dígitos</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" maxlength="200">
+                    <div class="invalid-feedback">Email inválido</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Endereço -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-geo-alt me-2"></i>
+                Endereço
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">CEP</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="zipCode" 
+                               placeholder="00000-000" maxlength="9">
+                        <button class="btn btn-outline-secondary" type="button" onclick="searchZipCode()">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                    <div class="invalid-feedback">CEP deve ter 8 dígitos</div>
+                </div>
+
+                <div class="col-md-7">
+                    <label class="form-label">Logradouro</label>
+                    <input type="text" class="form-control" id="street" maxlength="200">
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Número</label>
+                    <input type="text" class="form-control" id="number" maxlength="20">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Complemento</label>
+                    <input type="text" class="form-control" id="complement" maxlength="100">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Bairro</label>
+                    <input type="text" class="form-control" id="neighborhood" maxlength="100">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Cidade</label>
+                    <input type="text" class="form-control" id="city" maxlength="100">
+                </div>
+
+                <div class="col-md-1">
+                    <label class="form-label">UF</label>
+                    <input type="text" class="form-control" id="state" 
+                           maxlength="2" placeholder="SP">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações Médicas -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-heart-pulse me-2"></i>
+                Informações Médicas
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Alergias</label>
+                    <textarea class="form-control" id="allergies" rows="3" 
+                              placeholder="Descreva alergias conhecidas"></textarea>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Condições Médicas</label>
+                    <textarea class="form-control" id="medicalConditions" rows="3" 
+                              placeholder="Descreva condições médicas relevantes"></textarea>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Observações</label>
+                    <textarea class="form-control" id="observations" rows="2" 
+                              placeholder="Observações adicionais"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LGPD -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-shield-check me-2"></i>
+                Consentimento LGPD
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="consentDataProcessing" required>
+                <label class="form-check-label" for="consentDataProcessing">
+                    <strong>Eu autorizo o tratamento dos meus dados pessoais <span class="text-danger">*</span></strong>
+                </label>
+                <div class="form-text">
+                    Declaro estar ciente e concordar com o tratamento dos meus dados pessoais 
+                    para fins de atendimento farmacêutico, conforme Lei Geral de Proteção de Dados (LGPD).
+                </div>
+                <div class="invalid-feedback">
+                    É necessário consentir com o tratamento de dados para cadastrar o cliente
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-end gap-2">
+                <a href="/Customers" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i>
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="bi bi-check-circle me-1"></i>
+                    Salvar Cliente
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        setupMasks();
+        setupForm();
+    });
+
+    function setupMasks() {
+        // Máscara CPF
+        document.getElementById('cpf').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                e.target.value = value;
+            }
+        });
+
+        // Máscara Telefone/WhatsApp
+        const phoneMask = (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                if (value.length > 10) {
+                    value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+                } else {
+                    value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+                }
+                e.target.value = value;
+            }
+        };
+
+        document.getElementById('phone').addEventListener('input', phoneMask);
+        document.getElementById('whatsApp').addEventListener('input', phoneMask);
+
+        // Máscara CEP
+        document.getElementById('zipCode').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 8) {
+                value = value.replace(/(\d{5})(\d)/, '$1-$2');
+                e.target.value = value;
+            }
+        });
+
+        // UF maiúsculo
+        document.getElementById('state').addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+    }
+
+    function setupForm() {
+        const form = document.getElementById('customerForm');
+        
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            if (!form.checkValidity()) {
+                e.stopPropagation();
+                form.classList.add('was-validated');
+                return;
+            }
+
+            // Validação CPF
+            const cpf = document.getElementById('cpf').value;
+            if (cpf && !validateCpf(cpf)) {
+                document.getElementById('cpf').setCustomValidity('CPF inválido');
+                form.classList.add('was-validated');
+                return;
+            }
+            document.getElementById('cpf').setCustomValidity('');
+
+            await saveCustomer();
+        });
+    }
+
+    async function saveCustomer() {
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+
+        try {
+            const data = {
+                fullName: document.getElementById('fullName').value,
+                cpf: document.getElementById('cpf').value.replace(/\D/g, '') || null,
+                rg: document.getElementById('rg').value || null,
+                birthDate: document.getElementById('birthDate').value || null,
+                gender: document.getElementById('gender').value || null,
+                phone: document.getElementById('phone').value.replace(/\D/g, '') || null,
+                whatsApp: document.getElementById('whatsApp').value.replace(/\D/g, '') || null,
+                email: document.getElementById('email').value || null,
+                zipCode: document.getElementById('zipCode').value.replace(/\D/g, '') || null,
+                street: document.getElementById('street').value || null,
+                number: document.getElementById('number').value || null,
+                complement: document.getElementById('complement').value || null,
+                neighborhood: document.getElementById('neighborhood').value || null,
+                city: document.getElementById('city').value || null,
+                state: document.getElementById('state').value || null,
+                allergies: document.getElementById('allergies').value || null,
+                medicalConditions: document.getElementById('medicalConditions').value || null,
+                observations: document.getElementById('observations').value || null,
+                consentDataProcessing: document.getElementById('consentDataProcessing').checked
+            };
+
+            const response = await fetch('/api/Customers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert(result.message);
+                window.location.href = `/Customers/Details/${result.customerId}`;
+            } else {
+                alert(result.message || result.errors?.join('\n') || 'Erro ao salvar cliente');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Salvar Cliente';
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao salvar cliente');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Salvar Cliente';
+        }
+    }
+
+    async function searchZipCode() {
+        const zipCode = document.getElementById('zipCode').value.replace(/\D/g, '');
+
+        if (zipCode.length !== 8) {
+            alert('CEP deve ter 8 dígitos');
+            return;
+        }
+
+        try {
+            const response = await fetch(`https://viacep.com.br/ws/${zipCode}/json/`);
+            const data = await response.json();
+
+            if (data.erro) {
+                alert('CEP não encontrado');
+                return;
+            }
+
+            document.getElementById('street').value = data.logradouro || '';
+            document.getElementById('neighborhood').value = data.bairro || '';
+            document.getElementById('city').value = data.localidade || '';
+            document.getElementById('state').value = data.uf || '';
+            document.getElementById('number').focus();
+
+        } catch (error) {
+            console.error('Erro ao buscar CEP:', error);
+            alert('Erro ao buscar CEP');
+        }
+    }
+
+    function validateCpf(cpf) {
+        cpf = cpf.replace(/\D/g, '');
+
+        if (cpf.length !== 11) return false;
+        if (/^(\d)\1{10}$/.test(cpf)) return false;
+
+        let sum = 0;
+        for (let i = 0; i < 9; i++) {
+            sum += parseInt(cpf.charAt(i)) * (10 - i);
+        }
+        let digit = 11 - (sum % 11);
+        if (digit >= 10) digit = 0;
+        if (parseInt(cpf.charAt(9)) !== digit) return false;
+
+        sum = 0;
+        for (let i = 0; i < 10; i++) {
+            sum += parseInt(cpf.charAt(i)) * (11 - i);
+        }
+        digit = 11 - (sum % 11);
+        if (digit >= 10) digit = 0;
+        if (parseInt(cpf.charAt(10)) !== digit) return false;
+
+        return true;
+    }
+</script>
+}

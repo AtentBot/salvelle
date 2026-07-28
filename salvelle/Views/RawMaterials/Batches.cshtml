@@ -1,0 +1,808 @@
+@{
+    ViewData["Title"] = "Lotes da Matéria-Prima";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var materialId = ViewBag.RawMaterialId;
+}
+
+<div class="container-fluid py-4">
+    <!-- Loading -->
+    <div id="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
+        <p class="mt-2 text-muted">Carregando dados...</p>
+    </div>
+
+    <!-- Conteúdo -->
+    <div id="content" style="display: none;">
+        <!-- Cabeçalho -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center">
+                <a href="/materias-primas/@materialId" class="btn btn-link text-dark p-0 me-3">
+                    <i class="bi bi-arrow-left fs-4"></i>
+                </a>
+                <div>
+                    <h4 class="mb-0">
+                        <i class="bi bi-boxes me-2"></i>
+                        Lotes - <span id="materialName">Carregando...</span>
+                    </h4>
+                    <p class="text-muted mb-0 small" id="materialInfo">-</p>
+                </div>
+            </div>
+            <div>
+                <button type="button" class="btn btn-primary" onclick="openAddBatchModal()">
+                    <i class="bi bi-plus-lg me-1"></i>
+                    Novo Lote
+                </button>
+            </div>
+        </div>
+
+        <!-- Cards de Resumo -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3 col-lg-2">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center py-3">
+                        <div class="fs-3 fw-bold text-primary" id="statTotal">-</div>
+                        <div class="small text-muted">Total de Lotes</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center py-3">
+                        <div class="fs-3 fw-bold text-success" id="statActive">-</div>
+                        <div class="small text-muted">Lotes Ativos</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center py-3">
+                        <div class="fs-3 fw-bold text-warning" id="statExpiring">-</div>
+                        <div class="small text-muted">Próx. Vencimento</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center py-3">
+                        <div class="fs-3 fw-bold text-danger" id="statExpired">-</div>
+                        <div class="small text-muted">Vencidos</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center py-3">
+                        <div class="fs-3 fw-bold text-info" id="statStock">-</div>
+                        <div class="small text-muted">Estoque Total</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center py-3">
+                        <div class="fs-3 fw-bold text-secondary" id="statAvgPrice">-</div>
+                        <div class="small text-muted">Preço Médio</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body py-2">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="searchBatch" 
+                                   placeholder="Buscar lote...">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm" id="filterStatus">
+                            <option value="">Todos os Status</option>
+                            <option value="APROVADO">Aprovado</option>
+                            <option value="QUARENTENA">Quarentena</option>
+                            <option value="REJEITADO">Rejeitado</option>
+                            <option value="ESGOTADO">Esgotado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm" id="filterExpiry">
+                            <option value="">Validade</option>
+                            <option value="expiring30">Vence em 30 dias</option>
+                            <option value="expiring90">Vence em 90 dias</option>
+                            <option value="expired">Vencidos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm" id="filterOrder">
+                            <option value="expiry">Ordenar: Validade (FEFO)</option>
+                            <option value="received">Ordenar: Recebimento</option>
+                            <option value="quantity">Ordenar: Quantidade</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <div class="form-check form-check-inline small">
+                            <input class="form-check-input" type="checkbox" id="showExhausted">
+                            <label class="form-check-label" for="showExhausted">Mostrar esgotados</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Lotes -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 12%">Lote</th>
+                                <th style="width: 15%">Fornecedor</th>
+                                <th style="width: 10%">Status</th>
+                                <th style="width: 10%" class="text-end">Qtd. Inicial</th>
+                                <th style="width: 10%" class="text-end">Qtd. Atual</th>
+                                <th style="width: 10%" class="text-end">Custo Unit.</th>
+                                <th style="width: 10%">Validade</th>
+                                <th style="width: 10%">Recebido</th>
+                                <th style="width: 13%" class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchesBody">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo Lote -->
+<div class="modal fade" id="batchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="batchModalTitle">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Novo Lote
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="batchForm">
+                    <input type="hidden" id="batchId">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Número do Lote *</label>
+                            <input type="text" class="form-control" id="batchNumber" required
+                                   placeholder="Ex: LOTE2024001">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Nota Fiscal</label>
+                            <input type="text" class="form-control" id="invoiceNumber"
+                                   placeholder="Número da NF">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="batchStatus">
+                                <option value="QUARENTENA">Quarentena</option>
+                                <option value="APROVADO">Aprovado</option>
+                                <option value="REJEITADO">Rejeitado</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Fornecedor</label>
+                            <select class="form-select" id="supplierId">
+                                <option value="">Selecione...</option>
+                                <!-- Preenchido via JS -->
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Fabricante</label>
+                            <input type="text" class="form-control" id="manufacturer"
+                                   placeholder="Nome do fabricante">
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Quantidade *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="quantity" 
+                                       required step="0.01" min="0.01">
+                                <span class="input-group-text" id="batchUnit">g</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Custo Unitário *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="unitCost" 
+                                       required step="0.0001" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Data Recebimento *</label>
+                            <input type="date" class="form-control" id="receivedDate" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Data Validade *</label>
+                            <input type="date" class="form-control" id="expiryDate" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Data Fabricação</label>
+                            <input type="date" class="form-control" id="manufacturingDate">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Localização no Estoque</label>
+                            <input type="text" class="form-control" id="location"
+                                   placeholder="Ex: Prateleira A, Gaveta 3">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Observações</label>
+                            <textarea class="form-control" id="batchNotes" rows="2"
+                                      placeholder="Observações sobre o lote..."></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveBatch()">
+                    <i class="bi bi-check-lg me-1"></i>
+                    Salvar Lote
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Movimentação -->
+<div class="modal fade" id="movementModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-arrow-left-right me-2"></i>
+                    Movimentação de Estoque
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="movementForm">
+                    <input type="hidden" id="movBatchId">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Lote</label>
+                        <input type="text" class="form-control" id="movBatchNumber" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Movimentação *</label>
+                        <select class="form-select" id="movementType" required onchange="updateMovementFields()">
+                            <option value="">Selecione...</option>
+                            <option value="SAIDA">Saída (Uso)</option>
+                            <option value="AJUSTE">Ajuste de Estoque</option>
+                            <option value="PERDA">Perda/Quebra</option>
+                            <option value="TRANSFERENCIA">Transferência</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Quantidade *</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="movQuantity" 
+                                   required step="0.01" min="0.01">
+                            <span class="input-group-text" id="movUnit">g</span>
+                        </div>
+                        <div class="form-text">
+                            Disponível: <strong id="movAvailable">0</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Motivo *</label>
+                        <textarea class="form-control" id="movReason" rows="2" required
+                                  placeholder="Descreva o motivo da movimentação..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3" id="refOrderField" style="display: none;">
+                        <label class="form-label">Ordem de Produção</label>
+                        <input type="text" class="form-control" id="movOrderRef"
+                               placeholder="Número da ordem de produção">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveMovement()">
+                    <i class="bi bi-check-lg me-1"></i>
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Histórico -->
+<div class="modal fade" id="historyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-clock-history me-2"></i>
+                    Histórico do Lote
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>Lote:</strong> <span id="histBatchNumber">-</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Tipo</th>
+                                <th class="text-end">Quantidade</th>
+                                <th>Motivo</th>
+                                <th>Responsável</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const materialId = '@materialId';
+    let batches = [];
+    let material = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadMaterial();
+        loadBatches();
+        loadSuppliers();
+        setupFilters();
+        
+        // Data padrão para recebimento
+        document.getElementById('receivedDate').value = new Date().toISOString().split('T')[0];
+    });
+
+    function setupFilters() {
+        document.getElementById('searchBatch').addEventListener('input', filterBatches);
+        document.getElementById('filterStatus').addEventListener('change', filterBatches);
+        document.getElementById('filterExpiry').addEventListener('change', filterBatches);
+        document.getElementById('filterOrder').addEventListener('change', filterBatches);
+        document.getElementById('showExhausted').addEventListener('change', filterBatches);
+    }
+
+    async function loadMaterial() {
+        try {
+            const response = await fetch(`/api/RawMaterials/${materialId}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                material = result.data;
+                document.getElementById('materialName').textContent = material.name;
+                document.getElementById('materialInfo').textContent = 
+                    `CAS: ${material.casNumber || '-'} | Unidade: ${material.unit}`;
+                document.getElementById('batchUnit').textContent = material.unit;
+                document.getElementById('movUnit').textContent = material.unit;
+            }
+        } catch (e) {
+            console.error('Erro ao carregar matéria-prima:', e);
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+        }
+    }
+
+    async function loadBatches() {
+        try {
+            const response = await fetch(`/api/Batches?rawMaterialId=${materialId}`);
+            const result = await response.json();
+            
+            batches = Array.isArray(result) ? result : (result.data || result.items || []);
+            
+            updateStatistics();
+            filterBatches();
+        } catch (e) {
+            console.error('Erro ao carregar lotes:', e);
+            document.getElementById('batchesBody').innerHTML = 
+                '<tr><td colspan="9" class="text-center py-4 text-muted">Erro ao carregar lotes</td></tr>';
+        }
+    }
+
+    async function loadSuppliers() {
+        try {
+            const response = await fetch('/api/Suppliers?pageSize=100');
+            const result = await response.json();
+            
+            const suppliers = result.data || result.items || result || [];
+            const select = document.getElementById('supplierId');
+            
+            suppliers.forEach(s => {
+                const name = s.tradeName || s.companyName || s.name;
+                select.innerHTML += `<option value="${s.id}">${name}</option>`;
+            });
+        } catch (e) {
+            console.error('Erro ao carregar fornecedores:', e);
+        }
+    }
+
+    function updateStatistics() {
+        const now = new Date();
+        const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        
+        const active = batches.filter(b => (b.currentQuantity || 0) > 0);
+        const expiring = active.filter(b => {
+            const exp = new Date(b.expiryDate || b.expirationDate);
+            return exp > now && exp <= in30Days;
+        });
+        const expired = active.filter(b => new Date(b.expiryDate || b.expirationDate) <= now);
+        
+        const totalStock = active.reduce((sum, b) => sum + (b.currentQuantity || 0), 0);
+        const totalValue = active.reduce((sum, b) => sum + (b.currentQuantity || 0) * (b.unitCost || 0), 0);
+        const avgPrice = totalStock > 0 ? totalValue / totalStock : 0;
+        
+        document.getElementById('statTotal').textContent = batches.length;
+        document.getElementById('statActive').textContent = active.length;
+        document.getElementById('statExpiring').textContent = expiring.length;
+        document.getElementById('statExpired').textContent = expired.length;
+        document.getElementById('statStock').textContent = formatNumber(totalStock);
+        document.getElementById('statAvgPrice').textContent = `R$ ${formatNumber(avgPrice, 4)}`;
+    }
+
+    function filterBatches() {
+        const search = document.getElementById('searchBatch').value.toLowerCase();
+        const status = document.getElementById('filterStatus').value;
+        const expiry = document.getElementById('filterExpiry').value;
+        const order = document.getElementById('filterOrder').value;
+        const showExhausted = document.getElementById('showExhausted').checked;
+        
+        let filtered = batches.filter(b => {
+            // Filtro de esgotados
+            if (!showExhausted && (b.currentQuantity || 0) <= 0) return false;
+            
+            // Busca
+            if (search) {
+                const batchNum = (b.batchNumber || '').toLowerCase();
+                const supplier = (b.supplier?.tradeName || b.supplier?.companyName || b.supplierName || '').toLowerCase();
+                if (!batchNum.includes(search) && !supplier.includes(search)) return false;
+            }
+            
+            // Status
+            if (status && b.status !== status) return false;
+            
+            // Validade
+            if (expiry) {
+                const exp = new Date(b.expiryDate || b.expirationDate);
+                const now = new Date();
+                if (expiry === 'expired' && exp > now) return false;
+                if (expiry === 'expiring30') {
+                    const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+                    if (exp <= now || exp > in30) return false;
+                }
+                if (expiry === 'expiring90') {
+                    const in90 = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+                    if (exp <= now || exp > in90) return false;
+                }
+            }
+            
+            return true;
+        });
+        
+        // Ordenação
+        filtered.sort((a, b) => {
+            if (order === 'expiry') {
+                return new Date(a.expiryDate || a.expirationDate) - new Date(b.expiryDate || b.expirationDate);
+            } else if (order === 'received') {
+                return new Date(b.receivedDate) - new Date(a.receivedDate);
+            } else if (order === 'quantity') {
+                return (b.currentQuantity || 0) - (a.currentQuantity || 0);
+            }
+            return 0;
+        });
+        
+        renderBatches(filtered);
+    }
+
+    function renderBatches(batchList) {
+        const tbody = document.getElementById('batchesBody');
+        
+        if (!batchList || batchList.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">Nenhum lote encontrado</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = batchList.map(b => {
+            const now = new Date();
+            const expDate = new Date(b.expiryDate || b.expirationDate);
+            const daysToExp = Math.floor((expDate - now) / (1000 * 60 * 60 * 24));
+            
+            let expClass = 'text-success';
+            let expIcon = '';
+            if (daysToExp < 0) {
+                expClass = 'text-danger';
+                expIcon = '<i class="bi bi-exclamation-circle me-1"></i>';
+            } else if (daysToExp < 30) {
+                expClass = 'text-danger';
+                expIcon = '<i class="bi bi-exclamation-triangle me-1"></i>';
+            } else if (daysToExp < 90) {
+                expClass = 'text-warning';
+            }
+            
+            const statusBadges = {
+                'APROVADO': '<span class="badge bg-success">Aprovado</span>',
+                'QUARENTENA': '<span class="badge bg-warning text-dark">Quarentena</span>',
+                'REJEITADO': '<span class="badge bg-danger">Rejeitado</span>',
+                'ESGOTADO': '<span class="badge bg-secondary">Esgotado</span>'
+            };
+            
+            const status = (b.currentQuantity || 0) <= 0 ? 'ESGOTADO' : (b.status || 'APROVADO');
+            const statusBadge = statusBadges[status] || `<span class="badge bg-secondary">${status}</span>`;
+            
+            const supplierName = b.supplier?.tradeName || b.supplier?.companyName || b.supplierName || '-';
+            const qtyClass = (b.currentQuantity || 0) <= 0 ? 'text-muted' : '';
+            
+            return `
+                <tr class="${(b.currentQuantity || 0) <= 0 ? 'table-light' : ''}">
+                    <td>
+                        <strong>${b.batchNumber || '-'}</strong>
+                        ${b.invoiceNumber ? `<br><small class="text-muted">NF: ${b.invoiceNumber}</small>` : ''}
+                    </td>
+                    <td><small>${supplierName}</small></td>
+                    <td>${statusBadge}</td>
+                    <td class="text-end">${formatNumber(b.receivedQuantity || b.quantity || 0)}</td>
+                    <td class="text-end ${qtyClass}"><strong>${formatNumber(b.currentQuantity || 0)}</strong></td>
+                    <td class="text-end">R$ ${formatNumber(b.unitCost || 0, 4)}</td>
+                    <td class="${expClass}">
+                        ${expIcon}${formatDate(b.expiryDate || b.expirationDate)}
+                        ${daysToExp >= 0 && daysToExp < 90 ? `<br><small>(${daysToExp} dias)</small>` : ''}
+                    </td>
+                    <td><small>${formatDate(b.receivedDate)}</small></td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            ${(b.currentQuantity || 0) > 0 && status !== 'REJEITADO' ? `
+                                <button class="btn btn-outline-primary" onclick="openMovementModal('${b.id}', '${b.batchNumber}', ${b.currentQuantity || 0})" title="Movimentar">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-outline-secondary" onclick="editBatch('${b.id}')" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-outline-info" onclick="showHistory('${b.id}', '${b.batchNumber}')" title="Histórico">
+                                <i class="bi bi-clock-history"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function openAddBatchModal() {
+        document.getElementById('batchForm').reset();
+        document.getElementById('batchId').value = '';
+        document.getElementById('batchModalTitle').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Novo Lote';
+        document.getElementById('receivedDate').value = new Date().toISOString().split('T')[0];
+        new bootstrap.Modal(document.getElementById('batchModal')).show();
+    }
+
+    async function editBatch(batchId) {
+        const batch = batches.find(b => b.id === batchId);
+        if (!batch) return;
+        
+        document.getElementById('batchId').value = batch.id;
+        document.getElementById('batchNumber').value = batch.batchNumber || '';
+        document.getElementById('invoiceNumber').value = batch.invoiceNumber || '';
+        document.getElementById('batchStatus').value = batch.status || 'QUARENTENA';
+        document.getElementById('supplierId').value = batch.supplierId || '';
+        document.getElementById('manufacturer').value = batch.manufacturer || '';
+        document.getElementById('quantity').value = batch.receivedQuantity || batch.quantity || '';
+        document.getElementById('unitCost').value = batch.unitCost || '';
+        document.getElementById('receivedDate').value = batch.receivedDate ? batch.receivedDate.split('T')[0] : '';
+        document.getElementById('expiryDate').value = (batch.expiryDate || batch.expirationDate) ? (batch.expiryDate || batch.expirationDate).split('T')[0] : '';
+        document.getElementById('manufacturingDate').value = batch.manufacturingDate ? batch.manufacturingDate.split('T')[0] : '';
+        document.getElementById('location').value = batch.location || '';
+        document.getElementById('batchNotes').value = batch.notes || '';
+        
+        document.getElementById('batchModalTitle').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Lote';
+        new bootstrap.Modal(document.getElementById('batchModal')).show();
+    }
+
+    async function saveBatch() {
+        const batchId = document.getElementById('batchId').value;
+        
+        const data = {
+            rawMaterialId: materialId,
+            batchNumber: document.getElementById('batchNumber').value.trim(),
+            invoiceNumber: document.getElementById('invoiceNumber').value.trim() || null,
+            status: document.getElementById('batchStatus').value,
+            supplierId: document.getElementById('supplierId').value || null,
+            manufacturer: document.getElementById('manufacturer').value.trim() || null,
+            receivedQuantity: parseFloat(document.getElementById('quantity').value),
+            unitCost: parseFloat(document.getElementById('unitCost').value),
+            receivedDate: document.getElementById('receivedDate').value,
+            expiryDate: document.getElementById('expiryDate').value,
+            manufacturingDate: document.getElementById('manufacturingDate').value || null,
+            location: document.getElementById('location').value.trim() || null,
+            notes: document.getElementById('batchNotes').value.trim() || null
+        };
+        
+        try {
+            const url = batchId ? `/api/Batches/${batchId}` : '/api/Batches';
+            const method = batchId ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success || response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('batchModal')).hide();
+                loadBatches();
+                showToast(batchId ? 'Lote atualizado!' : 'Lote cadastrado!', 'success');
+            } else {
+                alert(result.error || 'Erro ao salvar lote');
+            }
+        } catch (e) {
+            console.error('Erro:', e);
+            alert('Erro ao salvar lote');
+        }
+    }
+
+    function openMovementModal(batchId, batchNumber, available) {
+        document.getElementById('movementForm').reset();
+        document.getElementById('movBatchId').value = batchId;
+        document.getElementById('movBatchNumber').value = batchNumber;
+        document.getElementById('movAvailable').textContent = formatNumber(available);
+        new bootstrap.Modal(document.getElementById('movementModal')).show();
+    }
+
+    function updateMovementFields() {
+        const type = document.getElementById('movementType').value;
+        document.getElementById('refOrderField').style.display = type === 'SAIDA' ? 'block' : 'none';
+    }
+
+    async function saveMovement() {
+        const data = {
+            batchId: document.getElementById('movBatchId').value,
+            movementType: document.getElementById('movementType').value,
+            quantity: parseFloat(document.getElementById('movQuantity').value),
+            reason: document.getElementById('movReason').value.trim(),
+            referenceOrderId: document.getElementById('movOrderRef').value.trim() || null
+        };
+        
+        if (!data.movementType) {
+            alert('Selecione o tipo de movimentação');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/StockMovements', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success || response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('movementModal')).hide();
+                loadBatches();
+                showToast('Movimentação registrada!', 'success');
+            } else {
+                alert(result.error || 'Erro ao registrar movimentação');
+            }
+        } catch (e) {
+            console.error('Erro:', e);
+            alert('Erro ao registrar movimentação');
+        }
+    }
+
+    async function showHistory(batchId, batchNumber) {
+        document.getElementById('histBatchNumber').textContent = batchNumber;
+        document.getElementById('historyBody').innerHTML = 
+            '<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div></td></tr>';
+        
+        new bootstrap.Modal(document.getElementById('historyModal')).show();
+        
+        try {
+            const response = await fetch(`/api/StockMovements?batchId=${batchId}`);
+            const result = await response.json();
+            
+            const movements = result.data || result.items || result || [];
+            
+            if (movements.length === 0) {
+                document.getElementById('historyBody').innerHTML = 
+                    '<tr><td colspan="5" class="text-center py-3 text-muted">Nenhuma movimentação registrada</td></tr>';
+                return;
+            }
+            
+            document.getElementById('historyBody').innerHTML = movements.map(m => {
+                const typeBadges = {
+                    'ENTRADA': '<span class="badge bg-success">Entrada</span>',
+                    'SAIDA': '<span class="badge bg-danger">Saída</span>',
+                    'AJUSTE': '<span class="badge bg-warning text-dark">Ajuste</span>',
+                    'PERDA': '<span class="badge bg-secondary">Perda</span>'
+                };
+                
+                const qty = m.quantity || 0;
+                const qtyClass = qty > 0 ? 'text-success' : 'text-danger';
+                const qtyPrefix = qty > 0 ? '+' : '';
+                
+                return `
+                    <tr>
+                        <td><small>${formatDateTime(m.movementDate || m.createdAt)}</small></td>
+                        <td>${typeBadges[m.movementType] || m.movementType}</td>
+                        <td class="text-end ${qtyClass}"><strong>${qtyPrefix}${formatNumber(qty)}</strong></td>
+                        <td><small>${m.reason || '-'}</small></td>
+                        <td><small>${m.performedByEmployeeName || m.employeeName || '-'}</small></td>
+                    </tr>
+                `;
+            }).join('');
+            
+        } catch (e) {
+            console.error('Erro:', e);
+            document.getElementById('historyBody').innerHTML = 
+                '<tr><td colspan="5" class="text-center py-3 text-danger">Erro ao carregar histórico</td></tr>';
+        }
+    }
+
+    function formatNumber(value, decimals = 2) {
+        return (value || 0).toLocaleString('pt-BR', { 
+            minimumFractionDigits: decimals, 
+            maximumFractionDigits: decimals 
+        });
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleDateString('pt-BR');
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function showToast(message, type = 'info') {
+        const container = document.createElement('div');
+        container.className = 'position-fixed bottom-0 end-0 p-3';
+        container.style.zIndex = '1100';
+        container.innerHTML = `
+            <div class="toast show align-items-center text-white bg-${type === 'success' ? 'success' : 'primary'} border-0">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.closest('.position-fixed').remove()"></button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(container);
+        setTimeout(() => container.remove(), 4000);
+    }
+</script>
+}

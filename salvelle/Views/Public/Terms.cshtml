@@ -1,0 +1,418 @@
+@{
+    Layout = null;
+    ViewData["Title"] = "Termos de Uso — Salvelle";
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>@@import url('https://api.fontshare.com/v2/css?f[]=general-sans@@400,500,600&display=swap');</style>
+    <link rel="stylesheet" href="~/css/design-system/tokens.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/design-system/components.css" asp-append-version="true">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@@1.11.2/font/bootstrap-icons.min.css">
+    <style>
+        body { background: var(--bg); color: var(--ink); }
+
+        /* Nav */
+        .pub-nav { position: sticky; top: 0; z-index: 50; background: var(--surface); border-bottom: 1px solid var(--rule); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+        .pub-nav-links { display: flex; gap: 24px; align-items: center; }
+        .pub-nav-link { color: var(--ink-2); text-decoration: none; font-size: 14px; font-weight: 500; }
+        .pub-nav-link:hover { color: var(--petrol-500); }
+
+        /* Layout */
+        .legal-wrap { display: grid; grid-template-columns: 240px 1fr; gap: 64px; max-width: 1080px; margin: 0 auto; padding: 64px 32px 120px; }
+        .legal-sidebar { position: sticky; top: 88px; align-self: start; }
+        .sidebar-title { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 16px; }
+        .sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
+        .sidebar-link { display: block; font-size: 13px; color: var(--ink-2); text-decoration: none; padding: 6px 10px; border-radius: var(--r-sm); border-left: 2px solid transparent; transition: all .15s; }
+        .sidebar-link:hover, .sidebar-link.active { color: var(--petrol-500); border-left-color: var(--petrol-500); background: var(--petrol-50, rgba(0,95,100,.06)); }
+
+        /* Content */
+        .legal-content { max-width: 720px; }
+        .legal-header { margin-bottom: 48px; }
+        .legal-header .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--petrol-500); margin-bottom: 12px; }
+        .legal-header h1 { font-size: 36px; font-weight: 600; letter-spacing: -.025em; margin: 0 0 12px; }
+        .legal-header .meta { font-size: 13px; color: var(--ink-3); }
+        .legal-header .meta strong { color: var(--ink-2); }
+
+        .legal-section { margin-bottom: 48px; scroll-margin-top: 96px; }
+        .legal-section h2 { font-size: 18px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
+        .legal-section h3 { font-size: 14px; font-weight: 600; margin: 24px 0 8px; color: var(--ink); }
+        .legal-section p { font-size: 14px; line-height: 1.75; color: var(--ink-2); margin: 0 0 12px; }
+        .legal-section ul, .legal-section ol { padding-left: 20px; margin: 8px 0 16px; }
+        .legal-section li { font-size: 14px; line-height: 1.7; color: var(--ink-2); margin-bottom: 6px; }
+        .legal-section strong { color: var(--ink); font-weight: 600; }
+
+        .legal-callout { background: var(--bg-subtle); border: 1px solid var(--rule); border-left: 3px solid var(--petrol-500); border-radius: var(--r-sm); padding: 16px 20px; margin: 20px 0; }
+        .legal-callout p { margin: 0; font-size: 13px; }
+
+        .legal-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+        .legal-table th { text-align: left; padding: 10px 14px; background: var(--bg-subtle); font-weight: 600; color: var(--ink); border-bottom: 1px solid var(--rule); }
+        .legal-table td { padding: 10px 14px; color: var(--ink-2); border-bottom: 1px solid var(--rule); vertical-align: top; }
+        .legal-table tr:last-child td { border-bottom: none; }
+
+        /* Footer */
+        .legal-footer { border-top: 1px solid var(--rule); padding: 32px; text-align: center; }
+        .legal-footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 12px; }
+        .legal-footer-links a { font-size: 13px; color: var(--ink-3); text-decoration: none; }
+        .legal-footer-links a:hover { color: var(--petrol-500); }
+        .legal-footer p { font-size: 12px; color: var(--ink-3); margin: 0; }
+
+        @@media (max-width: 768px) {
+            .pub-nav { padding: 14px 20px; }
+            .pub-nav-links { display: none; }
+            .legal-wrap { grid-template-columns: 1fr; gap: 32px; padding: 32px 20px 80px; }
+            .legal-sidebar { display: none; }
+            .legal-header h1 { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="pub-nav">
+    <a href="/" class="brand">
+        <span class="brand-glyph" style="width:32px;height:32px;">
+            <svg width="32" height="32" viewBox="0 0 88 88" fill="none" aria-hidden="true">
+                <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="var(--petrol-500)">S</text>
+            </svg>
+        </span>
+        <span class="brand-name">Salvelle</span>
+    </a>
+    <div class="pub-nav-links">
+        <a class="pub-nav-link" href="/">Produto</a>
+        <a class="pub-nav-link" href="/pricing">Preços</a>
+        <a class="pub-nav-link" href="/privacy">Privacidade</a>
+    </div>
+    <div style="display:flex;gap:12px">
+        <a class="btn btn-ghost btn-sm" href="/Account/Login">Entrar</a>
+        <a class="btn btn-primary btn-sm" href="/Signup">Começar grátis</a>
+    </div>
+</nav>
+
+<div class="legal-wrap">
+    <!-- Sidebar -->
+    <aside class="legal-sidebar">
+        <div class="sidebar-title">Seções</div>
+        <nav class="sidebar-nav">
+            <a class="sidebar-link" href="#definicoes">1. Definições</a>
+            <a class="sidebar-link" href="#aceitacao">2. Aceitação</a>
+            <a class="sidebar-link" href="#servicos">3. Serviços</a>
+            <a class="sidebar-link" href="#cadastro">4. Cadastro</a>
+            <a class="sidebar-link" href="#planos">5. Planos e Pagamento</a>
+            <a class="sidebar-link" href="#trial">6. Período de Avaliação</a>
+            <a class="sidebar-link" href="#marketplace">7. Marketplace</a>
+            <a class="sidebar-link" href="#obrigacoes">8. Obrigações</a>
+            <a class="sidebar-link" href="#propriedade">9. Propriedade Intelectual</a>
+            <a class="sidebar-link" href="#privacidade">10. Privacidade e LGPD</a>
+            <a class="sidebar-link" href="#disponibilidade">11. Disponibilidade</a>
+            <a class="sidebar-link" href="#responsabilidade">12. Responsabilidade</a>
+            <a class="sidebar-link" href="#rescisao">13. Rescisão</a>
+            <a class="sidebar-link" href="#alteracoes">14. Alterações</a>
+            <a class="sidebar-link" href="#geral">15. Disposições Gerais</a>
+        </nav>
+    </aside>
+
+    <!-- Content -->
+    <article class="legal-content">
+        <header class="legal-header">
+            <div class="eyebrow">Documento legal</div>
+            <h1>Termos de Uso</h1>
+            <div class="meta">
+                Versão <strong>2.0</strong> · Vigência a partir de <strong>1º de agosto de 2026</strong><br>
+                Última atualização: <strong>julho de 2026</strong>
+            </div>
+        </header>
+
+        <div class="legal-callout">
+            <p><strong>Leia com atenção.</strong> Ao criar uma conta ou utilizar qualquer funcionalidade da plataforma Salvelle, você concorda integralmente com estes Termos de Uso. Se não concordar, não crie uma conta e não utilize o serviço.</p>
+        </div>
+
+        <!-- 1 -->
+        <section class="legal-section" id="definicoes">
+            <h2>1. Definições</h2>
+            <p>Para fins destes Termos, os termos abaixo têm o seguinte significado:</p>
+            <ul>
+                <li><strong>"Salvelle" / "Plataforma"</strong> — sistema SaaS de gestão e marketplace para farmácias de manipulação, operado pela <strong>Salvelle Tecnologia Ltda.</strong> ("Salvelle", "nós", "nosso").</li>
+                <li><strong>"Estabelecimento" / "Farmácia"</strong> — pessoa jurídica que contrata o Salvelle para gerir suas operações e/ou vender pelo marketplace.</li>
+                <li><strong>"Usuário do Estabelecimento"</strong> — proprietários, farmacêuticos e colaboradores cadastrados pela Farmácia para operar a plataforma.</li>
+                <li><strong>"Cliente Final"</strong> — paciente ou consumidor que acessa o marketplace para solicitar orçamentos ou adquirir produtos.</li>
+                <li><strong>"Usuário"</strong> — qualquer Estabelecimento, Usuário do Estabelecimento ou Cliente Final.</li>
+                <li><strong>"Plano"</strong> — modalidade de assinatura contratada (Starter, Profissional ou Rede).</li>
+                <li><strong>"Marketplace"</strong> — módulo da plataforma que conecta Clientes Finais a Estabelecimentos credenciados.</li>
+                <li><strong>"Dados do Negócio"</strong> — fórmulas, fichas técnicas, listas de preços, dados de clientes e qualquer conteúdo inserido pelo Estabelecimento na plataforma.</li>
+            </ul>
+        </section>
+
+        <!-- 2 -->
+        <section class="legal-section" id="aceitacao">
+            <h2>2. Aceitação dos Termos</h2>
+            <p>O uso da plataforma está condicionado à aceitação destes Termos de Uso e da <a href="/privacy">Política de Privacidade</a>. A aceitação ocorre no momento em que o Usuário:</p>
+            <ul>
+                <li>Cria uma conta na plataforma;</li>
+                <li>Clica em "Concordar" ou equivalente durante o cadastro;</li>
+                <li>Acessa ou utiliza qualquer funcionalidade do serviço.</li>
+            </ul>
+            <p>Caso o Usuário seja um Estabelecimento, a pessoa que aceita os Termos declara ter poderes para vincular a empresa à presente relação contratual.</p>
+        </section>
+
+        <!-- 3 -->
+        <section class="legal-section" id="servicos">
+            <h2>3. Serviços Oferecidos</h2>
+            <p>O Salvelle é uma plataforma SaaS (<em>Software as a Service</em>) que oferece:</p>
+            <h3>3.1 Módulos de Gestão</h3>
+            <ul>
+                <li>Ponto de venda (PDV) e frente de caixa;</li>
+                <li>Gestão de fórmulas magistrais, manipulação e controle de qualidade;</li>
+                <li>Controle de estoque e matérias-primas;</li>
+                <li>Emissão de rótulos (padrão e controlados — faixa preta e vermelha);</li>
+                <li>SNGPC integrado e livros eletrônicos de psicotrópicos;</li>
+                <li>Emissão fiscal (NF-e, NFC-e);</li>
+                <li>Relatórios gerenciais e financeiros.</li>
+            </ul>
+            <h3>3.2 Marketplace</h3>
+            <ul>
+                <li>Vitrine online da farmácia acessível por Clientes Finais;</li>
+                <li>Recebimento de pedidos e orçamentos via aplicativo mobile;</li>
+                <li>Sistema de avaliações e reputação;</li>
+                <li>Gestão de cupons e promoções.</li>
+            </ul>
+            <p>A Salvelle reserva-se o direito de adicionar, modificar ou descontinuar funcionalidades, com aviso prévio de 30 dias para alterações que impactem funcionalidades essenciais.</p>
+        </section>
+
+        <!-- 4 -->
+        <section class="legal-section" id="cadastro">
+            <h2>4. Cadastro e Conta</h2>
+            <h3>4.1 Requisitos</h3>
+            <p>Para contratar o Salvelle, o Estabelecimento deve:</p>
+            <ul>
+                <li>Possuir CNPJ válido e ativo;</li>
+                <li>Ter Autorização de Funcionamento expedida pela Anvisa ou órgão competente;</li>
+                <li>Indicar um farmacêutico responsável técnico.</li>
+            </ul>
+            <h3>4.2 Veracidade das Informações</h3>
+            <p>O Usuário é inteiramente responsável pela veracidade e atualização dos dados fornecidos no cadastro. Informações falsas ou desatualizadas podem resultar na suspensão ou cancelamento da conta.</p>
+            <h3>4.3 Segurança da Conta</h3>
+            <p>O Usuário é responsável por manter a confidencialidade de suas credenciais de acesso e por todas as atividades realizadas em sua conta. Qualquer acesso não autorizado deve ser comunicado imediatamente ao suporte.</p>
+            <h3>4.4 Uma Conta por Estabelecimento</h3>
+            <p>Cada CNPJ pode ter apenas um cadastro ativo. Estabelecimentos com múltiplas unidades devem contratar o Plano Rede ou entrar em contato com o time comercial.</p>
+        </section>
+
+        <!-- 5 -->
+        <section class="legal-section" id="planos">
+            <h2>5. Planos, Preços e Pagamento</h2>
+            <h3>5.1 Planos Disponíveis</h3>
+            <table class="legal-table">
+                <thead>
+                    <tr><th>Plano</th><th>Público-alvo</th><th>Cobrança</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Starter</strong></td><td>Farmácias independentes com volume menor</td><td>Mensal ou anual</td></tr>
+                    <tr><td><strong>Profissional</strong></td><td>Farmácias de médio porte com marketplace ativo</td><td>Mensal ou anual</td></tr>
+                    <tr><td><strong>Rede</strong></td><td>Redes com múltiplas unidades</td><td>Contrato customizado</td></tr>
+                </tbody>
+            </table>
+            <p>Preços vigentes disponíveis em <a href="/pricing">/pricing</a>. Valores expressos em Reais (BRL) e incluem impostos aplicáveis.</p>
+            <h3>5.2 Ciclo de Cobrança</h3>
+            <p>A assinatura é cobrada de forma recorrente (mensal ou anual conforme escolha no cadastro) via cartão de crédito processado pelo Stripe. A renovação ocorre automaticamente até que o Usuário cancele.</p>
+            <h3>5.3 Reajuste de Preços</h3>
+            <p>A Salvelle pode reajustar os preços mediante aviso com 30 (trinta) dias de antecedência por e-mail. O Usuário pode cancelar a assinatura sem ônus caso não concorde com o novo valor.</p>
+            <h3>5.4 Comissão do Marketplace</h3>
+            <p>Sobre cada pedido concluído via marketplace, a Salvelle retém uma comissão escalonada:</p>
+            <table class="legal-table">
+                <thead><tr><th>Volume mensal de pedidos</th><th>Comissão</th></tr></thead>
+                <tbody>
+                    <tr><td>Até 100 pedidos</td><td>7%</td></tr>
+                    <tr><td>101 a 500 pedidos</td><td>5%</td></tr>
+                    <tr><td>Acima de 500 pedidos</td><td>3%</td></tr>
+                </tbody>
+            </table>
+            <p>A comissão é calculada sobre o valor bruto do pedido (após descontos de cupons) e descontada no repasse quinzenal ao Estabelecimento.</p>
+            <h3>5.5 Atrasos e Inadimplência</h3>
+            <p>O não pagamento da assinatura no vencimento resulta em: (i) suspensão de acesso após 5 dias úteis de atraso; (ii) cancelamento definitivo após 30 dias de inadimplência. Os Dados do Negócio ficam disponíveis para exportação por 90 dias após o cancelamento.</p>
+        </section>
+
+        <!-- 6 -->
+        <section class="legal-section" id="trial">
+            <h2>6. Período de Avaliação Gratuita</h2>
+            <p>Todo novo Estabelecimento tem direito a <strong>14 (quatorze) dias de acesso gratuito</strong> ao Plano Profissional, sem necessidade de informar cartão de crédito no início.</p>
+            <ul>
+                <li>Ao término do trial, o sistema solicitará os dados de pagamento para continuidade;</li>
+                <li>Sem cadastro de pagamento, o acesso é suspenso automaticamente;</li>
+                <li>Cada CNPJ tem direito a um único período de avaliação;</li>
+                <li>A Salvelle pode encerrar ou alterar as condições do trial a qualquer momento para novos cadastros.</li>
+            </ul>
+        </section>
+
+        <!-- 7 -->
+        <section class="legal-section" id="marketplace">
+            <h2>7. Marketplace e Transações</h2>
+            <h3>7.1 Papel da Salvelle</h3>
+            <p>A Salvelle atua como <strong>intermediária tecnológica</strong> entre Estabelecimentos e Clientes Finais. A Salvelle <strong>não é parte</strong> do contrato de compra e venda entre a Farmácia e o Cliente.</p>
+            <h3>7.2 Responsabilidade do Estabelecimento</h3>
+            <p>O Estabelecimento é inteiramente responsável por:</p>
+            <ul>
+                <li>Qualidade, segurança e conformidade regulatória dos produtos manipulados;</li>
+                <li>Cumprimento de receituários e legislação sanitária aplicável;</li>
+                <li>Entrega, embalagem e cadeia de frio quando aplicável;</li>
+                <li>Atendimento de reclamações e política de trocas/devoluções;</li>
+                <li>Emissão de documentos fiscais ao consumidor.</li>
+            </ul>
+            <h3>7.3 Vedações no Marketplace</h3>
+            <p>É proibido ao Estabelecimento:</p>
+            <ul>
+                <li>Anunciar produtos sem respaldo em receituário válido quando exigido;</li>
+                <li>Praticar preços discriminatórios no marketplace em relação à loja física;</li>
+                <li>Manipular avaliações ou induzir o consumidor a erro.</li>
+            </ul>
+            <h3>7.4 Cupons e Promoções</h3>
+            <p>Cupons emitidos pela Salvelle (campanhas da plataforma) podem ter condições de reembolso ao Estabelecimento definidas em contrato separado. Cupons criados pelo próprio Estabelecimento são de sua exclusiva responsabilidade financeira.</p>
+        </section>
+
+        <!-- 8 -->
+        <section class="legal-section" id="obrigacoes">
+            <h2>8. Obrigações e Condutas Proibidas</h2>
+            <h3>8.1 Obrigações do Usuário</h3>
+            <ul>
+                <li>Utilizar a plataforma somente para fins lícitos e compatíveis com a atividade farmacêutica;</li>
+                <li>Manter licenças e autorizações regulatórias vigentes;</li>
+                <li>Não compartilhar credenciais com terceiros não cadastrados;</li>
+                <li>Comunicar imediatamente qualquer violação de segurança ou uso indevido.</li>
+            </ul>
+            <h3>8.2 Condutas Vedadas</h3>
+            <p>O Usuário não pode:</p>
+            <ul>
+                <li>Realizar engenharia reversa, descompilar ou copiar o software;</li>
+                <li>Inserir vírus, malware ou código malicioso;</li>
+                <li>Tentar acessar áreas restritas da plataforma ou dados de outros Estabelecimentos;</li>
+                <li>Usar a plataforma para fins ilegais, incluindo lavagem de dinheiro ou venda de produtos proibidos;</li>
+                <li>Revender, sublicenciar ou ceder o acesso à plataforma a terceiros;</li>
+                <li>Sobrecarregar a infraestrutura da plataforma por meio de automações não autorizadas.</li>
+            </ul>
+            <p>O descumprimento das obrigações acima pode resultar em suspensão imediata e rescisão sem direito a reembolso.</p>
+        </section>
+
+        <!-- 9 -->
+        <section class="legal-section" id="propriedade">
+            <h2>9. Propriedade Intelectual</h2>
+            <h3>9.1 Propriedade da Salvelle</h3>
+            <p>Todo o código-fonte, design, marcas, logos, interfaces e documentação do Salvelle são propriedade exclusiva da Salvelle ou de seus licenciantes. O uso da plataforma não transfere qualquer direito de propriedade intelectual ao Usuário.</p>
+            <h3>9.2 Dados do Negócio</h3>
+            <p>O Estabelecimento é e permanece proprietário de todos os Dados do Negócio inseridos na plataforma. A Salvelle recebe licença não exclusiva e intransferível para processar esses dados exclusivamente com a finalidade de prestar o serviço contratado.</p>
+            <h3>9.3 Feedback e Sugestões</h3>
+            <p>Sugestões, ideias ou relatórios de bugs enviados pelo Usuário podem ser utilizados pela Salvelle para melhoria do produto, sem qualquer remuneração ao Usuário.</p>
+        </section>
+
+        <!-- 10 -->
+        <section class="legal-section" id="privacidade">
+            <h2>10. Privacidade e LGPD</h2>
+            <p>O tratamento de dados pessoais realizado pela Salvelle está detalhado em nossa <a href="/privacy"><strong>Política de Privacidade</strong></a>, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 — LGPD).</p>
+            <p>Ao utilizar o Salvelle, o Estabelecimento reconhece que também assume o papel de <strong>controlador de dados</strong> em relação aos dados pessoais de seus Clientes Finais inseridos na plataforma, sendo responsável pela obtenção do consentimento adequado e pelo cumprimento das obrigações da LGPD aplicáveis.</p>
+        </section>
+
+        <!-- 11 -->
+        <section class="legal-section" id="disponibilidade">
+            <h2>11. Disponibilidade e Suporte</h2>
+            <h3>11.1 Nível de Serviço</h3>
+            <p>A Salvelle empreende esforços razoáveis para manter a plataforma disponível 24 horas por dia, 7 dias por semana, buscando atingir 99,5% de uptime mensal nos planos Starter e Profissional, e 99,9% no Plano Rede.</p>
+            <h3>11.2 Manutenções Programadas</h3>
+            <p>Janelas de manutenção serão comunicadas com ao menos 48 horas de antecedência por e-mail e/ou banner na plataforma, preferencialmente realizadas entre 23h e 6h (horário de Brasília).</p>
+            <h3>11.3 Suporte</h3>
+            <ul>
+                <li><strong>Starter:</strong> suporte por e-mail em dias úteis, resposta em até 48h;</li>
+                <li><strong>Profissional:</strong> suporte via chat e e-mail em dias úteis, resposta em até 8h;</li>
+                <li><strong>Rede:</strong> SLA dedicado com canal exclusivo e resposta em até 2h úteis.</li>
+            </ul>
+        </section>
+
+        <!-- 12 -->
+        <section class="legal-section" id="responsabilidade">
+            <h2>12. Limitação de Responsabilidade</h2>
+            <p>Na máxima extensão permitida pela legislação brasileira:</p>
+            <ul>
+                <li>A Salvelle <strong>não se responsabiliza</strong> por danos indiretos, lucros cessantes ou danos emergentes decorrentes do uso ou impossibilidade de uso da plataforma;</li>
+                <li>A responsabilidade total da Salvelle em qualquer hipótese fica limitada ao valor pago pelo Estabelecimento nos 3 (três) meses anteriores ao evento que originou o dano;</li>
+                <li>A Salvelle não garante que a plataforma atenderá a todos os requisitos específicos do Usuário, que será livre de erros ou que erros serão corrigidos;</li>
+                <li>A Salvelle não se responsabiliza por atos de terceiros, incluindo falhas de operadoras de telecomunicações, processadoras de pagamento ou provedores de nuvem.</li>
+            </ul>
+            <div class="legal-callout">
+                <p><strong>Atividade regulada.</strong> O Salvelle é uma ferramenta de apoio à gestão. A responsabilidade técnica e sanitária pela manipulação farmacêutica é exclusiva do farmacêutico responsável e do Estabelecimento, conforme legislação vigente (CFF, Anvisa, CRF).</p>
+            </div>
+        </section>
+
+        <!-- 13 -->
+        <section class="legal-section" id="rescisao">
+            <h2>13. Rescisão e Cancelamento</h2>
+            <h3>13.1 Cancelamento pelo Usuário</h3>
+            <p>O Estabelecimento pode cancelar sua assinatura a qualquer momento, sem multa ou fidelidade, acessando "Minha Conta → Assinatura → Cancelar". O acesso permanece ativo até o fim do período já pago.</p>
+            <h3>13.2 Cancelamento pela Salvelle</h3>
+            <p>A Salvelle pode encerrar ou suspender o acesso de um Usuário, com ou sem aviso prévio, nos seguintes casos:</p>
+            <ul>
+                <li>Violação destes Termos de Uso ou da Política de Privacidade;</li>
+                <li>Inadimplência superior a 30 dias;</li>
+                <li>Uso fraudulento ou ilícito da plataforma;</li>
+                <li>Determinação judicial ou regulatória;</li>
+                <li>Descontinuação do serviço (com aviso de 90 dias).</li>
+            </ul>
+            <h3>13.3 Exportação de Dados</h3>
+            <p>Após o cancelamento, o Estabelecimento tem <strong>90 (noventa) dias</strong> para exportar seus Dados do Negócio em formato CSV ou PDF. Após esse prazo, os dados serão excluídos de forma segura e definitiva, exceto quando a manutenção for exigida por lei.</p>
+        </section>
+
+        <!-- 14 -->
+        <section class="legal-section" id="alteracoes">
+            <h2>14. Alterações dos Termos</h2>
+            <p>A Salvelle pode atualizar estes Termos periodicamente. Alterações materiais serão comunicadas com <strong>30 dias de antecedência</strong> por e-mail. O uso continuado da plataforma após a data de vigência das novas condições constitui aceitação tácita.</p>
+            <p>Caso não concorde com as alterações, o Usuário pode cancelar a assinatura sem ônus dentro do prazo de aviso.</p>
+        </section>
+
+        <!-- 15 -->
+        <section class="legal-section" id="geral">
+            <h2>15. Disposições Gerais</h2>
+            <h3>15.1 Lei Aplicável e Foro</h3>
+            <p>Estes Termos são regidos pela legislação brasileira. Fica eleito o foro da Comarca de São Paulo/SP para dirimir quaisquer controvérsias, renunciando as partes a qualquer outro, por mais privilegiado que seja.</p>
+            <h3>15.2 Integralidade</h3>
+            <p>Estes Termos, em conjunto com a Política de Privacidade e eventuais aditivos contratuais, constituem o acordo integral entre as partes, substituindo quaisquer acordos anteriores sobre o mesmo objeto.</p>
+            <h3>15.3 Independência das Cláusulas</h3>
+            <p>A invalidade ou inexequibilidade de qualquer cláusula não afetará as demais disposições, que permanecerão em pleno vigor.</p>
+            <h3>15.4 Ausência de Renúncia</h3>
+            <p>A tolerância da Salvelle em relação a qualquer descumprimento não implica renúncia ao direito de exigir o cumprimento posterior.</p>
+            <h3>15.5 Contato</h3>
+            <p>Para dúvidas sobre estes Termos:</p>
+            <ul>
+                <li>E-mail: <a href="mailto:juridico@salvelle.com">juridico@salvelle.com</a></li>
+                <li>Encarregado de Dados (LGPD): <a href="mailto:lgpd@salvelle.com">lgpd@salvelle.com</a></li>
+            </ul>
+        </section>
+    </article>
+</div>
+
+<footer class="legal-footer">
+    <div class="legal-footer-links">
+        <a href="/terms">Termos de Uso</a>
+        <a href="/privacy">Política de Privacidade</a>
+        <a href="/pricing">Planos</a>
+        <a href="mailto:contato@salvelle.com">Contato</a>
+    </div>
+    <p>© @DateTime.Now.Year Salvelle Tecnologia Ltda. · CNPJ 00.000.000/0001-00 · Todos os direitos reservados.</p>
+</footer>
+
+<script>
+    // Highlight active sidebar link on scroll
+    const sections = document.querySelectorAll('.legal-section');
+    const links = document.querySelectorAll('.sidebar-link');
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+            if (e.isIntersecting) {
+                links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id));
+            }
+        });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

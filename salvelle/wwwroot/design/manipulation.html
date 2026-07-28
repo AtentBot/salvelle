@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Salvelle — Manipulação</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap');</style>
+<link rel="stylesheet" href="ds/tokens.css">
+<link rel="stylesheet" href="ds/components.css">
+<style>
+  .manip-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+  .formula-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); }
+  .formula-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; }
+  .formula-head h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.015em; }
+  .formula-head .meta { display: flex; gap: 20px; align-items: center; font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+  .formula-head .meta span { display: inline-flex; gap: 6px; align-items: center; }
+  .formula-head .meta b { color: var(--ink-2); font-weight: 500; }
+  .step-rail { display: flex; padding: 14px 20px; gap: 4px; border-bottom: 1px solid var(--rule); background: var(--bg-subtle); }
+  .step-rail .s { flex: 1; padding: 8px 12px; border-radius: var(--r-sm); font-size: 12px; font-weight: 500; color: var(--ink-3); display: flex; align-items: center; gap: 8px; }
+  .step-rail .s.done { color: var(--ok); }
+  .step-rail .s.active { background: var(--surface); color: var(--ink); border: 1px solid var(--rule); }
+  .step-rail .s .num { font-family: var(--font-mono); font-size: 10px; opacity: 0.6; }
+  .form-section { padding: 20px; border-bottom: 1px solid var(--rule); }
+  .form-section:last-child { border-bottom: none; }
+  .section-title { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); margin-bottom: 12px; }
+  .ingredients-table { width: 100%; }
+  .ingredients-table th { font-size: 11px; padding: 8px 12px; }
+  .ingredients-table td { padding: 12px; border-bottom: 1px solid var(--rule); font-size: 13px; vertical-align: middle; }
+  .ingredients-table .ing-name { font-weight: 500; color: var(--ink); }
+  .ingredients-table .ing-meta { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  .ingredients-table .qty-input { width: 90px; padding: 6px 8px; text-align: right; font-family: var(--font-mono); }
+  .stock-pill { font-size: 11px; padding: 2px 6px; border-radius: 3px; font-family: var(--font-mono); display: inline-flex; align-items: center; gap: 4px; }
+  .stock-pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .stock-pill.low { background: var(--warn-soft); color: var(--warn); }
+  .stock-pill.out { background: var(--danger-soft); color: var(--danger); }
+  .add-ingredient { padding: 10px 12px; background: var(--bg-subtle); border-radius: var(--r-sm); margin-top: 12px; font-size: 13px; color: var(--petrol-500); border: 1px dashed var(--rule); cursor: pointer; display: flex; align-items: center; gap: 8px; justify-content: center; }
+  .veh-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .summary-card { padding: 20px; }
+  .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; }
+  .summary-row .lbl { color: var(--ink-3); }
+  .summary-row .val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+  .summary-row.total { border-top: 1px solid var(--rule); padding-top: 14px; margin-top: 8px; }
+  .summary-row.total .lbl { font-weight: 600; color: var(--ink); font-family: var(--font-sans); }
+  .summary-row.total .val { font-size: 18px; font-weight: 600; color: var(--ink); }
+  .alert-card { padding: 14px 16px; background: var(--warn-soft); border: 1px solid color-mix(in oklch, var(--warn) 30%, transparent); border-radius: var(--r-sm); display: flex; gap: 10px; font-size: 13px; color: var(--ink-2); align-items: flex-start; }
+  .alert-card svg { color: var(--warn); flex-shrink: 0; margin-top: 1px; }
+  .alert-card b { color: var(--ink); }
+  .label-preview { background: #fff; border: 1px solid var(--rule); border-radius: var(--r-sm); padding: 14px; font-size: 11px; line-height: 1.45; color: var(--ink); }
+  .label-preview .strip { background: var(--controlled-black); color: #fff; padding: 4px 8px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; margin: -14px -14px 12px; }
+  .label-preview h3 { font-size: 13px; font-weight: 600; margin: 0 0 8px; }
+  .label-preview .row { display: flex; justify-content: space-between; padding: 2px 0; gap: 8px; }
+  .label-preview .row .l { color: var(--ink-3); }
+  .label-preview .small { font-size: 9px; color: var(--ink-3); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--rule); }
+  .preview-block { padding: 20px; }
+  .formula-actions { padding: 16px 20px; display: flex; gap: 8px; justify-content: space-between; background: var(--bg-subtle); border-top: 1px solid var(--rule); }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/shell.jsx"></script>
+<script type="text/babel" data-presets="react">
+function App() {
+  return (
+    <div className="app-shell">
+      <Sidebar active="manipulation" />
+      <div className="app-main">
+        <Topbar />
+        <div className="app-content">
+          <PageHead
+            breadcrumb="OPERAÇÃO · MANIPULAÇÃO · ORD-1182"
+            title="Bupropiona 150mg · 30 cáps"
+            subtitle="Henrique Sá · Receita digital · Dr. Felipe Costa CRM/SP 87654"
+            actions={<>
+              <button className="btn btn-secondary"><Icon name="download"/>Imprimir ordem</button>
+              <button className="btn btn-secondary">Salvar rascunho</button>
+              <button className="btn btn-primary"><Icon name="check"/>Liberar pedido</button>
+            </>}
+          />
+
+          <div className="manip-grid">
+            <div className="formula-card">
+              <div className="formula-head">
+                <div>
+                  <h2>Receita & ativos</h2>
+                  <div className="meta">
+                    <span><Icon name="package"/><b>30 cápsulas</b></span>
+                    <span>·</span>
+                    <span><b>Bancada 02</b></span>
+                    <span>·</span>
+                    <span><span className="controlled-strip psicotropico" style={{padding:'2px 8px',fontSize:'9px'}}>Lista B · Faixa preta</span></span>
+                  </div>
+                </div>
+                <span className="badge badge-warn">Aguarda 2ª assinatura</span>
+              </div>
+
+              <div className="step-rail">
+                <div className="s done"><Icon name="check"/><span className="num">01</span>Receita</div>
+                <div className="s done"><Icon name="check"/><span className="num">02</span>Ativos</div>
+                <div className="s active"><span className="num">03</span>Pesagem</div>
+                <div className="s"><span className="num">04</span>Conferência</div>
+                <div className="s"><span className="num">05</span>Rotulagem</div>
+                <div className="s"><span className="num">06</span>Liberação</div>
+              </div>
+
+              <div className="form-section">
+                <div className="section-title">Ativos</div>
+                <table className="ingredients-table">
+                  <thead><tr style={{background:'var(--bg-subtle)', borderBottom:'1px solid var(--rule)'}}>
+                    <th style={{textAlign:'left',color:'var(--ink-3)',fontWeight:500,letterSpacing:'.04em',textTransform:'uppercase'}}>Insumo</th>
+                    <th style={{textAlign:'right',color:'var(--ink-3)',fontWeight:500,letterSpacing:'.04em',textTransform:'uppercase'}}>Conc.</th>
+                    <th style={{textAlign:'right',color:'var(--ink-3)',fontWeight:500,letterSpacing:'.04em',textTransform:'uppercase'}}>Qtd</th>
+                    <th style={{textAlign:'left',color:'var(--ink-3)',fontWeight:500,letterSpacing:'.04em',textTransform:'uppercase'}}>Lote</th>
+                    <th style={{textAlign:'left',color:'var(--ink-3)',fontWeight:500,letterSpacing:'.04em',textTransform:'uppercase'}}>Estoque</th>
+                    <th></th>
+                  </tr></thead>
+                  <tbody>
+                    <tr>
+                      <td><div className="ing-name">Bupropiona Cloridrato</div><div className="ing-meta">Pó · DCB 1457</div></td>
+                      <td style={{textAlign:'right'}} className="mono">150 mg</td>
+                      <td style={{textAlign:'right'}}><input className="input qty-input" defaultValue="4,500" /> g</td>
+                      <td className="mono" style={{fontSize:11}}>BUP-2410-A · val. 09/26</td>
+                      <td><span className="stock-pill ok">●  124 g</span></td>
+                      <td><Icon name="x"/></td>
+                    </tr>
+                    <tr>
+                      <td><div className="ing-name">Estearato de magnésio</div><div className="ing-meta">Lubrificante · q.s.p.</div></td>
+                      <td style={{textAlign:'right'}} className="mono">1%</td>
+                      <td style={{textAlign:'right'}}><input className="input qty-input" defaultValue="0,180" /> g</td>
+                      <td className="mono" style={{fontSize:11}}>EMG-2403-B · val. 03/27</td>
+                      <td><span className="stock-pill ok">●  3,2 kg</span></td>
+                      <td><Icon name="x"/></td>
+                    </tr>
+                    <tr>
+                      <td><div className="ing-name">Lactose monohidratada</div><div className="ing-meta">Veículo · q.s.p.</div></td>
+                      <td style={{textAlign:'right'}} className="mono">q.s.p.</td>
+                      <td style={{textAlign:'right'}}><input className="input qty-input" defaultValue="13,320" /> g</td>
+                      <td className="mono" style={{fontSize:11}}>LAC-2405-C · val. 05/27</td>
+                      <td><span className="stock-pill low">●  240 g</span></td>
+                      <td><Icon name="x"/></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div className="add-ingredient"><Icon name="plus"/>Adicionar insumo</div>
+              </div>
+
+              <div className="form-section">
+                <div className="section-title">Forma farmacêutica & embalagem</div>
+                <div className="veh-grid">
+                  <div><label className="input-label">Forma farmacêutica</label><select className="select"><option>Cápsula gelatinosa dura</option><option>Cápsula vegetal</option></select></div>
+                  <div><label className="input-label">Tamanho da cápsula</label><select className="select"><option>Nº 1 — 0,5 mL</option><option>Nº 0</option><option>Nº 00</option></select></div>
+                  <div><label className="input-label">Embalagem</label><select className="select"><option>Frasco âmbar 30 cáps</option><option>Blister PVDC</option></select></div>
+                </div>
+              </div>
+
+              <div className="form-section">
+                <div className="section-title">Posologia & orientações</div>
+                <textarea className="textarea" rows="3" defaultValue="Tomar 1 cápsula pela manhã, antes do café, durante 7 dias. A partir do 8º dia, tomar 1 cápsula pela manhã e 1 ao final da tarde. Manter em local seco e ao abrigo da luz."/>
+              </div>
+
+              <div className="formula-actions">
+                <button className="btn btn-ghost"><Icon name="x"/>Cancelar pedido</button>
+                <div className="row" style={{gap:8}}>
+                  <button className="btn btn-secondary">Salvar e enviar para pesagem</button>
+                  <button className="btn btn-primary"><Icon name="check"/>Aprovar como RT</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="col" style={{gap:16}}>
+              <div className="alert-card">
+                <Icon name="lock"/>
+                <div><b>Controlado · Lista B (psicotrópico).</b> Exige assinatura digital do farmacêutico RT antes da liberação. Receita azul retida e arquivada por 5 anos.</div>
+              </div>
+
+              <div className="card summary-card">
+                <div className="card-eyebrow">Resumo</div>
+                <h3 className="card-title" style={{margin:'0 0 12px'}}>Custos da fórmula</h3>
+                <div className="summary-row"><span className="lbl">Bupropiona 150mg</span><span className="val">R$ 38,40</span></div>
+                <div className="summary-row"><span className="lbl">Excipientes</span><span className="val">R$ 4,80</span></div>
+                <div className="summary-row"><span className="lbl">Embalagem</span><span className="val">R$ 6,20</span></div>
+                <div className="summary-row"><span className="lbl">Mão de obra (28 min)</span><span className="val">R$ 18,60</span></div>
+                <div className="summary-row"><span className="lbl">Margem</span><span className="val">R$ 56,00</span></div>
+                <div className="summary-row total"><span className="lbl">Preço final</span><span className="val">R$ 124,00</span></div>
+              </div>
+
+              <div className="card preview-block">
+                <div className="card-eyebrow">Pré-visualização</div>
+                <h3 className="card-title" style={{margin:'0 0 12px'}}>Rótulo Anvisa</h3>
+                <div className="label-preview">
+                  <div className="strip">Lista B · Sob prescrição médica · Venda sob retenção</div>
+                  <h3>Bupropiona 150 mg</h3>
+                  <div className="row"><span className="l">Paciente</span><span>Henrique Sá</span></div>
+                  <div className="row"><span className="l">Posologia</span><span>1 cáps. de manhã</span></div>
+                  <div className="row"><span className="l">Quantidade</span><span>30 cáps · 4,5 g</span></div>
+                  <div className="row"><span className="l">Validade</span><span>28/04/2027</span></div>
+                  <div className="row"><span className="l">Lote</span><span className="mono">F-1182-2604</span></div>
+                  <div className="row"><span className="l">Farm. RT</span><span>Douglas B. · CRF/SP 12345</span></div>
+                  <div className="small">Manipulado em 28/04/2026 · Farmácia Vita · Rua das Acácias 102 · São Paulo / SP</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

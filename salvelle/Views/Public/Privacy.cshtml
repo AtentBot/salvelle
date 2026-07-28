@@ -1,0 +1,443 @@
+@{
+    Layout = null;
+    ViewData["Title"] = "Política de Privacidade — Salvelle";
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>@@import url('https://api.fontshare.com/v2/css?f[]=general-sans@@400,500,600&display=swap');</style>
+    <link rel="stylesheet" href="~/css/design-system/tokens.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/design-system/components.css" asp-append-version="true">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@@1.11.2/font/bootstrap-icons.min.css">
+    <style>
+        body { background: var(--bg); color: var(--ink); }
+
+        /* Nav */
+        .pub-nav { position: sticky; top: 0; z-index: 50; background: var(--surface); border-bottom: 1px solid var(--rule); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+        .pub-nav-links { display: flex; gap: 24px; align-items: center; }
+        .pub-nav-link { color: var(--ink-2); text-decoration: none; font-size: 14px; font-weight: 500; }
+        .pub-nav-link:hover { color: var(--petrol-500); }
+
+        /* Layout */
+        .legal-wrap { display: grid; grid-template-columns: 240px 1fr; gap: 64px; max-width: 1080px; margin: 0 auto; padding: 64px 32px 120px; }
+        .legal-sidebar { position: sticky; top: 88px; align-self: start; }
+        .sidebar-title { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 16px; }
+        .sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
+        .sidebar-link { display: block; font-size: 13px; color: var(--ink-2); text-decoration: none; padding: 6px 10px; border-radius: var(--r-sm); border-left: 2px solid transparent; transition: all .15s; }
+        .sidebar-link:hover, .sidebar-link.active { color: var(--petrol-500); border-left-color: var(--petrol-500); background: var(--petrol-50, rgba(0,95,100,.06)); }
+
+        /* Content */
+        .legal-content { max-width: 720px; }
+        .legal-header { margin-bottom: 48px; }
+        .legal-header .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--petrol-500); margin-bottom: 12px; }
+        .legal-header h1 { font-size: 36px; font-weight: 600; letter-spacing: -.025em; margin: 0 0 12px; }
+        .legal-header .meta { font-size: 13px; color: var(--ink-3); }
+        .legal-header .meta strong { color: var(--ink-2); }
+
+        .legal-section { margin-bottom: 48px; scroll-margin-top: 96px; }
+        .legal-section h2 { font-size: 18px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
+        .legal-section h3 { font-size: 14px; font-weight: 600; margin: 24px 0 8px; color: var(--ink); }
+        .legal-section p { font-size: 14px; line-height: 1.75; color: var(--ink-2); margin: 0 0 12px; }
+        .legal-section ul, .legal-section ol { padding-left: 20px; margin: 8px 0 16px; }
+        .legal-section li { font-size: 14px; line-height: 1.7; color: var(--ink-2); margin-bottom: 6px; }
+        .legal-section strong { color: var(--ink); font-weight: 600; }
+
+        .legal-callout { background: var(--bg-subtle); border: 1px solid var(--rule); border-left: 3px solid var(--petrol-500); border-radius: var(--r-sm); padding: 16px 20px; margin: 20px 0; }
+        .legal-callout p { margin: 0; font-size: 13px; }
+        .legal-callout.warn { border-left-color: #d97706; }
+
+        .legal-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+        .legal-table th { text-align: left; padding: 10px 14px; background: var(--bg-subtle); font-weight: 600; color: var(--ink); border-bottom: 1px solid var(--rule); }
+        .legal-table td { padding: 10px 14px; color: var(--ink-2); border-bottom: 1px solid var(--rule); vertical-align: top; }
+        .legal-table tr:last-child td { border-bottom: none; }
+
+        /* Rights grid */
+        .rights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+        .right-card { border: 1px solid var(--rule); border-radius: var(--r-sm); padding: 16px; }
+        .right-card .right-icon { font-size: 20px; margin-bottom: 8px; }
+        .right-card .right-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+        .right-card .right-desc { font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+
+        /* Footer */
+        .legal-footer { border-top: 1px solid var(--rule); padding: 32px; text-align: center; }
+        .legal-footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 12px; }
+        .legal-footer-links a { font-size: 13px; color: var(--ink-3); text-decoration: none; }
+        .legal-footer-links a:hover { color: var(--petrol-500); }
+        .legal-footer p { font-size: 12px; color: var(--ink-3); margin: 0; }
+
+        @@media (max-width: 768px) {
+            .pub-nav { padding: 14px 20px; }
+            .pub-nav-links { display: none; }
+            .legal-wrap { grid-template-columns: 1fr; gap: 32px; padding: 32px 20px 80px; }
+            .legal-sidebar { display: none; }
+            .legal-header h1 { font-size: 28px; }
+            .rights-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="pub-nav">
+    <a href="/" class="brand">
+        <span class="brand-glyph" style="width:32px;height:32px;">
+            <svg width="32" height="32" viewBox="0 0 88 88" fill="none" aria-hidden="true">
+                <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="var(--petrol-500)">S</text>
+            </svg>
+        </span>
+        <span class="brand-name">Salvelle</span>
+    </a>
+    <div class="pub-nav-links">
+        <a class="pub-nav-link" href="/">Produto</a>
+        <a class="pub-nav-link" href="/pricing">Preços</a>
+        <a class="pub-nav-link" href="/terms">Termos de Uso</a>
+    </div>
+    <div style="display:flex;gap:12px">
+        <a class="btn btn-ghost btn-sm" href="/Account/Login">Entrar</a>
+        <a class="btn btn-primary btn-sm" href="/Signup">Começar grátis</a>
+    </div>
+</nav>
+
+<div class="legal-wrap">
+    <!-- Sidebar -->
+    <aside class="legal-sidebar">
+        <div class="sidebar-title">Seções</div>
+        <nav class="sidebar-nav">
+            <a class="sidebar-link" href="#intro">1. Quem somos</a>
+            <a class="sidebar-link" href="#dados-coletados">2. Dados que coletamos</a>
+            <a class="sidebar-link" href="#finalidades">3. Por que usamos</a>
+            <a class="sidebar-link" href="#bases-legais">4. Bases legais (LGPD)</a>
+            <a class="sidebar-link" href="#compartilhamento">5. Compartilhamento</a>
+            <a class="sidebar-link" href="#retencao">6. Retenção</a>
+            <a class="sidebar-link" href="#seguranca">7. Segurança</a>
+            <a class="sidebar-link" href="#cookies">8. Cookies</a>
+            <a class="sidebar-link" href="#direitos">9. Seus direitos</a>
+            <a class="sidebar-link" href="#menores">10. Menores</a>
+            <a class="sidebar-link" href="#transferencias">11. Transferência internacional</a>
+            <a class="sidebar-link" href="#atualizacoes">12. Atualizações</a>
+            <a class="sidebar-link" href="#contato">13. Contato e DPO</a>
+        </nav>
+    </aside>
+
+    <!-- Content -->
+    <article class="legal-content">
+        <header class="legal-header">
+            <div class="eyebrow">Documento legal · LGPD</div>
+            <h1>Política de Privacidade</h1>
+            <div class="meta">
+                Versão <strong>2.0</strong> · Vigência a partir de <strong>1º de agosto de 2026</strong><br>
+                Última atualização: <strong>julho de 2026</strong>
+            </div>
+        </header>
+
+        <div class="legal-callout">
+            <p><strong>Resumo em 30 segundos.</strong> A Salvelle coleta apenas os dados necessários para operar o serviço e cumprir obrigações legais. Não vendemos dados pessoais. Você pode solicitar acesso, correção ou exclusão dos seus dados a qualquer momento.</p>
+        </div>
+
+        <!-- 1 -->
+        <section class="legal-section" id="intro">
+            <h2>1. Quem Somos</h2>
+            <p>Esta Política de Privacidade descreve como a <strong>Salvelle Tecnologia Ltda.</strong> ("Salvelle", "nós") coleta, usa, armazena e protege os dados pessoais de seus usuários, em conformidade com a <strong>Lei Geral de Proteção de Dados Pessoais (LGPD — Lei nº 13.709/2018)</strong> e demais normas aplicáveis.</p>
+            <p>A Salvelle opera a plataforma <strong>Salvelle</strong>, um SaaS de gestão e marketplace para farmácias de manipulação. Atuamos como:</p>
+            <ul>
+                <li><strong>Controladora</strong> dos dados pessoais de Estabelecimentos (farmácias), seus colaboradores e dos Clientes Finais cadastrados diretamente em nossa plataforma;</li>
+                <li><strong>Operadora</strong> quando processamos dados pessoais de Clientes Finais por instrução do Estabelecimento contratante (via módulos de PDV, fidelidade e notificações).</li>
+            </ul>
+            <p>Esta política aplica-se a todos os Usuários da plataforma Salvelle, incluindo o site institucional, o painel web e o aplicativo mobile para consumidores.</p>
+        </section>
+
+        <!-- 2 -->
+        <section class="legal-section" id="dados-coletados">
+            <h2>2. Dados que Coletamos</h2>
+
+            <h3>2.1 Dados de Estabelecimentos e seus Colaboradores</h3>
+            <table class="legal-table">
+                <thead><tr><th>Categoria</th><th>Dados</th></tr></thead>
+                <tbody>
+                    <tr><td>Identificação da empresa</td><td>Razão social, nome fantasia, CNPJ, inscrição estadual</td></tr>
+                    <tr><td>Dados do responsável</td><td>Nome completo, CPF, e-mail, telefone, cargo</td></tr>
+                    <tr><td>Dados do farmacêutico RT</td><td>Nome, CRF, e-mail profissional</td></tr>
+                    <tr><td>Endereço</td><td>Logradouro, CEP, cidade, estado, coordenadas geográficas</td></tr>
+                    <tr><td>Financeiro</td><td>Dados de cartão de crédito (tokenizados pelo Stripe), histórico de cobranças e repasses</td></tr>
+                    <tr><td>Uso da plataforma</td><td>Logs de acesso, ações na interface, endereço IP, user agent</td></tr>
+                </tbody>
+            </table>
+
+            <h3>2.2 Dados de Clientes Finais (Consumidores do Marketplace)</h3>
+            <table class="legal-table">
+                <thead><tr><th>Categoria</th><th>Dados</th></tr></thead>
+                <tbody>
+                    <tr><td>Identificação</td><td>Nome completo, CPF, data de nascimento, sexo biológico (para fórmulas)</td></tr>
+                    <tr><td>Contato</td><td>E-mail, telefone celular, endereço de entrega</td></tr>
+                    <tr><td>Dados de saúde*</td><td>Receituários médicos enviados, diagnósticos informados voluntariamente, histórico de manipulação</td></tr>
+                    <tr><td>Pagamento</td><td>Tokenização Stripe (não armazenamos número de cartão em nossos servidores)</td></tr>
+                    <tr><td>Localização</td><td>Coordenadas de entrega, histórico de buscas por farmácias próximas</td></tr>
+                    <tr><td>Comportamento</td><td>Histórico de pedidos, avaliações, itens salvos</td></tr>
+                </tbody>
+            </table>
+            <div class="legal-callout warn">
+                <p>* <strong>Dados de saúde são dados sensíveis</strong> sob a LGPD (art. 11). Seu tratamento exige consentimento específico, destacado e livre, ou outra base legal qualificada. Eles são usados exclusivamente para processar pedidos e atender obrigações regulatórias.</p>
+            </div>
+
+            <h3>2.3 Dados Coletados Automaticamente</h3>
+            <ul>
+                <li>Endereço IP e dados de geolocalização aproximada;</li>
+                <li>Identificadores de dispositivo (UUID, push token para notificações);</li>
+                <li>Logs de requisição (timestamp, rota acessada, código HTTP) para segurança e diagnóstico;</li>
+                <li>Cookies e tecnologias similares (descritas na <a href="#cookies">Seção 8</a>).</li>
+            </ul>
+
+            <h3>2.4 Dados que Não Coletamos</h3>
+            <ul>
+                <li>Números de cartão, CVV ou dados bancários completos (processados exclusivamente pelo Stripe);</li>
+                <li>Dados biométricos;</li>
+                <li>Dados de menores de 18 anos sem consentimento de responsável legal.</li>
+            </ul>
+        </section>
+
+        <!-- 3 -->
+        <section class="legal-section" id="finalidades">
+            <h2>3. Por Que Usamos Seus Dados</h2>
+            <table class="legal-table">
+                <thead><tr><th>Finalidade</th><th>Dados usados</th></tr></thead>
+                <tbody>
+                    <tr><td>Criação e gestão de conta</td><td>Nome, e-mail, CPF/CNPJ, senha (hash)</td></tr>
+                    <tr><td>Prestação do serviço SaaS (PDV, estoque, manipulação)</td><td>Dados do estabelecimento e colaboradores</td></tr>
+                    <tr><td>Processamento de pedidos no marketplace</td><td>Dados do cliente, endereço, receituário, pagamento</td></tr>
+                    <tr><td>Cobrança de assinaturas e repasses</td><td>CNPJ, dados de pagamento, histórico financeiro</td></tr>
+                    <tr><td>Compliance sanitário (SNGPC, livros eletrônicos)</td><td>CPF paciente, CRF RT, dados da fórmula, receituário</td></tr>
+                    <tr><td>Comunicação com o usuário (notificações, alertas)</td><td>E-mail, telefone, push token</td></tr>
+                    <tr><td>Prevenção de fraudes e segurança</td><td>IP, logs, padrão de acesso</td></tr>
+                    <tr><td>Melhoria do produto e analytics</td><td>Dados de uso anonimizados ou pseudonimizados</td></tr>
+                    <tr><td>Obrigações legais e fiscais</td><td>CNPJ, CPF, notas fiscais, livros contábeis</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 4 -->
+        <section class="legal-section" id="bases-legais">
+            <h2>4. Bases Legais (LGPD)</h2>
+            <p>Todo tratamento de dados pessoais pela Salvelle está fundamentado em pelo menos uma das bases legais da LGPD:</p>
+            <table class="legal-table">
+                <thead><tr><th>Base legal</th><th>Quando aplicamos</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Execução de contrato</strong> (art. 7º, V)</td><td>Prestação do serviço SaaS, processamento de pedidos, cobrança de assinatura</td></tr>
+                    <tr><td><strong>Cumprimento de obrigação legal</strong> (art. 7º, II)</td><td>SNGPC, emissão fiscal, retenção de registros contábeis, Anvisa</td></tr>
+                    <tr><td><strong>Legítimo interesse</strong> (art. 7º, IX)</td><td>Segurança, prevenção de fraude, melhoria do produto (dados agregados)</td></tr>
+                    <tr><td><strong>Consentimento</strong> (art. 7º, I)</td><td>Comunicações de marketing, dados de saúde do Cliente Final, cookies não essenciais</td></tr>
+                    <tr><td><strong>Proteção da saúde</strong> (art. 11, II, f)</td><td>Dados de saúde necessários ao processo de manipulação farmacêutica</td></tr>
+                </tbody>
+            </table>
+            <p>Onde o consentimento é a base legal, o titular pode revogá-lo a qualquer momento sem prejuízo ao tratamento realizado anteriormente.</p>
+        </section>
+
+        <!-- 5 -->
+        <section class="legal-section" id="compartilhamento">
+            <h2>5. Compartilhamento de Dados</h2>
+            <p>A Salvelle <strong>não vende dados pessoais</strong>. Compartilhamos dados apenas nas situações abaixo:</p>
+
+            <h3>5.1 Parceiros Operacionais</h3>
+            <table class="legal-table">
+                <thead><tr><th>Parceiro</th><th>Dados compartilhados</th><th>Finalidade</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Stripe</strong></td><td>E-mail, nome, dados de pagamento</td><td>Processamento de pagamentos e cobrança recorrente</td></tr>
+                    <tr><td><strong>AWS / provedores de nuvem</strong></td><td>Todos os dados armazenados na plataforma</td><td>Hospedagem segura, backups</td></tr>
+                    <tr><td><strong>Sendgrid / provedor de e-mail</strong></td><td>E-mail, nome</td><td>Envio de notificações transacionais e alertas</td></tr>
+                    <tr><td><strong>Sentry / monitoramento</strong></td><td>Logs de erro (sem dados pessoais identificáveis)</td><td>Detecção e diagnóstico de erros</td></tr>
+                </tbody>
+            </table>
+            <p>Todos os parceiros são contratados sob acordos de processamento de dados (DPAs) que os obrigam a proteger as informações e usá-las exclusivamente para as finalidades contratadas.</p>
+
+            <h3>5.2 Autoridades e Órgãos Reguladores</h3>
+            <p>Compartilhamos dados com autoridades públicas, órgãos reguladores (Anvisa, CRF, Receita Federal) e o Poder Judiciário quando exigido por lei, determinação judicial ou obrigação regulatória.</p>
+
+            <h3>5.3 Estabelecimentos (Farmácias)</h3>
+            <p>Dados de Clientes Finais são compartilhados com o Estabelecimento contratante exclusivamente para finalidades relacionadas ao pedido realizado. O Estabelecimento assume o papel de controlador independente nesses casos e deve cumprir a LGPD.</p>
+
+            <h3>5.4 Fusões e Aquisições</h3>
+            <p>Em caso de fusão, aquisição ou venda de ativos, os dados podem ser transferidos ao adquirente, que ficará obrigado a honrar esta Política de Privacidade.</p>
+        </section>
+
+        <!-- 6 -->
+        <section class="legal-section" id="retencao">
+            <h2>6. Retenção de Dados</h2>
+            <table class="legal-table">
+                <thead><tr><th>Categoria de dado</th><th>Prazo de retenção</th></tr></thead>
+                <tbody>
+                    <tr><td>Dados de conta ativa</td><td>Durante toda a vigência do contrato</td></tr>
+                    <tr><td>Dados após cancelamento</td><td>90 dias para exportação; depois excluídos ou anonimizados</td></tr>
+                    <tr><td>Registros fiscais e contábeis</td><td>5 anos (Código Tributário Nacional)</td></tr>
+                    <tr><td>Registros SNGPC / psicotrópicos</td><td>10 anos (RDC Anvisa 20/2011 e portarias correlatas)</td></tr>
+                    <tr><td>Logs de acesso e segurança</td><td>6 meses (Marco Civil da Internet — Lei 12.965/2014)</td></tr>
+                    <tr><td>Dados de pagamento (tokenizados)</td><td>Conforme política do Stripe; excluídos no cancelamento</td></tr>
+                    <tr><td>Backups criptografados</td><td>90 dias em rotação (sobrescritos automaticamente)</td></tr>
+                </tbody>
+            </table>
+            <p>Após o prazo aplicável, os dados são excluídos de forma segura ou anonimizados de modo irreversível.</p>
+        </section>
+
+        <!-- 7 -->
+        <section class="legal-section" id="seguranca">
+            <h2>7. Segurança dos Dados</h2>
+            <p>Adotamos medidas técnicas e organizacionais para proteger seus dados, incluindo:</p>
+            <ul>
+                <li><strong>Criptografia em trânsito:</strong> TLS 1.2+ em todas as comunicações;</li>
+                <li><strong>Criptografia em repouso:</strong> AES-256-GCM para dados sensíveis no banco de dados;</li>
+                <li><strong>Autenticação:</strong> senhas em hash bcrypt, tokens JWT com expiração curta, rate limiting e bloqueio por tentativas excessivas;</li>
+                <li><strong>Isolamento multi-tenant:</strong> cada Estabelecimento acessa apenas seus próprios dados;</li>
+                <li><strong>Controle de acesso:</strong> princípio do menor privilégio para todos os colaboradores;</li>
+                <li><strong>Monitoramento:</strong> alertas automáticos para acessos suspeitos e anomalias;</li>
+                <li><strong>Backups:</strong> cópias criptografadas com testes periódicos de restauração.</li>
+            </ul>
+            <div class="legal-callout">
+                <p><strong>Incidente de segurança.</strong> Em caso de violação de dados que possa acarretar risco ou dano relevante, notificaremos a ANPD e os titulares afetados no prazo de até 72 horas após a ciência do incidente, conforme art. 48 da LGPD.</p>
+            </div>
+        </section>
+
+        <!-- 8 -->
+        <section class="legal-section" id="cookies">
+            <h2>8. Cookies e Tecnologias Similares</h2>
+            <h3>8.1 O que usamos</h3>
+            <table class="legal-table">
+                <thead><tr><th>Tipo</th><th>Finalidade</th><th>Pode recusar?</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Essenciais</strong></td><td>Manter sessão autenticada, preferências de segurança</td><td>Não (sem eles o serviço não funciona)</td></tr>
+                    <tr><td><strong>Funcionais</strong></td><td>Lembrar preferências de idioma e layout</td><td>Sim</td></tr>
+                    <tr><td><strong>Analíticos</strong></td><td>Entender uso do produto (dados agregados)</td><td>Sim</td></tr>
+                    <tr><td><strong>Marketing</strong></td><td>Não utilizamos cookies de rastreamento para fins publicitários</td><td>N/A</td></tr>
+                </tbody>
+            </table>
+            <h3>8.2 Como gerenciar</h3>
+            <p>Cookies não essenciais podem ser recusados no banner de consentimento exibido no primeiro acesso. Você também pode gerenciá-los diretamente nas configurações do seu navegador.</p>
+        </section>
+
+        <!-- 9 -->
+        <section class="legal-section" id="direitos">
+            <h2>9. Seus Direitos como Titular de Dados</h2>
+            <p>A LGPD garante ao titular de dados pessoais os seguintes direitos (art. 18):</p>
+            <div class="rights-grid">
+                <div class="right-card">
+                    <div class="right-icon">👁</div>
+                    <div class="right-title">Confirmação e Acesso</div>
+                    <div class="right-desc">Confirmar se tratamos seus dados e receber cópia completa das informações que possuímos sobre você.</div>
+                </div>
+                <div class="right-card">
+                    <div class="right-icon">✏️</div>
+                    <div class="right-title">Correção</div>
+                    <div class="right-desc">Solicitar a correção de dados incompletos, inexatos ou desatualizados.</div>
+                </div>
+                <div class="right-card">
+                    <div class="right-icon">🗑</div>
+                    <div class="right-title">Eliminação</div>
+                    <div class="right-desc">Solicitar a exclusão de dados tratados com base no consentimento (sujeito a obrigações legais de retenção).</div>
+                </div>
+                <div class="right-card">
+                    <div class="right-icon">⏸</div>
+                    <div class="right-title">Bloqueio / Anonimização</div>
+                    <div class="right-desc">Solicitar o bloqueio ou anonimização de dados desnecessários ou excessivos.</div>
+                </div>
+                <div class="right-card">
+                    <div class="right-icon">📦</div>
+                    <div class="right-title">Portabilidade</div>
+                    <div class="right-desc">Receber seus dados em formato estruturado e legível por máquina (CSV/JSON) para uso em outro serviço.</div>
+                </div>
+                <div class="right-card">
+                    <div class="right-icon">🚫</div>
+                    <div class="right-title">Oposição</div>
+                    <div class="right-desc">Opor-se ao tratamento realizado com base em legítimo interesse, quando não houver motivo legítimo preponderante.</div>
+                </div>
+                <div class="right-card">
+                    <div class="right-icon">ℹ️</div>
+                    <div class="right-title">Informação sobre compartilhamento</div>
+                    <div class="right-desc">Conhecer as entidades com as quais compartilhamos seus dados.</div>
+                </div>
+                <div class="right-card">
+                    <div class="right-icon">↩️</div>
+                    <div class="right-title">Revogação do consentimento</div>
+                    <div class="right-desc">Retirar o consentimento dado a qualquer momento, sem prejuízo ao tratamento anterior.</div>
+                </div>
+            </div>
+            <h3>9.1 Como exercer seus direitos</h3>
+            <p>Envie sua solicitação para <a href="mailto:lgpd@salvelle.com">lgpd@salvelle.com</a> com:</p>
+            <ul>
+                <li>Nome completo;</li>
+                <li>Documento de identificação (CPF);</li>
+                <li>Descrição do direito que deseja exercer;</li>
+                <li>E-mail cadastrado na plataforma.</li>
+            </ul>
+            <p>Responderemos em até <strong>15 dias úteis</strong>. Poderemos solicitar verificação de identidade antes de processar a requisição.</p>
+            <h3>9.2 Reclamações à ANPD</h3>
+            <p>Se considerar que seus direitos foram desrespeitados, você pode registrar reclamação junto à <strong>Autoridade Nacional de Proteção de Dados (ANPD)</strong> em <a href="https://www.gov.br/anpd" target="_blank" rel="noopener noreferrer">gov.br/anpd</a>.</p>
+        </section>
+
+        <!-- 10 -->
+        <section class="legal-section" id="menores">
+            <h2>10. Menores de Idade</h2>
+            <p>O Salvelle não é direcionado a menores de 18 anos. Não coletamos dados de menores de forma intencional. Dados de saúde de pacientes menores podem ser inseridos por Estabelecimentos no contexto de receituários pediátricos — nesses casos, o Estabelecimento é o controlador e deve garantir o consentimento do responsável legal.</p>
+            <p>Se identificarmos que coletamos dados de menor sem o consentimento adequado, os dados serão excluídos imediatamente.</p>
+        </section>
+
+        <!-- 11 -->
+        <section class="legal-section" id="transferencias">
+            <h2>11. Transferência Internacional de Dados</h2>
+            <p>Parte dos nossos serviços de infraestrutura pode envolver servidores localizados fora do Brasil (ex.: AWS us-east-1, Stripe EUA). Nessas situações, garantimos proteção adequada por meio de:</p>
+            <ul>
+                <li>Contratos com cláusulas padrão de proteção de dados (SCCs/DPAs);</li>
+                <li>Avaliação de adequação dos países destinatários conforme decisões da ANPD;</li>
+                <li>Criptografia dos dados durante a transferência e em repouso.</li>
+            </ul>
+        </section>
+
+        <!-- 12 -->
+        <section class="legal-section" id="atualizacoes">
+            <h2>12. Atualizações desta Política</h2>
+            <p>Esta Política pode ser atualizada periodicamente para refletir mudanças no serviço, na legislação ou nas nossas práticas. Alterações materiais serão comunicadas por e-mail com <strong>15 dias de antecedência</strong>. O uso continuado da plataforma após a data de vigência da nova versão indica aceitação.</p>
+            <p>O histórico de versões está disponível mediante solicitação para <a href="mailto:lgpd@salvelle.com">lgpd@salvelle.com</a>.</p>
+        </section>
+
+        <!-- 13 -->
+        <section class="legal-section" id="contato">
+            <h2>13. Contato e Encarregado de Dados (DPO)</h2>
+            <p>Para exercer seus direitos, tirar dúvidas sobre esta Política ou reportar incidentes de privacidade:</p>
+            <ul>
+                <li><strong>Encarregado de Dados (DPO):</strong> <a href="mailto:lgpd@salvelle.com">lgpd@salvelle.com</a></li>
+                <li><strong>Suporte geral:</strong> <a href="mailto:contato@salvelle.com">contato@salvelle.com</a></li>
+                <li><strong>Jurídico:</strong> <a href="mailto:juridico@salvelle.com">juridico@salvelle.com</a></li>
+            </ul>
+            <p><strong>Salvelle Tecnologia Ltda.</strong><br>
+            CNPJ: 00.000.000/0001-00<br>
+            São Paulo — SP, Brasil</p>
+        </section>
+    </article>
+</div>
+
+<footer class="legal-footer">
+    <div class="legal-footer-links">
+        <a href="/terms">Termos de Uso</a>
+        <a href="/privacy">Política de Privacidade</a>
+        <a href="/pricing">Planos</a>
+        <a href="mailto:contato@salvelle.com">Contato</a>
+    </div>
+    <p>© @DateTime.Now.Year Salvelle Tecnologia Ltda. · CNPJ 00.000.000/0001-00 · Todos os direitos reservados.</p>
+</footer>
+
+<script>
+    const sections = document.querySelectorAll('.legal-section');
+    const links = document.querySelectorAll('.sidebar-link');
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+            if (e.isIntersecting) {
+                links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id));
+            }
+        });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

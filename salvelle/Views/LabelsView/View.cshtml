@@ -1,0 +1,274 @@
+@{
+    ViewData["Title"] = "Visualizar Rótulo";
+    var labelId = ViewBag.LabelId as Guid?;
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-0">
+                <i class="bi bi-eye me-2"></i>Visualizar Rótulo
+            </h2>
+            <p class="text-muted mb-0" id="labelCode"></p>
+        </div>
+        <div class="col-auto">
+            <button onclick="history.back()" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </button>
+            <button id="btnPrint" class="btn btn-primary">
+                <i class="bi bi-printer me-2"></i>Imprimir
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-9">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Preview do Rótulo</h5>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary" onclick="zoomOut()">
+                                <i class="bi bi-zoom-out"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" id="zoomLevel">100%</button>
+                            <button class="btn btn-outline-secondary" onclick="zoomIn()">
+                                <i class="bi bi-zoom-in"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body bg-light">
+                    <div id="labelPreview" class="bg-white shadow-sm mx-auto" style="transform-origin: top center;">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-2 text-muted">Carregando rótulo...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">Informações</h6>
+                </div>
+                <div class="card-body" id="labelInfo">
+                    <div class="spinner-border spinner-border-sm text-primary"></div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">Status</h6>
+                </div>
+                <div class="card-body" id="labelStatus">
+                    <div class="spinner-border spinner-border-sm text-primary"></div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">Histórico de Impressão</h6>
+                </div>
+                <div class="card-body" id="printHistory">
+                    <div class="spinner-border spinner-border-sm text-primary"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="printModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-printer me-2"></i>Imprimir Rótulo
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Número de Cópias</label>
+                        <input type="number" id="copies" class="form-control" value="1" min="1" max="100">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Formato</label>
+                        <select id="format" class="form-select">
+                            <option value="HTML">HTML (Navegador)</option>
+                            <option value="PDF">PDF</option>
+                            <option value="ZPL">ZPL (Zebra)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Impressora (Opcional)</label>
+                        <input type="text" id="printerName" class="form-control" placeholder="Nome da impressora">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Motivo</label>
+                        <select id="printReason" class="form-select">
+                            <option value="IMPRESSAO">Impressão</option>
+                            <option value="REIMPRESSAO">Reimpressão</option>
+                            <option value="TESTE">Teste</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea id="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnConfirmPrint">
+                        <i class="bi bi-printer me-2"></i>Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const labelId = '@labelId';
+        let currentZoom = 100;
+        let labelData = null;
+        
+        async function loadLabel() {
+            try {
+                const response = await fetch(`/api/Labels/${labelId}`);
+                if (!response.ok) throw new Error('Rótulo não encontrado');
+                
+                labelData = await response.json();
+                
+                document.getElementById('labelCode').textContent = `Código: ${labelData.labelCode}`;
+                document.getElementById('labelPreview').innerHTML = labelData.generatedHtml || '<p class="text-center text-muted py-5">HTML não disponível</p>';
+                
+                document.getElementById('labelInfo').innerHTML = `
+                    <p class="mb-2"><strong>Paciente:</strong><br>${labelData.patientName || '-'}</p>
+                    <p class="mb-2"><strong>Fórmula:</strong><br>${labelData.formulaName}</p>
+                    <p class="mb-2"><strong>Lote:</strong><br>${labelData.batchNumber || '-'}</p>
+                    <p class="mb-2"><strong>Manipulação:</strong><br>${new Date(labelData.manipulationDate).toLocaleDateString('pt-BR')}</p>
+                    <p class="mb-0"><strong>Validade:</strong><br>${new Date(labelData.expirationDate).toLocaleDateString('pt-BR')}</p>
+                `;
+                
+                let statusBadge = '';
+                switch(labelData.status) {
+                    case 'PENDENTE': statusBadge = '<span class="badge bg-warning">Pendente</span>'; break;
+                    case 'IMPRESSO': statusBadge = '<span class="badge bg-success">Impresso</span>'; break;
+                    case 'REIMPRESSO': statusBadge = '<span class="badge bg-info">Reimpresso</span>'; break;
+                    case 'CANCELADO': statusBadge = '<span class="badge bg-danger">Cancelado</span>'; break;
+                }
+                
+                document.getElementById('labelStatus').innerHTML = `
+                    <p class="mb-2">${statusBadge}</p>
+                    <p class="mb-2"><strong>Impressões:</strong> ${labelData.printCount}</p>
+                    ${labelData.lastPrintedAt ? `<p class="mb-0"><strong>Última impressão:</strong><br><small>${new Date(labelData.lastPrintedAt).toLocaleString('pt-BR')}</small></p>` : ''}
+                `;
+                
+                loadPrintHistory();
+            } catch (error) {
+                document.getElementById('labelPreview').innerHTML = `
+                    <div class="alert alert-danger m-3">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function loadPrintHistory() {
+            try {
+                const response = await fetch(`/api/Labels/${labelId}/history`);
+                const history = await response.json();
+                
+                if (history.length === 0) {
+                    document.getElementById('printHistory').innerHTML = '<p class="text-muted mb-0"><small>Nenhuma impressão registrada</small></p>';
+                    return;
+                }
+                
+                let html = '<div class="timeline">';
+                history.forEach(h => {
+                    html += `
+                        <div class="mb-3">
+                            <small class="text-muted">${new Date(h.printedAt).toLocaleString('pt-BR')}</small>
+                            <p class="mb-0"><strong>${h.copies}x ${h.format}</strong></p>
+                            ${h.printerName ? `<small>${h.printerName}</small>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                document.getElementById('printHistory').innerHTML = html;
+            } catch (error) {
+                document.getElementById('printHistory').innerHTML = '<p class="text-muted mb-0"><small>Erro ao carregar histórico</small></p>';
+            }
+        }
+        
+        function zoomIn() {
+            currentZoom = Math.min(currentZoom + 10, 200);
+            updateZoom();
+        }
+        
+        function zoomOut() {
+            currentZoom = Math.max(currentZoom - 10, 50);
+            updateZoom();
+        }
+        
+        function updateZoom() {
+            document.getElementById('labelPreview').style.transform = `scale(${currentZoom / 100})`;
+            document.getElementById('zoomLevel').textContent = currentZoom + '%';
+        }
+        
+        document.getElementById('btnPrint').addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('printModal'));
+            modal.show();
+        });
+        
+        document.getElementById('btnConfirmPrint').addEventListener('click', async function() {
+            const data = {
+                copies: parseInt(document.getElementById('copies').value),
+                format: document.getElementById('format').value,
+                printerName: document.getElementById('printerName').value || null,
+                printReason: document.getElementById('printReason').value,
+                notes: document.getElementById('notes').value || null
+            };
+            
+            try {
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Imprimindo...';
+                
+                const response = await fetch(`/api/Labels/${labelId}/print`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) throw new Error(await response.text());
+                
+                bootstrap.Modal.getInstance(document.getElementById('printModal')).hide();
+                
+                if (data.format === 'HTML') {
+                    window.print();
+                }
+                
+                loadLabel();
+            } catch (error) {
+                alert('Erro ao imprimir: ' + error.message);
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-printer me-2"></i>Imprimir';
+            }
+        });
+        
+        loadLabel();
+    </script>
+    
+    <style>
+        @@media print {
+            .container-fluid, .card, .btn, .modal { display: none !important; }
+            #labelPreview { display: block !important; transform: none !important; }
+        }
+    </style>
+}

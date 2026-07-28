@@ -1,0 +1,128 @@
+@model SupplierCertificateForm
+@{
+    ViewData["Title"] = "Nova Certificação AFE";
+    var suppliers = ViewBag.Suppliers as List<Models.Pharmacy.Supplier>;
+}
+
+@section Styles {
+<style>
+    .form-wrap { max-width: 860px; }
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card + .ds-card { margin-top: 24px; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; gap: 10px; }
+    .ds-card-head i { color: var(--petrol-500); font-size: 16px; }
+    .ds-card-title { font-size: 16px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+    .ds-card-body { padding: 20px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+    .form-grid .span-2 { grid-column: 1 / -1; }
+    .req { color: var(--danger); font-weight: 600; }
+
+    .info-note { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--r-md); border: 1px solid var(--info-border); background: var(--info-soft); margin-top: 20px; }
+    .info-note i { color: var(--info); font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .info-note p { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+    .info-note a { color: var(--info); font-weight: 500; }
+
+    .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+    @@media (max-width: 640px) {
+        .form-grid { grid-template-columns: 1fr; }
+        .form-actions { flex-direction: column-reverse; }
+        .form-actions .btn { width: 100%; justify-content: center; }
+    }
+</style>
+}
+
+<div class="form-wrap">
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">FORNECEDORES · ANVISA</div>
+            <h1>Nova Certificação AFE</h1>
+            <p>Cadastrar certificado de fornecedor.</p>
+        </div>
+        <div class="row">
+            <a href="/SupplierCertification" class="btn btn-secondary"><i class="bi bi-arrow-left"></i>Voltar</a>
+        </div>
+    </div>
+
+    <form asp-action="CreateSubmit" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="ds-card">
+            <div class="ds-card-head">
+                <i class="bi bi-building"></i>
+                <h3 class="ds-card-title">Fornecedor</h3>
+            </div>
+            <div class="ds-card-body">
+                <label class="input-label">Fornecedor <span class="req">*</span></label>
+                <select name="SupplierId" class="select" required>
+                    <option value="">Selecione o fornecedor…</option>
+                    @if (suppliers != null)
+                    {
+                        foreach (var supplier in suppliers)
+                        {
+                            <option value="@supplier.Id">@supplier.CompanyName@(string.IsNullOrEmpty(supplier.TradeName) ? "" : $" ({supplier.TradeName})") — CNPJ: @supplier.Cnpj</option>
+                        }
+                    }
+                </select>
+                <div class="input-hint">Apenas fornecedores ativos são listados.</div>
+            </div>
+        </div>
+
+        <div class="ds-card">
+            <div class="ds-card-head">
+                <i class="bi bi-file-earmark-text"></i>
+                <h3 class="ds-card-title">Dados do certificado</h3>
+            </div>
+            <div class="ds-card-body">
+                <div class="form-grid">
+                    <div>
+                        <label class="input-label">Tipo de certificado <span class="req">*</span></label>
+                        <select name="CertificateType" class="select" required>
+                            <option value="AFE">AFE — Autorização de Funcionamento</option>
+                            <option value="AE">AE — Autorização Especial</option>
+                            <option value="CBPF">CBPF — Certificado de Boas Práticas</option>
+                            <option value="ISO">ISO — Certificação ISO</option>
+                            <option value="GMP">GMP — Boas Práticas de Fabricação</option>
+                            <option value="OUTRO">Outro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="input-label">Nome do certificado</label>
+                        <input type="text" name="Name" class="input" placeholder="Ex: Autorização de Funcionamento">
+                    </div>
+                    <div>
+                        <label class="input-label">Número <span class="req">*</span></label>
+                        <input type="text" name="Number" class="input" placeholder="Ex: 1.02.789-0" required>
+                    </div>
+                    <div>
+                        <label class="input-label">Órgão emissor</label>
+                        <input type="text" name="IssuingAuthority" class="input" value="ANVISA" placeholder="Ex: ANVISA">
+                    </div>
+                    <div>
+                        <label class="input-label">Data de emissão</label>
+                        <input type="date" name="IssueDate" class="input">
+                    </div>
+                    <div>
+                        <label class="input-label">Data de validade <span class="req">*</span></label>
+                        <input type="date" name="ExpiryDate" class="input" required>
+                    </div>
+                    <div class="span-2">
+                        <label class="input-label">Observações</label>
+                        <textarea name="Notes" class="textarea" rows="3" placeholder="Informações adicionais sobre o certificado…"></textarea>
+                    </div>
+                </div>
+
+                <div class="info-note">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <p><b>Verificação:</b> confirme os dados do certificado no portal da ANVISA — <a href="https://consultas.anvisa.gov.br/" target="_blank" rel="noopener">consultas.anvisa.gov.br</a>.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="/SupplierCertification" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i>Cadastrar certificação</button>
+        </div>
+    </form>
+</div>

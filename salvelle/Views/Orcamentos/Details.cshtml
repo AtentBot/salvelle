@@ -1,0 +1,411 @@
+@model Models.Pharmacy.PrescriptionQuote
+@{
+    ViewData["Title"] = $"Orçamento {Model.Code}";
+    var statusClass = Model.Status switch
+    {
+        "PENDENTE" => "bg-warning",
+        "APROVADO" => "bg-success",
+        "REJEITADO" => "bg-danger",
+        "CONVERTIDO" => "bg-primary",
+        "EXPIRADO" => "bg-secondary",
+        _ => "bg-secondary"
+    };
+    var isExpired = Model.ValidUntil < DateTime.UtcNow && Model.Status == "PENDENTE";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">
+                <i class="bi bi-receipt text-success me-2"></i>
+                Orçamento @Model.Code
+            </h2>
+            <p class="text-muted mb-0">
+                Criado em @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                @if (ViewBag.CreatedByName != null)
+                {
+                    <span>por @ViewBag.CreatedByName</span>
+                }
+            </p>
+        </div>
+        <div>
+            <a href="/Orcamentos" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (isExpired)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Atenção!</strong> Este orçamento expirou em @Model.ValidUntil.ToString("dd/MM/yyyy").
+        </div>
+    }
+
+    <div class="row">
+        <!-- Coluna Principal -->
+        <div class="col-lg-8">
+            <!-- Status e Ações -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge @statusClass fs-6 me-2">@Model.Status</span>
+                            @if (Model.WhatsAppSent)
+                            {
+                                <span class="badge bg-success"><i class="bi bi-whatsapp me-1"></i>Enviado</span>
+                            }
+                        </div>
+                        <div class="btn-group">
+                            @if (Model.Status == "PENDENTE")
+                            {
+                                <form method="post" asp-action="Approve" asp-route-id="@Model.Id" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-success" onclick="return confirm('Aprovar este orçamento?')">
+                                        <i class="bi bi-check-circle me-1"></i> Aprovar
+                                    </button>
+                                </form>
+                                <button type="button" class="btn btn-danger ms-2" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                                    <i class="bi bi-x-circle me-1"></i> Rejeitar
+                                </button>
+                            }
+                            @if (Model.Status == "APROVADO")
+                            {
+                                <form method="post" asp-action="ConvertToSale" asp-route-id="@Model.Id" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-primary" onclick="return confirm('Converter em manipulação?')">
+                                        <i class="bi bi-arrow-right-circle me-1"></i> Converter em Manipulação
+                                    </button>
+                                </form>
+                            }
+                            <button type="button" class="btn btn-outline-primary ms-2" onclick="copyPublicLink()">
+                                <i class="bi bi-link-45deg me-1"></i> Copiar Link
+                            </button>
+                            @if (!string.IsNullOrEmpty(Model.CustomerPhone) && Model.Status == "PENDENTE")
+                            {
+                                <form method="post" asp-action="ResendWhatsApp" asp-route-id="@Model.Id" class="d-inline ms-2">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-success">
+                                        <i class="bi bi-whatsapp me-1"></i> Reenviar
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dados do Cliente -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-person me-2"></i>Dados do Cliente</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Nome:</strong> @Model.CustomerName</p>
+                            @if (!string.IsNullOrEmpty(Model.CustomerPhone))
+                            {
+                                <p class="mb-2"><strong>Telefone:</strong> 
+                                    <a href="https://wa.me/55@Model.CustomerPhone.Replace("-","").Replace(" ","")" target="_blank" class="text-success">
+                                        <i class="bi bi-whatsapp"></i> @Model.CustomerPhone
+                                    </a>
+                                </p>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.CustomerEmail))
+                            {
+                                <p class="mb-2"><strong>Email:</strong> @Model.CustomerEmail</p>
+                            }
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Médico:</strong> @Model.DoctorName</p>
+                            @if (!string.IsNullOrEmpty(Model.DoctorCrm))
+                            {
+                                <p class="mb-2"><strong>CRM:</strong> @Model.DoctorCrm @Model.DoctorCrmState</p>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.DoctorSpecialty))
+                            {
+                                <p class="mb-2"><strong>Especialidade:</strong> @Model.DoctorSpecialty</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dados da Fórmula -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-capsule me-2"></i>Dados da Fórmula</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <p class="mb-1 text-muted small">Forma Farmacêutica</p>
+                            <p class="mb-0 fw-bold">@Model.PharmaceuticalForm</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="mb-1 text-muted small">Quantidade</p>
+                            <p class="mb-0 fw-bold">@Model.TotalQuantity</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="mb-1 text-muted small">Uso</p>
+                            <p class="mb-0 fw-bold">@Model.UsageType</p>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Instructions))
+                    {
+                        <hr>
+                        <p class="mb-1 text-muted small">Instruções</p>
+                        <p class="mb-0">@Model.Instructions</p>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.ComponentsJson) && Model.ComponentsJson != "[]")
+                    {
+                        <hr>
+                        <p class="mb-2 text-muted small">Componentes</p>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Componente</th>
+                                        <th>Quantidade</th>
+                                        <th class="text-end">Custo Unit.</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="componentsTable">
+                                    <!-- Preenchido via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Observações -->
+            @if (!string.IsNullOrEmpty(Model.CustomerObservations) || !string.IsNullOrEmpty(Model.InternalNotes) || !string.IsNullOrEmpty(Model.RejectionReason))
+            {
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0"><i class="bi bi-chat-text me-2"></i>Observações</h6>
+                    </div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(Model.CustomerObservations))
+                        {
+                            <p class="mb-2"><strong>Cliente:</strong> @Model.CustomerObservations</p>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.InternalNotes))
+                        {
+                            <p class="mb-2"><strong>Interno:</strong> @Model.InternalNotes</p>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.RejectionReason))
+                        {
+                            <p class="mb-0 text-danger"><strong>Motivo Rejeição:</strong> @Model.RejectionReason</p>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Coluna Lateral - Valores -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="bi bi-calculator me-2"></i>Valores</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Custo Materiais:</span>
+                        <span>@Model.MaterialsCost.ToString("C2", new System.Globalization.CultureInfo("pt-BR"))</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Markup (@Model.MarkupPercentage%):</span>
+                        <span>@Model.MarkupValue.ToString("C2", new System.Globalization.CultureInfo("pt-BR"))</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Mão de Obra:</span>
+                        <span>@Model.LaborCost.ToString("C2", new System.Globalization.CultureInfo("pt-BR"))</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Embalagem:</span>
+                        <span>@Model.PackagingCost.ToString("C2", new System.Globalization.CultureInfo("pt-BR"))</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Subtotal:</span>
+                        <span>@Model.Subtotal.ToString("C2", new System.Globalization.CultureInfo("pt-BR"))</span>
+                    </div>
+                    @if (Model.DiscountValue > 0)
+                    {
+                        <div class="d-flex justify-content-between mb-2 text-danger">
+                            <span>Desconto (@Model.DiscountPercentage%):</span>
+                            <span>-@Model.DiscountValue.ToString("C2", new System.Globalization.CultureInfo("pt-BR"))</span>
+                        </div>
+                    }
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-bold fs-5">TOTAL:</span>
+                        <span class="fw-bold fs-5 text-success">@Model.FinalPrice.ToString("C2", new System.Globalization.CultureInfo("pt-BR"))</span>
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <p class="mb-0 text-muted small">Prazo Estimado</p>
+                            <p class="mb-0 fw-bold">@Model.EstimatedDays dias</p>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-0 text-muted small">Válido até</p>
+                            <p class="mb-0 fw-bold @(isExpired ? "text-danger" : "")">@Model.ValidUntil.ToString("dd/MM/yyyy")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Histórico</h6>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <small class="text-muted">@Model.CreatedAt.ToString("dd/MM HH:mm")</small>
+                            <br>Orçamento criado
+                        </li>
+                        @if (Model.WhatsAppSent && Model.WhatsAppSentAt.HasValue)
+                        {
+                            <li class="list-group-item">
+                                <small class="text-muted">@Model.WhatsAppSentAt.Value.ToString("dd/MM HH:mm")</small>
+                                <br><i class="bi bi-whatsapp text-success"></i> Enviado via WhatsApp
+                            </li>
+                        }
+                        @if (Model.ApprovedAt.HasValue)
+                        {
+                            <li class="list-group-item text-success">
+                                <small class="text-muted">@Model.ApprovedAt.Value.ToString("dd/MM HH:mm")</small>
+                                <br><i class="bi bi-check-circle"></i> Aprovado pelo cliente
+                            </li>
+                        }
+                        @if (Model.RejectedAt.HasValue)
+                        {
+                            <li class="list-group-item text-danger">
+                                <small class="text-muted">@Model.RejectedAt.Value.ToString("dd/MM HH:mm")</small>
+                                <br><i class="bi bi-x-circle"></i> Rejeitado
+                            </li>
+                        }
+                        @if (Model.ViewCount > 0)
+                        {
+                            <li class="list-group-item">
+                                <small class="text-muted">Última visualização: @(Model.LastViewedAt?.ToString("dd/MM HH:mm") ?? "N/A")</small>
+                                <br><i class="bi bi-eye"></i> @Model.ViewCount visualização(ões)
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Rejeição -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="Reject" asp-route-id="@Model.Id">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title">Rejeitar Orçamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Motivo da Rejeição</label>
+                        <textarea name="reason" class="form-control" rows="3" required placeholder="Informe o motivo..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Confirmar Rejeição</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="copyToast" class="toast">
+        <div class="toast-header bg-success text-white">
+            <strong class="me-auto">Sucesso</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">Link copiado!</div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Carregar componentes do JSON
+        document.addEventListener('DOMContentLoaded', function() {
+            const componentsJson = '@Html.Raw(Model.ComponentsJson ?? "[]")';
+            try {
+                const components = JSON.parse(componentsJson);
+                const tbody = document.getElementById('componentsTable');
+                
+                if (tbody && components.length > 0) {
+                    components.forEach(comp => {
+                        const row = `
+                            <tr>
+                                <td>${comp.Name || comp.name}</td>
+                                <td>${comp.Quantity || comp.quantity} ${comp.Unit || comp.unit || ''}</td>
+                                <td class="text-end">${formatCurrency(comp.UnitCost || comp.unitCost || 0)}</td>
+                                <td class="text-end">${formatCurrency(comp.TotalCost || comp.totalCost || 0)}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                }
+            } catch (e) {
+                console.error('Erro ao parsear componentes:', e);
+            }
+        });
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        }
+
+        async function copyPublicLink() {
+            try {
+                const response = await fetch('/Orcamentos/GetPublicLink/@Model.Id');
+                const data = await response.json();
+                
+                if (data.url) {
+                    await navigator.clipboard.writeText(data.url);
+                    const toast = new bootstrap.Toast(document.getElementById('copyToast'));
+                    toast.show();
+                }
+            } catch (error) {
+                alert('Erro ao copiar link');
+            }
+        }
+    </script>
+}

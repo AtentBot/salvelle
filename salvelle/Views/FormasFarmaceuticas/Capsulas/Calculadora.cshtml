@@ -1,0 +1,1014 @@
+﻿@{
+    ViewData["Title"] = "Calculadora de Cápsulas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="fas fa-capsules text-primary me-2"></i>
+                Calculadora de Cápsulas
+            </h1>
+            <p class="text-muted mb-0">Calcule o preço de fórmulas encapsuladas com precisão</p>
+        </div>
+        <div>
+            <a href="/FormasFarmaceuticas" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Coluna Esquerda - Formulário -->
+        <div class="col-lg-7">
+            <!-- Card Principal -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-flask me-2"></i>Dados da Fórmula</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Tipo e Tamanho da Cápsula -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tipo de Cápsula</label>
+                            <select id="capsuleType" class="form-select" onchange="loadCapsuleSizes()">
+                                <option value="">Carregando...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tamanho</label>
+                            <select id="capsuleSize" class="form-select" onchange="updateCapsuleInfo()">
+                                <option value="">Selecione o tipo primeiro</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Info da Cápsula Selecionada -->
+                    <div id="capsuleInfo" class="alert alert-info d-none mb-4">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <small class="text-muted d-block">Capacidade</small>
+                                <strong id="infoCap">-</strong> mg
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block">Custo Unitário</small>
+                                R$ <strong id="infoCost">-</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block">Volume</small>
+                                <strong id="infoVol">-</strong> mL
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quantidade de Cápsulas -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Quantidade de Cápsulas</label>
+                            <input type="number" id="capsuleQty" class="form-control" 
+                                   value="30" min="1" max="9999" onchange="calculateTotal()">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Excipiente (QSP)</label>
+                            <select id="excipient" class="form-select" onchange="calculateTotal()">
+                                <option value="">Carregando...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Matérias-Primas -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-semibold mb-0">Matérias-Primas (Ativos)</label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addIngredient()">
+                                <i class="fas fa-plus me-1"></i> Adicionar
+                            </button>
+                        </div>
+                        <div id="ingredientsList">
+                            <!-- Template de ingrediente -->
+                            <div class="ingredient-row card card-body bg-light mb-2" data-index="0">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-5">
+                                        <label class="form-label small">Matéria-Prima</label>
+                                        <input type="text" class="form-control ingredient-search" 
+                                               placeholder="Digite para buscar..." 
+                                               data-index="0"
+                                               autocomplete="off">
+                                        <input type="hidden" class="ingredient-id" data-index="0">
+                                        <div class="autocomplete-dropdown d-none"></div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Dose por cápsula</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control ingredient-dose" 
+                                                   data-index="0" step="0.01" min="0" 
+                                                   onchange="calculateTotal()">
+                                            <span class="input-group-text ingredient-unit" data-index="0">mg</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Preço/g</label>
+                                        <input type="text" class="form-control ingredient-price" 
+                                               data-index="0" readonly>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-outline-danger w-100" 
+                                                onclick="removeIngredient(0)" title="Remover">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="ingredient-info small text-muted mt-1 d-none" data-index="0"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alerta de Capacidade -->
+                    <div id="capacityAlert" class="alert alert-warning d-none">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span id="capacityMessage"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card de Custos Adicionais -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-cogs me-2"></i>Custos de Produção</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label small">Mão de Obra (R$)</label>
+                            <input type="number" id="laborCost" class="form-control" 
+                                   value="15.00" step="0.01" min="0" onchange="calculateTotal()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Embalagem (R$)</label>
+                            <input type="number" id="packagingCost" class="form-control" 
+                                   value="5.00" step="0.01" min="0" onchange="calculateTotal()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Margem (%)</label>
+                            <input type="number" id="profitMargin" class="form-control" 
+                                   value="100" step="1" min="0" max="500" onchange="calculateTotal()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna Direita - Resultado -->
+        <div class="col-lg-5">
+            <!-- Card de Resultado -->
+            <div class="card shadow-sm border-primary sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Resultado do Cálculo</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Resumo da Fórmula -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">Composição por Cápsula</h6>
+                        <div id="formulaSummary" class="bg-light rounded p-3">
+                            <p class="text-muted mb-0 text-center">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Adicione ingredientes para ver o resumo
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Capacidade -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">Ocupação da Cápsula</small>
+                            <small id="capacityPercent">0%</small>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div id="capacityBar" class="progress-bar bg-success" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Detalhamento de Custos -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">Detalhamento</h6>
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                <tr>
+                                    <td>Cápsulas (<span id="qtyLabel">30</span>x)</td>
+                                    <td class="text-end" id="costCapsules">R$ 0,00</td>
+                                </tr>
+                                <tr>
+                                    <td>Ativos</td>
+                                    <td class="text-end" id="costActives">R$ 0,00</td>
+                                </tr>
+                                <tr>
+                                    <td>Excipiente QSP</td>
+                                    <td class="text-end" id="costExcipient">R$ 0,00</td>
+                                </tr>
+                                <tr>
+                                    <td>Mão de Obra</td>
+                                    <td class="text-end" id="costLabor">R$ 0,00</td>
+                                </tr>
+                                <tr>
+                                    <td>Embalagem</td>
+                                    <td class="text-end" id="costPackaging">R$ 0,00</td>
+                                </tr>
+                                <tr class="table-light">
+                                    <td><strong>Custo Total</strong></td>
+                                    <td class="text-end"><strong id="totalCost">R$ 0,00</strong></td>
+                                </tr>
+                                <tr class="table-light">
+                                    <td>Margem (<span id="marginLabel">100</span>%)</td>
+                                    <td class="text-end" id="marginValue">R$ 0,00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Preço Final -->
+                    <div class="bg-success text-white rounded p-4 text-center mb-4">
+                        <small class="d-block mb-1">PREÇO DE VENDA</small>
+                        <h2 class="mb-0" id="finalPrice">R$ 0,00</h2>
+                        <small class="opacity-75">
+                            <span id="pricePerCapsule">R$ 0,00</span> por cápsula
+                        </small>
+                    </div>
+
+                    <!-- Ações -->
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" onclick="saveQuote()">
+                            <i class="fas fa-save me-2"></i>Salvar Orçamento
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="printQuote()">
+                            <i class="fas fa-print me-2"></i>Imprimir
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="clearForm()">
+                            <i class="fas fa-eraser me-2"></i>Limpar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Salvar Orçamento -->
+<div class="modal fade" id="saveQuoteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Salvar Orçamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nome do Cliente (opcional)</label>
+                    <input type="text" id="quoteCustomerName" class="form-control" 
+                           placeholder="Nome do cliente">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Telefone (opcional)</label>
+                    <input type="text" id="quoteCustomerPhone" class="form-control" 
+                           placeholder="(00) 00000-0000">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Observações</label>
+                    <textarea id="quoteNotes" class="form-control" rows="3" 
+                              placeholder="Observações do orçamento..."></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Validade do Orçamento</label>
+                    <select id="quoteValidity" class="form-select">
+                        <option value="7">7 dias</option>
+                        <option value="15" selected>15 dias</option>
+                        <option value="30">30 dias</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="confirmSaveQuote()">
+                    <i class="fas fa-save me-1"></i> Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+<style>
+    .ingredient-row {
+        position: relative;
+        transition: all 0.2s ease;
+    }
+    .ingredient-row:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .autocomplete-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid var(--rule);
+        border-top: none;
+        border-radius: 0 0 0.375rem 0.375rem;
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 1050;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .autocomplete-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid var(--bg-subtle);
+    }
+    .autocomplete-item:hover {
+        background-color: var(--bg-subtle);
+    }
+    .autocomplete-item:last-child {
+        border-bottom: none;
+    }
+    .autocomplete-item .name {
+        font-weight: 500;
+    }
+    .autocomplete-item .details {
+        font-size: 0.8rem;
+        color: var(--ink-3);
+    }
+    .autocomplete-item .price {
+        font-weight: 600;
+        color: var(--ok);
+    }
+    .autocomplete-item.controlled {
+        border-left: 3px solid var(--danger);
+    }
+    .progress-bar {
+        transition: width 0.3s ease, background-color 0.3s ease;
+    }
+    .sticky-top {
+        z-index: 100;
+    }
+</style>
+}
+
+@section Scripts {
+<script>
+    // ══════════════════════════════════════════════════════════════════════════
+    // VARIÁVEIS GLOBAIS
+    // ══════════════════════════════════════════════════════════════════════════
+    
+    let capsuleTypes = [];
+    let capsuleSizes = [];
+    let excipients = [];
+    let selectedCapsule = null;
+    let ingredientIndex = 1;
+    let selectedIngredients = {};
+    let searchTimeout = null;
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // INICIALIZAÇÃO
+    // ══════════════════════════════════════════════════════════════════════════
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCapsuleTypes();
+        loadExcipients();
+        setupAutocomplete(0);
+    });
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // CARREGAR DADOS
+    // ══════════════════════════════════════════════════════════════════════════
+    
+    async function loadCapsuleTypes() {
+        try {
+            const response = await fetch('/api/PharmaceuticalForms/capsule-types');
+            const result = await response.json();
+            
+            if (result.success) {
+                capsuleTypes = result.data;
+                const select = document.getElementById('capsuleType');
+                select.innerHTML = '<option value="">Selecione...</option>';
+                
+                capsuleTypes.forEach(type => {
+                    select.innerHTML += `<option value="${type.code}">${type.name}</option>`;
+                });
+                
+                // Selecionar gelatina dura por padrão
+                const defaultType = capsuleTypes.find(t => t.code === 'HARD_GELATIN');
+                if (defaultType) {
+                    select.value = defaultType.code;
+                    loadCapsuleSizes();
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao carregar tipos de cápsula:', error);
+            showToast('Erro ao carregar tipos de cápsula', 'error');
+        }
+    }
+
+    async function loadCapsuleSizes() {
+        const typeCode = document.getElementById('capsuleType').value;
+        if (!typeCode) {
+            document.getElementById('capsuleSize').innerHTML = '<option value="">Selecione o tipo primeiro</option>';
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/PharmaceuticalForms/capsule-sizes?type=${typeCode}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                capsuleSizes = result.data;
+                const select = document.getElementById('capsuleSize');
+                select.innerHTML = '<option value="">Selecione o tamanho...</option>';
+                
+                capsuleSizes.forEach(size => {
+                    const label = `${size.sizeCode} - ${size.capacityMg}mg (${size.volumeMl}mL)`;
+                    select.innerHTML += `<option value="${size.id}">${label}</option>`;
+                });
+                
+                // Selecionar tamanho 0 por padrão se existir
+                const defaultSize = capsuleSizes.find(s => s.sizeCode === '0');
+                if (defaultSize) {
+                    select.value = defaultSize.id;
+                    updateCapsuleInfo();
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao carregar tamanhos:', error);
+        }
+    }
+
+    async function loadExcipients() {
+        try {
+            const response = await fetch('/api/RawMaterials/search?q=excipiente&usage=ORAL&limit=50');
+            const result = await response.json();
+            
+            if (result.success) {
+                excipients = result.data;
+                const select = document.getElementById('excipient');
+                select.innerHTML = '<option value="">Selecione o excipiente...</option>';
+                
+                // Adicionar opções comuns primeiro
+                const commonExcipients = ['Celulose Microcristalina', 'Amido', 'Lactose', 'Talco Farmacêutico'];
+                
+                excipients.forEach(exc => {
+                    const isCommon = commonExcipients.some(c => exc.name.toLowerCase().includes(c.toLowerCase()));
+                    const price = exc.basePrice ? `R$ ${exc.basePrice.toFixed(2)}/g` : 'S/ preço';
+                    select.innerHTML += `<option value="${exc.id}" data-price="${exc.basePrice || 0}" 
+                        data-density="${exc.bulkDensity || 0.5}" ${isCommon ? 'class="fw-bold"' : ''}>
+                        ${exc.name} (${price})
+                    </option>`;
+                });
+                
+                // Tentar selecionar celulose como padrão
+                const defaultExc = excipients.find(e => e.name.toLowerCase().includes('celulose'));
+                if (defaultExc) {
+                    select.value = defaultExc.id;
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao carregar excipientes:', error);
+            // Fallback com opção manual
+            document.getElementById('excipient').innerHTML = `
+                <option value="">Não disponível</option>
+                <option value="manual" data-price="0.05" data-density="0.5">Excipiente Padrão (R$ 0,05/g)</option>
+            `;
+        }
+    }
+
+    function updateCapsuleInfo() {
+        const sizeId = document.getElementById('capsuleSize').value;
+        selectedCapsule = capsuleSizes.find(s => s.id === sizeId);
+        
+        const infoDiv = document.getElementById('capsuleInfo');
+        
+        if (selectedCapsule) {
+            document.getElementById('infoCap').textContent = selectedCapsule.capacityMg.toFixed(0);
+            document.getElementById('infoCost').textContent = selectedCapsule.unitCost.toFixed(4);
+            document.getElementById('infoVol').textContent = selectedCapsule.volumeMl.toFixed(3);
+            infoDiv.classList.remove('d-none');
+        } else {
+            infoDiv.classList.add('d-none');
+        }
+        
+        calculateTotal();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // AUTOCOMPLETE DE MATÉRIAS-PRIMAS
+    // ══════════════════════════════════════════════════════════════════════════
+    
+    function setupAutocomplete(index) {
+        const input = document.querySelector(`.ingredient-search[data-index="${index}"]`);
+        if (!input) return;
+        
+        const dropdown = input.parentElement.querySelector('.autocomplete-dropdown');
+        
+        input.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 2) {
+                dropdown.classList.add('d-none');
+                dropdown.innerHTML = '';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => searchIngredients(query, index, dropdown), 300);
+        });
+        
+        input.addEventListener('blur', function() {
+            setTimeout(() => dropdown.classList.add('d-none'), 200);
+        });
+        
+        input.addEventListener('focus', function() {
+            if (this.value.length >= 2 && dropdown.innerHTML) {
+                dropdown.classList.remove('d-none');
+            }
+        });
+    }
+
+    async function searchIngredients(query, index, dropdown) {
+        try {
+            const response = await fetch(`/api/RawMaterials/search?q=${encodeURIComponent(query)}&usage=ORAL&limit=15`);
+            const result = await response.json();
+            
+            if (result.success && result.data.length > 0) {
+                dropdown.innerHTML = result.data.map(item => `
+                    <div class="autocomplete-item ${item.isControlled ? 'controlled' : ''}" 
+                         onclick="selectIngredient(${index}, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                        <div class="d-flex justify-content-between">
+                            <span class="name">${item.name}</span>
+                            <span class="price">${item.basePrice ? 'R$ ' + item.basePrice.toFixed(2) + '/g' : 'S/ preço'}</span>
+                        </div>
+                        <div class="details">
+                            ${item.dcbCode ? `DCB: ${item.dcbCode} | ` : ''}
+                            ${item.category || 'Sem categoria'}
+                            ${item.isControlled ? ` | <span class="text-danger">${item.controlType}</span>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+                dropdown.classList.remove('d-none');
+            } else {
+                dropdown.innerHTML = '<div class="autocomplete-item text-muted">Nenhum resultado encontrado</div>';
+                dropdown.classList.remove('d-none');
+            }
+        } catch (error) {
+            console.error('Erro na busca:', error);
+        }
+    }
+
+    function selectIngredient(index, item) {
+        const searchInput = document.querySelector(`.ingredient-search[data-index="${index}"]`);
+        const idInput = document.querySelector(`.ingredient-id[data-index="${index}"]`);
+        const priceInput = document.querySelector(`.ingredient-price[data-index="${index}"]`);
+        const unitSpan = document.querySelector(`.ingredient-unit[data-index="${index}"]`);
+        const infoDiv = document.querySelector(`.ingredient-info[data-index="${index}"]`);
+        const dropdown = searchInput.parentElement.querySelector('.autocomplete-dropdown');
+        
+        searchInput.value = item.name;
+        idInput.value = item.id;
+        priceInput.value = item.basePrice ? `R$ ${item.basePrice.toFixed(2)}` : 'S/ preço';
+        
+        // Armazenar dados completos
+        selectedIngredients[index] = {
+            id: item.id,
+            name: item.name,
+            price: item.basePrice || 0,
+            unit: item.unit || 'g',
+            density: item.bulkDensity || 0.6,
+            correctionFactor: item.correctionFactor || 1.0,
+            purityFactor: item.purityFactor || 1.0,
+            isControlled: item.isControlled,
+            controlType: item.controlType
+        };
+        
+        // Mostrar info adicional
+        if (item.isControlled || item.bulkDensity) {
+            let info = [];
+            if (item.isControlled) info.push(`<span class="text-danger">⚠️ ${item.controlType}</span>`);
+            if (item.bulkDensity) info.push(`Densidade: ${item.bulkDensity} g/mL`);
+            if (item.correctionFactor && item.correctionFactor !== 1) info.push(`Fator: ${item.correctionFactor}`);
+            infoDiv.innerHTML = info.join(' | ');
+            infoDiv.classList.remove('d-none');
+        } else {
+            infoDiv.classList.add('d-none');
+        }
+        
+        dropdown.classList.add('d-none');
+        calculateTotal();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // GERENCIAR INGREDIENTES
+    // ══════════════════════════════════════════════════════════════════════════
+    
+    function addIngredient() {
+        const list = document.getElementById('ingredientsList');
+        const newIndex = ingredientIndex++;
+        
+        const template = `
+            <div class="ingredient-row card card-body bg-light mb-2" data-index="${newIndex}">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label small">Matéria-Prima</label>
+                        <input type="text" class="form-control ingredient-search" 
+                               placeholder="Digite para buscar..." 
+                               data-index="${newIndex}"
+                               autocomplete="off">
+                        <input type="hidden" class="ingredient-id" data-index="${newIndex}">
+                        <div class="autocomplete-dropdown d-none"></div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Dose por cápsula</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control ingredient-dose" 
+                                   data-index="${newIndex}" step="0.01" min="0" 
+                                   onchange="calculateTotal()">
+                            <span class="input-group-text ingredient-unit" data-index="${newIndex}">mg</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Preço/g</label>
+                        <input type="text" class="form-control ingredient-price" 
+                               data-index="${newIndex}" readonly>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-danger w-100" 
+                                onclick="removeIngredient(${newIndex})" title="Remover">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="ingredient-info small text-muted mt-1 d-none" data-index="${newIndex}"></div>
+            </div>
+        `;
+        
+        list.insertAdjacentHTML('beforeend', template);
+        setupAutocomplete(newIndex);
+    }
+
+    function removeIngredient(index) {
+        const row = document.querySelector(`.ingredient-row[data-index="${index}"]`);
+        if (row) {
+            row.remove();
+            delete selectedIngredients[index];
+            calculateTotal();
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // CÁLCULOS
+    // ══════════════════════════════════════════════════════════════════════════
+    
+    function calculateTotal() {
+        if (!selectedCapsule) {
+            resetResults();
+            return;
+        }
+        
+        const qty = parseInt(document.getElementById('capsuleQty').value) || 0;
+        const laborCost = parseFloat(document.getElementById('laborCost').value) || 0;
+        const packagingCost = parseFloat(document.getElementById('packagingCost').value) || 0;
+        const margin = parseFloat(document.getElementById('profitMargin').value) || 0;
+        
+        // Custo das cápsulas vazias
+        const capsuleCost = qty * selectedCapsule.unitCost;
+        
+        // Calcular massa total dos ativos e custo
+        let totalActiveMass = 0; // em mg
+        let totalActiveCost = 0;
+        let formulaSummaryHtml = '';
+        
+        document.querySelectorAll('.ingredient-row').forEach(row => {
+            const index = row.dataset.index;
+            const dose = parseFloat(document.querySelector(`.ingredient-dose[data-index="${index}"]`)?.value) || 0;
+            const ingredient = selectedIngredients[index];
+            
+            if (ingredient && dose > 0) {
+                // Aplicar fatores de correção
+                const adjustedDose = dose * (ingredient.correctionFactor || 1) / (ingredient.purityFactor || 1);
+                totalActiveMass += adjustedDose;
+                
+                // Custo: (dose em mg / 1000) * preço por grama * quantidade
+                const costPerCapsule = (adjustedDose / 1000) * ingredient.price;
+                totalActiveCost += costPerCapsule * qty;
+                
+                formulaSummaryHtml += `
+                    <div class="d-flex justify-content-between border-bottom py-1">
+                        <span>${ingredient.name}</span>
+                        <span class="text-muted">${dose}mg</span>
+                    </div>
+                `;
+            }
+        });
+        
+        // Calcular excipiente QSP
+        const excipientSelect = document.getElementById('excipient');
+        const excipientOption = excipientSelect.selectedOptions[0];
+        const excipientPrice = parseFloat(excipientOption?.dataset.price) || 0;
+        
+        // Massa de excipiente = capacidade - massa dos ativos
+        const excipientMass = Math.max(0, selectedCapsule.capacityMg - totalActiveMass);
+        const excipientCost = (excipientMass / 1000) * excipientPrice * qty;
+        
+        // Verificar capacidade
+        const capacityPercent = (totalActiveMass / selectedCapsule.capacityMg) * 100;
+        updateCapacityIndicator(capacityPercent, totalActiveMass, selectedCapsule.capacityMg);
+        
+        // Custos totais
+        const totalCost = capsuleCost + totalActiveCost + excipientCost + laborCost + packagingCost;
+        const marginValue = totalCost * (margin / 100);
+        const finalPrice = totalCost + marginValue;
+        
+        // Atualizar UI
+        document.getElementById('qtyLabel').textContent = qty;
+        document.getElementById('marginLabel').textContent = margin;
+        
+        document.getElementById('costCapsules').textContent = formatCurrency(capsuleCost);
+        document.getElementById('costActives').textContent = formatCurrency(totalActiveCost);
+        document.getElementById('costExcipient').textContent = formatCurrency(excipientCost);
+        document.getElementById('costLabor').textContent = formatCurrency(laborCost);
+        document.getElementById('costPackaging').textContent = formatCurrency(packagingCost);
+        document.getElementById('totalCost').textContent = formatCurrency(totalCost);
+        document.getElementById('marginValue').textContent = formatCurrency(marginValue);
+        document.getElementById('finalPrice').textContent = formatCurrency(finalPrice);
+        document.getElementById('pricePerCapsule').textContent = formatCurrency(finalPrice / qty);
+        
+        // Resumo da fórmula
+        if (formulaSummaryHtml) {
+            formulaSummaryHtml += `
+                <div class="d-flex justify-content-between py-1 mt-2 border-top">
+                    <span class="fw-bold">Excipiente QSP</span>
+                    <span class="text-muted">${excipientMass.toFixed(1)}mg</span>
+                </div>
+                <div class="d-flex justify-content-between py-1 border-top">
+                    <span class="fw-bold">Total por cápsula</span>
+                    <span>${selectedCapsule.capacityMg}mg</span>
+                </div>
+            `;
+            document.getElementById('formulaSummary').innerHTML = formulaSummaryHtml;
+        } else {
+            document.getElementById('formulaSummary').innerHTML = `
+                <p class="text-muted mb-0 text-center">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Adicione ingredientes para ver o resumo
+                </p>
+            `;
+        }
+    }
+
+    function updateCapacityIndicator(percent, used, total) {
+        const bar = document.getElementById('capacityBar');
+        const label = document.getElementById('capacityPercent');
+        const alert = document.getElementById('capacityAlert');
+        const message = document.getElementById('capacityMessage');
+        
+        label.textContent = `${percent.toFixed(1)}% (${used.toFixed(1)}/${total}mg)`;
+        bar.style.width = Math.min(percent, 100) + '%';
+        
+        if (percent > 100) {
+            bar.className = 'progress-bar bg-danger';
+            alert.classList.remove('d-none');
+            alert.className = 'alert alert-danger';
+            message.textContent = `Capacidade excedida em ${(used - total).toFixed(1)}mg! Reduza as doses ou use cápsula maior.`;
+        } else if (percent > 95) {
+            bar.className = 'progress-bar bg-warning';
+            alert.classList.remove('d-none');
+            alert.className = 'alert alert-warning';
+            message.textContent = 'Cápsula quase cheia. Considere usar tamanho maior para margem de segurança.';
+        } else if (percent < 50 && percent > 0) {
+            bar.className = 'progress-bar bg-info';
+            alert.classList.remove('d-none');
+            alert.className = 'alert alert-info';
+            message.textContent = 'Considere usar cápsula menor para economia.';
+        } else {
+            bar.className = 'progress-bar bg-success';
+            alert.classList.add('d-none');
+        }
+    }
+
+    function resetResults() {
+        document.getElementById('costCapsules').textContent = 'R$ 0,00';
+        document.getElementById('costActives').textContent = 'R$ 0,00';
+        document.getElementById('costExcipient').textContent = 'R$ 0,00';
+        document.getElementById('costLabor').textContent = 'R$ 0,00';
+        document.getElementById('costPackaging').textContent = 'R$ 0,00';
+        document.getElementById('totalCost').textContent = 'R$ 0,00';
+        document.getElementById('marginValue').textContent = 'R$ 0,00';
+        document.getElementById('finalPrice').textContent = 'R$ 0,00';
+        document.getElementById('pricePerCapsule').textContent = 'R$ 0,00';
+        document.getElementById('capacityBar').style.width = '0%';
+        document.getElementById('capacityPercent').textContent = '0%';
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // AÇÕES
+    // ══════════════════════════════════════════════════════════════════════════
+    
+    function saveQuote() {
+        if (!selectedCapsule) {
+            showToast('Selecione o tipo e tamanho da cápsula', 'warning');
+            return;
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('saveQuoteModal'));
+        modal.show();
+    }
+
+    async function confirmSaveQuote() {
+        const qty = parseInt(document.getElementById('capsuleQty').value) || 0;
+        const finalPrice = parseCurrency(document.getElementById('finalPrice').textContent);
+        
+        // Montar itens
+        const items = [];
+        document.querySelectorAll('.ingredient-row').forEach(row => {
+            const index = row.dataset.index;
+            const dose = parseFloat(document.querySelector(`.ingredient-dose[data-index="${index}"]`)?.value) || 0;
+            const ingredient = selectedIngredients[index];
+            
+            if (ingredient && dose > 0) {
+                items.push({
+                    rawMaterialId: ingredient.id,
+                    name: ingredient.name,
+                    dosePerUnit: dose,
+                    unit: 'mg',
+                    pricePerGram: ingredient.price
+                });
+            }
+        });
+        
+        if (items.length === 0) {
+            showToast('Adicione pelo menos uma matéria-prima', 'warning');
+            return;
+        }
+        
+        const payload = {
+            formType: 'CAPSULE',
+            capsuleSizeId: selectedCapsule.id,
+            quantity: qty,
+            items: items,
+            laborCost: parseFloat(document.getElementById('laborCost').value) || 0,
+            packagingCost: parseFloat(document.getElementById('packagingCost').value) || 0,
+            profitMargin: parseFloat(document.getElementById('profitMargin').value) || 0,
+            finalPrice: finalPrice,
+            customerName: document.getElementById('quoteCustomerName').value.trim(),
+            customerPhone: document.getElementById('quoteCustomerPhone').value.trim(),
+            notes: document.getElementById('quoteNotes').value.trim(),
+            validityDays: parseInt(document.getElementById('quoteValidity').value)
+        };
+        
+        try {
+            const response = await fetch('/api/QuotePricing', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast('Orçamento salvo com sucesso!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('saveQuoteModal')).hide();
+                
+                // Limpar campos do modal
+                document.getElementById('quoteCustomerName').value = '';
+                document.getElementById('quoteCustomerPhone').value = '';
+                document.getElementById('quoteNotes').value = '';
+            } else {
+                showToast(result.error || 'Erro ao salvar orçamento', 'error');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showToast('Erro ao salvar orçamento', 'error');
+        }
+    }
+
+    function printQuote() {
+        window.print();
+    }
+
+    function clearForm() {
+        if (!confirm('Limpar todos os dados do formulário?')) return;
+        
+        // Reset ingredientes
+        document.getElementById('ingredientsList').innerHTML = `
+            <div class="ingredient-row card card-body bg-light mb-2" data-index="0">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label small">Matéria-Prima</label>
+                        <input type="text" class="form-control ingredient-search" 
+                               placeholder="Digite para buscar..." 
+                               data-index="0"
+                               autocomplete="off">
+                        <input type="hidden" class="ingredient-id" data-index="0">
+                        <div class="autocomplete-dropdown d-none"></div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Dose por cápsula</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control ingredient-dose" 
+                                   data-index="0" step="0.01" min="0" 
+                                   onchange="calculateTotal()">
+                            <span class="input-group-text ingredient-unit" data-index="0">mg</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Preço/g</label>
+                        <input type="text" class="form-control ingredient-price" 
+                               data-index="0" readonly>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-danger w-100" 
+                                onclick="removeIngredient(0)" title="Remover">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="ingredient-info small text-muted mt-1 d-none" data-index="0"></div>
+            </div>
+        `;
+        
+        selectedIngredients = {};
+        ingredientIndex = 1;
+        
+        document.getElementById('capsuleQty').value = 30;
+        document.getElementById('laborCost').value = '15.00';
+        document.getElementById('packagingCost').value = '5.00';
+        document.getElementById('profitMargin').value = '100';
+        
+        setupAutocomplete(0);
+        calculateTotal();
+        
+        showToast('Formulário limpo', 'info');
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // UTILITÁRIOS
+    // ══════════════════════════════════════════════════════════════════════════
+    
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(value || 0);
+    }
+
+    function parseCurrency(str) {
+        return parseFloat(str.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+    }
+
+    function showToast(message, type = 'info') {
+        // Criar toast container se não existir
+        let container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1100';
+            document.body.appendChild(container);
+        }
+        
+        const colors = {
+            success: 'bg-success',
+            error: 'bg-danger',
+            warning: 'bg-warning',
+            info: 'bg-info'
+        };
+        
+        const icons = {
+            success: 'fa-check-circle',
+            error: 'fa-times-circle',
+            warning: 'fa-exclamation-triangle',
+            info: 'fa-info-circle'
+        };
+        
+        const toastId = 'toast_' + Date.now();
+        const toastHtml = `
+            <div id="${toastId}" class="toast align-items-center text-white ${colors[type]} border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas ${icons[type]} me-2"></i>${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', toastHtml);
+        
+        const toastEl = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+        
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+</script>
+}

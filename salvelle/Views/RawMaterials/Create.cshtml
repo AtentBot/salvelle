@@ -1,0 +1,478 @@
+@{
+    ViewData["Title"] = "Nova Matéria-Prima";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex align-items-center mb-4">
+        <a href="/materias-primas" class="btn btn-link text-dark p-0 me-3">
+            <i class="bi bi-arrow-left fs-4"></i>
+        </a>
+        <div>
+            <h4 class="mb-0">
+                <i class="bi bi-plus-circle me-2"></i>
+                Nova Matéria-Prima
+            </h4>
+            <p class="text-muted mb-0 small">Cadastre um novo ingrediente no sistema</p>
+        </div>
+    </div>
+
+    <form id="createForm">
+        <div class="row">
+            <!-- Coluna Principal -->
+            <div class="col-lg-8">
+                <!-- Informações Básicas -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Informações Básicas
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Nome *</label>
+                                <input type="text" class="form-control" id="name" required
+                                       placeholder="Ex: Vitamina D3 (Colecalciferol)">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Código CAS</label>
+                                <input type="text" class="form-control" id="casNumber" 
+                                       placeholder="Ex: 67-97-0">
+                                <div class="form-text">Identificador químico único</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Código DCB</label>
+                                <input type="text" class="form-control" id="dcbCode"
+                                       placeholder="Ex: 09439">
+                                <div class="form-text">Denominação Comum Brasileira</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Código DCI</label>
+                                <input type="text" class="form-control" id="dciCode"
+                                       placeholder="Ex: Cholecalciferol">
+                                <div class="form-text">Denominação Comum Internacional</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Descrição</label>
+                                <textarea class="form-control" id="description" rows="2"
+                                          placeholder="Descrição técnica da matéria-prima..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Categoria</label>
+                                <input type="text" class="form-control" id="category" 
+                                       list="categoryList" placeholder="Ex: Vitaminas">
+                                <datalist id="categoryList">
+                                    <option value="Vitaminas"></option>
+                                    <option value="Minerais"></option>
+                                    <option value="Aminoácidos"></option>
+                                    <option value="Fitoterápicos"></option>
+                                    <option value="Hormônios"></option>
+                                    <option value="Anti-inflamatórios"></option>
+                                    <option value="Antioxidantes"></option>
+                                    <option value="Excipientes"></option>
+                                    <option value="Bases"></option>
+                                    <option value="Conservantes"></option>
+                                    <option value="Óleos Essenciais"></option>
+                                    <option value="Probióticos"></option>
+                                </datalist>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo de Controle *</label>
+                                <select class="form-select" id="controlType" required onchange="updateControlWarning()">
+                                    <option value="COMUM" selected>Comum</option>
+                                    <option value="LISTA_A">Lista A (Entorpecentes)</option>
+                                    <option value="LISTA_B">Lista B (Psicotrópicos)</option>
+                                    <option value="LISTA_C1">Lista C1 (Outras substâncias)</option>
+                                    <option value="LISTA_C2">Lista C2 (Retinoides)</option>
+                                    <option value="ANTIMICROBIANO">Antimicrobiano</option>
+                                    <option value="HORMONIO">Hormônio</option>
+                                </select>
+                            </div>
+                            <div class="col-12" id="controlWarning" style="display: none;">
+                                <div class="alert alert-warning mb-0">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <strong>Atenção:</strong> Substâncias controladas requerem autorização especial e 
+                                    são sujeitas a SNGPC. Apenas farmacêuticos podem manipular.
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Sinônimos</label>
+                                <input type="text" class="form-control" id="synonyms" 
+                                       placeholder="Nomes alternativos separados por vírgula">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Indicações Terapêuticas</label>
+                                <textarea class="form-control" id="indications" rows="2"
+                                          placeholder="Ex: Ossos, imunidade, absorção de cálcio"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estoque e Medidas -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-box me-2"></i>
+                            Estoque e Medidas
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Unidade de Medida *</label>
+                                <select class="form-select" id="unit" required>
+                                    <option value="g" selected>g (grama)</option>
+                                    <option value="mg">mg (miligrama)</option>
+                                    <option value="mcg">mcg (micrograma)</option>
+                                    <option value="ml">mL (mililitro)</option>
+                                    <option value="L">L (litro)</option>
+                                    <option value="ui">UI (unidade internacional)</option>
+                                    <option value="un">un (unidade)</option>
+                                    <option value="kg">kg (quilograma)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Uso Permitido</label>
+                                <select class="form-select" id="allowedUsage">
+                                    <option value="BOTH" selected>Oral e Tópico</option>
+                                    <option value="ORAL">Apenas Oral</option>
+                                    <option value="TOPICAL">Apenas Tópico</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Estado Físico</label>
+                                <select class="form-select" id="physicalState">
+                                    <option value="SOLID" selected>Sólido</option>
+                                    <option value="LIQUID">Líquido</option>
+                                    <option value="SEMI_SOLID">Semi-sólido</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Fator de Pureza</label>
+                                <input type="number" class="form-control" id="purityFactor" 
+                                       step="0.0001" min="0.0001" max="1" value="1"
+                                       placeholder="Ex: 0.98">
+                                <div class="form-text">1 = 100% puro</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Fator de Correção</label>
+                                <input type="number" class="form-control" id="correctionFactor" 
+                                       step="0.01" min="0.01" value="1"
+                                       placeholder="Ex: 1.15">
+                                <div class="form-text">Para cálculo de cápsulas</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Estoque Mínimo</label>
+                                <input type="number" class="form-control" id="minimumStock" 
+                                       step="0.01" min="0" value="0">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Estoque Máximo</label>
+                                <input type="number" class="form-control" id="maximumStock" 
+                                       step="0.01" min="0" value="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Propriedades Físicas (para cápsulas) -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="bi bi-capsule me-2"></i>
+                            Propriedades Físicas
+                        </h6>
+                        <small class="text-muted">Para cálculo de cápsulas</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Densidade Aparente</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="bulkDensity" 
+                                           step="0.001" min="0" placeholder="Ex: 0.5">
+                                    <span class="input-group-text">g/mL</span>
+                                </div>
+                                <div class="form-text">Densidade sem compactação</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Densidade Compactada</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="tappedDensity" 
+                                           step="0.001" min="0" placeholder="Ex: 0.7">
+                                    <span class="input-group-text">g/mL</span>
+                                </div>
+                                <div class="form-text">Após compactação</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Fator de Perda (%)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="lossFactor" 
+                                           step="0.1" min="0" max="100" value="0" placeholder="Ex: 5">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text">Perda na manipulação</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Armazenamento -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-thermometer-half me-2"></i>
+                            Condições de Armazenamento
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="requiresRefrigeration">
+                                    <label class="form-check-label" for="requiresRefrigeration">
+                                        <i class="bi bi-snow text-info me-1"></i>
+                                        Requer Refrigeração
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="lightSensitive">
+                                    <label class="form-check-label" for="lightSensitive">
+                                        <i class="bi bi-sun text-warning me-1"></i>
+                                        Sensível à Luz
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="humiditySensitive">
+                                    <label class="form-check-label" for="humiditySensitive">
+                                        <i class="bi bi-droplet text-primary me-1"></i>
+                                        Sensível à Umidade
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Condições Especiais</label>
+                                <textarea class="form-control" id="storageConditions" rows="2"
+                                          placeholder="Ex: Armazenar em temperatura entre 2-8°C, ao abrigo da luz..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Lateral -->
+            <div class="col-lg-4">
+                <!-- Preço Base -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-currency-dollar me-2"></i>
+                            Preço de Referência
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Preço Base por Unidade</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" id="basePrice" 
+                                       step="0.0001" min="0" placeholder="0,0000">
+                                <span class="input-group-text" id="priceUnit">/g</span>
+                            </div>
+                            <div class="form-text">
+                                Preço de referência quando não há estoque
+                            </div>
+                        </div>
+                        <div class="alert alert-info small mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
+                            O preço real será calculado automaticamente com base nos lotes em estoque.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opções Adicionais -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-gear me-2"></i>
+                            Opções Adicionais
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="isVirtual">
+                                <label class="form-check-label" for="isVirtual">
+                                    <i class="bi bi-cloud me-1"></i>
+                                    Matéria-Prima Virtual
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                Não possui estoque físico (ex: manipulada sob demanda)
+                            </div>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label">Popularidade (1-100)</label>
+                            <input type="range" class="form-range" id="popularity" 
+                                   min="1" max="100" value="50" oninput="updatePopularityLabel()">
+                            <div class="d-flex justify-content-between small text-muted">
+                                <span>Pouco usado</span>
+                                <span id="popularityValue">50</span>
+                                <span>Muito usado</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ações -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg" id="btnSave">
+                                <i class="bi bi-check-lg me-2"></i>
+                                Cadastrar Matéria-Prima
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="saveAndNew()">
+                                <i class="bi bi-plus-lg me-2"></i>
+                                Salvar e Criar Outra
+                            </button>
+                            <a href="/materias-primas" class="btn btn-outline-danger">
+                                <i class="bi bi-x-lg me-2"></i>
+                                Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+    let saveAndCreateNew = false;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Atualizar unidade do preço quando mudar unidade
+        document.getElementById('unit').addEventListener('change', function() {
+            document.getElementById('priceUnit').textContent = '/' + this.value;
+        });
+    });
+
+    function updateControlWarning() {
+        const controlType = document.getElementById('controlType').value;
+        const warning = document.getElementById('controlWarning');
+        warning.style.display = controlType !== 'COMUM' ? 'block' : 'none';
+    }
+
+    function updatePopularityLabel() {
+        const value = document.getElementById('popularity').value;
+        document.getElementById('popularityValue').textContent = value;
+    }
+
+    function saveAndNew() {
+        saveAndCreateNew = true;
+        document.getElementById('createForm').requestSubmit();
+    }
+
+    document.getElementById('createForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const data = {
+            name: document.getElementById('name').value.trim(),
+            casNumber: document.getElementById('casNumber').value.trim(),
+            dcbCode: document.getElementById('dcbCode').value.trim() || null,
+            dciCode: document.getElementById('dciCode').value.trim() || null,
+            description: document.getElementById('description').value.trim() || null,
+            category: document.getElementById('category').value.trim() || null,
+            controlType: document.getElementById('controlType').value,
+            synonyms: document.getElementById('synonyms').value.trim() || null,
+            indications: document.getElementById('indications').value.trim() || null,
+            unit: document.getElementById('unit').value,
+            allowedUsage: document.getElementById('allowedUsage').value,
+            physicalState: document.getElementById('physicalState').value,
+            purityFactor: parseFloat(document.getElementById('purityFactor').value) || 1,
+            correctionFactor: parseFloat(document.getElementById('correctionFactor').value) || 1,
+            minimumStock: parseFloat(document.getElementById('minimumStock').value) || 0,
+            maximumStock: parseFloat(document.getElementById('maximumStock').value) || 0,
+            bulkDensity: parseFloat(document.getElementById('bulkDensity').value) || null,
+            tappedDensity: parseFloat(document.getElementById('tappedDensity').value) || null,
+            lossFactor: parseFloat(document.getElementById('lossFactor').value) || 0,
+            requiresRefrigeration: document.getElementById('requiresRefrigeration').checked,
+            lightSensitive: document.getElementById('lightSensitive').checked,
+            humiditySensitive: document.getElementById('humiditySensitive').checked,
+            storageConditions: document.getElementById('storageConditions').value.trim() || null,
+            basePrice: parseFloat(document.getElementById('basePrice').value) || null,
+            isVirtual: document.getElementById('isVirtual').checked,
+            popularity: parseInt(document.getElementById('popularity').value) || 50
+        };
+
+        // Validação básica
+        if (!data.name) {
+            alert('Nome é obrigatório');
+            return;
+        }
+
+        const btn = document.getElementById('btnSave');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+        try {
+            const response = await fetch('/api/RawMaterials', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                if (saveAndCreateNew) {
+                    // Limpar formulário
+                    document.getElementById('createForm').reset();
+                    document.getElementById('popularity').value = 50;
+                    document.getElementById('popularityValue').textContent = '50';
+                    saveAndCreateNew = false;
+                    
+                    showToast('Matéria-prima cadastrada! Cadastre outra.', 'success');
+                } else {
+                    // Redirecionar para detalhes
+                    window.location.href = `/materias-primas/${result.data.id}`;
+                }
+            } else {
+                alert(result.error || 'Erro ao cadastrar');
+            }
+        } catch (e) {
+            console.error('Erro:', e);
+            alert('Erro ao cadastrar matéria-prima');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+
+    function showToast(message, type = 'info') {
+        const container = document.createElement('div');
+        container.className = 'position-fixed bottom-0 end-0 p-3';
+        container.style.zIndex = '1100';
+        container.innerHTML = `
+            <div class="toast show align-items-center text-white bg-${type === 'success' ? 'success' : 'primary'} border-0">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.closest('.position-fixed').remove()"></button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(container);
+        setTimeout(() => container.remove(), 4000);
+    }
+</script>
+}

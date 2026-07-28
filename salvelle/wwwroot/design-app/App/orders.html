@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Salvelle — Pedidos</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88'><rect width='88' height='88' rx='18' fill='%230F6E78'/><path d='M30 26 H42 a10 10 0 0 1 10 10 V52 H42 a10 10 0 0 1 -10 -10 V26 Z' fill='white'/><rect x='52' y='26' width='14' height='8' rx='4' fill='white'/><rect x='52' y='38' width='10' height='7' rx='3.5' fill='white'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<style>@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=cabinet-grotesk@500,700,800&display=swap');</style>
+<link rel="stylesheet" href="ds/tokens.css">
+<link rel="stylesheet" href="ds/components.css">
+<style>
+  .filter-bar { display: flex; gap: 8px; align-items: center; padding: 12px 16px; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); margin-bottom: 16px; }
+  .filter-bar .input { background: var(--bg-subtle); border-color: transparent; height: 36px; }
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 0 14px; }
+  .chip { font-family: var(--font-sans); font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--rule); color: var(--ink-2); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+  .chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .chip .count { font-family: var(--font-mono); font-size: 11px; opacity: .65; }
+  .order-row td { padding: 14px 16px; }
+  .pill-step { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); font-weight: 500; }
+  .pill-step .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); }
+  .pill-step.active .dot { background: var(--petrol-500); }
+  .pill-step.done .dot { background: var(--ok); }
+  .pill-step.warn .dot { background: var(--warn); }
+  .progress-track { display: flex; gap: 4px; align-items: center; }
+  .progress-track .seg { height: 4px; flex: 1; border-radius: 2px; background: var(--rule); }
+  .progress-track .seg.done { background: var(--ok); }
+  .progress-track .seg.active { background: var(--petrol-500); }
+  .controlled-flag { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 10px; font-weight: 600; padding: 2px 6px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .controlled-flag.b { background: var(--controlled-black); color: #fff; }
+  .controlled-flag.a { background: var(--controlled-red); color: #fff; }
+  .top-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; gap: 24px; }
+  .quick-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+  .qs { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); padding: 14px 16px; }
+  .qs-label { font-size: 11px; font-family: var(--font-mono); color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .qs-value { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .qs-foot { font-size: 11px; color: var(--ink-3); margin-top: 4px; }
+  .col-actions { width: 30px; }
+  .due-time { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); }
+  .due-time.late { color: var(--danger); font-weight: 500; }
+  .due-time.soon { color: var(--warn); }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/shell.jsx"></script>
+<script type="text/babel" data-presets="react">
+const { useState } = React;
+
+const ORDERS = [
+  { id:'ORD-1183', c:'Marina Rocha', f:'Minoxidil 5% · 60mL', step:5, status:'ok', sl:'Liberado', total:'86,40', due:'14:50', dueState:'', controlled:null },
+  { id:'ORD-1182', c:'Henrique Sá', f:'Bupropiona 150mg · 30 cáps', step:3, status:'warn', sl:'2ª assinatura', total:'124,00', due:'15:30', dueState:'soon', controlled:'b' },
+  { id:'ORD-1181', c:'Clínica Vita', f:'Tretinoína 0,05% · 30g', step:2, status:'neutral', sl:'Em fila', total:'58,00', due:'16:00', dueState:'', controlled:null },
+  { id:'ORD-1180', c:'Paulo Vargas', f:'Finasterida 1mg · 30 cáps', step:3, status:'ok', sl:'Em curso', total:'72,00', due:'14:45', dueState:'late', controlled:null },
+  { id:'ORD-1179', c:'Ana Beatriz', f:'Ácido salicílico 2% · 100mL', step:1, status:'danger', sl:'Estoque baixo', total:'42,00', due:'17:00', dueState:'', controlled:null },
+  { id:'ORD-1178', c:'José Ramos', f:'Ritalina 10mg · 30 cáps', step:4, status:'ok', sl:'Conferido', total:'168,00', due:'15:00', dueState:'', controlled:'a' },
+  { id:'ORD-1177', c:'Lucia Mendes', f:'Hidroquinona 4% · 30g', step:5, status:'ok', sl:'Liberado', total:'96,00', due:'13:30', dueState:'', controlled:null },
+  { id:'ORD-1176', c:'Bruna Coelho', f:'Cápsulas emagrecedoras (5 ativos)', step:2, status:'neutral', sl:'Pesagem', total:'215,00', due:'16:30', dueState:'', controlled:null },
+  { id:'ORD-1175', c:'Marcos Tavares', f:'Minoxidil + Finasterida tópico', step:3, status:'ok', sl:'Em curso', total:'108,00', due:'17:15', dueState:'', controlled:null },
+  { id:'ORD-1174', c:'Clínica Aurora', f:'Pomada manipulada anti-acne', step:4, status:'ok', sl:'Conferido', total:'62,00', due:'14:00', dueState:'late', controlled:null },
+  { id:'ORD-1173', c:'Tatiana Fonseca', f:'Vitamina C 20% sérum', step:5, status:'ok', sl:'Pronto', total:'89,00', due:'13:00', dueState:'', controlled:null },
+  { id:'ORD-1172', c:'Roberto Lima', f:'Diazepam 5mg · 60 cáps', step:3, status:'warn', sl:'2ª assinatura', total:'56,00', due:'15:45', dueState:'soon', controlled:'b' },
+];
+
+function Progress({ step, status }) {
+  return (
+    <div className="progress-track" style={{width:120}}>
+      {[1,2,3,4,5].map(i => (
+        <div key={i} className={`seg ${i < step ? 'done' : i === step ? 'active' : ''}`} />
+      ))}
+    </div>
+  );
+}
+
+function App() {
+  const [filter, setFilter] = useState('all');
+  return (
+    <div className="app-shell">
+      <Sidebar active="orders" />
+      <div className="app-main">
+        <Topbar />
+        <div className="app-content">
+          <PageHead
+            breadcrumb="OPERAÇÃO · PEDIDOS"
+            title="Pedidos"
+            subtitle="Tudo que está em produção, conferência e pronto para retirada."
+            actions={<>
+              <button className="btn btn-secondary"><Icon name="filter"/>Filtros</button>
+              <button className="btn btn-secondary"><Icon name="download"/>Exportar</button>
+              <a className="btn btn-primary" href="manipulation.html"><Icon name="plus"/>Novo pedido</a>
+            </>}
+          />
+
+          <div className="quick-stats">
+            <div className="qs"><div className="qs-label">Abertos</div><div className="qs-value">14</div><div className="qs-foot">3 atrasados</div></div>
+            <div className="qs"><div className="qs-label">Em manipulação</div><div className="qs-value">6</div><div className="qs-foot">bancadas 1, 2 e 4</div></div>
+            <div className="qs"><div className="qs-label">Aguardando 2ª ass.</div><div className="qs-value" style={{color:'var(--warn)'}}>3</div><div className="qs-foot">controlados</div></div>
+            <div className="qs"><div className="qs-label">Prontos p/ retirada</div><div className="qs-value" style={{color:'var(--ok)'}}>5</div><div className="qs-foot">balcão</div></div>
+            <div className="qs"><div className="qs-label">Faturado hoje</div><div className="qs-value">R$ 4.288</div><div className="qs-foot">mono. tabular</div></div>
+          </div>
+
+          <div className="filter-bar">
+            <div className="input-group" style={{flex:1, position:'relative'}}>
+              <span className="input-icon"><Icon name="search"/></span>
+              <input className="input" placeholder="Buscar por nº de pedido, cliente ou fórmula…" style={{paddingLeft:36}}/>
+            </div>
+            <select className="select" style={{width:140}}><option>Hoje</option><option>Esta semana</option><option>Este mês</option></select>
+            <select className="select" style={{width:160}}><option>Todas as bancadas</option><option>Bancada 01</option><option>Bancada 02</option></select>
+            <button className="btn btn-secondary btn-sm"><Icon name="filter"/>+ Filtros</button>
+          </div>
+
+          <div className="chip-row">
+            {[
+              {id:'all', l:'Todos', n:14},
+              {id:'queue', l:'Em fila', n:2},
+              {id:'manipulating', l:'Manipulando', n:6},
+              {id:'check', l:'Conferência', n:3},
+              {id:'sign', l:'2ª assinatura', n:3},
+              {id:'ready', l:'Prontos', n:5},
+              {id:'late', l:'Atrasados', n:3, danger:true},
+              {id:'controlled', l:'Controlados', n:3},
+            ].map(c => (
+              <button key={c.id} className={`chip ${filter===c.id?'active':''}`} onClick={()=>setFilter(c.id)} style={c.danger && filter !== c.id ? {color:'var(--danger)', borderColor:'var(--danger-soft)'} : {}}>{c.l}<span className="count">{c.n}</span></button>
+            ))}
+          </div>
+
+          <div className="table-wrap">
+            <table className="table">
+              <thead><tr>
+                <th style={{width:30}}><input type="checkbox"/></th>
+                <th>Pedido</th>
+                <th>Cliente</th>
+                <th>Fórmula</th>
+                <th>Progresso</th>
+                <th>Status</th>
+                <th>Prazo</th>
+                <th className="num">Total</th>
+                <th className="col-actions"></th>
+              </tr></thead>
+              <tbody>
+                {ORDERS.map(r => (
+                  <tr key={r.id} className="order-row">
+                    <td><input type="checkbox"/></td>
+                    <td>
+                      <div className="mono" style={{fontWeight:500, color:'var(--ink)'}}>{r.id}</div>
+                      {r.controlled && <span className={`controlled-flag ${r.controlled}`} style={{marginTop:4}}>{r.controlled === 'a' ? 'Lista A · Vermelha' : 'Lista B · Preta'}</span>}
+                    </td>
+                    <td><div style={{color:'var(--ink)'}}>{r.c}</div></td>
+                    <td className="muted">{r.f}</td>
+                    <td><Progress step={r.step} /></td>
+                    <td><span className={`badge badge-${r.status}`}>{r.sl}</span></td>
+                    <td><span className={`due-time ${r.dueState}`}>{r.dueState === 'late' ? '⚠ ' : ''}{r.due}</span></td>
+                    <td className="num" style={{color:'var(--ink)', fontWeight:500}}>R$ {r.total}</td>
+                    <td><Icon name="chevron-right"/></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:16, fontSize:13, color:'var(--ink-3)'}}>
+            <div>Mostrando <strong style={{color:'var(--ink)'}}>1–12</strong> de 14 pedidos</div>
+            <div className="row" style={{gap:6}}>
+              <button className="btn btn-secondary btn-sm" disabled style={{opacity:.5}}><Icon name="arrow-left"/></button>
+              <button className="btn btn-secondary btn-sm">Próxima<Icon name="arrow-right"/></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

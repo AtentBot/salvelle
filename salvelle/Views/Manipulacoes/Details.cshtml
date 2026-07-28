@@ -1,0 +1,295 @@
+@model dynamic
+@{
+    ViewData["Title"] = "Detalhes da Ordem";
+    var orderId = ViewBag.OrderId ?? Model?.Id ?? Guid.Empty;
+}
+
+<style>
+    .manip-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+    .formula-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); }
+    .formula-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+    .formula-head h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.015em; }
+    .formula-head .meta { display: flex; gap: 16px; align-items: center; font-size: 12px; color: var(--ink-3); margin-top: 4px; flex-wrap: wrap; }
+    .formula-head .meta b { color: var(--ink-2); font-weight: 500; }
+    .step-rail { display: flex; padding: 14px 20px; gap: 4px; border-bottom: 1px solid var(--rule); background: var(--bg-subtle); flex-wrap: wrap; }
+    .step-rail .s { flex: 1 1 90px; padding: 8px 12px; border-radius: var(--r-sm); font-size: 12px; font-weight: 500; color: var(--ink-3); display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .step-rail .s.done { color: var(--ok); }
+    .step-rail .s.active { background: var(--surface); color: var(--ink); border: 1px solid var(--rule); }
+    .step-rail .s .num { font-family: var(--font-mono); font-size: 10px; opacity: 0.6; }
+    .form-section { padding: 20px; border-bottom: 1px solid var(--rule); }
+    .form-section:last-child { border-bottom: none; }
+    .section-title { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); margin-bottom: 12px; }
+    .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .info-item label { font-size: 11px; color: var(--ink-3); display: block; margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+    .info-item div { font-size: 14px; color: var(--ink); font-weight: 500; }
+    .summary-card { padding: 20px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; }
+    .summary-row .lbl { color: var(--ink-3); }
+    .summary-row .val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+    .summary-row.total { border-top: 1px solid var(--rule); padding-top: 14px; margin-top: 8px; }
+    .summary-row.total .lbl { font-weight: 600; color: var(--ink); font-family: var(--font-sans); }
+    .summary-row.total .val { font-size: 18px; font-weight: 600; color: var(--ink); }
+    .alert-card { padding: 14px 16px; background: var(--warn-soft); border: 1px solid var(--warn-border); border-radius: var(--r-sm); display: flex; gap: 10px; font-size: 13px; color: var(--ink-2); align-items: flex-start; }
+    .alert-card i { color: var(--warn); flex-shrink: 0; margin-top: 1px; font-size: 16px; }
+    .alert-card b { color: var(--ink); }
+    .timeline-block { display: flex; flex-direction: column; gap: 12px; }
+    .timeline-block .tl { display: flex; gap: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--rule); }
+    .timeline-block .tl:last-child { border-bottom: none; padding-bottom: 0; }
+    .timeline-block .tl-time { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); flex-shrink: 0; width: 100px; }
+    .timeline-block .tl-icon { color: var(--petrol-500); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+    .timeline-block .tl-content { font-size: 13px; }
+    .timeline-block .tl-content strong { font-weight: 500; color: var(--ink); }
+    .skeleton { background: linear-gradient(90deg, var(--bg-subtle), var(--surface), var(--bg-subtle)); background-size: 200% 100%; animation: skel 1.4s ease-in-out infinite; border-radius: var(--r-xs); height: 14px; }
+    @@keyframes skel { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .badge-status { padding: 4px 12px; border-radius: var(--r-pill); font-size: 12px; font-weight: 500; letter-spacing: 0; display: inline-flex; align-items: center; gap: 6px; }
+
+    @@media (max-width: 980px) {
+        .manip-grid { grid-template-columns: 1fr; }
+    }
+    @@media print {
+        .ds-sidebar, .ds-topbar, .formula-actions, .quick-action-block { display: none !important; }
+        .ds-content { padding: 0 !important; }
+    }
+</style>
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow" style="margin-bottom:6px;">OPERAÇÃO · MANIPULAÇÃO</div>
+        <h1 style="font-size: var(--t-h2); font-weight: 600; letter-spacing: -0.025em; margin: 0 0 4px;" id="pageTitle">Ordem de Manipulação</h1>
+        <p style="color: var(--ink-3); font-size: 14px; margin: 0;" id="pageSubtitle">Carregando…</p>
+    </div>
+    <div class="row">
+        <a href="/Manipulacoes" class="btn btn-secondary"><i class="bi bi-arrow-left"></i>Voltar</a>
+        <partial name="_GenerateLabelButton" model="@orderId" />
+    </div>
+</div>
+
+<div class="manip-grid">
+    <div class="formula-card">
+        <div class="formula-head">
+            <div>
+                <h2 id="formulaTitle">Carregando fórmula…</h2>
+                <div class="meta" id="formulaMeta"></div>
+            </div>
+            <span id="orderStatus" class="badge-status" style="background:var(--bg-subtle); color:var(--ink-3);"><span class="skeleton" style="width:90px;height:14px;display:inline-block;"></span></span>
+        </div>
+
+        <div class="step-rail" id="stepRail"></div>
+
+        <div class="form-section">
+            <div class="section-title">Informações da ordem</div>
+            <div class="info-grid" id="orderInfo">
+                <div class="info-item"><label>Código</label><div class="skeleton" style="width:60%;"></div></div>
+                <div class="info-item"><label>Data</label><div class="skeleton" style="width:60%;"></div></div>
+                <div class="info-item"><label>Paciente</label><div class="skeleton" style="width:80%;"></div></div>
+                <div class="info-item"><label>Prescritor</label><div class="skeleton" style="width:80%;"></div></div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="section-title">Composição da fórmula</div>
+            <div id="formulaInfo">
+                <div class="info-grid">
+                    <div class="info-item"><label>Forma farmacêutica</label><div class="skeleton" style="width:70%;"></div></div>
+                    <div class="info-item"><label>Quantidade</label><div class="skeleton" style="width:50%;"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="section-title">Posologia & orientações</div>
+            <div id="posologyInfo" style="font-size:13px; color:var(--ink-2); line-height:1.55;">
+                <div class="skeleton" style="height:48px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:16px;">
+        <div id="controlledBanner" style="display:none;" class="alert-card">
+            <i class="bi bi-shield-lock-fill"></i>
+            <div><b>Medicamento controlado.</b> <span id="controlledText"></span></div>
+        </div>
+
+        <div class="card summary-card">
+            <div class="card-eyebrow">Custos</div>
+            <h3 class="card-title" style="margin:0 0 12px;">Resumo da fórmula</h3>
+            <div id="costBreakdown">
+                <div class="summary-row"><span class="lbl skeleton" style="width:60%;"></span><span class="val skeleton" style="width:30%;"></span></div>
+                <div class="summary-row"><span class="lbl skeleton" style="width:50%;"></span><span class="val skeleton" style="width:25%;"></span></div>
+                <div class="summary-row total"><span class="lbl">Total</span><span class="val skeleton" style="width:35%;"></span></div>
+            </div>
+        </div>
+
+        <div class="card summary-card quick-action-block">
+            <div class="card-eyebrow">Ações rápidas</div>
+            <h3 class="card-title" style="margin:0 0 12px;">Operar ordem</h3>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <a href="/Labels/Generate/@orderId" class="btn btn-primary" style="justify-content:center;"><i class="bi bi-file-earmark-text"></i>Gerar rótulo</a>
+                <button class="btn btn-secondary" onclick="editOrder()" style="justify-content:center;"><i class="bi bi-pencil"></i>Editar ordem</button>
+                <button class="btn btn-secondary" onclick="printReceipt()" style="justify-content:center;"><i class="bi bi-printer"></i>Imprimir</button>
+                <button class="btn btn-ghost" style="justify-content:center; color:var(--danger);" onclick="cancelOrder()"><i class="bi bi-x-circle"></i>Cancelar ordem</button>
+            </div>
+        </div>
+
+        <div class="card summary-card">
+            <div class="card-eyebrow">Histórico</div>
+            <h3 class="card-title" style="margin:0 0 12px;">Linha do tempo</h3>
+            <div class="timeline-block" id="timeline">
+                <div class="tl"><span class="skeleton" style="width:80%; height:14px;"></span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const orderId = '@orderId';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (orderId && orderId !== '@Guid.Empty') loadOrderDetails();
+    });
+
+    async function loadOrderDetails() {
+        try {
+            const r = await fetch(`/api/ManipulationOrders/${orderId}`, { credentials: 'include' });
+            if (!r.ok) throw new Error('Ordem não encontrada');
+            const order = await r.json();
+            renderOrder(order);
+        } catch (err) {
+            console.error('Erro ao carregar ordem:', err);
+            renderError(err.message);
+        }
+    }
+
+    function renderOrder(order) {
+        const code = order.code || order.orderNumber || '-';
+        document.getElementById('pageTitle').textContent = order.formulaName || 'Ordem ' + code;
+        document.getElementById('pageSubtitle').textContent = `${order.customerName || order.patientName || 'Paciente'} · ${order.prescriberName || 'Prescritor não informado'}`;
+        document.getElementById('formulaTitle').textContent = order.formulaName || 'Fórmula magistral';
+
+        const isControlled = (order.controlled || order.isControlled || (order.controlType && order.controlType !== 'NORMAL'));
+        const meta = [];
+        if (order.quantity) meta.push(`<span><i class="bi bi-box-seam"></i><b>${order.quantity}${order.unit ? ' ' + order.unit : ''}</b></span>`);
+        if (order.pharmaceuticalForm) meta.push(`<span><b>${order.pharmaceuticalForm}</b></span>`);
+        if (isControlled) meta.push(`<span class="controlled-strip ${order.controlType === 'A1' || order.controlType === 'A2' || order.controlType === 'A3' ? 'entorpecente' : 'psicotropico'}" style="padding:2px 8px;font-size:9px;">${order.controlType || 'Controlado'}</span>`);
+        document.getElementById('formulaMeta').innerHTML = meta.join('<span style="color:var(--ink-4);">·</span>');
+
+        document.getElementById('orderStatus').outerHTML = renderStatusBadge(order.status);
+        renderStepRail(order.status);
+
+        document.getElementById('orderInfo').innerHTML = `
+            <div class="info-item"><label>Código</label><div class="mono">${code}</div></div>
+            <div class="info-item"><label>Data</label><div>${formatDate(order.orderDate || order.createdAt)}</div></div>
+            <div class="info-item"><label>Paciente</label><div>${order.customerName || order.patientName || '—'}</div></div>
+            <div class="info-item"><label>Prescritor</label><div>${order.prescriberName || '—'}</div></div>
+            <div class="info-item"><label>Lote</label><div class="mono">${order.batchNumber || '—'}</div></div>
+            <div class="info-item"><label>Validade</label><div>${order.expirationDate ? formatDate(order.expirationDate) : '—'}</div></div>
+        `;
+
+        document.getElementById('formulaInfo').innerHTML = `
+            <div class="info-grid">
+                <div class="info-item"><label>Forma farmacêutica</label><div>${order.pharmaceuticalForm || '—'}</div></div>
+                <div class="info-item"><label>Quantidade</label><div>${order.quantity || '—'} ${order.unit || ''}</div></div>
+            </div>
+            ${order.composition ? `
+                <div style="margin-top:14px;">
+                    <label class="section-title" style="margin-bottom:8px;">Composição</label>
+                    <div style="background:var(--bg-subtle); border:1px solid var(--rule); border-radius:var(--r-sm); padding:14px; font-size:13px; color:var(--ink-2); white-space:pre-wrap;">${order.composition}</div>
+                </div>
+            ` : ''}
+        `;
+
+        document.getElementById('posologyInfo').innerHTML = order.posology
+            ? order.posology
+            : `<span style="color:var(--ink-3);">Posologia não informada.</span>`;
+
+        if (isControlled) {
+            document.getElementById('controlledBanner').style.display = '';
+            document.getElementById('controlledText').textContent = 'Exige assinatura digital do farmacêutico RT antes da liberação. Receita azul/amarela retida e arquivada por 5 anos.';
+        }
+
+        renderCosts(order);
+        renderTimeline(order);
+    }
+
+    function renderStepRail(status) {
+        const stages = [
+            { code: 'PENDENTE', label: 'Pendente' },
+            { code: 'SEPARACAO', label: 'Separação' },
+            { code: 'PESAGEM', label: 'Pesagem' },
+            { code: 'CONFERENCIA', label: 'Conferência' },
+            { code: 'ROTULAGEM', label: 'Rotulagem' },
+            { code: 'FINALIZADO', label: 'Liberação' },
+        ];
+        const idx = stages.findIndex(s => s.code === status);
+        const html = stages.map((s, i) => {
+            const cls = i < idx ? 'done' : i === idx ? 'active' : '';
+            const icon = i < idx ? '<i class="bi bi-check2"></i>' : '';
+            return `<div class="s ${cls}">${icon}<span class="num">${String(i+1).padStart(2,'0')}</span>${s.label}</div>`;
+        }).join('');
+        document.getElementById('stepRail').innerHTML = html;
+    }
+
+    function renderStatusBadge(status) {
+        const map = {
+            'PENDENTE':    { bg: 'var(--warn-soft)',    fg: 'var(--warn)',    icon: 'hourglass-split', label: 'Pendente' },
+            'SEPARACAO':   { bg: 'var(--info-soft)',    fg: 'var(--info)',    icon: 'box-arrow-in-down', label: 'Separação' },
+            'PESAGEM':     { bg: 'var(--info-soft)',    fg: 'var(--info)',    icon: 'speedometer',  label: 'Pesagem' },
+            'MISTURA':     { bg: 'var(--petrol-50)',    fg: 'var(--petrol-700)', icon: 'droplet-half', label: 'Mistura' },
+            'ENVASE':      { bg: 'var(--petrol-50)',    fg: 'var(--petrol-700)', icon: 'box', label: 'Envase' },
+            'ROTULAGEM':   { bg: 'var(--petrol-50)',    fg: 'var(--petrol-700)', icon: 'tag', label: 'Rotulagem' },
+            'CONFERENCIA': { bg: 'var(--bg-subtle)',    fg: 'var(--ink-2)',   icon: 'check2-square', label: 'Conferência' },
+            'APROVADO':    { bg: 'var(--ok-soft)',      fg: 'var(--ok)',      icon: 'check-circle', label: 'Aprovado' },
+            'FINALIZADO':  { bg: 'var(--ok-soft)',      fg: 'var(--ok)',      icon: 'check-circle-fill', label: 'Finalizado' },
+            'ENTREGUE':    { bg: 'var(--ink)',          fg: '#fff',           icon: 'truck', label: 'Entregue' },
+            'CANCELADO':   { bg: 'var(--danger-soft)',  fg: 'var(--danger)',  icon: 'x-circle', label: 'Cancelado' },
+        };
+        const s = map[status] || { bg: 'var(--bg-subtle)', fg: 'var(--ink-3)', icon: 'circle', label: status || 'Indefinido' };
+        return `<span id="orderStatus" class="badge-status" style="background:${s.bg}; color:${s.fg};"><i class="bi bi-${s.icon}"></i>${s.label}</span>`;
+    }
+
+    function renderCosts(order) {
+        const ingredientCost = order.ingredientCost ?? order.materialsCost ?? 0;
+        const laborCost = order.laborCost ?? 0;
+        const packagingCost = order.packagingCost ?? 0;
+        const margin = order.marginAmount ?? 0;
+        const total = order.totalPrice ?? order.total ?? (ingredientCost + laborCost + packagingCost + margin);
+        const fmt = v => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
+        document.getElementById('costBreakdown').innerHTML = `
+            <div class="summary-row"><span class="lbl">Insumos</span><span class="val">${fmt(ingredientCost)}</span></div>
+            <div class="summary-row"><span class="lbl">Embalagem</span><span class="val">${fmt(packagingCost)}</span></div>
+            <div class="summary-row"><span class="lbl">Mão de obra</span><span class="val">${fmt(laborCost)}</span></div>
+            <div class="summary-row"><span class="lbl">Margem</span><span class="val">${fmt(margin)}</span></div>
+            <div class="summary-row total"><span class="lbl">Preço final</span><span class="val">${fmt(total)}</span></div>
+        `;
+    }
+
+    function renderTimeline(order) {
+        const items = [];
+        if (order.createdAt) items.push({ time: formatDateTime(order.createdAt), icon: 'plus-circle', title: 'Ordem criada' });
+        if (order.startDate) items.push({ time: formatDateTime(order.startDate), icon: 'play-circle', title: 'Manipulação iniciada' });
+        if (order.completionDate) items.push({ time: formatDateTime(order.completionDate), icon: 'check-circle', title: 'Ordem finalizada' });
+        if (order.deliveryDate) items.push({ time: formatDate(order.deliveryDate), icon: 'truck', title: 'Previsão de entrega' });
+        const html = items.length === 0
+            ? '<div style="font-size:13px; color:var(--ink-3);">Sem eventos registrados.</div>'
+            : items.map(i => `<div class="tl"><span class="tl-time">${i.time}</span><i class="bi bi-${i.icon} tl-icon"></i><div class="tl-content"><strong>${i.title}</strong></div></div>`).join('');
+        document.getElementById('timeline').innerHTML = html;
+    }
+
+    function renderError(msg) {
+        document.querySelectorAll('.skeleton').forEach(el => { el.classList.remove('skeleton'); el.textContent = '—'; });
+        document.getElementById('pageSubtitle').innerHTML = `<span style="color:var(--danger);"><i class="bi bi-exclamation-triangle me-1"></i>${msg}</span>`;
+    }
+
+    function formatDate(d) { return d ? new Date(d).toLocaleDateString('pt-BR') : '—'; }
+    function formatDateTime(d) { return d ? new Date(d).toLocaleString('pt-BR') : '—'; }
+    function editOrder() { window.location.href = `/Manipulacoes/Edit/${orderId}`; }
+    function printReceipt() { window.print(); }
+    function cancelOrder() {
+        if (!confirm('Tem certeza que deseja cancelar esta ordem?')) return;
+        fetch(`/api/ManipulationOrders/${orderId}/cancel`, { method: 'POST', credentials: 'include' })
+            .then(r => r.ok ? location.reload() : alert('Não foi possível cancelar a ordem.'))
+            .catch(() => alert('Erro de conexão.'));
+    }
+</script>
+}

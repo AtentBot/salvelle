@@ -1,0 +1,320 @@
+﻿@model Models.EstablishmentQRCode
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code - @Model.Establishment?.NomeFantasia</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-subtle);
+            padding: 20px;
+        }
+        
+        .print-controls {
+            max-width: 800px;
+            margin: 0 auto 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .size-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .size-btn {
+            padding: 10px 20px;
+            border: 2px solid var(--rule);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .size-btn:hover {
+            border-color: var(--petrol-500);
+        }
+        
+        .size-btn.active {
+            border-color: var(--petrol-500);
+            background: #eef2ff;
+        }
+        
+        .sticker-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .sticker {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            text-align: center;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+        
+        /* Tamanho Pequeno - 5x5cm */
+        .sticker.small {
+            width: 189px; /* 5cm */
+            padding: 15px;
+        }
+        .sticker.small .qr-image {
+            width: 120px;
+            height: 120px;
+        }
+        .sticker.small .pharmacy-name {
+            font-size: 11px;
+        }
+        .sticker.small .scan-text {
+            font-size: 9px;
+        }
+        
+        /* Tamanho Médio - 7x7cm */
+        .sticker.medium {
+            width: 265px; /* 7cm */
+            padding: 20px;
+        }
+        .sticker.medium .qr-image {
+            width: 160px;
+            height: 160px;
+        }
+        .sticker.medium .pharmacy-name {
+            font-size: 14px;
+        }
+        .sticker.medium .scan-text {
+            font-size: 11px;
+        }
+        
+        /* Tamanho Grande - 10x10cm */
+        .sticker.large {
+            width: 378px; /* 10cm */
+            padding: 25px;
+        }
+        .sticker.large .qr-image {
+            width: 220px;
+            height: 220px;
+        }
+        .sticker.large .pharmacy-name {
+            font-size: 18px;
+        }
+        .sticker.large .scan-text {
+            font-size: 13px;
+        }
+        
+        .sticker-header {
+            background: var(--petrol-500);
+            color: white;
+            padding: 12px;
+            margin: -20px -20px 15px -20px;
+        }
+        
+        .sticker.small .sticker-header {
+            padding: 8px;
+            margin: -15px -15px 10px -15px;
+        }
+        
+        .sticker.large .sticker-header {
+            padding: 15px;
+            margin: -25px -25px 20px -25px;
+        }
+        
+        .pharmacy-name {
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .qr-image {
+            margin: 0 auto 15px;
+            background: var(--bg-subtle);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .qr-image img {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .scan-text {
+            color: var(--ink-3);
+            margin-bottom: 10px;
+        }
+        
+        .scan-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--petrol-500);
+            font-weight: 600;
+        }
+        
+        .phone-info {
+            font-size: 11px;
+            color: var(--ink-3);
+            margin-top: 10px;
+        }
+        
+        @@media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .print-controls {
+                display: none !important;
+            }
+            
+            .sticker-container {
+                justify-content: flex-start;
+            }
+            
+            .sticker {
+                box-shadow: none;
+                border: 1px solid var(--rule);
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Controles de impressão -->
+    <div class="print-controls">
+        <h5 class="mb-3"><i class="bi bi-printer me-2"></i>Configurações de Impressão</h5>
+        
+        <div class="mb-3">
+            <label class="form-label fw-bold">Tamanho do Adesivo:</label>
+            <div class="size-options">
+                <button class="size-btn" onclick="setSize('small')">
+                    <i class="bi bi-square me-1"></i>Pequeno (5×5cm)
+                </button>
+                <button class="size-btn active" onclick="setSize('medium')">
+                    <i class="bi bi-square me-1"></i>Médio (7×7cm)
+                </button>
+                <button class="size-btn" onclick="setSize('large')">
+                    <i class="bi bi-square me-1"></i>Grande (10×10cm)
+                </button>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label fw-bold">Quantidade por página:</label>
+            <div class="size-options">
+                <button class="size-btn" onclick="setQuantity(1)">1</button>
+                <button class="size-btn" onclick="setQuantity(2)">2</button>
+                <button class="size-btn active" onclick="setQuantity(4)">4</button>
+                <button class="size-btn" onclick="setQuantity(6)">6</button>
+                <button class="size-btn" onclick="setQuantity(9)">9</button>
+            </div>
+        </div>
+        
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="bi bi-printer me-2"></i>Imprimir
+            </button>
+            <a href="/QRCodes" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+    
+    <!-- Adesivos para impressão -->
+    <div class="sticker-container" id="stickerContainer">
+        <!-- Preenchido via JavaScript -->
+    </div>
+    
+    <script>
+        let currentSize = 'medium';
+        let currentQuantity = 4;
+        let qrImageBase64 = '';
+        
+        const pharmacyName = '@Model.Establishment?.NomeFantasia';
+        const pharmacyPhone = '@Model.Establishment?.Phone';
+        const qrCode = '@Model.Code';
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            loadQRCode();
+        });
+        
+        async function loadQRCode() {
+            try {
+                const response = await fetch(`/api/establishment-qrcodes/@Model.Id/image-base64?size=400`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    qrImageBase64 = data.imageBase64;
+                    renderStickers();
+                }
+            } catch (error) {
+                console.error('Erro ao carregar QR Code:', error);
+            }
+        }
+        
+        function setSize(size) {
+            currentSize = size;
+            document.querySelectorAll('.size-options')[0].querySelectorAll('.size-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            renderStickers();
+        }
+        
+        function setQuantity(qty) {
+            currentQuantity = qty;
+            document.querySelectorAll('.size-options')[1].querySelectorAll('.size-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            renderStickers();
+        }
+        
+        function renderStickers() {
+            const container = document.getElementById('stickerContainer');
+            let html = '';
+            
+            for (let i = 0; i < currentQuantity; i++) {
+                html += `
+                    <div class="sticker ${currentSize}">
+                        <div class="sticker-header">
+                            <p class="pharmacy-name">${pharmacyName}</p>
+                        </div>
+                        <div class="qr-image">
+                            ${qrImageBase64 ? `<img src="${qrImageBase64}" alt="QR Code">` : '<div class="spinner-border"></div>'}
+                        </div>
+                        <p class="scan-text">Escaneie para acessar nosso portal</p>
+                        <div class="scan-icon">
+                            <i class="bi bi-phone"></i>
+                            <span>Peça pelo celular!</span>
+                        </div>
+                        ${pharmacyPhone ? `<p class="phone-info"><i class="bi bi-whatsapp"></i> ${pharmacyPhone}</p>` : ''}
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

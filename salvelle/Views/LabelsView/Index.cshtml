@@ -1,0 +1,152 @@
+@model List<DTOs.Labels.LabelTemplateResponseDto>
+@using DTOs.Labels
+@{
+    ViewData["Title"] = "Templates de Rótulos";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-0">
+                <i class="bi bi-file-earmark-text me-2"></i>Templates de Rótulos
+            </h2>
+            <p class="text-muted">Gerenciar modelos de etiquetas para produtos manipulados</p>
+        </div>
+        <div class="col-auto">
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Novo Template
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>Tipo</th>
+                            <th>Forma Farm.</th>
+                            <th>Dimensões</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Padrão</th>
+                            <th>Criado em</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model?.Any() == true)
+                        {
+                            @foreach (var template in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@template.Name</strong>
+                                        @if (!string.IsNullOrEmpty(template.Description))
+                                        {
+                                            <br><small class="text-muted">@template.Description</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @switch (template.TemplateType)
+                                        {
+                                            case "PADRAO":
+                                                <span class="badge bg-secondary">Padrão</span>
+                                                break;
+                                            case "CONTROLADO":
+                                                <span class="badge bg-danger">Controlado</span>
+                                                break;
+                                            case "HOMEOPATICO":
+                                                <span class="badge bg-info">Homeopático</span>
+                                                break;
+                                            case "FITOTERAPICO":
+                                                <span class="badge bg-success">Fitoterápico</span>
+                                                break;
+                                            case "VETERINARIO":
+                                                <span class="badge bg-warning">Veterinário</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-light text-dark">@template.TemplateType</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>@(template.PharmaceuticalForm ?? "-")</td>
+                                    <td>
+                                        <small class="text-muted">
+                                            @template.Width x @template.Height mm
+                                        </small>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (template.IsActive)
+                                        {
+                                            <span class="badge bg-success">Ativo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inativo</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (template.IsDefault)
+                                        {
+                                            <i class="bi bi-star-fill text-warning" title="Template Padrão"></i>
+                                        }
+                                    </td>
+                                    <td>
+                                        <small>@template.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-action="Edit" asp-route-id="@template.Id" 
+                                               class="btn btn-outline-primary" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="deleteTemplate('@template.Id', '@template.Name')" 
+                                                    title="Excluir">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <i class="bi bi-inbox display-4 text-muted"></i>
+                                    <p class="mt-3 text-muted">Nenhum template cadastrado</p>
+                                    <a asp-action="Create" class="btn btn-primary">
+                                        <i class="bi bi-plus-circle me-2"></i>Criar Primeiro Template
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function deleteTemplate(id, name) {
+            if (confirm(`Deseja realmente excluir o template "${name}"?`)) {
+                fetch(`/api/Labels/templates/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Erro ao excluir template');
+                    }
+                });
+            }
+        }
+    </script>
+}

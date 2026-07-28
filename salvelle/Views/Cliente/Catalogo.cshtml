@@ -1,0 +1,421 @@
+﻿@using Models.Pharmacy
+@{
+    ViewData["Title"] = "Catálogo";
+    Layout = null;
+    var categories = ViewBag.Categories as List<string> ?? new List<string>();
+    var products = ViewBag.Products as List<RawMaterial> ?? new List<RawMaterial>();
+    var currentCategory = ViewBag.CurrentCategory as string;
+    var pharmacyName = ViewBag.PharmacyName ?? "Farmácia";
+    var cartCount = ViewBag.CartCount ?? 0;
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="var(--petrol-500)">
+    <title>@ViewData["Title"] - Salvelle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/design-system/tokens.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/design-system/components.css" asp-append-version="true">
+    <style>
+        :root {
+            --primary: var(--petrol-500);
+            --primary-light: var(--petrol-200);
+            --secondary: var(--ok);
+            --gray-900: var(--ink); --gray-700: var(--ink-2); --gray-500: var(--ink-3);
+            --gray-400: var(--ink-4); --gray-200: var(--rule); --gray-100: var(--bg-subtle);
+            --gray-50: var(--bg); --white: var(--surface);
+            --gradient-primary: var(--petrol-500);
+            --shadow: var(--shadow-1); --shadow-md: var(--shadow-2);
+            --radius: var(--r-md); --radius-lg: var(--r-lg); --radius-full: var(--r-pill);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+            padding-bottom: 80px;
+            margin: 0;
+        }
+
+        .app-header {
+            background: var(--white);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid var(--gray-100);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            background: var(--gray-100);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: var(--gray-700);
+            cursor: pointer;
+        }
+
+        .header-title {
+            flex: 1;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .header-search {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            background: var(--gray-100);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: var(--gray-700);
+            cursor: pointer;
+        }
+
+        /* Categories Tabs */
+        .categories-tabs {
+            background: var(--white);
+            padding: 12px 20px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .categories-tabs::-webkit-scrollbar { display: none; }
+
+        .category-tab {
+            flex: 0 0 auto;
+            padding: 10px 20px;
+            border-radius: var(--radius-full);
+            background: var(--gray-100);
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .category-tab:hover {
+            background: var(--gray-200);
+        }
+
+        .category-tab.active {
+            background: var(--gradient-primary);
+            color: var(--white);
+        }
+
+        .main-content {
+            padding: 20px;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .product-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            transition: all 0.3s ease;
+            border: 1px solid var(--gray-100);
+            position: relative;
+        }
+
+        .product-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .product-image {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: var(--radius);
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: var(--white);
+            margin-bottom: 12px;
+        }
+
+        .product-category {
+            font-size: 11px;
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .product-name {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 40px;
+        }
+
+        .product-price {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 800;
+            font-size: 18px;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .product-price small {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--gray-500);
+        }
+
+        .product-stock {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: var(--radius-full);
+        }
+
+        .product-stock.in-stock {
+            background: var(--ok-soft);
+            color: var(--ok);
+        }
+
+        .product-stock.out-stock {
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        .add-btn {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-full);
+            background: var(--secondary);
+            color: var(--white);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .add-btn:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-full);
+            background: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: var(--gray-400);
+            margin: 0 auto 16px;
+        }
+
+        .empty-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            color: var(--gray-500);
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border-top: 1px solid var(--gray-100);
+            padding: 8px 16px;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom));
+            display: flex;
+            justify-content: space-around;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 16px;
+            text-decoration: none;
+            color: var(--gray-500);
+        }
+
+        .nav-item.active { color: var(--primary); }
+        .nav-item i { font-size: 22px; }
+        .nav-item span { font-size: 11px; font-weight: 600; }
+
+        @@media (min-width: 768px) {
+            body { max-width: 480px; margin: 0 auto; }
+            .bottom-nav { max-width: 480px; left: 50%; transform: translateX(-50%); }
+            .products-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <button class="back-btn" onclick="history.back()">
+            <i class="bi bi-arrow-left"></i>
+        </button>
+        <h1 class="header-title">Catálogo</h1>
+        <button class="header-search" onclick="location.href='/Cliente/Buscar'">
+            <i class="bi bi-search"></i>
+        </button>
+    </header>
+
+    <div class="categories-tabs">
+        <button class="category-tab @(string.IsNullOrEmpty(currentCategory) ? "active" : "")" 
+                onclick="filterCategory('')">
+            Todos
+        </button>
+        @foreach(var cat in categories.Where(c => !string.IsNullOrEmpty(c)).Take(10))
+        {
+            <button class="category-tab @(currentCategory == cat ? "active" : "")" 
+                    onclick="filterCategory('@cat')">
+                @cat
+            </button>
+        }
+    </div>
+
+    <main class="main-content">
+        @if(products.Any())
+        {
+            <div class="products-grid">
+                @foreach(var product in products)
+                {
+                    <div class="product-card">
+                        <div class="product-image">
+                            <i class="bi bi-capsule"></i>
+                        </div>
+                        <p class="product-category">@(product.Category ?? "Manipulado")</p>
+                        <h3 class="product-name">@product.Name</h3>
+                        <p class="product-price">
+                            @if(product.BasePrice.HasValue)
+                            {
+                                @:R$ @product.BasePrice.Value.ToString("N2")
+                                <small>/ @product.Unit</small>
+                            }
+                            else
+                            {
+                                <small>Sob consulta</small>
+                            }
+                        </p>
+                        <span class="product-stock @(product.CurrentStock > 0 ? "in-stock" : "out-stock")">
+                            <i class="bi bi-@(product.CurrentStock > 0 ? "check-circle" : "clock")"></i>
+                            @(product.CurrentStock > 0 ? "Em estoque" : "Sob encomenda")
+                        </span>
+                        <button class="add-btn" onclick="addToFormula('@product.Id')">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                </div>
+                <h3 class="empty-title">Nenhum produto encontrado</h3>
+                <p class="empty-text">Tente selecionar outra categoria</p>
+            </div>
+        }
+    </main>
+
+    <nav class="bottom-nav">
+        <a href="/Cliente/Inicio" class="nav-item">
+            <i class="bi bi-house"></i>
+            <span>Início</span>
+        </a>
+        <a href="/Cliente/Buscar" class="nav-item">
+            <i class="bi bi-search"></i>
+            <span>Buscar</span>
+        </a>
+        <a href="/Cliente/MeusPedidos" class="nav-item">
+            <i class="bi bi-bag"></i>
+            <span>Pedidos</span>
+        </a>
+        <a href="/Cliente/Carrinho" class="nav-item">
+            <i class="bi bi-cart3"></i>
+            <span>Carrinho</span>
+        </a>
+        <a href="/Cliente/Perfil" class="nav-item">
+            <i class="bi bi-person"></i>
+            <span>Perfil</span>
+        </a>
+    </nav>
+
+    <script>
+        function filterCategory(category) {
+            if (category) {
+                window.location.href = `/Cliente/Catalogo?categoria=${encodeURIComponent(category)}`;
+            } else {
+                window.location.href = '/Cliente/Catalogo';
+            }
+        }
+
+        function addToFormula(productId) {
+            // TODO: Adicionar ao formulário/carrinho
+            alert('Produto adicionado à fórmula!');
+        }
+    </script>
+</body>
+</html>

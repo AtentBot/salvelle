@@ -1,0 +1,855 @@
+@{
+    ViewData["Title"] = "Matérias-Primas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <i class="bi bi-box-seam me-2"></i>
+                Matérias-Primas
+            </h4>
+            <p class="text-muted mb-0">Gerencie seu estoque de ingredientes</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/materias-primas/precos" class="btn btn-outline-primary">
+                <i class="bi bi-currency-dollar me-1"></i>
+                Dashboard de Preços
+            </a>
+            <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#catalogModal">
+                <i class="bi bi-collection me-1"></i>
+                Importar do Catálogo
+            </button>
+            <a href="/materias-primas/criar" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>
+                Nova Matéria-Prima
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3 col-lg-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fs-3 fw-bold text-primary" id="statTotal">-</div>
+                    <div class="small text-muted">Total</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fs-3 fw-bold text-success" id="statWithStock">-</div>
+                    <div class="small text-muted">Em Estoque</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fs-3 fw-bold text-warning" id="statLowStock">-</div>
+                    <div class="small text-muted">Estoque Baixo</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fs-3 fw-bold text-secondary" id="statVirtual">-</div>
+                    <div class="small text-muted">Virtuais</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fs-3 fw-bold text-danger" id="statControlled">-</div>
+                    <div class="small text-muted">Controlados</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fs-3 fw-bold text-info" id="statOutdated">-</div>
+                    <div class="small text-muted">Preço Desatualizado</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="searchInput" 
+                               placeholder="Buscar por nome, CAS, DCB...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filterControlType">
+                        <option value="">Tipo de Controle</option>
+                        <option value="COMUM">Comum</option>
+                        <option value="LISTA_A">Lista A</option>
+                        <option value="LISTA_B">Lista B</option>
+                        <option value="LISTA_C1">Lista C1</option>
+                        <option value="LISTA_C2">Lista C2</option>
+                        <option value="ANTIMICROBIANO">Antimicrobiano</option>
+                        <option value="HORMONIO">Hormônio</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filterPriceSource">
+                        <option value="">Origem do Preço</option>
+                        <option value="ESTOQUE">🟢 Estoque Real</option>
+                        <option value="HISTORICO">🟡 Histórico</option>
+                        <option value="BASE">🔴 Preço Base</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filterCategory">
+                        <option value="">Categoria</option>
+                        <!-- Preenchido via JS -->
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filterStock">
+                        <option value="">Status Estoque</option>
+                        <option value="low">Estoque Baixo</option>
+                        <option value="virtual">Apenas Virtuais</option>
+                        <option value="outdated">Preço Desatualizado</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="materialsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 25%">Nome</th>
+                            <th style="width: 10%">CAS</th>
+                            <th style="width: 8%">Controle</th>
+                            <th style="width: 10%">Categoria</th>
+                            <th style="width: 12%" class="text-end">Estoque</th>
+                            <th style="width: 12%" class="text-end">Preço Atual</th>
+                            <th style="width: 13%">Última Atualização</th>
+                            <th style="width: 10%" class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="materialsBody">
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Carregando...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Paginação -->
+        <div class="card-footer bg-white border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted small" id="paginationInfo">
+                    Mostrando 0 de 0 registros
+                </div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="pagination">
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Atualização de Preço -->
+<div class="modal fade" id="priceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-currency-dollar me-2"></i>
+                    Atualizar Preço Base
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">
+                    <strong id="priceMaterialName"></strong>
+                </p>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label text-muted small">Preço Base Atual</label>
+                        <div class="fs-5" id="priceCurrentBase">R$ 0,00</div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted small">Último Preço Pago</label>
+                        <div class="fs-5" id="priceLastKnown">-</div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Novo Preço Base (R$/unidade)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        <input type="number" class="form-control" id="newBasePrice" 
+                               step="0.0001" min="0.0001" placeholder="0,0000">
+                    </div>
+                    <div class="form-text">
+                        Este preço será usado quando não houver estoque nem histórico de compras.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveBasePrice()">
+                    <i class="bi bi-check-lg me-1"></i>
+                    Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Importar do Catálogo Global -->
+<div class="modal fade" id="catalogModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-collection me-2"></i>
+                    Catálogo de Matérias-Primas
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="catalogSearch"
+                                   placeholder="Buscar por nome, sinônimo, DCB ou CAS..." autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="catalogCategory">
+                            <option value="">Todas as categorias</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="catalogUsage">
+                            <option value="">Todos os usos</option>
+                            <option value="ORAL">Oral</option>
+                            <option value="TOPICAL">Tópico</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-center justify-content-end">
+                        <span class="badge bg-secondary" id="catalogSelectedCount">0 selecionados</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="max-height: 55vh;">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th style="width: 36px;">
+                                    <input type="checkbox" class="form-check-input" id="catalogSelectAll"
+                                           title="Selecionar todos da página atual">
+                                </th>
+                                <th>Nome</th>
+                                <th style="width: 14%">Categoria</th>
+                                <th style="width: 9%">Controle</th>
+                                <th style="width: 7%">Uso</th>
+                                <th style="width: 7%">Unidade</th>
+                                <th style="width: 8%" class="text-end">DCB</th>
+                            </tr>
+                        </thead>
+                        <tbody id="catalogTableBody">
+                            <tr><td colspan="7" class="text-center py-4 text-muted">
+                                <div class="spinner-border spinner-border-sm me-2"></div>Carregando catálogo...
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <div class="text-muted small" id="catalogPaginationInfo">
+                    -
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0" id="catalogPagination"></ul>
+                    </nav>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="btnImportSelected" disabled>
+                        <i class="bi bi-download me-1"></i>
+                        Importar selecionados
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentPage = 1;
+    let currentMaterialId = null;
+    const pageSize = 50;
+
+    // ──────── Estado do catálogo ────────
+    const catalogState = {
+        page: 1,
+        pageSize: 25,
+        q: '',
+        category: '',
+        usage: '',
+        selected: new Map(), // id => name
+        currentPageItems: []
+    };
+    let catalogSearchTimeout;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCategories();
+        loadStatistics();
+        loadMaterials();
+
+        // Debounce na busca
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentPage = 1;
+                loadMaterials();
+            }, 300);
+        });
+
+        // Filtros
+        ['filterControlType', 'filterPriceSource', 'filterCategory', 'filterStock'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                currentPage = 1;
+                loadMaterials();
+            });
+        });
+    });
+
+    async function loadCategories() {
+        try {
+            const response = await fetch('/api/RawMaterials/categories');
+            const result = await response.json();
+            if (result.success) {
+                const select = document.getElementById('filterCategory');
+                result.data.forEach(cat => {
+                    select.innerHTML += `<option value="${cat.category}">${cat.category} (${cat.count})</option>`;
+                });
+            }
+        } catch (e) {
+            console.error('Erro ao carregar categorias:', e);
+        }
+    }
+
+    async function loadStatistics() {
+        try {
+            const response = await fetch('/api/RawMaterials/pricing-statistics');
+            const result = await response.json();
+            if (result.success) {
+                const s = result.data;
+                document.getElementById('statTotal').textContent = s.totalMaterials;
+                document.getElementById('statWithStock').textContent = s.withStock;
+                document.getElementById('statLowStock').textContent = s.priceFromHistory || 0;
+                document.getElementById('statVirtual').textContent = s.virtualOnly;
+                document.getElementById('statControlled').textContent = s.priceFromBase;
+                document.getElementById('statOutdated').textContent = s.outdatedPrice;
+            }
+        } catch (e) {
+            console.error('Erro ao carregar estatísticas:', e);
+        }
+    }
+
+    async function loadMaterials() {
+        const search = document.getElementById('searchInput').value;
+        const controlType = document.getElementById('filterControlType').value;
+        const priceSource = document.getElementById('filterPriceSource').value;
+        const category = document.getElementById('filterCategory').value;
+        const stockFilter = document.getElementById('filterStock').value;
+
+        let url = `/api/RawMaterials?page=${currentPage}&pageSize=${pageSize}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (controlType) url += `&controlType=${controlType}`;
+        if (priceSource) url += `&priceSource=${priceSource}`;
+        if (category) url += `&category=${encodeURIComponent(category)}`;
+        if (stockFilter === 'low') url += `&lowStock=true`;
+        if (stockFilter === 'virtual') url += `&isVirtual=true`;
+        if (stockFilter === 'outdated') url += `&outdatedPrice=true`;
+
+        try {
+            const response = await fetch(url);
+            const result = await response.json();
+
+            if (result.success) {
+                renderTable(result.data);
+                renderPagination(result.pagination);
+            }
+        } catch (e) {
+            console.error('Erro:', e);
+            document.getElementById('materialsBody').innerHTML = `
+                <tr><td colspan="8" class="text-center text-danger py-4">Erro ao carregar dados</td></tr>
+            `;
+        }
+    }
+
+    function renderTable(materials) {
+        const tbody = document.getElementById('materialsBody');
+
+        if (!materials || materials.length === 0) {
+            tbody.innerHTML = `
+                <tr><td colspan="8" class="text-center text-muted py-5">
+                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                    Nenhuma matéria-prima encontrada
+                </td></tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = materials.map(m => {
+            // Indicador de preço
+            let priceIndicator, priceClass;
+            if (m.priceStatus === 'ESTOQUE') {
+                priceIndicator = '🟢';
+                priceClass = 'text-success';
+            } else if (m.priceStatus === 'HISTORICO') {
+                priceIndicator = '🟡';
+                priceClass = 'text-warning';
+            } else {
+                priceIndicator = '🔴';
+                priceClass = 'text-danger';
+            }
+
+            // Badge de controle
+            let controlBadge = '';
+            if (m.controlType !== 'COMUM') {
+                controlBadge = `<span class="badge bg-danger">${m.controlType}</span>`;
+            } else {
+                controlBadge = `<span class="badge bg-secondary">Comum</span>`;
+            }
+
+            // Status do estoque
+            let stockClass = 'text-body';
+            let stockIcon = '';
+            if (m.stockStatus === 'SEM_ESTOQUE') {
+                stockClass = 'text-muted';
+                stockIcon = '<i class="bi bi-x-circle text-danger me-1"></i>';
+            } else if (m.stockStatus === 'BAIXO') {
+                stockClass = 'text-warning';
+                stockIcon = '<i class="bi bi-exclamation-triangle text-warning me-1"></i>';
+            } else if (m.stockStatus === 'EXCESSO') {
+                stockClass = 'text-info';
+            }
+
+            // Última atualização
+            let lastUpdate = '-';
+            let updateClass = '';
+            if (m.lastPriceDate) {
+                const date = new Date(m.lastPriceDate);
+                lastUpdate = date.toLocaleDateString('pt-BR');
+                if (m.isPriceOutdated) {
+                    updateClass = 'text-danger';
+                    lastUpdate += ` <i class="bi bi-exclamation-circle" title="${m.daysSinceLastPrice} dias"></i>`;
+                }
+            }
+
+            return `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            ${m.isVirtual ? '<i class="bi bi-cloud text-muted me-2" title="Virtual"></i>' : ''}
+                            <div>
+                                <a href="/materias-primas/${m.id}" class="text-decoration-none fw-medium">
+                                    ${m.name}
+                                </a>
+                                ${m.requiresRefrigeration ? '<i class="bi bi-snow text-info ms-1" title="Refrigeração"></i>' : ''}
+                                ${m.requiresSpecialAuthorization ? '<i class="bi bi-shield-exclamation text-danger ms-1" title="Autorização Especial"></i>' : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-muted small">${m.casNumber || '-'}</td>
+                    <td>${controlBadge}</td>
+                    <td class="small">${m.category || '-'}</td>
+                    <td class="text-end ${stockClass}">
+                        ${stockIcon}${formatNumber(m.currentStock)} ${m.unit}
+                    </td>
+                    <td class="text-end">
+                        <span class="${priceClass}" title="${m.priceStatus}">
+                            ${priceIndicator} R$ ${formatNumber(m.currentPrice, 4)}
+                        </span>
+                        <button class="btn btn-link btn-sm p-0 ms-1" onclick="openPriceModal('${m.id}', '${escapeHtml(m.name)}', ${m.basePrice || 0}, ${m.lastKnownPrice || 0})" title="Editar preço base">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </td>
+                    <td class="${updateClass} small">${lastUpdate}</td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <a href="/materias-primas/${m.id}" class="btn btn-outline-primary" title="Detalhes">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="/materias-primas/${m.id}/editar" class="btn btn-outline-secondary" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="/materias-primas/${m.id}/lotes" class="btn btn-outline-info" title="Lotes">
+                                <i class="bi bi-boxes"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderPagination(pagination) {
+        const info = document.getElementById('paginationInfo');
+        const nav = document.getElementById('pagination');
+
+        const start = (pagination.currentPage - 1) * pagination.pageSize + 1;
+        const end = Math.min(pagination.currentPage * pagination.pageSize, pagination.totalRecords);
+        info.textContent = `Mostrando ${start}-${end} de ${pagination.totalRecords} registros`;
+
+        let html = '';
+        
+        // Anterior
+        html += `<li class="page-item ${pagination.currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToPage(${pagination.currentPage - 1}); return false;">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>`;
+
+        // Páginas
+        for (let i = 1; i <= pagination.totalPages; i++) {
+            if (i === 1 || i === pagination.totalPages || 
+                (i >= pagination.currentPage - 2 && i <= pagination.currentPage + 2)) {
+                html += `<li class="page-item ${i === pagination.currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="goToPage(${i}); return false;">${i}</a>
+                </li>`;
+            } else if (i === pagination.currentPage - 3 || i === pagination.currentPage + 3) {
+                html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+
+        // Próximo
+        html += `<li class="page-item ${pagination.currentPage === pagination.totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToPage(${pagination.currentPage + 1}); return false;">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>`;
+
+        nav.innerHTML = html;
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        loadMaterials();
+    }
+
+    function openPriceModal(id, name, basePrice, lastKnown) {
+        currentMaterialId = id;
+        document.getElementById('priceMaterialName').textContent = name;
+        document.getElementById('priceCurrentBase').textContent = basePrice > 0 ? `R$ ${formatNumber(basePrice, 4)}` : 'Não definido';
+        document.getElementById('priceLastKnown').textContent = lastKnown > 0 ? `R$ ${formatNumber(lastKnown, 4)}` : '-';
+        document.getElementById('newBasePrice').value = basePrice > 0 ? basePrice : '';
+        
+        new bootstrap.Modal(document.getElementById('priceModal')).show();
+    }
+
+    async function saveBasePrice() {
+        const price = parseFloat(document.getElementById('newBasePrice').value);
+        if (!price || price <= 0) {
+            alert('Informe um preço válido');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/RawMaterials/${currentMaterialId}/base-price`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ basePrice: price })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById('priceModal')).hide();
+                loadMaterials();
+                loadStatistics();
+            } else {
+                alert(result.error || 'Erro ao salvar');
+            }
+        } catch (e) {
+            console.error('Erro:', e);
+            alert('Erro ao salvar preço');
+        }
+    }
+
+    function formatNumber(value, decimals = 2) {
+        return (value || 0).toLocaleString('pt-BR', { 
+            minimumFractionDigits: decimals, 
+            maximumFractionDigits: decimals 
+        });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML.replace(/'/g, "\\'");
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // CATÁLOGO GLOBAL DE MATÉRIAS-PRIMAS (importar do catálogo)
+    // ════════════════════════════════════════════════════════════════════════
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('catalogModal');
+        if (!modal) return;
+
+        modal.addEventListener('shown.bs.modal', () => {
+            // Primeira abertura: carrega categorias e primeira página
+            if (!modal.dataset.loaded) {
+                loadCatalogCategories();
+                modal.dataset.loaded = 'true';
+            }
+            loadCatalog();
+            document.getElementById('catalogSearch').focus();
+        });
+
+        document.getElementById('catalogSearch').addEventListener('input', () => {
+            clearTimeout(catalogSearchTimeout);
+            catalogSearchTimeout = setTimeout(() => {
+                catalogState.q = document.getElementById('catalogSearch').value.trim();
+                catalogState.page = 1;
+                loadCatalog();
+            }, 300);
+        });
+
+        document.getElementById('catalogCategory').addEventListener('change', (e) => {
+            catalogState.category = e.target.value;
+            catalogState.page = 1;
+            loadCatalog();
+        });
+
+        document.getElementById('catalogUsage').addEventListener('change', (e) => {
+            catalogState.usage = e.target.value;
+            catalogState.page = 1;
+            loadCatalog();
+        });
+
+        document.getElementById('catalogSelectAll').addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            catalogState.currentPageItems.forEach(item => {
+                if (checked) catalogState.selected.set(item.id, item.name);
+                else catalogState.selected.delete(item.id);
+            });
+            renderCatalogBody();
+            updateCatalogSelectionUI();
+        });
+
+        document.getElementById('btnImportSelected').addEventListener('click', importSelectedFromCatalog);
+    });
+
+    async function loadCatalogCategories() {
+        try {
+            const r = await fetch('/api/RawMaterialsCatalog/categories');
+            const result = await r.json();
+            if (result.success) {
+                const sel = document.getElementById('catalogCategory');
+                result.data.forEach(c => {
+                    sel.innerHTML += `<option value="${c.category}">${c.category} (${c.count})</option>`;
+                });
+            }
+        } catch (e) {
+            console.error('Erro ao carregar categorias do catálogo:', e);
+        }
+    }
+
+    async function loadCatalog() {
+        const body = document.getElementById('catalogTableBody');
+        body.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">
+            <div class="spinner-border spinner-border-sm me-2"></div>Buscando...</td></tr>`;
+
+        const params = new URLSearchParams({
+            page: catalogState.page,
+            pageSize: catalogState.pageSize
+        });
+        if (catalogState.q) params.append('q', catalogState.q);
+        if (catalogState.category) params.append('category', catalogState.category);
+        if (catalogState.usage) params.append('usage', catalogState.usage);
+
+        try {
+            const r = await fetch(`/api/RawMaterialsCatalog?${params.toString()}`);
+            const result = await r.json();
+            if (!result.success) throw new Error(result.error || 'Erro');
+
+            catalogState.currentPageItems = result.data || [];
+            renderCatalogBody();
+            renderCatalogPagination(result.pagination);
+            updateCatalogSelectionUI();
+        } catch (e) {
+            console.error(e);
+            body.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">
+                Erro ao carregar catálogo</td></tr>`;
+        }
+    }
+
+    function renderCatalogBody() {
+        const body = document.getElementById('catalogTableBody');
+        if (catalogState.currentPageItems.length === 0) {
+            body.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>Nenhum item encontrado
+            </td></tr>`;
+            return;
+        }
+
+        body.innerHTML = catalogState.currentPageItems.map(item => {
+            const isSelected = catalogState.selected.has(item.id);
+            const controlBadge = item.controlType && item.controlType !== 'COMUM'
+                ? `<span class="badge bg-danger">${item.controlType}</span>`
+                : `<span class="badge bg-light text-dark">Comum</span>`;
+            const usageLabel = item.allowedUsage === 'BOTH' ? 'O/T'
+                             : item.allowedUsage === 'ORAL' ? 'Oral'
+                             : item.allowedUsage === 'TOPICAL' ? 'Tópico'
+                             : item.allowedUsage || '-';
+            const indications = item.indications
+                ? `<small class="text-muted d-block">${escapeText(item.indications)}</small>`
+                : '';
+            return `
+                <tr>
+                    <td><input type="checkbox" class="form-check-input catalog-row-check"
+                               data-id="${item.id}" data-name="${escapeAttr(item.name)}"
+                               ${isSelected ? 'checked' : ''}></td>
+                    <td>
+                        <strong>${escapeText(item.name)}</strong>
+                        ${item.synonyms ? `<small class="text-muted d-block">${escapeText(item.synonyms)}</small>` : ''}
+                        ${indications}
+                    </td>
+                    <td class="small">${escapeText(item.category || '-')}</td>
+                    <td>${controlBadge}</td>
+                    <td class="small">${usageLabel}</td>
+                    <td class="small">${escapeText(item.unit || '-')}</td>
+                    <td class="text-end small text-muted">${escapeText(item.dcbCode || '-')}</td>
+                </tr>
+            `;
+        }).join('');
+
+        body.querySelectorAll('.catalog-row-check').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const id = e.target.dataset.id;
+                const name = e.target.dataset.name;
+                if (e.target.checked) catalogState.selected.set(id, name);
+                else catalogState.selected.delete(id);
+                updateCatalogSelectionUI();
+            });
+        });
+    }
+
+    function renderCatalogPagination(pagination) {
+        const info = document.getElementById('catalogPaginationInfo');
+        const nav = document.getElementById('catalogPagination');
+        if (!pagination) { info.textContent = '-'; nav.innerHTML = ''; return; }
+
+        const start = (pagination.currentPage - 1) * pagination.pageSize + 1;
+        const end = Math.min(pagination.currentPage * pagination.pageSize, pagination.totalRecords);
+        info.textContent = pagination.totalRecords > 0
+            ? `${start}-${end} de ${pagination.totalRecords}`
+            : 'Nenhum item';
+
+        let html = `<li class="page-item ${pagination.currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToCatalogPage(${pagination.currentPage - 1}); return false;">
+                <i class="bi bi-chevron-left"></i></a></li>`;
+        const total = pagination.totalPages;
+        const cur = pagination.currentPage;
+        for (let i = 1; i <= total; i++) {
+            if (i === 1 || i === total || (i >= cur - 1 && i <= cur + 1)) {
+                html += `<li class="page-item ${i === cur ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="goToCatalogPage(${i}); return false;">${i}</a></li>`;
+            } else if (i === cur - 2 || i === cur + 2) {
+                html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+        html += `<li class="page-item ${cur === total || total === 0 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToCatalogPage(${cur + 1}); return false;">
+                <i class="bi bi-chevron-right"></i></a></li>`;
+        nav.innerHTML = html;
+    }
+
+    function goToCatalogPage(page) {
+        catalogState.page = page;
+        loadCatalog();
+    }
+
+    function updateCatalogSelectionUI() {
+        const count = catalogState.selected.size;
+        document.getElementById('catalogSelectedCount').textContent = `${count} selecionado${count !== 1 ? 's' : ''}`;
+        document.getElementById('btnImportSelected').disabled = count === 0;
+
+        // sync "select all" checkbox
+        const allCheckbox = document.getElementById('catalogSelectAll');
+        const visibleIds = catalogState.currentPageItems.map(i => i.id);
+        const allOnPageSelected = visibleIds.length > 0 && visibleIds.every(id => catalogState.selected.has(id));
+        allCheckbox.checked = allOnPageSelected;
+        allCheckbox.indeterminate = !allOnPageSelected && visibleIds.some(id => catalogState.selected.has(id));
+    }
+
+    async function importSelectedFromCatalog() {
+        const ids = Array.from(catalogState.selected.keys());
+        if (ids.length === 0) return;
+
+        const btn = document.getElementById('btnImportSelected');
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Importando...';
+
+        try {
+            const r = await fetch('/api/RawMaterials/import-from-catalog', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ catalogIds: ids, asVirtual: true })
+            });
+            const result = await r.json();
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById('catalogModal')).hide();
+                catalogState.selected.clear();
+                alert(`✅ ${result.importedCount} importado(s). ${result.skippedCount > 0 ? result.skippedCount + ' ignorado(s) (já existiam).' : ''}`);
+                loadMaterials();
+                loadStatistics();
+            } else {
+                alert(result.error || 'Erro ao importar');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Erro ao importar do catálogo');
+        } finally {
+            btn.disabled = catalogState.selected.size === 0;
+            btn.innerHTML = original;
+        }
+    }
+
+    function escapeText(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function escapeAttr(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+</script>
+}

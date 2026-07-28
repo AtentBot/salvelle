@@ -1,0 +1,60 @@
+@model Models.CashRegister
+@{
+    ViewData["Title"] = "Sangria";
+    Layout = "_Layout";
+    var saldoDisponivel = Model.OpeningBalance + Model.TotalCash - Model.TotalWithdrawals + Model.TotalSupplies;
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center mb-4">
+                <a href="/Caixa" class="btn btn-outline-secondary me-3">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div>
+                    <h4 class="mb-0">Sangria</h4>
+                    <small class="text-muted">Retirada de dinheiro do caixa</small>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-arrow-up-circle me-2"></i>Realizar Sangria</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <strong>Caixa:</strong> @Model.Code<br>
+                        <strong>Saldo disponível em dinheiro:</strong> R$ @saldoDisponivel.ToString("N2")
+                    </div>
+
+                    <form method="post" action="/Caixa/Sangria">
+                        <input type="hidden" name="cashRegisterId" value="@Model.Id">
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Valor da Sangria *</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" name="valor" 
+                                       step="0.01" min="0.01" max="@saldoDisponivel.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)" required autofocus>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Motivo *</label>
+                            <textarea class="form-control" name="motivo" rows="3" 
+                                      placeholder="Ex: Depósito bancário, pagamento fornecedor..." required></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="bi bi-arrow-up-circle me-2"></i>Confirmar Sangria
+                            </button>
+                            <a href="/Caixa" class="btn btn-outline-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,208 @@
+@model DTOs.Labels.CreateLabelTemplateDto
+@using DTOs.Labels
+@{
+    ViewData["Title"] = "Novo Template de Rótulo";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-0">
+                <i class="bi bi-plus-circle me-2"></i>Novo Template de Rótulo
+            </h2>
+        </div>
+        <div class="col-auto">
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <form id="templateForm" asp-action="Create" method="post">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Informações Básicas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nome do Template *</label>
+                                <input asp-for="Name" class="form-control" required maxlength="100" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo *</label>
+                                <select asp-for="TemplateType" class="form-select" required>
+                                    <option value="PADRAO">Padrão</option>
+                                    <option value="CONTROLADO">Controlado</option>
+                                    <option value="HOMEOPATICO">Homeopático</option>
+                                    <option value="FITOTERAPICO">Fitoterápico</option>
+                                    <option value="VETERINARIO">Veterinário</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Descrição</label>
+                            <textarea asp-for="Description" class="form-control" rows="2" maxlength="500"></textarea>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Forma Farmacêutica</label>
+                                <input asp-for="PharmaceuticalForm" class="form-control" maxlength="50" 
+                                       placeholder="Ex: Cápsula, Pomada..." />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Largura (mm) *</label>
+                                <input asp-for="Width" type="number" class="form-control" step="0.01" required />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Altura (mm) *</label>
+                                <input asp-for="Height" type="number" class="form-control" step="0.01" required />
+                            </div>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input asp-for="IsDefault" class="form-check-input" type="checkbox" />
+                            <label class="form-check-label" asp-for="IsDefault">
+                                Definir como template padrão
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">Template HTML</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">HTML do Rótulo *</label>
+                            <textarea asp-for="HtmlTemplate" class="form-control font-monospace" 
+                                      rows="15" required></textarea>
+                            <small class="form-text text-muted">
+                                Use placeholders: {{PHARMACY_NAME}}, {{PATIENT_NAME}}, {{FORMULA_NAME}}, 
+                                {{COMPOSITION}}, {{POSOLOGY}}, {{BATCH_NUMBER}}, {{MANIPULATION_DATE}}, 
+                                {{EXPIRATION_DATE}}, {{PHARMACIST_NAME}}, {{PHARMACIST_CRF}}, {{QR_CODE}}, {{WARNINGS}}
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">CSS (Opcional)</label>
+                            <textarea asp-for="CssStyles" class="form-control font-monospace" rows="8"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Campos a Incluir</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check mb-2">
+                            <input asp-for="IncludeEstablishmentName" class="form-check-input" type="checkbox" checked />
+                            <label class="form-check-label">Nome da Farmácia</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input asp-for="IncludePharmacistName" class="form-check-input" type="checkbox" checked />
+                            <label class="form-check-label">Nome do Farmacêutico</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input asp-for="IncludeFormulaName" class="form-check-input" type="checkbox" checked />
+                            <label class="form-check-label">Nome da Fórmula</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input asp-for="IncludeComposition" class="form-check-input" type="checkbox" checked />
+                            <label class="form-check-label">Composição</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input asp-for="IncludePosology" class="form-check-input" type="checkbox" checked />
+                            <label class="form-check-label">Posologia</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input asp-for="IncludeValidity" class="form-check-input" type="checkbox" checked />
+                            <label class="form-check-label">Validade</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input asp-for="IncludeBatchNumber" class="form-check-input" type="checkbox" checked />
+                            <label class="form-check-label">Número do Lote</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input asp-for="IncludeManipulationDate" class="form-check-input" type="checkbox" checked />
+                            <label class="form-check-label">Data de Manipulação</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input asp-for="IncludePatientName" class="form-check-input" type="checkbox" checked />
+                            <label class="form-check-label">Nome do Paciente</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input asp-for="IncludeQrCode" class="form-check-input" type="checkbox" checked />
+                            <label class="form-check-label">QR Code</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input asp-for="IncludeWarnings" class="form-check-input" type="checkbox" checked />
+                            <label class="form-check-label">Advertências</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mt-3">
+                    <div class="card-body">
+                        <button type="submit" class="btn btn-primary w-100 mb-2">
+                            <i class="bi bi-save me-2"></i>Salvar Template
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary w-100">
+                            Cancelar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('templateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            // Converter checkboxes
+            const checkboxes = ['IsDefault', 'IncludeEstablishmentName', 'IncludePharmacistName', 
+                'IncludeFormulaName', 'IncludeComposition', 'IncludePosology', 'IncludeValidity',
+                'IncludeBatchNumber', 'IncludeManipulationDate', 'IncludePatientName', 
+                'IncludeQrCode', 'IncludeWarnings'];
+            
+            checkboxes.forEach(cb => {
+                data[cb] = formData.get(cb) === 'on' || formData.get(cb) === 'true';
+            });
+            
+            // Converter números
+            data.Width = parseFloat(data.Width);
+            data.Height = parseFloat(data.Height);
+            
+            try {
+                const response = await fetch('/api/Labels/templates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    window.location.href = '/Labels';
+                } else {
+                    const error = await response.text();
+                    alert('Erro ao criar template: ' + error);
+                }
+            } catch (error) {
+                alert('Erro ao criar template: ' + error.message);
+            }
+        });
+    </script>
+}

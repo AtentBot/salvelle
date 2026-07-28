@@ -1,0 +1,202 @@
+﻿@{
+    ViewData["Title"] = "Relatório de Vendas";
+    Layout = "_Layout";
+    var vendas = ViewBag.Vendas as List<Models.Sale>;
+    var resumo = ViewBag.Resumo as VendasResumoDto;
+    var startDate = (DateTime)ViewBag.StartDate;
+    var endDate = (DateTime)ViewBag.EndDate;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="/Reports" class="btn btn-outline-secondary btn-sm mb-2">
+                <i class="bi bi-arrow-left me-1"></i>Voltar ao Dashboard
+            </a>
+            <h4 class="mb-0">
+                <i class="bi bi-graph-up text-primary me-2"></i>
+                Relatório de Vendas
+            </h4>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-outline-success btn-sm" onclick="exportarExcel()">
+                <i class="bi bi-file-earmark-excel me-1"></i>Excel
+            </button>
+            <button class="btn btn-outline-danger btn-sm" onclick="window.print()">
+                <i class="bi bi-file-earmark-pdf me-1"></i>Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small">Data Início</label>
+                    <input type="date" name="startDate" class="form-control" 
+                           value="@startDate.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">Data Fim</label>
+                    <input type="date" name="endDate" class="form-control" 
+                           value="@endDate.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>Filtrar
+                    </button>
+                    <a href="/Reports/Vendas" class="btn btn-outline-secondary">Limpar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resumo -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-lg-2">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="card-body py-2">
+                    <p class="text-muted small mb-1">Total Vendas</p>
+                    <h4 class="text-primary mb-0">@(resumo?.TotalVendas ?? 0)</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="card-body py-2">
+                    <p class="text-muted small mb-1">Valor Total</p>
+                    <h4 class="text-success mb-0">R$ @(resumo?.ValorTotal.ToString("N2") ?? "0,00")</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-2">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="card-body py-2">
+                    <p class="text-muted small mb-1">Ticket Médio</p>
+                    <h4 class="text-info mb-0">R$ @(resumo?.TicketMedio.ToString("N2") ?? "0,00")</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-2">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="card-body py-2">
+                    <p class="text-muted small mb-1">Descontos</p>
+                    <h4 class="text-warning mb-0">R$ @(resumo?.DescontoTotal.ToString("N2") ?? "0,00")</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="card-body py-2">
+                    <p class="text-muted small mb-1">Canceladas</p>
+                    <h4 class="text-danger mb-0">@(resumo?.VendasCanceladas ?? 0)</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Vendas -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h6 class="mb-0">Detalhamento das Vendas</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="vendasTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Data/Hora</th>
+                            <th>Cliente</th>
+                            <th>Itens</th>
+                            <th class="text-end">Subtotal</th>
+                            <th class="text-end">Desconto</th>
+                            <th class="text-end">Total</th>
+                            <th>Pagamento</th>
+                            <th>Status</th>
+                            <th>Vendedor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (vendas != null && vendas.Any())
+                        {
+                            foreach (var venda in vendas)
+                            {
+                                var statusClass = venda.Status == "FINALIZADA" ? "bg-success" : 
+                                                  venda.Status == "CANCELADA" ? "bg-danger" : "bg-warning";
+                                var pagamentoNome = venda.PaymentMethod switch
+                                {
+                                    "DINHEIRO" => "Dinheiro",
+                                    "PIX" => "PIX",
+                                    "CARTAO_CREDITO" => "Crédito",
+                                    "CARTAO_DEBITO" => "Débito",
+                                    "BOLETO" => "Boleto",
+                                    _ => venda.PaymentMethod ?? "-"
+                                };
+                                <tr>
+                                    <td>
+                                        <a href="/pdv/recibo/@venda.Id" class="text-primary text-decoration-none">
+                                            @venda.Code
+                                        </a>
+                                    </td>
+                                    <td>@venda.SaleDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@(venda.Customer?.FullName ?? "Consumidor Final")</td>
+                                    <td>
+                                        <span class="badge bg-secondary">@(venda.Items?.Count ?? 0)</span>
+                                    </td>
+                                    <td class="text-end">R$ @venda.Subtotal.ToString("N2")</td>
+                                    <td class="text-end">
+                                        @if (venda.DiscountAmount > 0)
+                                        {
+                                            <span class="text-warning">-R$ @venda.DiscountAmount.ToString("N2")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-end fw-bold">R$ @venda.TotalAmount.ToString("N2")</td>
+                                    <td>@pagamentoNome</td>
+                                    <td><span class="badge @statusClass">@venda.Status</span></td>
+                                    <td>@(venda.CreatedByEmployee?.FullName ?? "-")</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="10" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    Nenhuma venda encontrada no período
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@media print {
+        .btn, form, .sidebar, .top-nav { display: none !important; }
+        .main-content { margin-left: 0 !important; }
+        .card { box-shadow: none !important; border: 1px solid var(--rule) !important; }
+    }
+</style>
+
+@section Scripts {
+<script>
+    function exportarExcel() {
+        var table = document.getElementById('vendasTable');
+        var html = table.outerHTML;
+        var url = 'data:application/vnd.ms-excel,' + encodeURIComponent(html);
+        var link = document.createElement('a');
+        link.href = url;
+            link.download = 'relatorio_vendas_@(DateTime.Now.ToString("yyyyMMdd")).xlsx';
+        link.click();
+    }
+</script>
+}

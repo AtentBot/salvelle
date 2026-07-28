@@ -1,0 +1,483 @@
+﻿@{
+    ViewData["Title"] = "Dashboard de Pedidos";
+    Layout = "_Layout";
+}
+
+<style>
+    .stat-card {
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+        transition: all 0.2s;
+    }
+    .stat-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        line-height: 1;
+    }
+    .pedido-pronto-card {
+        background: var(--ok-soft);
+        border-radius: 12px;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .pedido-pronto-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+    .pedido-pendente-card {
+        background: #fff;
+        border: 1px solid var(--amber-500);
+        border-radius: 12px;
+    }
+    .badge-aguardando {
+        animation: pulse 2s infinite;
+    }
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <i class="bi bi-graph-up me-2"></i>Dashboard de Pedidos
+            </h4>
+            <small class="text-muted">Visão geral dos pedidos online</small>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+            </button>
+            <a href="/OnlineOrders" class="btn btn-primary">
+                <i class="bi bi-list-ul me-1"></i>Ver Todos os Pedidos
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card p-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-number text-dark" id="statHoje">0</div>
+                        <small class="text-muted">Pedidos Hoje</small>
+                        <div class="mt-1">
+                            <small class="text-success">Total: <span id="totalHoje">R$ 0,00</span></small>
+                        </div>
+                    </div>
+                    <div class="stat-icon bg-primary bg-opacity-10">
+                        <i class="bi bi-calendar-day text-primary fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card p-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-number text-dark" id="statSemana">0</div>
+                        <small class="text-muted">Pedidos na Semana</small>
+                        <div class="mt-1">
+                            <small class="text-success">Total: <span id="totalSemana">R$ 0,00</span></small>
+                        </div>
+                    </div>
+                    <div class="stat-icon bg-success bg-opacity-10">
+                        <i class="bi bi-calendar-week text-success fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card p-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-number text-dark" id="statMes">0</div>
+                        <small class="text-muted">Pedidos no Mês</small>
+                        <div class="mt-1">
+                            <small class="text-success">Total: <span id="totalMes">R$ 0,00</span></small>
+                        </div>
+                    </div>
+                    <div class="stat-icon bg-info bg-opacity-10">
+                        <i class="bi bi-calendar-month text-info fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card p-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-number text-warning" id="statAguardando">0</div>
+                        <small class="text-muted">Aguardando Ação</small>
+                        <div class="mt-1">
+                            <small>Prontos: <span class="text-success fw-bold" id="countProntos">0</span></small>
+                        </div>
+                    </div>
+                    <div class="stat-icon bg-warning bg-opacity-10">
+                        <i class="bi bi-hourglass-split text-warning fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Prontos para Cobrança -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <span>
+                        <i class="bi bi-cash-coin me-2"></i>Prontos para Cobrança
+                    </span>
+                    <span class="badge bg-light text-success" id="badgeProntos">0</span>
+                </div>
+                <div class="card-body" id="listaProntos">
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-hourglass-split fs-1"></i>
+                        <p class="mt-2">Carregando...</p>
+                    </div>
+                </div>
+                <div class="card-footer bg-white">
+                    <a href="/PDV" class="btn btn-success w-100">
+                        <i class="bi bi-shop me-2"></i>Abrir PDV para Cobrar
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pendentes de Confirmação -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-warning d-flex justify-content-between align-items-center">
+                    <span>
+                        <i class="bi bi-exclamation-circle me-2"></i>Pendentes de Confirmação
+                    </span>
+                    <span class="badge bg-dark" id="badgePendentes">0</span>
+                </div>
+                <div class="card-body" id="listaPendentes">
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-hourglass-split fs-1"></i>
+                        <p class="mt-2">Carregando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pedidos de Hoje -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span>
+                        <i class="bi bi-calendar-event me-2"></i>Pedidos de Hoje
+                    </span>
+                    <span class="badge bg-primary" id="badgeHoje">0</span>
+                </div>
+                <div class="card-body" id="listaPedidosHoje">
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">Nenhum pedido hoje ainda</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        carregarDados();
+        // Auto-refresh a cada 30 segundos
+        setInterval(carregarDados, 30000);
+    });
+
+    async function carregarDados() {
+        await Promise.all([
+            carregarEstatisticas(),
+            carregarPedidosProntos(),
+            carregarPedidosPendentes(),
+            carregarPedidosHoje()
+        ]);
+    }
+
+    async function carregarEstatisticas() {
+        try {
+            const response = await fetch('/api/online-orders/stats');
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                document.getElementById('statHoje').textContent = data.data.todayCount || 0;
+                document.getElementById('statSemana').textContent = data.data.weekCount || 0;
+                document.getElementById('statMes').textContent = data.data.monthCount || 0;
+                document.getElementById('statAguardando').textContent = data.data.pendingCount || 0;
+                document.getElementById('countProntos').textContent = data.data.readyCount || 0;
+                
+                document.getElementById('totalHoje').textContent = formatarMoeda(data.data.todayTotal || 0);
+                document.getElementById('totalSemana').textContent = formatarMoeda(data.data.weekTotal || 0);
+                document.getElementById('totalMes').textContent = formatarMoeda(data.data.monthTotal || 0);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar estatísticas:', error);
+        }
+    }
+
+    async function carregarPedidosProntos() {
+        try {
+            const response = await fetch('/api/PDV/online-orders-ready');
+            const data = await response.json();
+            
+            const container = document.getElementById('listaProntos');
+            const badge = document.getElementById('badgeProntos');
+            
+            if (data.success && data.data && data.data.length > 0) {
+                badge.textContent = data.data.length;
+                
+                container.innerHTML = data.data.map(pedido => {
+                    const tempoEspera = calcularTempoEspera(pedido.createdAt);
+                    const tempoMinutos = calcularMinutosEspera(pedido.createdAt);
+                    const tempoClasse = tempoMinutos > 30 ? 'text-danger badge-aguardando' : 'text-muted';
+                    
+                    return `
+                        <div class="pedido-pronto-card p-3 mb-2" onclick="cobrarNoPDV('${pedido.id}')">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong class="text-success">#${pedido.orderNumber}</strong>
+                                    <br>
+                                    <small><i class="bi bi-person me-1"></i>${pedido.customerName}</small>
+                                    <br>
+                                    <small class="${tempoClasse}"><i class="bi bi-clock me-1"></i>${tempoEspera}</small>
+                                </div>
+                                <div class="text-end">
+                                    <strong class="d-block fs-5 mb-1">R$ ${pedido.total.toFixed(2).replace('.', ',')}</strong>
+                                    <button class="btn btn-sm btn-warning">
+                                        <i class="bi bi-cash-coin me-1"></i>Cobrar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                badge.textContent = '0';
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-check-circle text-success fs-1"></i>
+                        <p class="text-muted mt-2">Todos os pedidos prontos foram cobrados!</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar pedidos prontos:', error);
+        }
+    }
+
+    async function carregarPedidosPendentes() {
+        try {
+            const response = await fetch('/api/online-orders?status=PENDING&limit=10');
+            const data = await response.json();
+            
+            const container = document.getElementById('listaPendentes');
+            const badge = document.getElementById('badgePendentes');
+            
+            if (data.success && data.data && data.data.orders && data.data.orders.length > 0) {
+                badge.textContent = data.data.orders.length;
+                
+                container.innerHTML = data.data.orders.map(pedido => `
+                    <div class="pedido-pendente-card p-3 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="/OnlineOrders/Details/${pedido.id}" class="text-primary fw-bold">
+                                    #${pedido.orderNumber}
+                                </a>
+                                <span class="badge bg-warning ms-2">Pendente</span>
+                                <br>
+                                <small class="text-muted">${pedido.customerName}</small>
+                                <br>
+                                <small class="text-muted"><i class="bi bi-clock me-1"></i>${formatarData(pedido.createdAt)}</small>
+                            </div>
+                            <div class="text-end">
+                                <strong class="d-block text-success">R$ ${pedido.total.toFixed(2).replace('.', ',')}</strong>
+                                <button class="btn btn-sm btn-success mt-1" onclick="confirmarPedido('${pedido.id}')">
+                                    <i class="bi bi-check me-1"></i>Confirmar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                badge.textContent = '0';
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-check-circle text-success fs-1"></i>
+                        <p class="text-muted mt-2">Tudo em dia! Nenhum pedido pendente.</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar pedidos pendentes:', error);
+        }
+    }
+
+    async function carregarPedidosHoje() {
+        try {
+            const hoje = new Date().toISOString().split('T')[0];
+            const response = await fetch(`/api/online-orders?startDate=${hoje}&limit=20`);
+            const data = await response.json();
+            
+            const container = document.getElementById('listaPedidosHoje');
+            const badge = document.getElementById('badgeHoje');
+            
+            if (data.success && data.data && data.data.orders && data.data.orders.length > 0) {
+                badge.textContent = data.data.orders.length;
+                
+                container.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Hora</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.data.orders.map(pedido => `
+                                    <tr>
+                                        <td><strong>#${pedido.orderNumber}</strong></td>
+                                        <td>${pedido.customerName}</td>
+                                        <td>${new Date(pedido.createdAt).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</td>
+                                        <td class="text-success fw-bold">R$ ${pedido.total.toFixed(2).replace('.', ',')}</td>
+                                        <td>${getStatusBadge(pedido.status)}</td>
+                                        <td>
+                                            ${pedido.status === 'READY' ? `
+                                                <button class="btn btn-sm btn-warning" onclick="cobrarNoPDV('${pedido.id}')">
+                                                    <i class="bi bi-cash-coin"></i> Cobrar
+                                                </button>
+                                            ` : `
+                                                <a href="/OnlineOrders/Details/${pedido.id}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            `}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else {
+                badge.textContent = '0';
+                container.innerHTML = `
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">Nenhum pedido hoje ainda</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar pedidos de hoje:', error);
+        }
+    }
+
+    function cobrarNoPDV(orderId) {
+        // Verificar se caixa está aberto
+        fetch('/api/PDV/cash-register/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data && data.data.isOpen) {
+                    window.location.href = `/PDV?orderId=${orderId}`;
+                } else {
+                    if (confirm('O caixa está fechado. Deseja abrir o caixa agora?')) {
+                        // Salvar orderId para depois
+                        sessionStorage.setItem('pendingOrderId', orderId);
+                        window.location.href = '/Caixa/Abrir';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                window.location.href = `/PDV?orderId=${orderId}`;
+            });
+    }
+
+    async function confirmarPedido(orderId) {
+        if (!confirm('Confirmar este pedido? O cliente será notificado.')) return;
+        
+        try {
+            const response = await fetch(`/api/online-orders/${orderId}/confirm`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('✅ Pedido confirmado!');
+                carregarDados();
+            } else {
+                alert('❌ Erro: ' + data.message);
+            }
+        } catch (error) {
+            alert('❌ Erro ao confirmar pedido');
+        }
+    }
+
+    function calcularTempoEspera(createdAt) {
+        const created = new Date(createdAt);
+        const now = new Date();
+        const diffMs = now - created;
+        const diffMins = Math.floor(diffMs / 60000);
+        
+        if (diffMins < 60) return `${diffMins} minutos`;
+        const hours = Math.floor(diffMins / 60);
+        const mins = diffMins % 60;
+        return `${hours}h ${mins}min`;
+    }
+
+    function calcularMinutosEspera(createdAt) {
+        const created = new Date(createdAt);
+        const now = new Date();
+        return Math.floor((now - created) / 60000);
+    }
+
+    function formatarMoeda(valor) {
+        return 'R$ ' + valor.toFixed(2).replace('.', ',');
+    }
+
+    function formatarData(dataStr) {
+        const data = new Date(dataStr);
+        return data.toLocaleDateString('pt-BR') + ' ' + data.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+    }
+
+    function getStatusBadge(status) {
+        const badges = {
+            'PENDING': '<span class="badge bg-warning">Pendente</span>',
+            'CONFIRMED': '<span class="badge bg-info">Confirmado</span>',
+            'PREPARING': '<span class="badge bg-primary">Preparando</span>',
+            'READY': '<span class="badge bg-success">Pronto</span>',
+            'DELIVERED': '<span class="badge bg-secondary">Entregue</span>',
+            'CANCELLED': '<span class="badge bg-danger">Cancelado</span>'
+        };
+        return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
+    }
+</script>
+}

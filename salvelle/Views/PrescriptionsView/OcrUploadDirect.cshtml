@@ -1,0 +1,374 @@
+﻿@{
+    ViewData["Title"] = "Processar Receita";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">
+                <i class="bi bi-camera text-success me-2"></i>
+                Processar Receita (OCR)
+            </h2>
+            <p class="text-muted mb-0">Faça upload da imagem da receita para extração automática</p>
+        </div>
+        <a href="/PrescriptionsView" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+    </div>
+
+    <!-- Card Principal -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <!-- Área de Upload -->
+                    <div id="uploadArea" class="border border-2 border-dashed rounded p-5 text-center mb-4"
+                         style="cursor: pointer; border-color: var(--rule); transition: all 0.3s;"
+                         ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" 
+                         ondrop="handleDrop(event)" onclick="document.getElementById('fileInput').click()">
+                        <i class="bi bi-cloud-arrow-up text-primary" style="font-size: 4rem;"></i>
+                        <h5 class="mt-3">Arraste a imagem da receita aqui</h5>
+                        <p class="text-muted mb-2">ou clique para selecionar</p>
+                        <small class="text-muted">Formatos aceitos: JPG, PNG, PDF (máx. 5MB)</small>
+                        <input type="file" id="fileInput" accept="image/*,.pdf" class="d-none" onchange="handleFileSelect(event)">
+                    </div>
+
+                    <!-- Preview da Imagem -->
+                    <div id="previewArea" class="d-none mb-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0"><i class="bi bi-image me-2"></i>Imagem da Receita</h6>
+                                    </div>
+                                    <div class="card-body text-center p-2">
+                                        <img id="imagePreview" src="" class="img-fluid rounded" style="max-height: 400px;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0"><i class="bi bi-file-text me-2"></i>Resultado OCR</h6>
+                                        <span id="ocrStatus" class="badge bg-secondary">Aguardando</span>
+                                    </div>
+                                    <div class="card-body" id="ocrResultArea">
+                                        <div class="text-center py-4 text-muted">
+                                            <i class="bi bi-arrow-left fs-3"></i>
+                                            <p class="mt-2">Faça upload da imagem para processar</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="d-flex justify-content-between">
+                        <button type="button" id="btnClear" class="btn btn-outline-secondary d-none" onclick="clearUpload()">
+                            <i class="bi bi-trash me-1"></i> Limpar
+                        </button>
+                        <button type="button" id="btnProcess" class="btn btn-success btn-lg d-none" onclick="processOcr()">
+                            <i class="bi bi-cpu me-1"></i> Processar com IA
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instruções -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-info bg-opacity-10">
+                    <h6 class="mb-0 text-info"><i class="bi bi-info-circle me-2"></i>Como funciona</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
+                                <i class="bi bi-upload text-primary fs-4"></i>
+                            </div>
+                            <h6>1. Upload</h6>
+                            <small class="text-muted">Envie a foto ou PDF da receita médica</small>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
+                                <i class="bi bi-cpu text-success fs-4"></i>
+                            </div>
+                            <h6>2. OCR com IA</h6>
+                            <small class="text-muted">Nossa IA extrai automaticamente os dados</small>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
+                                <i class="bi bi-check2-all text-warning fs-4"></i>
+                            </div>
+                            <h6>3. Revisão</h6>
+                            <small class="text-muted">Confira os dados e gere o orçamento</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Processamento -->
+<div class="modal fade" id="processingModal" data-bs-backdrop="static" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-5">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                <h5>Processando receita...</h5>
+                <p class="text-muted mb-0">Nossa IA está analisando a imagem</p>
+                <p class="text-muted small">Isso pode levar alguns segundos</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Resultado -->
+<div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-check-circle me-2"></i>Receita Processada!</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="resultContent">
+                <!-- Preenchido via JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <a href="#" id="btnGoToQuote" class="btn btn-success">
+                    <i class="bi bi-cash-coin me-1"></i> Gerar Orçamento
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #uploadArea:hover, #uploadArea.drag-over {
+        border-color: var(--info) !important;
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+</style>
+
+@section Scripts {
+    <script>
+        let selectedFile = null;
+        let prescriptionId = null;
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) processFile(file);
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) processFile(file);
+        }
+
+        function processFile(file) {
+            // Validações
+            const maxSize = 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('Arquivo muito grande. Máximo 5MB.');
+                return;
+            }
+
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Tipo de arquivo não permitido.');
+                return;
+            }
+
+            selectedFile = file;
+
+            // Mostrar preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (file.type.startsWith('image/')) {
+                    document.getElementById('imagePreview').src = e.target.result;
+                } else {
+                    // PDF - mostrar ícone
+                    document.getElementById('imagePreview').src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjZGMzNTQ1Ij48cGF0aCBkPSJNMTQgNC41VjE0YTIgMiAwIDAgMCAyIDJoMTBNMTQgMi41SDZhMiAyIDAgMCAwLTIgMnYyN2EyIDIgMCAwIDAgMiAyaDIwYTIgMiAwIDAgMCAyLTJWNi41bC04LTRaIi8+PC9zdmc+';
+                }
+                
+                document.getElementById('previewArea').classList.remove('d-none');
+                document.getElementById('btnProcess').classList.remove('d-none');
+                document.getElementById('btnClear').classList.remove('d-none');
+                document.getElementById('uploadArea').classList.add('d-none');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearUpload() {
+            selectedFile = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('previewArea').classList.add('d-none');
+            document.getElementById('btnProcess').classList.add('d-none');
+            document.getElementById('btnClear').classList.add('d-none');
+            document.getElementById('uploadArea').classList.remove('d-none');
+            document.getElementById('ocrResultArea').innerHTML = `
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-arrow-left fs-3"></i>
+                    <p class="mt-2">Faça upload da imagem para processar</p>
+                </div>
+            `;
+            document.getElementById('ocrStatus').className = 'badge bg-secondary';
+            document.getElementById('ocrStatus').textContent = 'Aguardando';
+        }
+
+        async function processOcr() {
+            if (!selectedFile) {
+                alert('Selecione um arquivo primeiro');
+                return;
+            }
+
+            // Mostrar modal de processamento
+            const processingModal = new bootstrap.Modal(document.getElementById('processingModal'));
+            processingModal.show();
+
+            document.getElementById('ocrStatus').className = 'badge bg-warning';
+            document.getElementById('ocrStatus').textContent = 'Processando...';
+
+            try {
+                // Converter arquivo para base64
+                const base64 = await fileToBase64(selectedFile);
+
+                // 1. Criar prescrição
+                const createResponse = await fetch('/api/Prescriptions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        prescriptionDate: new Date().toISOString(),
+                        expirationDate: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
+                        doctorName: 'A identificar via OCR',
+                        prescriptionType: 'SIMPLES'
+                    })
+                });
+
+                if (!createResponse.ok) {
+                    throw new Error('Erro ao criar prescrição');
+                }
+
+                const createData = await createResponse.json();
+                prescriptionId = createData.prescriptionId;
+
+                // 2. Upload do arquivo
+                const uploadResponse = await fetch(`/api/Prescriptions/${prescriptionId}/upload`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        fileName: selectedFile.name,
+                        fileType: selectedFile.type,
+                        fileBase64: base64.split(',')[1] // Remover prefixo data:
+                    })
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error('Erro ao enviar arquivo');
+                }
+
+                const uploadData = await uploadResponse.json();
+                const fileId = uploadData.fileId;
+
+                // 3. Processar OCR
+                const ocrResponse = await fetch(`/api/Prescriptions/${prescriptionId}/files/${fileId}/parse`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (!ocrResponse.ok) {
+                    throw new Error('Erro no processamento OCR');
+                }
+
+                const ocrResult = await ocrResponse.json();
+
+                // Fechar modal de processamento
+                processingModal.hide();
+
+                // Atualizar status
+                document.getElementById('ocrStatus').className = 'badge bg-success';
+                document.getElementById('ocrStatus').textContent = 'Concluído';
+
+                // Mostrar resultado
+                showOcrResult(ocrResult);
+
+            } catch (error) {
+                processingModal.hide();
+                console.error('Erro:', error);
+                document.getElementById('ocrStatus').className = 'badge bg-danger';
+                document.getElementById('ocrStatus').textContent = 'Erro';
+                alert('Erro ao processar: ' + error.message);
+            }
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function showOcrResult(result) {
+            const resultArea = document.getElementById('ocrResultArea');
+            
+            let html = `
+                <div class="mb-3">
+                    <span class="badge bg-info mb-2">Confiança: ${(result.overallConfidence * 100).toFixed(0)}%</span>
+                </div>
+            `;
+
+            if (result.doctorName) {
+                html += `<p><strong>Médico:</strong> ${result.doctorName}</p>`;
+            }
+            if (result.doctorCrm) {
+                html += `<p><strong>CRM:</strong> ${result.doctorCrm}</p>`;
+            }
+            if (result.patientName) {
+                html += `<p><strong>Paciente:</strong> ${result.patientName}</p>`;
+            }
+
+            if (result.items && result.items.length > 0) {
+                html += `<hr><h6>Componentes Identificados:</h6><ul class="list-group list-group-flush">`;
+                result.items.forEach(item => {
+                    html += `
+                        <li class="list-group-item px-0 py-2">
+                            <strong>${item.component || item.name}</strong>
+                            ${item.quantity ? ` - ${item.quantity}` : ''}
+                            ${item.unit ? item.unit : ''}
+                        </li>
+                    `;
+                });
+                html += `</ul>`;
+            }
+
+            resultArea.innerHTML = html;
+
+            // Configurar modal de resultado
+            document.getElementById('resultContent').innerHTML = html;
+            document.getElementById('btnGoToQuote').href = `/PrescriptionsView/Details/${prescriptionId}`;
+
+            // Mostrar modal de resultado
+            const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+            resultModal.show();
+        }
+    </script>
+}

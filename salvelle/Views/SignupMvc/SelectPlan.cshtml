@@ -1,0 +1,364 @@
+﻿@using System.Text.Json
+@{
+    ViewData["Title"] = "Escolha seu Plano";
+    Layout = null;
+    var plans = ViewBag.Plans as List<Models.SubscriptionPlan> ?? new List<Models.SubscriptionPlan>();
+    var establishmentId = ViewBag.EstablishmentId;
+    
+    // Dicionário para traduzir as features
+    var featureTranslations = new Dictionary<string, string>
+    {
+        { "custom_reports", "Relatórios personalizados" },
+        { "priority_support", "Suporte prioritário" },
+        { "whatsapp_notifications", "Notificações WhatsApp" },
+        { "sngpc_integration", "Integração SNGPC" },
+        { "api_access", "Acesso à API" },
+        { "dedicated_support", "Suporte dedicado" },
+        { "multi_establishment", "Multi-estabelecimentos" },
+        { "advanced_analytics", "Analytics avançado" },
+        { "white_label", "White Label" },
+        { "custom_integrations", "Integrações customizadas" },
+        { "unlimited_orders", "Pedidos ilimitados" },
+        { "ocr_processing", "Processamento OCR" },
+        { "customer_portal", "Portal do Cliente" },
+        { "inventory_alerts", "Alertas de estoque" },
+        { "financial_reports", "Relatórios financeiros" }
+    };
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Escolha seu Plano - Salvelle</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/signup.css"/>
+    <style>
+        .plan-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            height: 100%;
+        }
+        .plan-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+        .plan-card.popular {
+            border-color: var(--petrol-500);
+            position: relative;
+        }
+        .plan-card.popular::before {
+            content: 'MAIS POPULAR';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--petrol-500);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .plan-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--ink-2);
+            margin-bottom: 10px;
+        }
+        .plan-price {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--petrol-500);
+        }
+        .plan-price small {
+            font-size: 1rem;
+            color: var(--ink-3);
+            font-weight: normal;
+        }
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .plan-features li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--rule);
+            color: var(--ink-2);
+        }
+        .plan-features li:last-child {
+            border-bottom: none;
+        }
+        .plan-features i {
+            color: var(--ok);
+            margin-right: 10px;
+        }
+        .plan-features .feature-disabled {
+            color: var(--ink-3);
+        }
+        .plan-features .feature-disabled i {
+            color: var(--danger);
+        }
+        .btn-select-plan {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-select-plan.btn-primary {
+            background: var(--petrol-500);
+            border: none;
+        }
+        .btn-select-plan.btn-outline-primary {
+            border: 2px solid var(--petrol-500);
+            color: var(--petrol-500);
+        }
+        .btn-select-plan.btn-outline-primary:hover {
+            background: var(--petrol-500);
+            color: white;
+        }
+        .trial-badge {
+            background: var(--ok);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 30px;
+            display: inline-block;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+        .trial-info {
+            background: rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            color: white;
+        }
+        .trial-info h5 {
+            margin-bottom: 15px;
+        }
+        .trial-info ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .trial-info li {
+            padding: 5px 0;
+        }
+        .trial-info i {
+            margin-right: 10px;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            font-weight: bold;
+            font-size: 14px;
+            color: white;
+        }
+        .step.completed {
+            background: var(--ok);
+        }
+        .step.active {
+            background: white;
+            color: var(--petrol-500);
+        }
+        .step-line {
+            width: 50px;
+            height: 2px;
+            background: rgba(255,255,255,0.3);
+            align-self: center;
+        }
+        .step-line.completed {
+            background: var(--ok);
+        }
+    </style>
+</head>
+<body>
+<div class="signup-wrapper">
+    <div class="container py-5">
+        <!-- Indicador de passos -->
+        <div class="step-indicator">
+            <div class="step completed"><i class="bi bi-check"></i></div>
+            <div class="step-line completed"></div>
+            <div class="step completed"><i class="bi bi-check"></i></div>
+            <div class="step-line completed"></div>
+            <div class="step completed"><i class="bi bi-check"></i></div>
+            <div class="step-line"></div>
+            <div class="step active">4</div>
+        </div>
+
+        <div class="text-center text-white mb-4">
+            <h1 class="mb-3">Escolha seu Plano</h1>
+            <div class="trial-badge">
+                <i class="bi bi-gift me-2"></i>14 DIAS GRÁTIS
+            </div>
+            <p class="lead">Teste todas as funcionalidades sem compromisso</p>
+        </div>
+
+        <input type="hidden" id="establishmentId" value="@establishmentId" />
+
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div class="alert alert-danger text-center mb-4">
+                <i class="bi bi-exclamation-triangle me-2"></i>@ViewBag.ErrorMessage
+            </div>
+        }
+
+        <div class="row justify-content-center g-4">
+            @foreach (var plan in plans)
+            {
+                var isPopular = plan.Name.Contains("Profissional") || plan.Name.Contains("Pro");
+                
+                // Parsear features do JSON
+                var featuresDict = new Dictionary<string, bool>();
+                try
+                {
+                    if (!string.IsNullOrEmpty(plan.Features) && plan.Features.StartsWith("{"))
+                    {
+                        featuresDict = JsonSerializer.Deserialize<Dictionary<string, bool>>(plan.Features) 
+                                       ?? new Dictionary<string, bool>();
+                    }
+                }
+                catch { }
+                
+                <div class="col-md-4">
+                    <div class="plan-card @(isPopular ? "popular" : "")">
+                        <div class="plan-name">@plan.Name</div>
+                        <div class="plan-price">
+                            R$ @plan.PriceMonthly.ToString("N0")
+                            <small>/mês</small>
+                        </div>
+                        <p class="text-muted small">@plan.Description</p>
+                        
+                        <ul class="plan-features">
+                            <li>
+                                <i class="bi bi-check-circle-fill"></i>
+                                Até @(plan.MaxEmployees?.ToString("N0") ?? "∞") funcionários
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill"></i>
+                                @(plan.MaxMonthlyOrders?.ToString("N0") ?? "∞") ordens/mês
+                            </li>
+                            @foreach (var feature in featuresDict.Take(6))
+                            {
+                                var featureName = featureTranslations.ContainsKey(feature.Key) 
+                                    ? featureTranslations[feature.Key] 
+                                    : feature.Key.Replace("_", " ");
+                                
+                                if (feature.Value)
+                                {
+                                    <li>
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        @featureName
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="feature-disabled">
+                                        <i class="bi bi-x-circle"></i>
+                                        @featureName
+                                    </li>
+                                }
+                            }
+                        </ul>
+
+                        <button class="btn btn-select-plan @(isPopular ? "btn-primary" : "btn-outline-primary")"
+                                onclick="selectPlan('@plan.Id', '@plan.Name')">
+                            Começar Trial Grátis
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="trial-info text-center">
+            <h5><i class="bi bi-shield-check me-2"></i>Como funciona o período de teste</h5>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <ul class="text-start">
+                        <li><i class="bi bi-credit-card"></i>Cadastre seu cartão para iniciar o trial</li>
+                        <li><i class="bi bi-calendar-check"></i>Use todas as funcionalidades por 14 dias grátis</li>
+                        <li><i class="bi bi-x-circle"></i>Cancele a qualquer momento sem cobrança</li>
+                        <li><i class="bi bi-cash"></i>Após 14 dias, a cobrança é feita automaticamente</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+async function selectPlan(planId, planName) {
+    const establishmentId = document.getElementById('establishmentId').value;
+    
+    if (!establishmentId) {
+        alert('Erro: Estabelecimento não identificado. Por favor, reinicie o cadastro.');
+        return;
+    }
+
+    // Mostrar loading no botão
+    const buttons = document.querySelectorAll('.btn-select-plan');
+    buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.onclick.toString().includes(planId)) {
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processando...';
+        }
+    });
+
+    try {
+        // Criar sessão do Stripe Checkout com trial
+        const response = await fetch('/api/signup/create-checkout-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                establishmentId: establishmentId,
+                planId: planId
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Erro ao processar');
+        }
+
+        // Redirecionar para Stripe Checkout
+        if (data.checkoutUrl) {
+            window.location.href = data.checkoutUrl;
+        } else {
+            throw new Error('URL de checkout não recebida');
+        }
+
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao processar: ' + error.message);
+        
+        // Restaurar botões
+        buttons.forEach(btn => {
+            btn.disabled = false;
+            btn.innerHTML = 'Começar Trial Grátis';
+        });
+    }
+}
+</script>
+@await Html.PartialAsync("_SupportChat")
+</body>
+</html>

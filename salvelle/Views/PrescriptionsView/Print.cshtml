@@ -1,0 +1,347 @@
+﻿@model Models.Pharmacy.PrescriptionQuote
+@{
+    Layout = null;
+    var customer = ViewBag.Customer as Models.Customer;
+    var establishment = ViewBag.Establishment;
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orçamento @Model.Code - Impressão</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: var(--ink-2);
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid var(--ink-2);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        .header .subtitle {
+            font-size: 11px;
+            color: var(--ink-3);
+        }
+        .header .quote-code {
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 10px;
+            color: #0066cc;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 13px;
+            font-weight: bold;
+            background: var(--bg-subtle);
+            padding: 8px 10px;
+            border-left: 4px solid #0066cc;
+            margin-bottom: 10px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .info-item {
+            display: flex;
+        }
+        .info-label {
+            font-weight: bold;
+            min-width: 120px;
+            color: #555;
+        }
+        .info-value {
+            flex: 1;
+        }
+        .formula-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .formula-table th,
+        .formula-table td {
+            border: 1px solid var(--rule);
+            padding: 8px;
+            text-align: left;
+        }
+        .formula-table th {
+            background: var(--bg-subtle);
+            font-weight: bold;
+        }
+        .formula-table tr:nth-child(even) {
+            background: var(--bg);
+        }
+        .pricing-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .pricing-table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--rule);
+        }
+        .pricing-table .label {
+            color: var(--ink-3);
+        }
+        .pricing-table .value {
+            text-align: right;
+            font-weight: 500;
+        }
+        .pricing-table .total-row td {
+            border-top: 2px solid var(--ink-2);
+            font-size: 16px;
+            font-weight: bold;
+            padding-top: 12px;
+        }
+        .pricing-table .total-row .value {
+            color: #0066cc;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid var(--rule);
+            text-align: center;
+            font-size: 10px;
+            color: var(--ink-3);
+        }
+        .validity {
+            background: var(--warn-soft);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin-top: 15px;
+        }
+        .signature-area {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+        .signature-line {
+            border-top: 1px solid var(--ink-2);
+            padding-top: 5px;
+            text-align: center;
+            font-size: 11px;
+        }
+        .no-print {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        .btn-print {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 5px;
+        }
+        .btn-print:hover {
+            background: #0055aa;
+        }
+        @@media print {
+            .no-print {
+                display: none;
+            }
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="btn-print" onclick="window.print()">
+            🖨️ Imprimir
+        </button>
+    </div>
+
+    <!-- Cabeçalho -->
+    <div class="header">
+        <h1>@(establishment?.NomeFantasia ?? "Farmácia")</h1>
+        <div class="subtitle">
+            @if (establishment != null)
+            {
+                @:@establishment.Street, @establishment.Number - @establishment.Neighborhood
+                <br>
+                @:@establishment.City/@establishment.State - CEP: @establishment.PostalCode
+                <br>
+                @:Tel: @establishment.Phone
+                if (!string.IsNullOrEmpty(establishment.Email))
+                {
+                    @: | @establishment.Email
+                }
+            }
+        </div>
+        <div class="quote-code">ORÇAMENTO Nº @Model.Code</div>
+    </div>
+
+    <!-- Dados do Cliente -->
+    <div class="section">
+        <div class="section-title">DADOS DO CLIENTE</div>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Nome:</span>
+                <span class="info-value">@(Model.CustomerName ?? customer?.FullName ?? "Não informado")</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Telefone:</span>
+                <span class="info-value">@(Model.CustomerPhone ?? customer?.Phone ?? "-")</span>
+            </div>
+            @if (customer != null && !string.IsNullOrEmpty(customer.Cpf))
+            {
+                <div class="info-item">
+                    <span class="info-label">CPF:</span>
+                    <span class="info-value">@customer.Cpf</span>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.CustomerEmail))
+            {
+                <div class="info-item">
+                    <span class="info-label">E-mail:</span>
+                    <span class="info-value">@Model.CustomerEmail</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Dados do Prescritor -->
+    @if (!string.IsNullOrEmpty(Model.DoctorName))
+    {
+        <div class="section">
+            <div class="section-title">PRESCRITOR</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Médico:</span>
+                    <span class="info-value">@Model.DoctorName</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.DoctorCrm))
+                {
+                    <div class="info-item">
+                        <span class="info-label">CRM:</span>
+                        <span class="info-value">@Model.DoctorCrm/@Model.DoctorCrmState</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Fórmula -->
+    <div class="section">
+        <div class="section-title">FÓRMULA MAGISTRAL</div>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Forma Farmacêutica:</span>
+                <span class="info-value">@Model.PharmaceuticalForm</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Quantidade:</span>
+                <span class="info-value">@Model.TotalQuantity @Model.TotalQuantityUnit</span>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.UsageType))
+            {
+                <div class="info-item">
+                    <span class="info-label">Uso:</span>
+                    <span class="info-value">@Model.UsageType</span>
+                </div>
+            }
+        </div>
+        @if (!string.IsNullOrEmpty(Model.Instructions))
+        {
+            <div style="margin-top: 10px;">
+                <span class="info-label">Posologia:</span>
+                <div style="margin-top: 5px; padding: 8px; background: var(--bg); border-radius: 4px;">
+                    @Model.Instructions
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Valores -->
+    <div class="section">
+        <div class="section-title">VALORES</div>
+        <table class="pricing-table">
+            <tr>
+                <td class="label">Custo dos Materiais:</td>
+                <td class="value">R$ @Model.MaterialsCost.ToString("N2")</td>
+            </tr>
+            @if (Model.MarkupValue > 0)
+            {
+                <tr>
+                    <td class="label">Markup (@Model.MarkupPercentage.ToString("N0")%):</td>
+                    <td class="value">R$ @Model.MarkupValue.ToString("N2")</td>
+                </tr>
+            }
+            @if (Model.LaborCost > 0)
+            {
+                <tr>
+                    <td class="label">Mão de Obra:</td>
+                    <td class="value">R$ @Model.LaborCost.ToString("N2")</td>
+                </tr>
+            }
+            @if (Model.PackagingCost > 0)
+            {
+                <tr>
+                    <td class="label">Embalagem:</td>
+                    <td class="value">R$ @Model.PackagingCost.ToString("N2")</td>
+                </tr>
+            }
+            @if (Model.DiscountValue > 0)
+            {
+                <tr>
+                    <td class="label">Desconto (@Model.DiscountPercentage.ToString("N0")%):</td>
+                    <td class="value" style="color: #d32f2f;">- R$ @Model.DiscountValue.ToString("N2")</td>
+                </tr>
+            }
+            <tr class="total-row">
+                <td class="label">VALOR TOTAL:</td>
+                <td class="value">R$ @Model.FinalPrice.ToString("N2")</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Prazo e Validade -->
+    <div class="validity">
+        <strong>Prazo de Produção:</strong> @Model.EstimatedDays dias úteis após confirmação
+        <br>
+        <strong>Validade do Orçamento:</strong> @Model.ValidUntil.ToString("dd/MM/yyyy")
+    </div>
+
+    <!-- Área de Assinatura -->
+    <div class="signature-area">
+        <div class="signature-line">
+            Responsável pela Farmácia
+        </div>
+        <div class="signature-line">
+            Cliente
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="footer">
+        <p>Orçamento gerado em @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+        <p>Este documento não tem valor fiscal. Documento gerado pelo sistema Salvelle.</p>
+    </div>
+</body>
+</html>

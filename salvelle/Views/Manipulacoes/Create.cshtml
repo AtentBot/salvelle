@@ -1,0 +1,625 @@
+@{
+    ViewData["Title"] = "Nova Ordem de Manipulação";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <i class="bi bi-plus-circle me-2"></i>Nova Ordem de Manipulação
+            </h4>
+            <p class="text-muted mb-0">Cadastre uma nova ordem para produção</p>
+        </div>
+        <a href="/Manipulacoes" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+    </div>
+
+    <form id="formNovaOrdem" class="needs-validation" novalidate>
+        <div class="row">
+            <!-- Coluna Principal -->
+            <div class="col-lg-8">
+                <!-- Card: Cliente -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-person me-2"></i>Cliente</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">Buscar Cliente <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="customerSearch" 
+                                           placeholder="Digite nome, CPF ou telefone..." autocomplete="off">
+                                    <button type="button" class="btn btn-outline-success" onclick="showNewCustomerModal()">
+                                        <i class="bi bi-plus-lg"></i> Novo
+                                    </button>
+                                </div>
+                                <div id="customerResults" class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1000; max-height: 200px; overflow-y: auto;"></div>
+                                <input type="hidden" id="customerId" name="customerId">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Telefone</label>
+                                <input type="text" class="form-control" id="customerPhone" readonly>
+                            </div>
+                        </div>
+                        
+                        <!-- Cliente Selecionado -->
+                        <div id="selectedCustomer" class="alert alert-success mt-3 d-none">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong id="selectedCustomerName"></strong>
+                                    <br><small id="selectedCustomerInfo" class="text-muted"></small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearCustomer()">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Prescrição -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-file-medical me-2"></i>Prescrição</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Número da Receita</label>
+                                <input type="text" class="form-control" id="prescriptionNumber" name="prescriptionNumber" 
+                                       placeholder="Ex: RX-001">
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Nome do Prescritor</label>
+                                <input type="text" class="form-control" id="prescriberName" name="prescriberName" 
+                                       placeholder="Dr. Nome Completo">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">CRM/CRO</label>
+                                <input type="text" class="form-control" id="prescriberRegistration" name="prescriberRegistration" 
+                                       placeholder="CRM-12345">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Fórmula -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-prescription2 me-2"></i>Fórmula</h5>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <input type="radio" class="btn-check" name="formulaType" id="formulaExisting" value="existing" checked>
+                            <label class="btn btn-outline-primary" for="formulaExisting">Fórmula Cadastrada</label>
+                            
+                            <input type="radio" class="btn-check" name="formulaType" id="formulaMagistral" value="magistral">
+                            <label class="btn btn-outline-primary" for="formulaMagistral">Magistral Avulsa</label>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Fórmula Existente -->
+                        <div id="existingFormulaSection">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Selecionar Fórmula <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="formulaId" name="formulaId">
+                                        <option value="">Selecione uma fórmula...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Detalhes da Fórmula -->
+                            <div id="formulaDetails" class="mt-3 d-none">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <h6 id="formulaName" class="card-title"></h6>
+                                        <p id="formulaDescription" class="card-text small text-muted"></p>
+                                        <hr>
+                                        <h6 class="small text-uppercase text-muted">Componentes</h6>
+                                        <ul id="formulaComponents" class="list-unstyled mb-0"></ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fórmula Magistral -->
+                        <div id="magistralFormulaSection" class="d-none">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Fórmula magistral avulsa - os componentes serão definidos durante a produção.
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Descrição da Fórmula <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="magistralDescription" rows="3" 
+                                          placeholder="Descreva a composição da fórmula magistral..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Instruções -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Instruções Especiais</h5>
+                    </div>
+                    <div class="card-body">
+                        <textarea class="form-control" id="specialInstructions" name="specialInstructions" rows="3" 
+                                  placeholder="Observações, instruções de preparo, posologia, etc..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Lateral -->
+            <div class="col-lg-4">
+                <!-- Card: Produção -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Produção</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Quantidade <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control form-control-lg" id="quantityToProduce" 
+                                       name="quantityToProduce" min="1" step="0.01" value="1" required>
+                                <select class="form-select" id="unit" name="unit" style="max-width: 100px;">
+                                    <option value="g">g</option>
+                                    <option value="mg">mg</option>
+                                    <option value="kg">kg</option>
+                                    <option value="mL">mL</option>
+                                    <option value="L">L</option>
+                                    <option value="un">un</option>
+                                    <option value="caps">caps</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Data Prevista <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="expectedDate" name="expectedDate" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Prioridade</label>
+                            <select class="form-select" id="priority" name="priority">
+                                <option value="NORMAL">Normal</option>
+                                <option value="URGENTE">Urgente</option>
+                                <option value="BAIXA">Baixa</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Resumo -->
+                <div class="card border-0 shadow-sm mb-4 bg-light">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Resumo</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tr>
+                                <td class="text-muted">Cliente:</td>
+                                <td class="text-end fw-bold" id="resumoCliente">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Fórmula:</td>
+                                <td class="text-end fw-bold" id="resumoFormula">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Quantidade:</td>
+                                <td class="text-end fw-bold" id="resumoQuantidade">-</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Previsão:</td>
+                                <td class="text-end fw-bold" id="resumoPrevisao">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Botões -->
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg" id="btnSalvar">
+                        <i class="bi bi-check-lg me-2"></i>Criar Ordem
+                    </button>
+                    <button type="button" class="btn btn-success btn-lg" id="btnSalvarIniciar" onclick="saveAndStart()">
+                        <i class="bi bi-play-fill me-2"></i>Criar e Iniciar Produção
+                    </button>
+                    <a href="/Manipulacoes" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg me-2"></i>Cancelar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal: Novo Cliente Rápido -->
+<div class="modal fade" id="newCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Novo Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="newCustomerName" required>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">CPF</label>
+                        <input type="text" class="form-control" id="newCustomerCpf" placeholder="000.000.000-00">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Telefone <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="newCustomerPhone" placeholder="(00) 00000-0000" required>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="newCustomerEmail" placeholder="email@exemplo.com">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="createQuickCustomer()">
+                    <i class="bi bi-check-lg me-1"></i> Cadastrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let selectedCustomerId = null;
+    let selectedFormulaId = null;
+    let startAfterCreate = false;
+    let formulas = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Definir data mínima como hoje
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('expectedDate').min = today;
+        document.getElementById('expectedDate').value = addDays(today, 3); // 3 dias úteis
+
+        loadFormulas();
+        setupEventListeners();
+    });
+
+    function addDays(dateStr, days) {
+        const date = new Date(dateStr);
+        date.setDate(date.getDate() + days);
+        return date.toISOString().split('T')[0];
+    }
+
+    function setupEventListeners() {
+        // Busca de cliente
+        const customerSearch = document.getElementById('customerSearch');
+        let searchTimeout;
+        customerSearch.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => searchCustomers(this.value), 300);
+        });
+
+        // Tipo de fórmula
+        document.querySelectorAll('input[name="formulaType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'existing') {
+                    document.getElementById('existingFormulaSection').classList.remove('d-none');
+                    document.getElementById('magistralFormulaSection').classList.add('d-none');
+                } else {
+                    document.getElementById('existingFormulaSection').classList.add('d-none');
+                    document.getElementById('magistralFormulaSection').classList.remove('d-none');
+                    document.getElementById('resumoFormula').textContent = 'Magistral';
+                }
+            });
+        });
+
+        // Seleção de fórmula
+        document.getElementById('formulaId').addEventListener('change', function() {
+            loadFormulaDetails(this.value);
+        });
+
+        // Atualizar resumo
+        document.getElementById('quantityToProduce').addEventListener('input', updateResumo);
+        document.getElementById('unit').addEventListener('change', updateResumo);
+        document.getElementById('expectedDate').addEventListener('change', updateResumo);
+
+        // Submit do form
+        document.getElementById('formNovaOrdem').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveOrder();
+        });
+
+        // Fechar resultados de busca ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#customerSearch') && !e.target.closest('#customerResults')) {
+                document.getElementById('customerResults').classList.add('d-none');
+            }
+        });
+    }
+
+    async function loadFormulas() {
+        try {
+            const response = await fetch('/api/Formulas?pageSize=100&isActive=true');
+            const data = await response.json();
+            
+            const select = document.getElementById('formulaId');
+            
+            if (data.items && data.items.length > 0) {
+                formulas = data.items;
+                formulas.forEach(formula => {
+                    const option = document.createElement('option');
+                    option.value = formula.id;
+                    option.textContent = `${formula.name} (${formula.pharmaceuticalForm || 'N/A'})`;
+                    select.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Erro ao carregar fórmulas:', error);
+        }
+    }
+
+    async function searchCustomers(term) {
+        if (term.length < 2) {
+            document.getElementById('customerResults').classList.add('d-none');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/Customers?search=${encodeURIComponent(term)}&pageSize=10`);
+            const data = await response.json();
+            
+            const resultsDiv = document.getElementById('customerResults');
+            
+            if (data.items && data.items.length > 0) {
+                resultsDiv.innerHTML = data.items.map(customer => `
+                    <a href="#" class="list-group-item list-group-item-action" onclick="selectCustomer(${JSON.stringify(customer).replace(/"/g, '&quot;')})">
+                        <strong>${customer.name}</strong>
+                        <br><small class="text-muted">${customer.cpf || ''} | ${customer.phone || ''}</small>
+                    </a>
+                `).join('');
+                resultsDiv.classList.remove('d-none');
+            } else {
+                resultsDiv.innerHTML = '<div class="list-group-item text-muted">Nenhum cliente encontrado</div>';
+                resultsDiv.classList.remove('d-none');
+            }
+        } catch (error) {
+            console.error('Erro ao buscar clientes:', error);
+        }
+    }
+
+    function selectCustomer(customer) {
+        selectedCustomerId = customer.id;
+        
+        document.getElementById('customerId').value = customer.id;
+        document.getElementById('customerSearch').value = '';
+        document.getElementById('customerPhone').value = customer.phone || '';
+        document.getElementById('customerResults').classList.add('d-none');
+        
+        document.getElementById('selectedCustomerName').textContent = customer.name;
+        document.getElementById('selectedCustomerInfo').textContent = 
+            `${customer.cpf || 'CPF não informado'} | ${customer.phone || 'Telefone não informado'}`;
+        document.getElementById('selectedCustomer').classList.remove('d-none');
+        
+        document.getElementById('resumoCliente').textContent = customer.name;
+    }
+
+    function clearCustomer() {
+        selectedCustomerId = null;
+        document.getElementById('customerId').value = '';
+        document.getElementById('customerPhone').value = '';
+        document.getElementById('selectedCustomer').classList.add('d-none');
+        document.getElementById('resumoCliente').textContent = '-';
+    }
+
+    function loadFormulaDetails(formulaId) {
+        if (!formulaId) {
+            document.getElementById('formulaDetails').classList.add('d-none');
+            document.getElementById('resumoFormula').textContent = '-';
+            return;
+        }
+
+        const formula = formulas.find(f => f.id === formulaId);
+        if (!formula) return;
+
+        selectedFormulaId = formulaId;
+        
+        document.getElementById('formulaName').textContent = formula.name;
+        document.getElementById('formulaDescription').textContent = formula.description || 'Sem descrição';
+        
+        // Carregar componentes
+        fetch(`/api/Formulas/${formulaId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.data.components) {
+                    const componentsList = document.getElementById('formulaComponents');
+                    componentsList.innerHTML = data.data.components.map(c => 
+                        `<li><i class="bi bi-dot"></i> ${c.rawMaterialName}: ${c.quantity} ${c.unit}</li>`
+                    ).join('');
+                }
+            });
+        
+        document.getElementById('formulaDetails').classList.remove('d-none');
+        document.getElementById('resumoFormula').textContent = formula.name;
+
+        // Atualizar unidade baseada na fórmula
+        if (formula.pharmaceuticalForm) {
+            const form = formula.pharmaceuticalForm.toLowerCase();
+            if (form.includes('cápsula')) {
+                document.getElementById('unit').value = 'caps';
+            } else if (form.includes('creme') || form.includes('gel') || form.includes('pomada')) {
+                document.getElementById('unit').value = 'g';
+            } else if (form.includes('solução') || form.includes('xarope')) {
+                document.getElementById('unit').value = 'mL';
+            }
+        }
+    }
+
+    function updateResumo() {
+        const qty = document.getElementById('quantityToProduce').value;
+        const unit = document.getElementById('unit').value;
+        const date = document.getElementById('expectedDate').value;
+
+        document.getElementById('resumoQuantidade').textContent = qty ? `${qty} ${unit}` : '-';
+        document.getElementById('resumoPrevisao').textContent = date ? 
+            new Date(date + 'T00:00:00').toLocaleDateString('pt-BR') : '-';
+    }
+
+    function showNewCustomerModal() {
+        new bootstrap.Modal(document.getElementById('newCustomerModal')).show();
+    }
+
+    async function createQuickCustomer() {
+        const name = document.getElementById('newCustomerName').value.trim();
+        const phone = document.getElementById('newCustomerPhone').value.trim();
+        const cpf = document.getElementById('newCustomerCpf').value.trim();
+        const email = document.getElementById('newCustomerEmail').value.trim();
+
+        if (!name || !phone) {
+            alert('Nome e telefone são obrigatórios');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/Customers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, phone, cpf, email })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Selecionar o cliente criado
+                selectCustomer({
+                    id: data.data?.id || data.id,
+                    name: name,
+                    phone: phone,
+                    cpf: cpf
+                });
+
+                // Fechar modal e limpar
+                bootstrap.Modal.getInstance(document.getElementById('newCustomerModal')).hide();
+                document.getElementById('newCustomerName').value = '';
+                document.getElementById('newCustomerPhone').value = '';
+                document.getElementById('newCustomerCpf').value = '';
+                document.getElementById('newCustomerEmail').value = '';
+
+                alert('Cliente cadastrado com sucesso!');
+            } else {
+                alert(data.message || 'Erro ao cadastrar cliente');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao cadastrar cliente');
+        }
+    }
+
+    function saveAndStart() {
+        startAfterCreate = true;
+        document.getElementById('formNovaOrdem').dispatchEvent(new Event('submit'));
+    }
+
+    async function saveOrder() {
+        // Validações
+        const formulaType = document.querySelector('input[name="formulaType"]:checked').value;
+        
+        if (!selectedCustomerId) {
+            alert('Selecione um cliente');
+            return;
+        }
+
+        if (formulaType === 'existing' && !document.getElementById('formulaId').value) {
+            alert('Selecione uma fórmula');
+            return;
+        }
+
+        const quantity = parseFloat(document.getElementById('quantityToProduce').value);
+        if (!quantity || quantity <= 0) {
+            alert('Informe a quantidade a produzir');
+            return;
+        }
+
+        const expectedDate = document.getElementById('expectedDate').value;
+        if (!expectedDate) {
+            alert('Informe a data prevista');
+            return;
+        }
+
+        // Montar payload
+        const customerName = document.getElementById('selectedCustomerName').textContent;
+        const customerPhone = document.getElementById('customerPhone').value;
+
+        const payload = {
+            customerId: selectedCustomerId,
+            customerName: customerName,
+            customerPhone: customerPhone,
+            formulaId: formulaType === 'existing' ? document.getElementById('formulaId').value : null,
+            quantityToProduce: quantity,
+            unit: document.getElementById('unit').value,
+            expectedDate: new Date(expectedDate + 'T18:00:00').toISOString(),
+            prescriptionNumber: document.getElementById('prescriptionNumber').value || null,
+            prescriberName: document.getElementById('prescriberName').value || null,
+            prescriberRegistration: document.getElementById('prescriberRegistration').value || null,
+            specialInstructions: document.getElementById('specialInstructions').value || null
+        };
+
+        // Se magistral, adicionar descrição nas instruções
+        if (formulaType === 'magistral') {
+            const magistralDesc = document.getElementById('magistralDescription').value;
+            if (!magistralDesc.trim()) {
+                alert('Descreva a fórmula magistral');
+                return;
+            }
+            payload.specialInstructions = `[FÓRMULA MAGISTRAL]\n${magistralDesc}\n\n${payload.specialInstructions || ''}`;
+        }
+
+        // Desabilitar botões
+        document.getElementById('btnSalvar').disabled = true;
+        document.getElementById('btnSalvarIniciar').disabled = true;
+
+        try {
+            const response = await fetch('/api/ManipulationOrders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                const orderId = data.data?.id || data.id;
+                
+                if (startAfterCreate) {
+                    // Ir para tela de produção
+                    window.location.href = `/Manipulacoes/Producao`;
+                    localStorage.setItem('openOrderId', orderId);
+                } else {
+                    // Ir para lista
+                    alert('Ordem criada com sucesso!');
+                    window.location.href = '/Manipulacoes';
+                }
+            } else {
+                alert(data.message || 'Erro ao criar ordem');
+                document.getElementById('btnSalvar').disabled = false;
+                document.getElementById('btnSalvarIniciar').disabled = false;
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao criar ordem');
+            document.getElementById('btnSalvar').disabled = false;
+            document.getElementById('btnSalvarIniciar').disabled = false;
+        }
+
+        startAfterCreate = false;
+    }
+</script>
+}

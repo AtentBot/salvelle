@@ -1,0 +1,240 @@
+@{
+    ViewData["Title"] = "Ações Corretivas e Preventivas";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-tools me-2"></i>CAPAs</h4>
+            <p class="text-muted mb-0">Ações Corretivas e Preventivas</p>
+        </div>
+        <div>
+            <a href="/Qualidade" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+            <a href="/Qualidade/CAPAs/Editar" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Nova CAPA
+            </a>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0" id="kpiAbertas">-</h3>
+                    <small>Abertas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0" id="kpiAndamento">-</h3>
+                    <small>Em Andamento</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0" id="kpiAtrasadas">-</h3>
+                    <small>Atrasadas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0" id="kpiConcluidas">-</h3>
+                    <small>Concluídas (mês)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Tipo</label>
+                    <select class="form-select" id="filtroTipo" onchange="carregarCAPAs()">
+                        <option value="">Todos</option>
+                        <option value="CORRETIVA">Corretiva</option>
+                        <option value="PREVENTIVA">Preventiva</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="filtroStatus" onchange="carregarCAPAs()">
+                        <option value="">Todos</option>
+                        <option value="ABERTA">Aberta</option>
+                        <option value="EM_ANDAMENTO">Em Andamento</option>
+                        <option value="VERIFICACAO">Verificação</option>
+                        <option value="CONCLUIDA">Concluída</option>
+                        <option value="CANCELADA">Cancelada</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Prioridade</label>
+                    <select class="form-select" id="filtroPrioridade" onchange="carregarCAPAs()">
+                        <option value="">Todas</option>
+                        <option value="ALTA">Alta</option>
+                        <option value="MEDIA">Média</option>
+                        <option value="BAIXA">Baixa</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Buscar</label>
+                    <input type="text" class="form-control" id="filtroBusca" placeholder="Código ou título...">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Tipo</th>
+                            <th>Título</th>
+                            <th class="text-center">Prioridade</th>
+                            <th class="text-center">Status</th>
+                            <th>Prazo</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaCAPAs">
+                        <tr><td colspan="7" class="text-center py-4">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        carregarKPIs();
+        carregarCAPAs();
+    });
+
+    async function carregarKPIs() {
+        try {
+            const response = await fetch('/api/qualidade/indicadores');
+            const data = await response.json();
+
+            document.getElementById('kpiAbertas').textContent = data.capas?.abertas || 0;
+            document.getElementById('kpiAtrasadas').textContent = data.capas?.atrasadas || 0;
+            document.getElementById('kpiConcluidas').textContent = data.capas?.concluidas || 0;
+            
+            // Em andamento = abertas - atrasadas (aproximação)
+            const emAndamento = Math.max(0, (data.capas?.abertas || 0) - (data.capas?.atrasadas || 0));
+            document.getElementById('kpiAndamento').textContent = emAndamento;
+        } catch (error) {
+            console.error('Erro ao carregar KPIs:', error);
+        }
+    }
+
+    async function carregarCAPAs() {
+        const tipo = document.getElementById('filtroTipo').value;
+        const status = document.getElementById('filtroStatus').value;
+        
+        let url = '/api/qualidade/capas?pageSize=50';
+        if (tipo) url += `&tipo=${tipo}`;
+        if (status) url += `&status=${status}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            const tbody = document.getElementById('tabelaCAPAs');
+
+            if (!data.items || data.items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Nenhuma CAPA encontrada</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.items.map(capa => {
+                const atrasado = capa.atrasado;
+                return `
+                    <tr class="${atrasado ? 'table-danger' : ''}">
+                        <td><code>${capa.code}</code></td>
+                        <td>
+                            <span class="badge bg-${capa.type === 'CORRETIVA' ? 'danger' : 'info'}">
+                                ${capa.type === 'CORRETIVA' ? 'AC' : 'AP'}
+                            </span>
+                        </td>
+                        <td>${capa.title}</td>
+                        <td class="text-center">
+                            <span class="badge bg-${getPrioridadeCor(capa.priority)}">${capa.priority}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-${getStatusCor(capa.status)}">${capa.status.replace('_', ' ')}</span>
+                        </td>
+                        <td>
+                            ${formatarData(capa.dueDate)}
+                            ${atrasado ? '<i class="bi bi-exclamation-triangle text-danger ms-1"></i>' : ''}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="/Qualidade/CAPAs/Editar/${capa.id}" class="btn btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                ${capa.status !== 'CONCLUIDA' && capa.status !== 'CANCELADA' ? `
+                                    <button class="btn btn-outline-success" onclick="atualizarStatus('${capa.id}')" title="Atualizar Status">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join('');
+        } catch (error) {
+            console.error('Erro ao carregar CAPAs:', error);
+        }
+    }
+
+    function getPrioridadeCor(p) {
+        return { 'ALTA': 'danger', 'MEDIA': 'warning', 'BAIXA': 'secondary' }[p] || 'secondary';
+    }
+
+    function getStatusCor(s) {
+        return { 'ABERTA': 'primary', 'EM_ANDAMENTO': 'info', 'VERIFICACAO': 'warning', 'CONCLUIDA': 'success', 'CANCELADA': 'secondary' }[s] || 'secondary';
+    }
+
+    function formatarData(d) {
+        return new Date(d).toLocaleDateString('pt-BR');
+    }
+
+    async function atualizarStatus(id) {
+        const novoStatus = prompt('Novo status (ABERTA, EM_ANDAMENTO, VERIFICACAO, CONCLUIDA, CANCELADA):');
+        if (!novoStatus) return;
+
+        try {
+            const response = await fetch(`/api/qualidade/capas/${id}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: novoStatus.toUpperCase() })
+            });
+
+            if (response.ok) {
+                alert('Status atualizado!');
+                carregarCAPAs();
+                carregarKPIs();
+            } else {
+                alert('Erro ao atualizar status');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    }
+</script>
+}

@@ -1,0 +1,208 @@
+@{
+    ViewData["Title"] = "Meu Perfil";
+}
+
+<style>
+    .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 860px; }
+    @@media (max-width: 640px) { .profile-grid { grid-template-columns: 1fr; } }
+    .profile-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); padding: 28px; }
+    .profile-card h2 { font-size: 15px; font-weight: 600; margin: 0 0 20px; color: var(--ink); }
+    .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--petrol-500); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; margin-bottom: 12px; }
+    .profile-name { font-size: 20px; font-weight: 600; margin: 0; }
+    .profile-job { font-size: 13px; color: var(--ink-3); margin: 2px 0 0; }
+    .divider { border: none; border-top: 1px solid var(--rule); margin: 20px 0; }
+    .form-row { display: flex; flex-direction: column; gap: 14px; }
+    .alert-success { background: var(--success-soft, #ecfdf5); color: var(--success, #16a34a); border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: var(--r-sm); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .alert-danger { background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger-border); padding: 10px 14px; border-radius: var(--r-sm); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .pwd-strength { height: 3px; border-radius: 2px; margin-top: 6px; background: var(--rule); overflow: hidden; }
+    .pwd-strength-bar { height: 100%; width: 0; transition: width .3s, background .3s; border-radius: 2px; }
+</style>
+
+<div class="profile-grid">
+
+    <!-- Identidade -->
+    <div class="profile-card" style="grid-column: 1 / -1;">
+        <div id="avatarBlock" class="profile-avatar">?</div>
+        <p class="profile-name" id="displayName">Carregando...</p>
+        <p class="profile-job" id="displayJob"></p>
+    </div>
+
+    <!-- Dados pessoais -->
+    <div class="profile-card">
+        <h2><i class="bi bi-person me-2" style="color:var(--petrol-500)"></i>Dados pessoais</h2>
+        <div id="alertProfile"></div>
+        <div class="form-row">
+            <div>
+                <label class="input-label">Nome completo</label>
+                <input class="input" id="fullName" type="text" placeholder="Seu nome" />
+            </div>
+            <div>
+                <label class="input-label">Nome social <span style="color:var(--ink-4);font-weight:400">(opcional)</span></label>
+                <input class="input" id="socialName" type="text" placeholder="Como prefere ser chamado(a)" />
+            </div>
+            <div>
+                <label class="input-label">E-mail</label>
+                <input class="input" id="email" type="email" placeholder="seu@email.com" />
+            </div>
+            <div>
+                <label class="input-label">WhatsApp</label>
+                <input class="input mono" id="whatsapp" type="text" placeholder="(00) 00000-0000" />
+            </div>
+            <div>
+                <label class="input-label">CPF</label>
+                <input class="input mono" id="cpf" type="text" disabled style="opacity:.5;cursor:not-allowed;" />
+            </div>
+        </div>
+        <hr class="divider">
+        <button class="btn btn-primary" id="btnSaveProfile" onclick="saveProfile()">
+            <span id="btnSaveText">Salvar alterações</span>
+            <span id="btnSaveLoader" style="display:none"><span class="spinner-border spinner-border-sm me-1"></span>Salvando…</span>
+        </button>
+    </div>
+
+    <!-- Alterar senha -->
+    <div class="profile-card">
+        <h2><i class="bi bi-shield-lock me-2" style="color:var(--petrol-500)"></i>Alterar senha</h2>
+        <div id="alertPwd"></div>
+        <div class="form-row">
+            <div>
+                <label class="input-label">Senha atual</label>
+                <input class="input" id="currentPwd" type="password" placeholder="••••••••" autocomplete="current-password" />
+            </div>
+            <div>
+                <label class="input-label">Nova senha</label>
+                <input class="input" id="newPwd" type="password" placeholder="••••••••" autocomplete="new-password" oninput="checkStrength(this.value)" />
+                <div class="pwd-strength"><div class="pwd-strength-bar" id="strengthBar"></div></div>
+                <span id="strengthLabel" style="font-size:11px;color:var(--ink-4)"></span>
+            </div>
+            <div>
+                <label class="input-label">Confirmar nova senha</label>
+                <input class="input" id="confirmPwd" type="password" placeholder="••••••••" autocomplete="new-password" />
+            </div>
+        </div>
+        <hr class="divider">
+        <button class="btn btn-primary" id="btnSavePwd" onclick="savePassword()">
+            <span id="btnPwdText">Alterar senha</span>
+            <span id="btnPwdLoader" style="display:none"><span class="spinner-border spinner-border-sm me-1"></span>Alterando…</span>
+        </button>
+    </div>
+
+</div>
+
+<script>
+    const headers = { 'Content-Type': 'application/json' };
+
+    // ── Carregar dados ──────────────────────────────────────────────────────
+    async function loadProfile() {
+        const r = await fetch('/api/Employees/me', { headers });
+        if (!r.ok) return;
+        const d = await r.json();
+
+        document.getElementById('fullName').value   = d.fullName ?? '';
+        document.getElementById('socialName').value = d.socialName ?? '';
+        document.getElementById('email').value      = d.email ?? '';
+        document.getElementById('whatsapp').value   = d.whatsApp ?? '';
+        document.getElementById('cpf').value        = formatCpf(d.cpf ?? '');
+
+        const display = d.socialName || d.fullName || '?';
+        document.getElementById('displayName').textContent = display;
+        document.getElementById('displayJob').textContent  = d.jobPosition ?? '';
+        document.getElementById('avatarBlock').textContent = display[0].toUpperCase();
+    }
+
+    // ── Salvar dados pessoais ───────────────────────────────────────────────
+    async function saveProfile() {
+        setBusy('Profile', true);
+        const body = {
+            fullName:   document.getElementById('fullName').value.trim(),
+            socialName: document.getElementById('socialName').value.trim() || null,
+            email:      document.getElementById('email').value.trim(),
+            whatsApp:   document.getElementById('whatsapp').value.trim()
+        };
+
+        try {
+            const r = await fetch('/api/Employees/me', {
+                method: 'PUT', headers,
+                body: JSON.stringify(body)
+            });
+            const d = await r.json();
+            showAlert('alertProfile', r.ok ? 'success' : 'danger', d.message || d.error);
+            if (r.ok) {
+                document.getElementById('displayName').textContent = body.socialName || body.fullName;
+                document.getElementById('avatarBlock').textContent = (body.socialName || body.fullName)[0].toUpperCase();
+            }
+        } catch { showAlert('alertProfile', 'danger', 'Erro de conexão. Tente novamente.'); }
+        finally { setBusy('Profile', false); }
+    }
+
+    // ── Alterar senha ───────────────────────────────────────────────────────
+    async function savePassword() {
+        const newPwd = document.getElementById('newPwd').value;
+        const confirmPwd = document.getElementById('confirmPwd').value;
+
+        if (newPwd !== confirmPwd) {
+            showAlert('alertPwd', 'danger', 'As senhas não coincidem.');
+            return;
+        }
+
+        setBusy('Pwd', true);
+        try {
+            const r = await fetch('/api/Employees/me/change-password', {
+                method: 'POST', headers,
+                body: JSON.stringify({
+                    currentPassword: document.getElementById('currentPwd').value,
+                    newPassword: newPwd,
+                    confirmPassword: confirmPwd
+                })
+            });
+            const d = await r.json();
+            showAlert('alertPwd', r.ok ? 'success' : 'danger', d.message || d.error);
+            if (r.ok) {
+                document.getElementById('currentPwd').value = '';
+                document.getElementById('newPwd').value     = '';
+                document.getElementById('confirmPwd').value = '';
+                document.getElementById('strengthBar').style.width = '0';
+                document.getElementById('strengthLabel').textContent = '';
+            }
+        } catch { showAlert('alertPwd', 'danger', 'Erro de conexão. Tente novamente.'); }
+        finally { setBusy('Pwd', false); }
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+    function setBusy(which, busy) {
+        const btnId = which === 'Profile' ? 'btnSaveProfile' : 'btnSavePwd';
+        const textId = which === 'Profile' ? 'btnSaveText' : 'btnPwdText';
+        const loaderId = which === 'Profile' ? 'btnSaveLoader' : 'btnPwdLoader';
+        document.getElementById(btnId).disabled = busy;
+        document.getElementById(textId).style.display = busy ? 'none' : '';
+        document.getElementById(loaderId).style.display = busy ? 'inline-flex' : 'none';
+    }
+
+    function showAlert(id, type, msg) {
+        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+        document.getElementById(id).innerHTML =
+            `<div class="alert-${type}"><i class="bi ${icon}"></i>${msg}</div>`;
+        setTimeout(() => { document.getElementById(id).innerHTML = ''; }, 5000);
+    }
+
+    function checkStrength(pwd) {
+        let score = 0;
+        if (pwd.length >= 8) score++;
+        if (/[A-Z]/.test(pwd)) score++;
+        if (/[0-9]/.test(pwd)) score++;
+        if (/[^A-Za-z0-9]/.test(pwd)) score++;
+        const colors = ['#ef4444','#f97316','#eab308','#22c55e'];
+        const labels = ['Fraca','Razoável','Boa','Forte'];
+        const bar = document.getElementById('strengthBar');
+        bar.style.width = (score * 25) + '%';
+        bar.style.background = colors[score - 1] ?? '#e5e7eb';
+        document.getElementById('strengthLabel').textContent = score > 0 ? labels[score - 1] : '';
+    }
+
+    function formatCpf(v) {
+        v = v.replace(/\D/g,'');
+        return v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    }
+
+    loadProfile();
+</script>

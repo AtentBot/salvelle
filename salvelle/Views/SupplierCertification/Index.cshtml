@@ -1,0 +1,267 @@
+@model List<Models.Pharmacy.SupplierCertificate>
+@{
+    ViewData["Title"] = "Certificações AFE";
+    var stats = ViewBag.Stats as CertificationStats;
+    var selectedStatus = ViewBag.SelectedStatus as string;
+    var search = ViewBag.Search as string;
+}
+
+@section Styles {
+<style>
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .ds-stat { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); padding: 16px 20px; position: relative; overflow: hidden; }
+    .ds-stat::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ink-5); }
+    .ds-stat.is-ok::before { background: var(--ok); }
+    .ds-stat.is-warn::before { background: var(--amber-500); }
+    .ds-stat.is-danger::before { background: var(--danger); }
+    .ds-stat.is-info::before { background: var(--info); }
+    .ds-stat-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .ds-stat-label { font-size: 12px; color: var(--ink-3); font-weight: 500; }
+    .ds-stat-value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 4px; }
+    .ds-stat-icon { width: 34px; height: 34px; border-radius: var(--r-sm); display: grid; place-items: center; font-size: 16px; flex-shrink: 0; }
+    .ds-stat.is-danger .ds-stat-icon { background: var(--danger-soft); color: var(--danger); }
+    .ds-stat.is-warn .ds-stat-icon { background: var(--amber-50); color: var(--amber-700); }
+    .ds-stat.is-ok .ds-stat-icon { background: var(--ok-soft); color: var(--ok); }
+    .ds-stat.is-info .ds-stat-icon { background: var(--info-soft); color: var(--info); }
+
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card.pad { padding: 20px; }
+    .ds-card + .ds-card { margin-top: 24px; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .ds-card-eyebrow { font-family: var(--font-mono); font-size: 11px; color: var(--petrol-500); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ds-card-title { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+
+    .filter-grid { display: grid; grid-template-columns: 2fr 1fr auto; gap: 14px; align-items: end; }
+    .filter-actions { display: flex; gap: 8px; }
+
+    .ds-banner { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-radius: var(--r-md); margin-bottom: 16px; border: 1px solid var(--rule); background: var(--surface); font-size: 14px; color: var(--ink-2); }
+    .ds-banner i { font-size: 18px; flex-shrink: 0; }
+    .ds-banner.is-ok { border-color: var(--ok-border); background: var(--ok-soft); }
+    .ds-banner.is-ok i { color: var(--ok); }
+    .ds-banner.is-warn { border-color: var(--warn-border); background: var(--warn-soft); }
+    .ds-banner.is-warn i { color: var(--warn); }
+    .ds-banner.is-danger { border-color: var(--danger-border); background: var(--danger-soft); }
+    .ds-banner.is-danger i { color: var(--danger); }
+
+    .empty-row { text-align: center; color: var(--ink-3); padding: 48px 24px; }
+    .empty-row i { font-size: 32px; display: block; margin-bottom: 8px; color: var(--ink-5); }
+
+    .expiry-hint { font-size: 12px; }
+    .expiry-hint.danger { color: var(--danger); }
+    .expiry-hint.warn { color: var(--warn); }
+
+    @@media (max-width: 1080px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @@media (max-width: 720px) {
+        .filter-grid { grid-template-columns: 1fr; }
+        .filter-actions .btn { flex: 1; justify-content: center; }
+        table.responsive-stack thead { display: none; }
+        table.responsive-stack tbody tr { display: block; border-bottom: 1px solid var(--rule); padding: 12px 16px; }
+        table.responsive-stack tbody tr:hover td { background: transparent; }
+        table.responsive-stack tbody td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 5px 0; border: none; text-align: right; }
+        table.responsive-stack tbody td::before { content: attr(data-label); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; text-align: left; }
+    }
+    @@media (max-width: 480px) { .stat-grid { grid-template-columns: 1fr; } }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">FORNECEDORES · ANVISA</div>
+            <h1>Certificações AFE</h1>
+            <p>Gestão de Autorizações de Funcionamento de Fornecedores.</p>
+        </div>
+        <div class="row">
+            <a href="/SupplierCertification/Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i>Nova certificação</a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="ds-banner is-ok"><i class="bi bi-check-circle-fill"></i><div>@TempData["Success"]</div></div>
+    }
+    @if (TempData["Warning"] != null)
+    {
+        <div class="ds-banner is-warn"><i class="bi bi-exclamation-triangle-fill"></i><div>@TempData["Warning"]</div></div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="ds-banner is-danger"><i class="bi bi-x-circle-fill"></i><div>@TempData["Error"]</div></div>
+    }
+
+    <div class="stat-grid">
+        <div class="ds-stat is-ok">
+            <div class="ds-stat-top">
+                <div>
+                    <div class="ds-stat-label">Certificados ativos</div>
+                    <div class="ds-stat-value">@(stats?.TotalActive ?? 0)</div>
+                </div>
+                <div class="ds-stat-icon"><i class="bi bi-check-circle"></i></div>
+            </div>
+        </div>
+        <div class="ds-stat is-warn">
+            <div class="ds-stat-top">
+                <div>
+                    <div class="ds-stat-label">Vencendo em 30 dias</div>
+                    <div class="ds-stat-value">@(stats?.ExpiringIn30Days ?? 0)</div>
+                </div>
+                <div class="ds-stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            </div>
+        </div>
+        <div class="ds-stat is-danger">
+            <div class="ds-stat-top">
+                <div>
+                    <div class="ds-stat-label">Vencidos</div>
+                    <div class="ds-stat-value">@(stats?.Expired ?? 0)</div>
+                </div>
+                <div class="ds-stat-icon"><i class="bi bi-x-circle"></i></div>
+            </div>
+        </div>
+        <div class="ds-stat is-info">
+            <div class="ds-stat-top">
+                <div>
+                    <div class="ds-stat-label">Pendentes</div>
+                    <div class="ds-stat-value">@(stats?.PendingVerification ?? 0)</div>
+                </div>
+                <div class="ds-stat-icon"><i class="bi bi-hourglass-split"></i></div>
+            </div>
+        </div>
+    </div>
+
+    @if ((stats?.ExpiringIn30Days ?? 0) > 0)
+    {
+        <div class="ds-banner is-warn">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div><strong>@stats?.ExpiringIn30Days</strong> certificado(s) vencendo nos próximos 30 dias.</div>
+            <a href="/SupplierCertification/Expiring" class="btn btn-amber btn-sm" style="margin-left:auto;"><i class="bi bi-eye"></i>Ver vencendo</a>
+        </div>
+    }
+
+    <div class="ds-card pad" style="margin-bottom:24px;">
+        <form method="get" class="filter-grid">
+            <div>
+                <label class="input-label">Buscar</label>
+                <input type="text" name="search" class="input" placeholder="Fornecedor, número AFE…" value="@search">
+            </div>
+            <div>
+                <label class="input-label">Status</label>
+                <select name="status" class="select">
+                    <option value="">Todos</option>
+                    <option value="Válido" selected="@(selectedStatus == "Válido")">Válido</option>
+                    <option value="Vencido" selected="@(selectedStatus == "Vencido")">Vencido</option>
+                    <option value="Revogado" selected="@(selectedStatus == "Revogado")">Revogado</option>
+                    <option value="Pendente" selected="@(selectedStatus == "Pendente")">Pendente</option>
+                </select>
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i>Filtrar</button>
+                <a href="/SupplierCertification" class="btn btn-secondary">Limpar</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="ds-card">
+        <div class="ds-card-head">
+            <div>
+                <div class="ds-card-eyebrow">Certificados</div>
+                <h3 class="ds-card-title">Autorizações de fornecedores</h3>
+            </div>
+            <span class="badge badge-neutral badge-no-dot">@(Model?.Count ?? 0) registro(s)</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table responsive-stack mb-0">
+                <thead>
+                    <tr>
+                        <th>Fornecedor</th>
+                        <th>Tipo</th>
+                        <th>Número</th>
+                        <th>Emissão</th>
+                        <th>Validade</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var cert in Model)
+                        {
+                            var isExpired = cert.ExpiryDate.HasValue && cert.ExpiryDate.Value < DateTime.UtcNow;
+                            var isExpiring = cert.ExpiryDate.HasValue && cert.ExpiryDate.Value <= DateTime.UtcNow.AddDays(30) && !isExpired;
+
+                            <tr>
+                                <td data-label="Fornecedor">
+                                    <span style="color:var(--ink);font-weight:500;">@cert.Supplier?.CompanyName</span>
+                                    @if (!string.IsNullOrEmpty(cert.Supplier?.TradeName))
+                                    {
+                                        <br /><small style="color:var(--ink-3);">@cert.Supplier.TradeName</small>
+                                    }
+                                </td>
+                                <td data-label="Tipo"><span class="badge badge-petrol badge-no-dot">@cert.CertificateType</span></td>
+                                <td data-label="Número" class="mono" style="color:var(--ink-2);">@cert.Number</td>
+                                <td data-label="Emissão" class="mono" style="color:var(--ink-3);">@cert.IssueDate?.ToString("dd/MM/yyyy")</td>
+                                <td data-label="Validade">
+                                    @if (cert.ExpiryDate.HasValue)
+                                    {
+                                        <span class="mono" style="color:@(isExpired ? "var(--danger)" : isExpiring ? "var(--warn)" : "var(--ink-2)");font-weight:@(isExpired || isExpiring ? "600" : "400");">
+                                            @cert.ExpiryDate.Value.ToString("dd/MM/yyyy")
+                                        </span>
+                                        @if (isExpired)
+                                        {
+                                            <br /><span class="expiry-hint danger">Vencido</span>
+                                        }
+                                        else if (isExpiring)
+                                        {
+                                            <br /><span class="expiry-hint warn">@cert.DaysUntilExpiry dias restantes</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--ink-3);">Sem validade</span>
+                                    }
+                                </td>
+                                <td data-label="Status">
+                                    @if (cert.Status == "Válido" && !isExpired)
+                                    {
+                                        <span class="badge badge-ok badge-no-dot">Válido</span>
+                                    }
+                                    else if (isExpired || cert.Status == "Vencido")
+                                    {
+                                        <span class="badge badge-danger badge-no-dot">Vencido</span>
+                                    }
+                                    else if (cert.Status == "Revogado")
+                                    {
+                                        <span class="badge badge-neutral badge-no-dot">Revogado</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-warn badge-no-dot">@cert.Status</span>
+                                    }
+                                </td>
+                                <td data-label="Ações" class="text-end">
+                                    <div class="row" style="justify-content:flex-end;gap:6px;">
+                                        <a href="/SupplierCertification/Details/@cert.Id" class="btn btn-ghost btn-sm" title="Detalhes"><i class="bi bi-eye"></i></a>
+                                        <a href="/SupplierCertification/Edit/@cert.Id" class="btn btn-ghost btn-sm" title="Editar"><i class="bi bi-pencil"></i></a>
+                                        @if (isExpired || isExpiring)
+                                        {
+                                            <a href="/SupplierCertification/Renew/@cert.Id" class="btn btn-amber btn-sm" title="Renovar"><i class="bi bi-arrow-repeat"></i></a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="empty-row">
+                                <i class="bi bi-inbox"></i>
+                                Nenhuma certificação encontrada.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

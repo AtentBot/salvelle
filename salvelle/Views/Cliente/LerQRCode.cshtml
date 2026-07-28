@@ -1,0 +1,135 @@
+@{
+    ViewData["Title"] = "Escanear QR Code";
+    ViewData["ActiveNav"] = "qrcode";
+    Layout = "_LayoutCliente";
+}
+
+<div class="container py-4">
+    <div class="text-center mb-4">
+        <h4 class="mb-2">Escanear QR Code</h4>
+        <p class="text-muted">Aponte a câmera para o QR Code da farmácia</p>
+    </div>
+
+    <div class="scan-area mb-4" id="scanArea">
+        <div id="reader" style="width: 100%;"></div>
+        <div id="placeholder" class="text-center text-muted">
+            <i class="bi bi-camera fs-1"></i>
+            <p class="mt-2">Clique para iniciar a câmera</p>
+        </div>
+    </div>
+
+    <div id="alertArea"></div>
+
+    <div class="d-grid gap-2">
+        <button type="button" class="btn btn-primary btn-lg" id="btnStart" onclick="startScanner()">
+            <i class="bi bi-camera me-2"></i>Iniciar Câmera
+        </button>
+        <button type="button" class="btn btn-outline-secondary d-none" id="btnStop" onclick="stopScanner()">
+            <i class="bi bi-stop-circle me-2"></i>Parar
+        </button>
+    </div>
+
+    <hr class="my-4">
+
+    <!-- Entrada manual -->
+    <div class="text-center">
+        <p class="text-muted small mb-2">Ou digite o código manualmente:</p>
+        <div class="input-group" style="max-width: 280px; margin: 0 auto;">
+            <input type="text" class="form-control text-center text-uppercase" id="manualCode" 
+                   maxlength="8" placeholder="ABC12345" style="letter-spacing: 2px; font-weight: bold;">
+            <button class="btn btn-primary" type="button" onclick="submitManualCode()">
+                <i class="bi bi-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+    let html5QrcodeScanner = null;
+
+    function startScanner() {
+        document.getElementById('placeholder').style.display = 'none';
+        document.getElementById('btnStart').classList.add('d-none');
+        document.getElementById('btnStop').classList.remove('d-none');
+        document.getElementById('scanArea').classList.add('scanning');
+
+        html5QrcodeScanner = new Html5Qrcode("reader");
+        
+        html5QrcodeScanner.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 250 }
+            },
+            (decodedText) => {
+                onScanSuccess(decodedText);
+            },
+            (errorMessage) => {
+                // Ignorar erros de scan contínuo
+            }
+        ).catch((err) => {
+            showAlert('Erro ao acessar câmera: ' + err, 'danger');
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.stop().then(() => {
+                html5QrcodeScanner = null;
+            }).catch(console.error);
+        }
+        
+        document.getElementById('placeholder').style.display = 'block';
+        document.getElementById('btnStart').classList.remove('d-none');
+        document.getElementById('btnStop').classList.add('d-none');
+        document.getElementById('scanArea').classList.remove('scanning');
+        document.getElementById('reader').innerHTML = '';
+    }
+
+    function onScanSuccess(decodedText) {
+        stopScanner();
+        
+        // Verificar se é URL do sistema
+        if (decodedText.includes('/c/')) {
+            const code = decodedText.split('/c/')[1].split('?')[0]; // Remove query params se houver
+            processCode(code);
+        } else if (decodedText.match(/^[A-Z0-9]{8}$/i)) {
+            // Código direto de 8 caracteres
+            processCode(decodedText);
+        } else {
+            showAlert('QR Code inválido', 'danger');
+        }
+    }
+
+    function submitManualCode() {
+        const code = document.getElementById('manualCode').value.trim().toUpperCase();
+        if (code.length !== 8) {
+            showAlert('Digite um código de 8 caracteres', 'warning');
+            return;
+        }
+        processCode(code);
+    }
+
+    function processCode(code) {
+        showAlert('Processando...', 'info');
+        // Redirecionar para o endpoint de QR Code
+        window.location.href = `/c/${code}`;
+    }
+
+    function showAlert(message, type) {
+        document.getElementById('alertArea').innerHTML = `
+            <div class="alert alert-${type} small py-2 mb-3">${message}</div>
+        `;
+    }
+
+    // Enter para código manual
+    document.getElementById('manualCode').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            submitManualCode();
+        }
+    });
+</script>
+}

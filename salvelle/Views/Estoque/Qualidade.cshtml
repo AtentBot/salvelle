@@ -1,0 +1,632 @@
+@{
+    ViewData["Title"] = "Controle de Qualidade";
+}
+
+<!-- Header -->
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0"><i class="bi bi-shield-check me-2"></i>Controle de Qualidade</h2>
+                <p class="text-muted mb-0">Gerenciamento de lotes em quarentena e análise</p>
+            </div>
+            <div>
+                <a href="/Estoque" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar ao Estoque
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Em Quarentena</p>
+                        <h3 class="mb-0 text-warning" id="totalQuarentena">-</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-hourglass-split text-warning fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Aprovados Hoje</p>
+                        <h3 class="mb-0 text-success" id="aprovadosHoje">-</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-check-circle text-success fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Reprovados</p>
+                        <h3 class="mb-0 text-danger" id="totalReprovados">-</h3>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-x-circle text-danger fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Aguardando Laudo</p>
+                        <h3 class="mb-0 text-info" id="aguardandoLaudo">-</h3>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-file-earmark-text text-info fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small">Status</label>
+                        <select id="filterStatus" class="form-select form-select-sm">
+                            <option value="">Todos</option>
+                            <option value="QUARENTENA" selected>Em Quarentena</option>
+                            <option value="APROVADO">Aprovado</option>
+                            <option value="REPROVADO">Reprovado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small">Matéria-Prima</label>
+                        <select id="filterMaterial" class="form-select form-select-sm">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small">Período</label>
+                        <select id="filterPeriod" class="form-select form-select-sm">
+                            <option value="7">Últimos 7 dias</option>
+                            <option value="30" selected>Últimos 30 dias</option>
+                            <option value="90">Últimos 90 dias</option>
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button onclick="loadBatches()" class="btn btn-primary btn-sm w-100">
+                            <i class="bi bi-search me-1"></i> Filtrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Lotes -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-check me-2"></i>
+                    Lotes para Análise
+                </h5>
+                <span class="badge bg-secondary" id="totalLotes">0 lotes</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Lote</th>
+                                <th>Matéria-Prima</th>
+                                <th>Fornecedor</th>
+                                <th>Quantidade</th>
+                                <th>Fabricação</th>
+                                <th>Validade</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchesTable">
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <i class="bi bi-hourglass-split fs-1 d-block mb-2"></i>
+                                    Carregando lotes...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Análise -->
+<div class="modal fade" id="analyzeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-clipboard-check me-2"></i>
+                    Análise de Qualidade
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Lote</label>
+                        <p id="modalLote" class="mb-0">-</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Matéria-Prima</label>
+                        <p id="modalMaterial" class="mb-0">-</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Resultado da Análise</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="resultAnalise" id="resultAprovado" value="APROVADO">
+                        <label class="btn btn-outline-success" for="resultAprovado">
+                            <i class="bi bi-check-circle me-1"></i> Aprovar
+                        </label>
+                        <input type="radio" class="btn-check" name="resultAnalise" id="resultReprovado" value="REPROVADO">
+                        <label class="btn btn-outline-danger" for="resultReprovado">
+                            <i class="bi bi-x-circle me-1"></i> Reprovar
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Número do Laudo</label>
+                    <input type="text" class="form-control" id="analysisReportNumber" placeholder="Ex: LAU-2024-001">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Observações da Análise</label>
+                    <textarea class="form-control" id="analysisNotes" rows="3" placeholder="Descreva os resultados da análise..."></textarea>
+                </div>
+                <div class="mb-3" id="rejectionReasonDiv" style="display: none;">
+                    <label class="form-label fw-bold text-danger">Motivo da Reprovação</label>
+                    <select class="form-select" id="rejectionReason">
+                        <option value="">Selecione o motivo...</option>
+                        <option value="CONTAMINACAO">Contaminação</option>
+                        <option value="FORA_ESPECIFICACAO">Fora da Especificação</option>
+                        <option value="VALIDADE_CURTA">Validade Muito Curta</option>
+                        <option value="EMBALAGEM_DANIFICADA">Embalagem Danificada</option>
+                        <option value="DOCUMENTACAO">Documentação Inadequada</option>
+                        <option value="OUTRO">Outro</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveAnalysis()">
+                    <i class="bi bi-save me-1"></i> Salvar Análise
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Detalhes -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Detalhes do Lote
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailsContent">
+                Carregando...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <a href="#" id="rastreabilidadeLink" class="btn btn-info">
+                    <i class="bi bi-diagram-3 me-1"></i> Ver Rastreabilidade
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let currentBatchId = null;
+let allBatches = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadMaterials();
+    loadBatches();
+
+    // Toggle motivo de reprovação
+    document.querySelectorAll('input[name="resultAnalise"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.getElementById('rejectionReasonDiv').style.display = 
+                this.value === 'REPROVADO' ? 'block' : 'none';
+        });
+    });
+});
+
+// Função para extrair array da resposta da API
+function extractArray(result) {
+    if (Array.isArray(result)) {
+        return result;
+    }
+    if (result && Array.isArray(result.items)) {
+        return result.items;
+    }
+    if (result && Array.isArray(result.data)) {
+        return result.data;
+    }
+    if (result && Array.isArray(result.batches)) {
+        return result.batches;
+    }
+    // Se for um objeto único, retorna em array
+    if (result && typeof result === 'object' && result.id) {
+        return [result];
+    }
+    console.warn('Formato de resposta não reconhecido:', result);
+    return [];
+}
+
+async function loadMaterials() {
+    try {
+        const response = await fetch('/api/RawMaterials', { credentials: 'include' });
+        if (!response.ok) return;
+        
+        const result = await response.json();
+        const materials = extractArray(result);
+
+        const select = document.getElementById('filterMaterial');
+        materials.forEach(m => {
+            const option = document.createElement('option');
+            option.value = m.id;
+            option.textContent = m.name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Erro ao carregar matérias-primas:', error);
+    }
+}
+
+async function loadBatches() {
+    try {
+        const status = document.getElementById('filterStatus').value;
+        const materialId = document.getElementById('filterMaterial').value;
+        const period = document.getElementById('filterPeriod').value;
+
+        let url = '/api/Batches?';
+        if (status) url += `status=${status}&`;
+        if (materialId) url += `rawMaterialId=${materialId}&`;
+
+        console.log('Carregando lotes de:', url);
+
+        const response = await fetch(url, { credentials: 'include' });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Resposta da API:', result);
+        
+        // Extrair array da resposta
+        let batches = extractArray(result);
+        console.log('Batches extraídos:', batches.length);
+        
+        // Guardar todos para estatísticas
+        allBatches = batches;
+
+        // Filtrar por período no cliente
+        if (period && batches.length > 0) {
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - parseInt(period));
+            batches = batches.filter(b => {
+                const batchDate = new Date(b.createdAt || b.receivedDate);
+                return batchDate >= cutoffDate;
+            });
+        }
+
+        updateStats();
+        renderBatches(batches);
+        document.getElementById('totalLotes').textContent = `${batches.length} lotes`;
+    } catch (error) {
+        console.error('Erro ao carregar lotes:', error);
+        document.getElementById('batchesTable').innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-4 text-danger">
+                    <i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>
+                    Erro ao carregar lotes: ${error.message}
+                </td>
+            </tr>`;
+    }
+}
+
+function updateStats() {
+    if (!Array.isArray(allBatches)) {
+        console.warn('allBatches não é um array:', allBatches);
+        allBatches = [];
+    }
+
+    const quarentena = allBatches.filter(b => b.status === 'QUARENTENA');
+    const reprovados = allBatches.filter(b => b.status === 'REPROVADO');
+    const semLaudo = quarentena.filter(b => !b.certificateNumber);
+
+    const today = new Date().toISOString().split('T')[0];
+    const aprovadosHoje = allBatches.filter(b => 
+        b.status === 'APROVADO' && 
+        b.approvalDate && 
+        b.approvalDate.startsWith(today)
+    );
+
+    document.getElementById('totalQuarentena').textContent = quarentena.length;
+    document.getElementById('aprovadosHoje').textContent = aprovadosHoje.length;
+    document.getElementById('totalReprovados').textContent = reprovados.length;
+    document.getElementById('aguardandoLaudo').textContent = semLaudo.length;
+}
+
+function renderBatches(batches) {
+    const tbody = document.getElementById('batchesTable');
+
+    if (!Array.isArray(batches) || batches.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                    Nenhum lote encontrado
+                </td>
+            </tr>`;
+        return;
+    }
+
+    tbody.innerHTML = batches.map(batch => {
+        const materialName = batch.name || batch.rawMaterialName || '-';
+        const supplierName = batch.companyName || batch.supplierName || '-';
+        
+        return `
+            <tr>
+                <td>
+                    <span class="fw-bold">${batch.batchNumber || '-'}</span>
+                    ${batch.invoiceNumber ? `<br><small class="text-muted">NF: ${batch.invoiceNumber}</small>` : ''}
+                </td>
+                <td>${materialName}</td>
+                <td>${supplierName}</td>
+                <td>${formatQuantity(batch.currentQuantity, batch.unit)}</td>
+                <td>${formatDate(batch.manufactureDate || batch.manufacturingDate)}</td>
+                <td>
+                    ${formatDate(batch.expiryDate)}
+                    ${batch.isExpiringSoon ? '<br><span class="badge bg-warning text-dark">Vencendo</span>' : ''}
+                    ${batch.isExpired ? '<br><span class="badge bg-danger">Vencido</span>' : ''}
+                </td>
+                <td>${getStatusBadge(batch.status)}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-info" onclick="showDetails('${batch.id}')" title="Detalhes">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        ${batch.status === 'QUARENTENA' ? `
+                            <button class="btn btn-outline-primary" onclick="openAnalyzeModal('${batch.id}', '${(batch.batchNumber || '').replace(/'/g, "\\'")}', '${materialName.replace(/'/g, "\\'")}')" title="Analisar">
+                                <i class="bi bi-clipboard-check"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function getStatusBadge(status) {
+    const badges = {
+        'QUARENTENA': '<span class="badge bg-warning text-dark">Quarentena</span>',
+        'APROVADO': '<span class="badge bg-success">Aprovado</span>',
+        'REPROVADO': '<span class="badge bg-danger">Reprovado</span>'
+    };
+    return badges[status] || `<span class="badge bg-secondary">${status || '-'}</span>`;
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    try {
+        return new Date(dateStr).toLocaleDateString('pt-BR');
+    } catch {
+        return '-';
+    }
+}
+
+function formatQuantity(qty, unit) {
+    if (qty === null || qty === undefined) return '-';
+    return `${parseFloat(qty).toFixed(2)} ${unit || ''}`;
+}
+
+function openAnalyzeModal(batchId, batchNumber, materialName) {
+    currentBatchId = batchId;
+    document.getElementById('modalLote').textContent = batchNumber || '-';
+    document.getElementById('modalMaterial').textContent = materialName || '-';
+    document.getElementById('analysisReportNumber').value = '';
+    document.getElementById('analysisNotes').value = '';
+    document.getElementById('rejectionReason').value = '';
+    document.querySelectorAll('input[name="resultAnalise"]').forEach(r => r.checked = false);
+    document.getElementById('rejectionReasonDiv').style.display = 'none';
+
+    new bootstrap.Modal(document.getElementById('analyzeModal')).show();
+}
+
+async function saveAnalysis() {
+    const result = document.querySelector('input[name="resultAnalise"]:checked')?.value;
+    if (!result) {
+        alert('Selecione o resultado da análise');
+        return;
+    }
+
+    const reportNumber = document.getElementById('analysisReportNumber').value;
+    const notes = document.getElementById('analysisNotes').value;
+    const rejectionReason = document.getElementById('rejectionReason').value;
+
+    if (result === 'REPROVADO' && !rejectionReason) {
+        alert('Informe o motivo da reprovação');
+        return;
+    }
+
+    try {
+        // Tenta primeiro o endpoint específico de quality-analysis
+        let response = await fetch(`/api/Batches/${currentBatchId}/quality-analysis`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                status: result,
+                certificateNumber: reportNumber,
+                qualityNotes: notes,
+                rejectionReason: result === 'REPROVADO' ? rejectionReason : null
+            })
+        });
+
+        // Se não existir, tenta PATCH no lote
+        if (response.status === 404) {
+            response = await fetch(`/api/Batches/${currentBatchId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    status: result,
+                    certificateNumber: reportNumber,
+                    qualityNotes: notes
+                })
+            });
+        }
+
+        if (response.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('analyzeModal')).hide();
+            loadBatches();
+            alert(result === 'APROVADO' ? 'Lote aprovado com sucesso!' : 'Lote reprovado.');
+        } else {
+            const error = await response.json().catch(() => ({}));
+            alert(error.message || 'Erro ao salvar análise');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao salvar análise');
+    }
+}
+
+async function showDetails(batchId) {
+    try {
+        const response = await fetch(`/api/Batches/${batchId}`, { credentials: 'include' });
+        
+        if (!response.ok) {
+            throw new Error('Lote não encontrado');
+        }
+        
+        const batch = await response.json();
+
+        document.getElementById('rastreabilidadeLink').href = `/Estoque/Rastreabilidade/${batchId}`;
+
+        document.getElementById('detailsContent').innerHTML = `
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold text-muted small">Número do Lote</label>
+                    <p class="mb-0">${batch.batchNumber || '-'}</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold text-muted small">Nota Fiscal</label>
+                    <p class="mb-0">${batch.invoiceNumber || '-'}</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold text-muted small">Matéria-Prima</label>
+                    <p class="mb-0">${batch.name || batch.rawMaterialName || '-'}</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold text-muted small">Fornecedor</label>
+                    <p class="mb-0">${batch.companyName || batch.supplierName || '-'}</p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold text-muted small">Quantidade Recebida</label>
+                    <p class="mb-0">${formatQuantity(batch.receivedQuantity, batch.unit)}</p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold text-muted small">Quantidade Atual</label>
+                    <p class="mb-0">${formatQuantity(batch.currentQuantity, batch.unit)}</p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold text-muted small">Status</label>
+                    <p class="mb-0">${getStatusBadge(batch.status)}</p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold text-muted small">Fabricação</label>
+                    <p class="mb-0">${formatDate(batch.manufactureDate || batch.manufacturingDate)}</p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold text-muted small">Validade</label>
+                    <p class="mb-0">${formatDate(batch.expiryDate)}</p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold text-muted small">Recebimento</label>
+                    <p class="mb-0">${formatDate(batch.receivedDate)}</p>
+                </div>
+                ${batch.unitCost ? `
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold text-muted small">Custo Unitário</label>
+                    <p class="mb-0">R$ ${parseFloat(batch.unitCost).toFixed(2)}</p>
+                </div>` : ''}
+                ${batch.certificateNumber ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold text-muted small">Laudo/Certificado</label>
+                    <p class="mb-0">${batch.certificateNumber}</p>
+                </div>` : ''}
+                ${batch.approvalDate ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold text-muted small">Data Aprovação</label>
+                    <p class="mb-0">${formatDate(batch.approvalDate)}</p>
+                </div>` : ''}
+                ${batch.approvedByName ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold text-muted small">Aprovado por</label>
+                    <p class="mb-0">${batch.approvedByName}</p>
+                </div>` : ''}
+                ${batch.qualityNotes ? `
+                <div class="col-12 mb-3">
+                    <label class="form-label fw-bold text-muted small">Observações de Qualidade</label>
+                    <p class="mb-0">${batch.qualityNotes}</p>
+                </div>` : ''}
+            </div>
+        `;
+
+        new bootstrap.Modal(document.getElementById('detailsModal')).show();
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao carregar detalhes');
+    }
+}
+</script>
+}

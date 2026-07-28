@@ -1,0 +1,248 @@
+@model Models.Pharmacy.RawMaterial
+@{
+    ViewData["Title"] = Model == null ? "Nova Matéria-Prima" : "Editar Matéria-Prima";
+    var isEdit = Model != null;
+}
+
+<!-- Header -->
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0">
+                    <i class="bi bi-file-earmark-medical me-2"></i>
+                    @ViewData["Title"]
+                </h2>
+                <p class="text-muted mb-0">@(isEdit ? "Atualizar informações da matéria-prima" : "Cadastrar nova matéria-prima")</p>
+            </div>
+            <div>
+                <a href="/MateriasPrimas" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulário -->
+<form id="materialForm">
+    <input type="hidden" id="materialId" value="@(Model?.Id ?? Guid.Empty)">
+
+    <div class="row">
+        <!-- Informações Básicas -->
+        <div class="col-md-8 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Informações Básicas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="name" class="form-label">Nome da Matéria-Prima <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" value="@Model?.Name" required>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="dcbCode" class="form-label">Código DCB</label>
+                            <input type="text" class="form-control" id="dcbCode" value="@Model?.DcbCode">
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="dciCode" class="form-label">Código DCI</label>
+                            <input type="text" class="form-control" id="dciCode" value="@Model?.DciCode">
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="casNumber" class="form-label">Número CAS <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="casNumber" value="@Model?.CasNumber" required>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label for="description" class="form-label">Descrição</label>
+                            <textarea class="form-control" id="description" rows="3">@Model?.Description</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controle e Estoque -->
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Controle</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="controlType" class="form-label">Tipo de Controle <span class="text-danger">*</span></label>
+                        <select class="form-select" id="controlType" required>
+                            <option value="COMUM" selected="@(Model?.ControlType == "COMUM")">Comum</option>
+                            <option value="ESPECIAL" selected="@(Model?.ControlType == "ESPECIAL")">Especial</option>
+                            <option value="A1" selected="@(Model?.ControlType == "A1")">Lista A1 (Entorpecentes)</option>
+                            <option value="A2" selected="@(Model?.ControlType == "A2")">Lista A2 (Entorpecentes)</option>
+                            <option value="A3" selected="@(Model?.ControlType == "A3")">Lista A3 (Psicotrópicos)</option>
+                            <option value="B1" selected="@(Model?.ControlType == "B1")">Lista B1 (Psicotrópicos)</option>
+                            <option value="B2" selected="@(Model?.ControlType == "B2")">Lista B2 (Psicotrópicas)</option>
+                            <option value="C1" selected="@(Model?.ControlType == "C1")">Lista C1 (Outras)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="unit" class="form-label">Unidade <span class="text-danger">*</span></label>
+                        <select class="form-select" id="unit" required>
+                            <option value="g" selected="@(Model?.Unit == "g")">g (gramas)</option>
+                            <option value="mg" selected="@(Model?.Unit == "mg")">mg (miligramas)</option>
+                            <option value="kg" selected="@(Model?.Unit == "kg")">kg (quilogramas)</option>
+                            <option value="ml" selected="@(Model?.Unit == "ml")">ml (mililitros)</option>
+                            <option value="l" selected="@(Model?.Unit == "l")">L (litros)</option>
+                            <option value="un" selected="@(Model?.Unit == "un")">Un (unidades)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="purityFactor" class="form-label">Fator de Pureza</label>
+                        <input type="number" class="form-control" id="purityFactor" step="0.0001" min="0" max="1" value="@(Model?.PurityFactor ?? 1)">
+                        <small class="text-muted">Valor entre 0 e 1</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Estoque</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="minimumStock" class="form-label">Estoque Mínimo</label>
+                        <input type="number" class="form-control" id="minimumStock" step="0.01" min="0" value="@(Model?.MinimumStock ?? 0)">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="maximumStock" class="form-label">Estoque Máximo</label>
+                        <input type="number" class="form-control" id="maximumStock" step="0.01" min="0" value="@(Model?.MaximumStock ?? 0)">
+                    </div>
+
+                    @if (isEdit)
+                    {
+                        <div class="alert alert-info mb-0">
+                            <small><strong>Estoque Atual:</strong> @Model.CurrentStock.ToString("N2") @Model.Unit</small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Condições de Armazenamento -->
+        <div class="col-md-12 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Condições de Armazenamento</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="storageConditions" class="form-label">Condições Especiais</label>
+                            <textarea class="form-control" id="storageConditions" rows="2">@Model?.StorageConditions</textarea>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Requisitos</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="requiresRefrigeration" checked="@(Model?.RequiresRefrigeration == true)">
+                                <label class="form-check-label" for="requiresRefrigeration">
+                                    <i class="bi bi-thermometer-snow text-info"></i> Requer Refrigeração
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="lightSensitive" checked="@(Model?.LightSensitive == true)">
+                                <label class="form-check-label" for="lightSensitive">
+                                    <i class="bi bi-brightness-high text-warning"></i> Sensível à Luz
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="humiditySensitive" checked="@(Model?.HumiditySensitive == true)">
+                                <label class="form-check-label" for="humiditySensitive">
+                                    <i class="bi bi-droplet text-primary"></i> Sensível à Umidade
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="col-12">
+            <div class="d-flex justify-content-end gap-2">
+                <a href="/MateriasPrimas" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary" id="saveButton">
+                    <i class="bi bi-check-circle me-1"></i> @(isEdit ? "Atualizar" : "Cadastrar")
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        const isEdit = '@isEdit' === 'True';
+        const materialId = document.getElementById('materialId').value;
+
+        document.getElementById('materialForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const saveButton = document.getElementById('saveButton');
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+
+            const data = {
+                name: document.getElementById('name').value,
+                dcbCode: document.getElementById('dcbCode').value || null,
+                dciCode: document.getElementById('dciCode').value || null,
+                casNumber: document.getElementById('casNumber').value,
+                description: document.getElementById('description').value || null,
+                controlType: document.getElementById('controlType').value,
+                unit: document.getElementById('unit').value,
+                purityFactor: parseFloat(document.getElementById('purityFactor').value),
+                minimumStock: parseFloat(document.getElementById('minimumStock').value),
+                maximumStock: parseFloat(document.getElementById('maximumStock').value),
+                storageConditions: document.getElementById('storageConditions').value || null,
+                requiresRefrigeration: document.getElementById('requiresRefrigeration').checked,
+                lightSensitive: document.getElementById('lightSensitive').checked,
+                humiditySensitive: document.getElementById('humiditySensitive').checked
+            };
+
+            try {
+                const url = isEdit ? `/api/RawMaterials/${materialId}` : '/api/RawMaterials';
+                const method = isEdit ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert(isEdit ? 'Matéria-prima atualizada com sucesso!' : 'Matéria-prima cadastrada com sucesso!');
+                    window.location.href = '/MateriasPrimas';
+                } else {
+                    const error = await response.json();
+                    alert('Erro: ' + (error.error || 'Erro ao salvar matéria-prima'));
+                    saveButton.disabled = false;
+                    saveButton.innerHTML = '<i class="bi bi-check-circle me-1"></i> ' + (isEdit ? 'Atualizar' : 'Cadastrar');
+                }
+
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao salvar matéria-prima');
+                saveButton.disabled = false;
+                saveButton.innerHTML = '<i class="bi bi-check-circle me-1"></i> ' + (isEdit ? 'Atualizar' : 'Cadastrar');
+            }
+        });
+    </script>
+}

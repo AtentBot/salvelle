@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Salvelle — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap');</style>
+<link rel="stylesheet" href="ds/tokens.css">
+<link rel="stylesheet" href="ds/components.css">
+<style>
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .dash-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 24px; margin-bottom: 24px; }
+  .chart-card { padding: 20px; min-height: 320px; }
+  .chart-card h3 { margin: 0; font-size: 16px; font-weight: 600; }
+  .chart-svg { width: 100%; height: 240px; margin-top: 16px; }
+  .chart-axis { font-family: var(--font-mono); font-size: 10px; fill: var(--ink-3); }
+  .chart-grid { stroke: var(--rule); stroke-dasharray: 2 4; }
+  .timeline { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
+  .tl-row { display: flex; gap: 12px; align-items: flex-start; padding-bottom: 14px; border-bottom: 1px dashed var(--rule); }
+  .tl-row:last-child { border-bottom: none; }
+  .tl-time { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); width: 50px; flex-shrink: 0; padding-top: 2px; }
+  .tl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--petrol-500); flex-shrink: 0; margin-top: 6px; }
+  .tl-dot.warn { background: var(--amber-500); }
+  .tl-dot.ok { background: var(--ok); }
+  .tl-content { flex: 1; font-size: 13px; }
+  .tl-content strong { font-weight: 500; color: var(--ink); }
+  .tl-content small { display: block; color: var(--ink-3); margin-top: 2px; font-size: 12px; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/shell.jsx"></script>
+<script type="text/babel" data-presets="react">
+function Chart() {
+  const data = [12, 18, 22, 19, 28, 34, 31, 38, 42, 36, 44, 42];
+  const max = 50; const w = 700; const h = 200; const pad = 30;
+  const stepX = (w - pad*2) / (data.length - 1);
+  const points = data.map((v, i) => `${pad + i*stepX},${h - pad - (v/max)*(h - pad*2)}`).join(' ');
+  const area = `${pad},${h-pad} ${points} ${pad + (data.length-1)*stepX},${h-pad}`;
+  return (
+    <svg className="chart-svg" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--petrol-500)" stopOpacity=".18"/>
+          <stop offset="100%" stopColor="var(--petrol-500)" stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      {[0, 1, 2, 3, 4].map(i => (
+        <line key={i} className="chart-grid" x1={pad} x2={w-pad} y1={pad + i*((h-pad*2)/4)} y2={pad + i*((h-pad*2)/4)} />
+      ))}
+      <polygon points={area} fill="url(#g1)" />
+      <polyline points={points} fill="none" stroke="var(--petrol-500)" strokeWidth="2" />
+      {data.map((v, i) => (
+        <circle key={i} cx={pad + i*stepX} cy={h - pad - (v/max)*(h - pad*2)} r="3" fill="var(--surface)" stroke="var(--petrol-500)" strokeWidth="2" />
+      ))}
+      {['00','02','04','06','08','10','12','14','16','18','20','22'].map((t, i) => (
+        <text key={i} className="chart-axis" x={pad + i*stepX} y={h - 8} textAnchor="middle">{t}h</text>
+      ))}
+    </svg>
+  );
+}
+
+function App() {
+  return (
+    <div className="app-shell">
+      <Sidebar active="dashboard" />
+      <div className="app-main">
+        <Topbar />
+        <div className="app-content">
+          <PageHead
+            breadcrumb="HOJE · 28 ABR · SEXTA"
+            title="Bom dia, Douglas."
+            subtitle="14 pedidos abertos · 3 fórmulas aguardando 2ª assinatura · estoque OK."
+            actions={<>
+              <button className="btn btn-secondary"><Icon name="download"/>Exportar</button>
+              <a className="btn btn-primary" href="manipulation.html"><Icon name="plus"/>Nova fórmula</a>
+            </>}
+          />
+
+          <div className="stat-grid">
+            <div className="stat">
+              <div className="stat-label">Pedidos hoje</div>
+              <div className="stat-value">42</div>
+              <div className="stat-delta"><Icon name="arrow-up"/>+12% vs. ontem</div>
+            </div>
+            <div className="stat">
+              <div className="stat-label">Em manipulação</div>
+              <div className="stat-value">14</div>
+              <div className="stat-delta down"><Icon name="arrow-down"/>−3 desde manhã</div>
+            </div>
+            <div className="stat">
+              <div className="stat-label">Faturamento</div>
+              <div className="stat-value">R$ 8.420</div>
+              <div className="stat-delta"><Icon name="arrow-up"/>+R$ 1.140</div>
+            </div>
+            <div className="stat">
+              <div className="stat-label">Ticket médio</div>
+              <div className="stat-value">R$ 92</div>
+              <div className="stat-delta flat">estável</div>
+            </div>
+          </div>
+
+          <div className="dash-grid">
+            <div className="card chart-card">
+              <div className="row" style={{ justifyContent: 'space-between' }}>
+                <div>
+                  <div className="card-eyebrow">Pedidos por hora</div>
+                  <h3>Movimento de hoje</h3>
+                </div>
+                <div className="row" style={{ gap: 6 }}>
+                  <button className="btn btn-secondary btn-sm">Hoje</button>
+                  <button className="btn btn-ghost btn-sm">7 dias</button>
+                  <button className="btn btn-ghost btn-sm">Mês</button>
+                </div>
+              </div>
+              <Chart />
+            </div>
+            <div className="card">
+              <div className="card-eyebrow">Atividade ao vivo</div>
+              <h3 className="card-title">Últimas ações</h3>
+              <div className="timeline">
+                <div className="tl-row"><span className="tl-time">14:38</span><span className="tl-dot ok"/><div className="tl-content"><strong>Marina Rocha</strong> liberada<small>Minoxidil 5% · 60mL · ORD-1183</small></div></div>
+                <div className="tl-row"><span className="tl-time">14:31</span><span className="tl-dot warn"/><div className="tl-content"><strong>Bupropiona 150mg</strong> aguarda 2ª assinatura<small>ORD-1182 · controlado preto</small></div></div>
+                <div className="tl-row"><span className="tl-time">14:18</span><span className="tl-dot"/><div className="tl-content"><strong>Pesagem</strong> concluída · bancada 02<small>62,4 g · J. Lima</small></div></div>
+                <div className="tl-row"><span className="tl-time">13:55</span><span className="tl-dot"/><div className="tl-content"><strong>Estoque</strong> abaixo do mínimo<small>Tretinoína 0,025% · 3 frascos</small></div></div>
+                <div className="tl-row"><span className="tl-time">13:42</span><span className="tl-dot ok"/><div className="tl-content"><strong>Clínica Vita</strong> nova receita via OCR<small>4 itens identificados</small></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="table-wrap">
+            <div className="card-header" style={{ padding: '16px 20px', borderBottom: '1px solid var(--rule)', marginBottom: 0 }}>
+              <h3 className="card-title">Pedidos abertos</h3>
+              <div className="row" style={{ gap: 8 }}>
+                <button className="btn btn-secondary btn-sm"><Icon name="filter"/>Filtros</button>
+                <a className="btn btn-ghost btn-sm" href="orders.html">Ver todos<Icon name="arrow-right"/></a>
+              </div>
+            </div>
+            <table className="table">
+              <thead><tr><th>Pedido</th><th>Cliente</th><th>Fórmula</th><th>Etapa</th><th>Status</th><th className="num">Total</th><th></th></tr></thead>
+              <tbody>
+                {[
+                  {id:'ORD-1183', c:'Marina Rocha', f:'Minoxidil 5% · 60mL', step:'Embalagem', status:'ok', sl:'Liberado', total:'86,40'},
+                  {id:'ORD-1182', c:'Henrique Sá', f:'Bupropiona 150mg · 30 cáps', step:'Conferência', status:'warn', sl:'2ª assinatura', total:'124,00'},
+                  {id:'ORD-1181', c:'Clínica Vita', f:'Tretinoína 0,05% · 30g', step:'Pesagem', status:'neutral', sl:'Em fila', total:'58,00'},
+                  {id:'ORD-1180', c:'Paulo Vargas', f:'Finasterida 1mg · 30 cáps', step:'Manipulação', status:'ok', sl:'Em curso', total:'72,00'},
+                  {id:'ORD-1179', c:'Ana Beatriz', f:'Ácido salicílico 2% · 100mL', step:'Aguardando', status:'danger', sl:'Estoque baixo', total:'42,00'},
+                ].map(r => (
+                  <tr key={r.id}>
+                    <td className="mono">{r.id}</td>
+                    <td>{r.c}</td>
+                    <td>{r.f}</td>
+                    <td className="muted">{r.step}</td>
+                    <td><span className={`badge badge-${r.status}`}>{r.sl}</span></td>
+                    <td className="num">R$ {r.total}</td>
+                    <td><Icon name="chevron-right" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

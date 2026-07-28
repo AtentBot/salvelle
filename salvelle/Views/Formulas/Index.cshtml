@@ -1,0 +1,991 @@
+﻿@{
+    ViewData["Title"] = "Gerenciar Fórmulas";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-journal-medical text-primary me-2"></i>
+                Fórmulas Farmacêuticas
+            </h2>
+            <p class="text-muted mb-0">Gerencie fórmulas e composições para manipulação</p>
+        </div>
+        <button class="btn btn-primary" onclick="openCreateModal()">
+            <i class="bi bi-plus-lg me-2"></i>Nova Fórmula
+        </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" id="searchInput" 
+                               placeholder="Buscar por código ou nome..." onkeyup="debounceSearch()">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filterCategory" onchange="loadFormulas()">
+                        <option value="">Todas Categorias</option>
+                        <option value="CAPSULA">Cápsula</option>
+                        <option value="CREME">Creme</option>
+                        <option value="GEL">Gel</option>
+                        <option value="POMADA">Pomada</option>
+                        <option value="SOLUCAO">Solução</option>
+                        <option value="XAROPE">Xarope</option>
+                        <option value="SUSPENSAO">Suspensão</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filterStatus" onchange="loadFormulas()">
+                        <option value="">Todos Status</option>
+                        <option value="true" selected>Ativas</option>
+                        <option value="false">Inativas</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                        <i class="bi bi-x-circle me-1"></i>Limpar
+                    </button>
+                </div>
+                <div class="col-md-2 text-end">
+                    <span class="badge bg-primary fs-6" id="totalCount">0 fórmulas</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Fórmulas -->
+    <div class="row" id="formulasContainer">
+        <div class="col-12 text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Criar/Editar Fórmula -->
+<div class="modal fade" id="formulaModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalTitle">
+                    <i class="bi bi-plus-circle me-2"></i>Nova Fórmula
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="formulaId">
+                
+                <!-- Abas -->
+                <ul class="nav nav-tabs mb-4" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabInfo">
+                            <i class="bi bi-info-circle me-1"></i>Informações
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabComponents">
+                            <i class="bi bi-list-check me-1"></i>Componentes
+                            <span class="badge bg-primary ms-1" id="componentCount">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabInstructions">
+                            <i class="bi bi-file-text me-1"></i>Instruções
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- Tab Informações -->
+                    <div class="tab-pane fade show active" id="tabInfo">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label fw-semibold">Nome da Fórmula *</label>
+                                <input type="text" class="form-control" id="formulaName" 
+                                       placeholder="Ex: Vitamina C + Zinco" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Código</label>
+                                <input type="text" class="form-control" id="formulaCode" 
+                                       placeholder="Auto-gerado" readonly>
+                                <small class="text-muted">Gerado automaticamente</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Categoria *</label>
+                                <select class="form-select" id="formulaCategory" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="CAPSULA">Cápsula</option>
+                                    <option value="CREME">Creme</option>
+                                    <option value="GEL">Gel</option>
+                                    <option value="POMADA">Pomada</option>
+                                    <option value="SOLUCAO">Solução</option>
+                                    <option value="SUSPENSAO">Suspensão</option>
+                                    <option value="XAROPE">Xarope</option>
+                                    <option value="PO">Pó</option>
+                                    <option value="LOCAO">Loção</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Forma Farmacêutica *</label>
+                                <select class="form-select" id="formulaForm" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="Cápsula">Cápsula</option>
+                                    <option value="Cápsula Gelatinosa">Cápsula Gelatinosa</option>
+                                    <option value="Comprimido">Comprimido</option>
+                                    <option value="Creme">Creme</option>
+                                    <option value="Gel">Gel</option>
+                                    <option value="Pomada">Pomada</option>
+                                    <option value="Solução Oral">Solução Oral</option>
+                                    <option value="Solução Tópica">Solução Tópica</option>
+                                    <option value="Suspensão">Suspensão</option>
+                                    <option value="Xarope">Xarope</option>
+                                    <option value="Pó">Pó</option>
+                                    <option value="Sachê">Sachê</option>
+                                    <option value="Loção">Loção</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Rendimento Padrão *</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="standardYield" 
+                                           step="0.01" min="0.01" placeholder="Ex: 60" required>
+                                    <span class="input-group-text">unidades</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Validade (dias) *</label>
+                                <input type="number" class="form-control" id="shelfLifeDays" 
+                                       min="1" placeholder="Ex: 180" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Status</label>
+                                <select class="form-select" id="isActive">
+                                    <option value="true" selected>Ativa</option>
+                                    <option value="false">Inativa</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Descrição</label>
+                                <textarea class="form-control" id="formulaDescription" rows="2"
+                                          placeholder="Descrição breve da fórmula..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="requiresPrescription" checked>
+                                    <label class="form-check-label" for="requiresPrescription">
+                                        Requer Prescrição Médica
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="requiresSpecialControl">
+                                    <label class="form-check-label" for="requiresSpecialControl">
+                                        <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+                                        Controle Especial (Portaria 344)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Componentes -->
+                    <div class="tab-pane fade" id="tabComponents">
+                        <!-- Adicionar Componente -->
+                        <div class="card bg-light border-0 mb-4">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">
+                                    <i class="bi bi-plus-circle me-2"></i>Adicionar Componente
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-5">
+                                        <label class="form-label small">Matéria-Prima</label>
+                                        <div class="position-relative">
+                                            <input type="text" class="form-control" id="searchRawMaterial" 
+                                                   placeholder="Buscar matéria-prima..." autocomplete="off">
+                                            <input type="hidden" id="selectedRawMaterialId">
+                                            <div class="dropdown-menu w-100" id="rawMaterialResults" style="max-height: 250px; overflow-y: auto;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Quantidade</label>
+                                        <input type="number" class="form-control" id="componentQuantity" 
+                                               step="0.000001" min="0.000001" placeholder="0.00">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Unidade</label>
+                                        <select class="form-select" id="componentUnit">
+                                            <option value="g">g</option>
+                                            <option value="mg">mg</option>
+                                            <option value="mcg">mcg</option>
+                                            <option value="kg">kg</option>
+                                            <option value="mL">mL</option>
+                                            <option value="L">L</option>
+                                            <option value="un">un</option>
+                                            <option value="%">%</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Tipo</label>
+                                        <select class="form-select" id="componentType">
+                                            <option value="ATIVO">Ativo</option>
+                                            <option value="EXCIPIENTE">Excipiente</option>
+                                            <option value="VEICULO">Veículo</option>
+                                            <option value="CONSERVANTE">Conservante</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-1 d-flex align-items-end">
+                                        <button class="btn btn-success w-100" onclick="addComponent()">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Componentes -->
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 40px;">#</th>
+                                        <th>Matéria-Prima</th>
+                                        <th style="width: 120px;">Quantidade</th>
+                                        <th style="width: 100px;">Unidade</th>
+                                        <th style="width: 120px;">Tipo</th>
+                                        <th style="width: 100px;">Opcional</th>
+                                        <th style="width: 80px;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="componentsTableBody">
+                                    <tr id="noComponentsRow">
+                                        <td colspan="7" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            Nenhum componente adicionado
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab Instruções -->
+                    <div class="tab-pane fade" id="tabInstructions">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-list-ol me-1"></i>Instruções de Preparo
+                                </label>
+                                <textarea class="form-control" id="preparationInstructions" rows="4"
+                                          placeholder="Descreva o passo a passo para preparação da fórmula..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-box-seam me-1"></i>Instruções de Armazenamento
+                                </label>
+                                <textarea class="form-control" id="storageInstructions" rows="3"
+                                          placeholder="Ex: Conservar em local fresco e seco..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-prescription2 me-1"></i>Instruções de Uso (Posologia)
+                                </label>
+                                <textarea class="form-control" id="usageInstructions" rows="3"
+                                          placeholder="Ex: Tomar 1 cápsula ao dia..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveFormula()">
+                    <i class="bi bi-check-lg me-1"></i>Salvar Fórmula
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-info-circle me-2"></i>Detalhes da Fórmula
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailsContent">
+                <!-- Preenchido via JS -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-warning" id="btnEditFromDetails">
+                    <i class="bi bi-pencil me-1"></i>Editar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmação Exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Deseja realmente excluir a fórmula <strong id="deleteFormulaName"></strong>?</p>
+                <p class="text-danger small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Se houver manipulações vinculadas, a fórmula será apenas inativada.
+                </p>
+                <input type="hidden" id="deleteFormulaId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                    <i class="bi bi-trash me-1"></i>Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .formula-card {
+        transition: all 0.2s ease;
+        border: 1px solid var(--bg-subtle);
+    }
+    .formula-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    }
+    .formula-card.inactive {
+        opacity: 0.7;
+        background: var(--bg-subtle);
+    }
+    .badge-category {
+        font-size: 0.75rem;
+        padding: 0.35em 0.65em;
+    }
+    .component-row {
+        transition: background-color 0.2s;
+    }
+    .component-row:hover {
+        background-color: var(--bg-subtle);
+    }
+    .dropdown-item-raw {
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+    }
+    .dropdown-item-raw:hover {
+        background-color: var(--bg-subtle);
+    }
+    .nav-tabs .nav-link {
+        color: var(--ink-3);
+    }
+    .nav-tabs .nav-link.active {
+        font-weight: 600;
+        color: var(--info);
+    }
+</style>
+
+@section Scripts {
+<script>
+    let formulas = [];
+    let components = [];
+    let rawMaterials = [];
+    let searchTimeout = null;
+    let editingFormulaId = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadFormulas();
+        setupRawMaterialSearch();
+    });
+
+    function debounceSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(loadFormulas, 300);
+    }
+
+    async function loadFormulas() {
+        const container = document.getElementById('formulasContainer');
+        container.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>`;
+
+        try {
+            const category = document.getElementById('filterCategory').value;
+            const isActive = document.getElementById('filterStatus').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+
+            let url = '/api/Formulas?';
+            if (category) url += `category=${category}&`;
+            if (isActive) url += `isActive=${isActive}&`;
+
+            const response = await fetch(url);
+            let data = await response.json();
+
+            // Filtrar por busca local
+            if (search) {
+                data = data.filter(f => 
+                    f.code.toLowerCase().includes(search) ||
+                    f.name.toLowerCase().includes(search)
+                );
+            }
+
+            formulas = data;
+            document.getElementById('totalCount').textContent = `${data.length} fórmula${data.length !== 1 ? 's' : ''}`;
+
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="bi bi-inbox fs-1 text-muted"></i>
+                        <p class="text-muted mt-2">Nenhuma fórmula encontrada</p>
+                        <button class="btn btn-primary" onclick="openCreateModal()">
+                            <i class="bi bi-plus-lg me-1"></i>Criar Primeira Fórmula
+                        </button>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = data.map(formula => renderFormulaCard(formula)).join('');
+        } catch (error) {
+            console.error('Erro:', error);
+            container.innerHTML = `
+                <div class="col-12 text-center py-5 text-danger">
+                    <i class="bi bi-exclamation-triangle fs-1"></i>
+                    <p class="mt-2">Erro ao carregar fórmulas</p>
+                </div>`;
+        }
+    }
+
+    function renderFormulaCard(formula) {
+        const categoryColors = {
+            'CAPSULA': 'primary',
+            'CREME': 'info',
+            'GEL': 'success',
+            'POMADA': 'warning',
+            'SOLUCAO': 'secondary',
+            'XAROPE': 'danger',
+            'SUSPENSAO': 'dark'
+        };
+        const color = categoryColors[formula.category] || 'secondary';
+        const componentCount = formula.components?.length || 0;
+
+        return `
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card formula-card h-100 ${!formula.isActive ? 'inactive' : ''}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <span class="badge bg-${color} badge-category mb-2">${formula.category}</span>
+                                ${formula.requiresSpecialControl ? '<span class="badge bg-danger badge-category ms-1"><i class="bi bi-exclamation-triangle"></i> Controlado</span>' : ''}
+                                ${!formula.isActive ? '<span class="badge bg-secondary badge-category ms-1">Inativa</span>' : ''}
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="#" onclick="viewDetails('${formula.id}')">
+                                        <i class="bi bi-eye me-2"></i>Ver Detalhes
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="openEditModal('${formula.id}')">
+                                        <i class="bi bi-pencil me-2"></i>Editar
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="duplicateFormula('${formula.id}')">
+                                        <i class="bi bi-copy me-2"></i>Duplicar
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="openDeleteModal('${formula.id}', '${formula.name.replace(/'/g, "\\'")}')">
+                                        <i class="bi bi-trash me-2"></i>Excluir
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <h5 class="card-title mb-1">${formula.name}</h5>
+                        <p class="text-muted small mb-3">${formula.code} • ${formula.pharmaceuticalForm}</p>
+                        ${formula.description ? `<p class="small text-muted mb-3">${formula.description.substring(0, 80)}${formula.description.length > 80 ? '...' : ''}</p>` : ''}
+                        <div class="d-flex justify-content-between text-muted small mb-2">
+                            <span><i class="bi bi-list-check me-1"></i>${componentCount} componentes</span>
+                            <span><i class="bi bi-calendar me-1"></i>${formula.shelfLifeDays} dias validade</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small">
+                                <i class="bi bi-box me-1"></i>Rend: ${formula.standardYield} un
+                            </span>
+                            ${formula.totalCost > 0 ? `<span class="badge bg-success">R$ ${formula.totalCost.toFixed(2)}</span>` : '<span class="badge bg-secondary">Sem custo</span>'}
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <div class="btn-group w-100">
+                            <button class="btn btn-outline-primary btn-sm" onclick="viewDetails('${formula.id}')">
+                                <i class="bi bi-eye me-1"></i>Ver
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="openEditModal('${formula.id}')">
+                                <i class="bi bi-pencil me-1"></i>Editar
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="viewCost('${formula.id}')">
+                                <i class="bi bi-calculator me-1"></i>Custo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    function clearFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterCategory').value = '';
+        document.getElementById('filterStatus').value = 'true';
+        loadFormulas();
+    }
+
+    // ==================== CRUD ====================
+
+    function openCreateModal() {
+        editingFormulaId = null;
+        components = [];
+        
+        document.getElementById('modalTitle').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Nova Fórmula';
+        document.getElementById('formulaId').value = '';
+        document.getElementById('formulaCode').value = '';
+        document.getElementById('formulaName').value = '';
+        document.getElementById('formulaDescription').value = '';
+        document.getElementById('formulaCategory').value = '';
+        document.getElementById('formulaForm').value = '';
+        document.getElementById('standardYield').value = '';
+        document.getElementById('shelfLifeDays').value = '180';
+        document.getElementById('isActive').value = 'true';
+        document.getElementById('requiresPrescription').checked = true;
+        document.getElementById('requiresSpecialControl').checked = false;
+        document.getElementById('preparationInstructions').value = '';
+        document.getElementById('storageInstructions').value = '';
+        document.getElementById('usageInstructions').value = '';
+        
+        renderComponentsTable();
+        
+        // Reset tabs
+        document.querySelector('[data-bs-target="#tabInfo"]').click();
+        
+        new bootstrap.Modal(document.getElementById('formulaModal')).show();
+    }
+
+    async function openEditModal(id) {
+        try {
+            const response = await fetch(`/api/Formulas/${id}`);
+            const formula = await response.json();
+            
+            if (!formula || !formula.id) {
+                showAlert('Fórmula não encontrada', 'danger');
+                return;
+            }
+            
+            editingFormulaId = id;
+            
+            document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Fórmula';
+            document.getElementById('formulaId').value = formula.id;
+            document.getElementById('formulaCode').value = formula.code;
+            document.getElementById('formulaName').value = formula.name;
+            document.getElementById('formulaDescription').value = formula.description || '';
+            document.getElementById('formulaCategory').value = formula.category;
+            document.getElementById('formulaForm').value = formula.pharmaceuticalForm;
+            document.getElementById('standardYield').value = formula.standardYield;
+            document.getElementById('shelfLifeDays').value = formula.shelfLifeDays;
+            document.getElementById('isActive').value = formula.isActive.toString();
+            document.getElementById('requiresPrescription').checked = formula.requiresPrescription;
+            document.getElementById('requiresSpecialControl').checked = formula.requiresSpecialControl;
+            document.getElementById('preparationInstructions').value = formula.preparationInstructions || '';
+            document.getElementById('storageInstructions').value = formula.storageInstructions || '';
+            document.getElementById('usageInstructions').value = formula.usageInstructions || '';
+            
+            // Carregar componentes
+            components = (formula.components || []).map((c, index) => ({
+                id: c.id,
+                rawMaterialId: c.rawMaterialId,
+                rawMaterialName: c.rawMaterialName,
+                quantity: c.quantity,
+                unit: c.unit,
+                componentType: c.componentType,
+                orderIndex: c.orderIndex || index,
+                isOptional: c.isOptional
+            }));
+            
+            renderComponentsTable();
+            
+            document.querySelector('[data-bs-target="#tabInfo"]').click();
+            
+            new bootstrap.Modal(document.getElementById('formulaModal')).show();
+        } catch (error) {
+            console.error('Erro:', error);
+            showAlert('Erro ao carregar fórmula', 'danger');
+        }
+    }
+
+    async function saveFormula() {
+        const name = document.getElementById('formulaName').value.trim();
+        const category = document.getElementById('formulaCategory').value;
+        const form = document.getElementById('formulaForm').value;
+        const standardYield = parseFloat(document.getElementById('standardYield').value);
+        const shelfLifeDays = parseInt(document.getElementById('shelfLifeDays').value);
+
+        if (!name || !category || !form || !standardYield || !shelfLifeDays) {
+            showAlert('Preencha todos os campos obrigatórios', 'warning');
+            document.querySelector('[data-bs-target="#tabInfo"]').click();
+            return;
+        }
+
+        const dto = {
+            name: name,
+            description: document.getElementById('formulaDescription').value.trim() || null,
+            category: category,
+            pharmaceuticalForm: form,
+            standardYield: standardYield,
+            shelfLifeDays: shelfLifeDays,
+            preparationInstructions: document.getElementById('preparationInstructions').value.trim() || null,
+            storageInstructions: document.getElementById('storageInstructions').value.trim() || null,
+            usageInstructions: document.getElementById('usageInstructions').value.trim() || null,
+            requiresPrescription: document.getElementById('requiresPrescription').checked,
+            requiresSpecialControl: document.getElementById('requiresSpecialControl').checked,
+            isActive: document.getElementById('isActive').value === 'true',
+            components: components.map((c, index) => ({
+                id: c.id || null,
+                rawMaterialId: c.rawMaterialId,
+                quantity: c.quantity,
+                unit: c.unit,
+                componentType: c.componentType,
+                orderIndex: index,
+                specialInstructions: c.specialInstructions || null,
+                isOptional: c.isOptional || false
+            }))
+        };
+
+        try {
+            const url = editingFormulaId ? `/api/Formulas/${editingFormulaId}` : '/api/Formulas';
+            const method = editingFormulaId ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dto)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('formulaModal')).hide();
+                showAlert(result.message || 'Fórmula salva com sucesso!', 'success');
+                loadFormulas();
+            } else {
+                showAlert(result.message || result.errors?.join(', ') || 'Erro ao salvar', 'danger');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showAlert('Erro ao salvar fórmula', 'danger');
+        }
+    }
+
+    function openDeleteModal(id, name) {
+        document.getElementById('deleteFormulaId').value = id;
+        document.getElementById('deleteFormulaName').textContent = name;
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+
+    async function confirmDelete() {
+        const id = document.getElementById('deleteFormulaId').value;
+        
+        try {
+            const response = await fetch(`/api/Formulas/${id}`, { method: 'DELETE' });
+            const result = await response.json();
+
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                showAlert(result.message || 'Fórmula excluída!', 'success');
+                loadFormulas();
+            } else {
+                showAlert(result.message || 'Erro ao excluir', 'danger');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showAlert('Erro ao excluir fórmula', 'danger');
+        }
+    }
+
+    async function duplicateFormula(id) {
+        if (!confirm('Deseja duplicar esta fórmula?')) return;
+
+        try {
+            const response = await fetch(`/api/Formulas/${id}/duplicate`, { method: 'POST' });
+            const result = await response.json();
+
+            if (response.ok) {
+                showAlert(result.message || 'Fórmula duplicada!', 'success');
+                loadFormulas();
+            } else {
+                showAlert(result.message || 'Erro ao duplicar', 'danger');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showAlert('Erro ao duplicar fórmula', 'danger');
+        }
+    }
+
+    // ==================== COMPONENTES ====================
+
+    function setupRawMaterialSearch() {
+        const input = document.getElementById('searchRawMaterial');
+        const dropdown = document.getElementById('rawMaterialResults');
+        let timeout;
+
+        input.addEventListener('input', function() {
+            clearTimeout(timeout);
+            const term = this.value.trim();
+            
+            if (term.length < 2) {
+                dropdown.classList.remove('show');
+                return;
+            }
+
+            timeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/RawMaterials/search?q=${encodeURIComponent(term)}&limit=15`);
+                    const payload = await response.json();
+                    const items = Array.isArray(payload?.data) ? payload.data
+                                : Array.isArray(payload?.items) ? payload.items
+                                : Array.isArray(payload) ? payload
+                                : [];
+
+                    if (items.length > 0) {
+                        dropdown.innerHTML = items.map(rm => `
+                            <div class="dropdown-item-raw" onclick="selectRawMaterial('${rm.id}', '${rm.name.replace(/'/g, "\\'")}', '${rm.unit || 'g'}')">
+                                <strong>${rm.name}</strong>
+                                <small class="text-muted d-block">${rm.dcbCode || ''} • ${rm.unit || 'g'}</small>
+                            </div>
+                        `).join('');
+                        dropdown.classList.add('show');
+                    } else {
+                        dropdown.innerHTML = '<div class="p-2 text-muted">Nenhum resultado</div>';
+                        dropdown.classList.add('show');
+                    }
+                } catch (error) {
+                    console.error('Erro na busca:', error);
+                }
+            }, 300);
+        });
+
+        // Fechar dropdown ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#searchRawMaterial') && !e.target.closest('#rawMaterialResults')) {
+                dropdown.classList.remove('show');
+            }
+        });
+    }
+
+    function selectRawMaterial(id, name, unit) {
+        document.getElementById('searchRawMaterial').value = name;
+        document.getElementById('selectedRawMaterialId').value = id;
+        document.getElementById('componentUnit').value = unit;
+        document.getElementById('rawMaterialResults').classList.remove('show');
+        document.getElementById('componentQuantity').focus();
+    }
+
+    function addComponent() {
+        const rawMaterialId = document.getElementById('selectedRawMaterialId').value;
+        const rawMaterialName = document.getElementById('searchRawMaterial').value.trim();
+        const quantity = parseFloat(document.getElementById('componentQuantity').value);
+        const unit = document.getElementById('componentUnit').value;
+        const componentType = document.getElementById('componentType').value;
+
+        if (!rawMaterialId || !rawMaterialName) {
+            showAlert('Selecione uma matéria-prima', 'warning');
+            return;
+        }
+
+        if (!quantity || quantity <= 0) {
+            showAlert('Informe uma quantidade válida', 'warning');
+            return;
+        }
+
+        // Verificar se já existe
+        if (components.some(c => c.rawMaterialId === rawMaterialId)) {
+            showAlert('Esta matéria-prima já foi adicionada', 'warning');
+            return;
+        }
+
+        components.push({
+            rawMaterialId: rawMaterialId,
+            rawMaterialName: rawMaterialName,
+            quantity: quantity,
+            unit: unit,
+            componentType: componentType,
+            orderIndex: components.length,
+            isOptional: false
+        });
+
+        // Limpar campos
+        document.getElementById('searchRawMaterial').value = '';
+        document.getElementById('selectedRawMaterialId').value = '';
+        document.getElementById('componentQuantity').value = '';
+        document.getElementById('componentType').value = 'ATIVO';
+
+        renderComponentsTable();
+    }
+
+    function removeComponent(index) {
+        components.splice(index, 1);
+        renderComponentsTable();
+    }
+
+    function toggleOptional(index) {
+        components[index].isOptional = !components[index].isOptional;
+        renderComponentsTable();
+    }
+
+    function renderComponentsTable() {
+        const tbody = document.getElementById('componentsTableBody');
+        document.getElementById('componentCount').textContent = components.length;
+
+        if (components.length === 0) {
+            tbody.innerHTML = `
+                <tr id="noComponentsRow">
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        Nenhum componente adicionado
+                    </td>
+                </tr>`;
+            return;
+        }
+
+        const typeColors = {
+            'ATIVO': 'primary',
+            'EXCIPIENTE': 'info',
+            'VEICULO': 'secondary',
+            'CONSERVANTE': 'warning'
+        };
+
+        tbody.innerHTML = components.map((c, i) => `
+            <tr class="component-row">
+                <td class="text-center">${i + 1}</td>
+                <td>
+                    <strong>${c.rawMaterialName}</strong>
+                </td>
+                <td>${c.quantity}</td>
+                <td>${c.unit}</td>
+                <td><span class="badge bg-${typeColors[c.componentType] || 'secondary'}">${c.componentType}</span></td>
+                <td class="text-center">
+                    <div class="form-check form-switch d-flex justify-content-center">
+                        <input class="form-check-input" type="checkbox" ${c.isOptional ? 'checked' : ''} 
+                               onchange="toggleOptional(${i})">
+                    </div>
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-outline-danger btn-sm" onclick="removeComponent(${i})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // ==================== DETALHES ====================
+
+    async function viewDetails(id) {
+        try {
+            const response = await fetch(`/api/Formulas/${id}`);
+            const f = await response.json();
+
+            const componentsHtml = f.components && f.components.length > 0
+                ? f.components.map(c => `
+                    <tr>
+                        <td>${c.rawMaterialName}</td>
+                        <td>${c.quantity} ${c.unit}</td>
+                        <td><span class="badge bg-${c.componentType === 'ATIVO' ? 'primary' : 'secondary'}">${c.componentType}</span></td>
+                        <td>${c.isAvailable ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>'}</td>
+                    </tr>
+                `).join('')
+                : '<tr><td colspan="4" class="text-center text-muted">Sem componentes</td></tr>';
+
+            document.getElementById('detailsContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Código:</strong> ${f.code}</p>
+                        <p><strong>Nome:</strong> ${f.name}</p>
+                        <p><strong>Categoria:</strong> ${f.category}</p>
+                        <p><strong>Forma:</strong> ${f.pharmaceuticalForm}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Rendimento:</strong> ${f.standardYield} un</p>
+                        <p><strong>Validade:</strong> ${f.shelfLifeDays} dias</p>
+                        <p><strong>Custo Total:</strong> R$ ${(f.totalCost || 0).toFixed(2)}</p>
+                        <p><strong>Status:</strong> ${f.isActive ? '<span class="badge bg-success">Ativa</span>' : '<span class="badge bg-secondary">Inativa</span>'}</p>
+                    </div>
+                </div>
+                ${f.description ? `<p><strong>Descrição:</strong> ${f.description}</p>` : ''}
+                <hr>
+                <h6><i class="bi bi-list-check me-2"></i>Componentes (${f.components?.length || 0})</h6>
+                <table class="table table-sm">
+                    <thead><tr><th>Matéria-Prima</th><th>Qtd</th><th>Tipo</th><th>Disponível</th></tr></thead>
+                    <tbody>${componentsHtml}</tbody>
+                </table>
+            `;
+
+            document.getElementById('btnEditFromDetails').onclick = () => {
+                bootstrap.Modal.getInstance(document.getElementById('detailsModal')).hide();
+                openEditModal(id);
+            };
+
+            new bootstrap.Modal(document.getElementById('detailsModal')).show();
+        } catch (error) {
+            console.error('Erro:', error);
+            showAlert('Erro ao carregar detalhes', 'danger');
+        }
+    }
+
+    async function viewCost(id) {
+        try {
+            const response = await fetch(`/api/Formulas/${id}/cost`);
+            const cost = await response.json();
+
+            alert(`Custo da Fórmula: ${cost.formulaName}\n\nCusto Total: R$ ${cost.totalCost.toFixed(2)}\nPreço Sugerido: R$ ${cost.suggestedPrice.toFixed(2)}\nMargem: ${cost.profitMargin}%`);
+        } catch (error) {
+            console.error('Erro:', error);
+            showAlert('Erro ao calcular custo', 'danger');
+        }
+    }
+
+    // ==================== UTILS ====================
+
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 5000);
+    }
+</script>
+}

@@ -1,0 +1,686 @@
+﻿@{
+    ViewData["Title"] = "Configuração Fiscal";
+    Layout = "_Layout";
+}
+
+<style>
+    .config-section {
+        background: #fff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .config-section h5 {
+        color: var(--info);
+        border-bottom: 2px solid var(--info);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .cert-upload-area {
+        border: 2px dashed var(--rule);
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .cert-upload-area:hover {
+        border-color: var(--info);
+        background: #f8f9ff;
+    }
+    .cert-upload-area.dragover {
+        border-color: var(--info);
+        background: var(--petrol-50);
+    }
+    .cert-status {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+    }
+    .cert-valid { background: var(--ok-soft); border: 1px solid #badbcc; }
+    .cert-warning { background: var(--warn-soft); border: 1px solid #ffecb5; }
+    .cert-expired { background: var(--danger-soft); border: 1px solid #f5c2c7; }
+    .cert-none { background: #e2e3e5; border: 1px solid #d3d6d8; }
+    .ambiente-card {
+        border: 2px solid var(--rule);
+        border-radius: 8px;
+        padding: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .ambiente-card:hover {
+        border-color: var(--info);
+    }
+    .ambiente-card.selected {
+        border-color: var(--info);
+        background: #f8f9ff;
+    }
+    .ambiente-card.producao.selected {
+        border-color: var(--ok);
+        background: #f8fff8;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-gear me-2"></i>Configuração Fiscal</h4>
+            <small class="text-muted">Configure os dados fiscais da sua farmácia para emissão de NF-e/NFC-e</small>
+        </div>
+        <a href="@Url.Action("Index", "Fiscal")" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+
+    <!-- Alertas -->
+    <div id="alertContainer"></div>
+
+    <form id="formConfig">
+        <div class="row">
+            <!-- Coluna Principal -->
+            <div class="col-lg-8">
+                
+                <!-- Seção: Dados do Emitente -->
+                <div class="config-section">
+                    <h5><i class="bi bi-building me-2"></i>Dados do Emitente</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Inscrição Estadual <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="inscricaoEstadual" 
+                                   placeholder="Ex: 123.456.789.123" maxlength="20">
+                            <small class="text-muted">Obrigatório para emissão de NF-e</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Inscrição Municipal</label>
+                            <input type="text" class="form-control" id="inscricaoMunicipal" 
+                                   placeholder="Ex: 12345678" maxlength="20">
+                            <small class="text-muted">Opcional - para NFS-e de serviços</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">UF <span class="text-danger">*</span></label>
+                            <select class="form-select" id="uf">
+                                <option value="">Selecione...</option>
+                                <option value="AC">AC - Acre</option>
+                                <option value="AL">AL - Alagoas</option>
+                                <option value="AP">AP - Amapá</option>
+                                <option value="AM">AM - Amazonas</option>
+                                <option value="BA">BA - Bahia</option>
+                                <option value="CE">CE - Ceará</option>
+                                <option value="DF">DF - Distrito Federal</option>
+                                <option value="ES">ES - Espírito Santo</option>
+                                <option value="GO">GO - Goiás</option>
+                                <option value="MA">MA - Maranhão</option>
+                                <option value="MT">MT - Mato Grosso</option>
+                                <option value="MS">MS - Mato Grosso do Sul</option>
+                                <option value="MG">MG - Minas Gerais</option>
+                                <option value="PA">PA - Pará</option>
+                                <option value="PB">PB - Paraíba</option>
+                                <option value="PR">PR - Paraná</option>
+                                <option value="PE">PE - Pernambuco</option>
+                                <option value="PI">PI - Piauí</option>
+                                <option value="RJ">RJ - Rio de Janeiro</option>
+                                <option value="RN">RN - Rio Grande do Norte</option>
+                                <option value="RS">RS - Rio Grande do Sul</option>
+                                <option value="RO">RO - Rondônia</option>
+                                <option value="RR">RR - Roraima</option>
+                                <option value="SC">SC - Santa Catarina</option>
+                                <option value="SP" selected>SP - São Paulo</option>
+                                <option value="SE">SE - Sergipe</option>
+                                <option value="TO">TO - Tocantins</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Regime Tributário <span class="text-danger">*</span></label>
+                            <select class="form-select" id="taxRegime">
+                                <option value="SIMPLES_NACIONAL" selected>Simples Nacional</option>
+                                <option value="SIMPLES_EXCESSO">Simples Nacional - Excesso</option>
+                                <option value="LUCRO_PRESUMIDO">Lucro Presumido</option>
+                                <option value="LUCRO_REAL">Lucro Real</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Natureza da Operação</label>
+                            <input type="text" class="form-control" id="defaultNature" 
+                                   value="VENDA DE MERCADORIA">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção: Certificado Digital -->
+                <div class="config-section">
+                    <h5><i class="bi bi-shield-lock me-2"></i>Certificado Digital A1</h5>
+                    
+                    <div id="certStatus" class="cert-status cert-none mb-3">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-x-circle fs-4 me-3"></i>
+                            <div>
+                                <strong>Nenhum certificado configurado</strong>
+                                <p class="mb-0 small">Faça upload do certificado digital A1 (.pfx)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cert-upload-area" id="certUploadArea" onclick="document.getElementById('certFile').click()">
+                        <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+                        <p class="mb-1 mt-2">Arraste o certificado aqui ou clique para selecionar</p>
+                        <small class="text-muted">Arquivo .pfx ou .p12 (máx. 10MB)</small>
+                        <input type="file" id="certFile" accept=".pfx,.p12" style="display: none">
+                    </div>
+
+                    <div id="certPasswordDiv" class="mt-3" style="display: none;">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-6">
+                                <label class="form-label">Senha do Certificado</label>
+                                <input type="password" class="form-control" id="certPassword" 
+                                       placeholder="Digite a senha do certificado">
+                            </div>
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-primary" onclick="uploadCertificate()">
+                                    <i class="bi bi-upload me-1"></i>Enviar Certificado
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção: Séries e Numeração -->
+                <div class="config-section">
+                    <h5><i class="bi bi-123 me-2"></i>Séries e Numeração</h5>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Série NF-e</label>
+                            <input type="number" class="form-control" id="nfeSeries" value="1" min="1">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Última NF-e</label>
+                            <input type="number" class="form-control" id="nfeLastNumber" value="0" min="0" readonly>
+                            <small class="text-muted">Automático</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Série NFC-e</label>
+                            <input type="number" class="form-control" id="nfceSeries" value="1" min="1">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Última NFC-e</label>
+                            <input type="number" class="form-control" id="nfceLastNumber" value="0" min="0" readonly>
+                            <small class="text-muted">Automático</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção: CSC para NFC-e -->
+                <div class="config-section">
+                    <h5><i class="bi bi-key me-2"></i>CSC - Código de Segurança do Contribuinte (NFC-e)</h5>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        O CSC é obrigatório para emissão de NFC-e. Solicite na SEFAZ do seu estado.
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">ID do CSC</label>
+                            <input type="text" class="form-control" id="cscId" placeholder="Ex: 000001">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Token CSC</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="cscToken" 
+                                       placeholder="Cole o token aqui">
+                                <button class="btn btn-outline-secondary" type="button" onclick="toggleCscToken()">
+                                    <i class="bi bi-eye" id="cscToggleIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção: CFOP e NCM Padrão -->
+                <div class="config-section">
+                    <h5><i class="bi bi-tag me-2"></i>CFOP e NCM Padrão</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">CFOP Venda</label>
+                            <select class="form-select" id="defaultCfopVenda">
+                                <option value="5102" selected>5102 - Venda merc. adq. terceiros</option>
+                                <option value="5405">5405 - Venda ST (destino mesmo estado)</option>
+                                <option value="6102">6102 - Venda interestadual</option>
+                            </select>
+                            <small class="text-muted">Para produtos de revenda</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">CFOP Manipulação</label>
+                            <select class="form-select" id="defaultCfopManipulacao">
+                                <option value="5101" selected>5101 - Venda prod. estabelecimento</option>
+                                <option value="5401">5401 - Venda ST (prod. próprio)</option>
+                                <option value="6101">6101 - Venda interestadual (prod.)</option>
+                            </select>
+                            <small class="text-muted">Para fórmulas manipuladas</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">NCM Manipulados</label>
+                            <input type="text" class="form-control" id="defaultNcmManipulacao" 
+                                   value="30049099" maxlength="8">
+                            <small class="text-muted">30049099 = Outros medicamentos</small>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Coluna Lateral -->
+            <div class="col-lg-4">
+                
+                <!-- Ambiente -->
+                <div class="config-section">
+                    <h5><i class="bi bi-toggles me-2"></i>Ambiente SEFAZ</h5>
+                    
+                    <div class="ambiente-card selected mb-3" id="ambienteHomolog" onclick="selectAmbiente('HOMOLOGACAO')">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-bug fs-3 text-warning me-3"></i>
+                            <div>
+                                <strong>Homologação</strong>
+                                <p class="mb-0 small text-muted">Ambiente de testes - notas não têm valor fiscal</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ambiente-card producao" id="ambienteProducao" onclick="selectAmbiente('PRODUCAO')">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle fs-3 text-success me-3"></i>
+                            <div>
+                                <strong>Produção</strong>
+                                <p class="mb-0 small text-muted">Notas fiscais com valor legal</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" id="environment" value="HOMOLOGACAO">
+                    
+                    <div class="alert alert-warning mt-3 small">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        <strong>Atenção:</strong> Teste todas as funcionalidades em homologação antes de mudar para produção.
+                    </div>
+                </div>
+
+                <!-- Opções -->
+                <div class="config-section">
+                    <h5><i class="bi bi-sliders me-2"></i>Opções</h5>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="printDanfeAuto" checked>
+                        <label class="form-check-label" for="printDanfeAuto">
+                            Imprimir DANFE automaticamente
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="contingencyEnabled" checked>
+                        <label class="form-check-label" for="contingencyEnabled">
+                            Habilitar contingência offline
+                        </label>
+                    </div>
+                    
+                    <hr>
+                    
+                    <label class="form-label">Informações Adicionais (padrão)</label>
+                    <textarea class="form-control" id="defaultAdditionalInfo" rows="3" 
+                              placeholder="Ex: Documento emitido por ME/EPP optante pelo Simples Nacional..."></textarea>
+                </div>
+
+                <!-- Provedor -->
+                <div class="config-section">
+                    <h5><i class="bi bi-cloud me-2"></i>Provedor de Emissão</h5>
+                    <select class="form-select mb-3" id="provider" onchange="toggleProviderFields()">
+                        <option value="INTERNO" selected>Interno (desenvolvimento)</option>
+                        <option value="FOCUS_NFE">Focus NF-e</option>
+                        <option value="TECNOSPEED">Tecnospeed</option>
+                        <option value="ACBR">ACBr.NET</option>
+                        <option value="WEBMANIA">WebmaniaBR</option>
+                    </select>
+                    
+                    <div id="providerFields" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">API Key</label>
+                            <input type="text" class="form-control" id="providerApiKey">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">API Secret</label>
+                            <input type="password" class="form-control" id="providerApiSecret">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botão Salvar -->
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-check-lg me-2"></i>Salvar Configurações
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="testConnection()">
+                        <i class="bi bi-wifi me-2"></i>Testar Conexão SEFAZ
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+    let selectedCertFile = null;
+
+    // Carregar configuração existente
+    document.addEventListener('DOMContentLoaded', loadConfig);
+
+    async function loadConfig() {
+        try {
+            const response = await fetch('/api/Fiscal/config');
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                const config = result.data;
+                
+                // Preencher campos
+                document.getElementById('inscricaoEstadual').value = config.inscricaoEstadual || '';
+                document.getElementById('inscricaoMunicipal').value = config.inscricaoMunicipal || '';
+                document.getElementById('uf').value = config.uf || 'SP';
+                document.getElementById('taxRegime').value = config.taxRegime || 'SIMPLES_NACIONAL';
+                document.getElementById('defaultNature').value = config.defaultNature || 'VENDA DE MERCADORIA';
+                
+                document.getElementById('nfeSeries').value = config.nfeSeries || 1;
+                document.getElementById('nfeLastNumber').value = config.nfeLastNumber || 0;
+                document.getElementById('nfceSeries').value = config.nfceSeries || 1;
+                document.getElementById('nfceLastNumber').value = config.nfceLastNumber || 0;
+                
+                document.getElementById('cscId').value = config.cscId || '';
+                document.getElementById('cscToken').value = config.cscToken || '';
+                
+                document.getElementById('defaultCfopVenda').value = config.defaultCfopVenda || '5102';
+                document.getElementById('defaultCfopManipulacao').value = config.defaultCfopManipulacao || '5101';
+                document.getElementById('defaultNcmManipulacao').value = config.defaultNcmManipulacao || '30049099';
+                
+                document.getElementById('printDanfeAuto').checked = config.printDanfeAuto !== false;
+                document.getElementById('contingencyEnabled').checked = config.contingencyEnabled !== false;
+                document.getElementById('defaultAdditionalInfo').value = config.defaultAdditionalInfo || '';
+                
+                document.getElementById('provider').value = config.provider || 'INTERNO';
+                toggleProviderFields();
+                
+                // Ambiente
+                selectAmbiente(config.environment || 'HOMOLOGACAO');
+            }
+            
+            // Carregar status do certificado
+            await loadCertStatus();
+            
+        } catch (error) {
+            console.error('Erro ao carregar configuração:', error);
+        }
+    }
+
+    async function loadCertStatus() {
+        try {
+            const response = await fetch('/api/Fiscal/config/status');
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                const status = result.data;
+                const certDiv = document.getElementById('certStatus');
+                
+                if (status.hasValidCertificate) {
+                    const daysLeft = status.daysUntilExpiry;
+                    const expiry = new Date(status.certificateExpiry).toLocaleDateString('pt-BR');
+                    
+                    if (daysLeft > 30) {
+                        certDiv.className = 'cert-status cert-valid';
+                        certDiv.innerHTML = `
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle fs-4 me-3 text-success"></i>
+                                <div>
+                                    <strong>Certificado válido</strong>
+                                    <p class="mb-0 small">Expira em ${expiry} (${daysLeft} dias)</p>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        certDiv.className = 'cert-status cert-warning';
+                        certDiv.innerHTML = `
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle fs-4 me-3 text-warning"></i>
+                                <div>
+                                    <strong>Certificado expirando!</strong>
+                                    <p class="mb-0 small">Expira em ${expiry} (${daysLeft} dias) - Renove em breve</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else if (status.certificateExpiry) {
+                    certDiv.className = 'cert-status cert-expired';
+                    certDiv.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-x-circle fs-4 me-3 text-danger"></i>
+                            <div>
+                                <strong>Certificado EXPIRADO!</strong>
+                                <p class="mb-0 small">Faça upload de um novo certificado</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao carregar status do certificado:', error);
+        }
+    }
+
+    function selectAmbiente(ambiente) {
+        document.getElementById('environment').value = ambiente;
+        
+        document.getElementById('ambienteHomolog').classList.remove('selected');
+        document.getElementById('ambienteProducao').classList.remove('selected');
+        
+        if (ambiente === 'HOMOLOGACAO') {
+            document.getElementById('ambienteHomolog').classList.add('selected');
+        } else {
+            document.getElementById('ambienteProducao').classList.add('selected');
+        }
+    }
+
+    function toggleProviderFields() {
+        const provider = document.getElementById('provider').value;
+        const fields = document.getElementById('providerFields');
+        fields.style.display = provider === 'INTERNO' ? 'none' : 'block';
+    }
+
+    function toggleCscToken() {
+        const input = document.getElementById('cscToken');
+        const icon = document.getElementById('cscToggleIcon');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'bi bi-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'bi bi-eye';
+        }
+    }
+
+    // Upload de certificado
+    const uploadArea = document.getElementById('certUploadArea');
+    const certFile = document.getElementById('certFile');
+
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const file = e.dataTransfer.files[0];
+        if (file && (file.name.endsWith('.pfx') || file.name.endsWith('.p12'))) {
+            handleCertFile(file);
+        } else {
+            showAlert('danger', 'Arquivo inválido. Selecione um certificado .pfx ou .p12');
+        }
+    });
+
+    certFile.addEventListener('change', (e) => {
+        if (e.target.files[0]) {
+            handleCertFile(e.target.files[0]);
+        }
+    });
+
+    function handleCertFile(file) {
+        selectedCertFile = file;
+        uploadArea.innerHTML = `
+            <i class="bi bi-file-earmark-check fs-1 text-success"></i>
+            <p class="mb-1 mt-2"><strong>${file.name}</strong></p>
+            <small class="text-muted">${(file.size / 1024).toFixed(1)} KB</small>
+        `;
+        document.getElementById('certPasswordDiv').style.display = 'block';
+    }
+
+    async function uploadCertificate() {
+        if (!selectedCertFile) {
+            showAlert('warning', 'Selecione um arquivo de certificado primeiro');
+            return;
+        }
+
+        const password = document.getElementById('certPassword').value;
+        if (!password) {
+            showAlert('warning', 'Digite a senha do certificado');
+            return;
+        }
+
+        try {
+            // Converter arquivo para base64
+            const base64 = await fileToBase64(selectedCertFile);
+            
+            const response = await fetch('/api/Fiscal/config/certificate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    certificateBase64: base64,
+                    password: password
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('success', 'Certificado enviado com sucesso!');
+                await loadCertStatus();
+                document.getElementById('certPassword').value = '';
+            } else {
+                showAlert('danger', result.message || 'Erro ao enviar certificado');
+            }
+        } catch (error) {
+            showAlert('danger', 'Erro ao processar certificado: ' + error.message);
+        }
+    }
+
+    function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => {
+                const base64 = reader.result.split(',')[1];
+                resolve(base64);
+            };
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    // Salvar configuração
+    document.getElementById('formConfig').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const config = {
+            inscricaoEstadual: document.getElementById('inscricaoEstadual').value,
+            inscricaoMunicipal: document.getElementById('inscricaoMunicipal').value,
+            uf: document.getElementById('uf').value,
+            taxRegime: document.getElementById('taxRegime').value,
+            defaultNature: document.getElementById('defaultNature').value,
+            environment: document.getElementById('environment').value,
+            
+            nfeSeries: parseInt(document.getElementById('nfeSeries').value) || 1,
+            nfceSeries: parseInt(document.getElementById('nfceSeries').value) || 1,
+            
+            cscId: document.getElementById('cscId').value,
+            cscToken: document.getElementById('cscToken').value,
+            
+            defaultCfopVenda: document.getElementById('defaultCfopVenda').value,
+            defaultCfopManipulacao: document.getElementById('defaultCfopManipulacao').value,
+            defaultNcmManipulacao: document.getElementById('defaultNcmManipulacao').value,
+            
+            printDanfeAuto: document.getElementById('printDanfeAuto').checked,
+            contingencyEnabled: document.getElementById('contingencyEnabled').checked,
+            defaultAdditionalInfo: document.getElementById('defaultAdditionalInfo').value,
+            
+            provider: document.getElementById('provider').value,
+            providerApiKey: document.getElementById('providerApiKey').value,
+            providerApiSecret: document.getElementById('providerApiSecret').value
+        };
+
+        try {
+            const response = await fetch('/api/Fiscal/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('success', 'Configurações salvas com sucesso!');
+            } else {
+                showAlert('danger', result.message || 'Erro ao salvar configurações');
+            }
+        } catch (error) {
+            showAlert('danger', 'Erro ao salvar: ' + error.message);
+        }
+    });
+
+    async function testConnection() {
+        try {
+            const response = await fetch('/api/Fiscal/config/test-connection', {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('success', 'Conexão com SEFAZ OK!');
+            } else {
+                showAlert('danger', result.message || 'Falha na conexão com SEFAZ');
+            }
+        } catch (error) {
+            showAlert('danger', 'Erro ao testar conexão: ' + error.message);
+        }
+    }
+
+    function showAlert(type, message) {
+        const container = document.getElementById('alertContainer');
+        const id = 'alert-' + Date.now();
+        
+        container.innerHTML = `
+            <div id="${id}" class="alert alert-${type} alert-dismissible fade show">
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'x-circle' : 'exclamation-triangle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            const alert = document.getElementById(id);
+            if (alert) alert.remove();
+        }, 5000);
+    }
+</script>
+}

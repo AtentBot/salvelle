@@ -1,0 +1,463 @@
+﻿@{
+    ViewData["Title"] = "Dashboard de Produção";
+    Layout = "_Layout";
+}
+
+<style>
+    .stat-card {
+        border: 1px solid var(--rule);
+        border-radius: var(--r-md);
+        background: var(--surface);
+        transition: all var(--t-base);
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+    .stat-card .icon-box {
+        width: 48px; height: 48px;
+        border-radius: var(--r-sm);
+        display: grid; place-items: center;
+        font-size: 18px;
+    }
+    .progress-ring { width: 120px; height: 120px; }
+    .activity-item {
+        padding: 12px 0;
+        border-bottom: 1px solid var(--rule);
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .chart-container { height: 300px; }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-speedometer2 me-2"></i>Dashboard de Produção</h4>
+            <small class="text-muted">Métricas e indicadores de manipulação</small>
+        </div>
+        <div class="d-flex gap-2">
+            <select class="form-select form-select-sm" style="width: auto;" id="periodFilter" onchange="loadDashboard()">
+                <option value="today">Hoje</option>
+                <option value="week" selected>Esta Semana</option>
+                <option value="month">Este Mês</option>
+            </select>
+            <button class="btn btn-outline-secondary btn-sm" onclick="loadDashboard()">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="text-muted mb-2">Pendentes</h6>
+                            <h2 class="mb-0" id="statPendentes">0</h2>
+                            <small class="text-warning">Aguardando início</small>
+                        </div>
+                        <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                            <i class="bi bi-inbox"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="text-muted mb-2">Em Produção</h6>
+                            <h2 class="mb-0" id="statProducao">0</h2>
+                            <small class="text-primary">No laboratório</small>
+                        </div>
+                        <div class="icon-box bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-gear-wide-connected"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="text-muted mb-2">Finalizadas</h6>
+                            <h2 class="mb-0" id="statFinalizadas">0</h2>
+                            <small class="text-success">Período selecionado</small>
+                        </div>
+                        <div class="icon-box bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="text-muted mb-2">Atrasadas</h6>
+                            <h2 class="mb-0 text-danger" id="statAtrasadas">0</h2>
+                            <small class="text-danger">Requer atenção</small>
+                        </div>
+                        <div class="icon-box bg-danger bg-opacity-10 text-danger">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Gráfico de Produção -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Produção por Dia</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="productionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Taxa de Aprovação -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Taxa de Aprovação</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="chart-container d-flex align-items-center justify-content-center">
+                        <canvas id="approvalChart"></canvas>
+                    </div>
+                    <h3 class="mt-3 mb-0" id="approvalRate">0%</h3>
+                    <p class="text-muted">das manipulações aprovadas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-2">
+        <!-- Distribuição por Status -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Distribuição por Etapa</h6>
+                </div>
+                <div class="card-body">
+                    <div id="statusDistribution">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Atividade Recente -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Atividade Recente</h6>
+                    <a href="/Manipulacoes" class="btn btn-sm btn-outline-primary">Ver todas</a>
+                </div>
+                <div class="card-body p-0">
+                    <div id="recentActivity" style="max-height: 350px; overflow-y: auto;">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-2">
+        <!-- Top Fórmulas -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-trophy me-2"></i>Fórmulas Mais Produzidas</h6>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Fórmula</th>
+                                <th class="text-end">Quantidade</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topFormulas">
+                            <tr><td colspan="3" class="text-center py-3 text-muted">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPIs de Tempo -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-stopwatch me-2"></i>Métricas de Tempo</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 class="mb-1" id="avgTime">--</h4>
+                                <small class="text-muted">Tempo Médio</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 class="mb-1" id="minTime">--</h4>
+                                <small class="text-muted">Mais Rápida</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 class="mb-1" id="maxTime">--</h4>
+                                <small class="text-muted">Mais Demorada</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 class="mb-1" id="dailyAvg">--</h4>
+                                <small class="text-muted">Média/Dia</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let productionChart = null;
+let approvalChart = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadDashboard();
+});
+
+async function loadDashboard() {
+    await Promise.all([
+        loadStats(),
+        loadCharts(),
+        loadStatusDistribution(),
+        loadRecentActivity(),
+        loadTopFormulas()
+    ]);
+}
+
+async function loadStats() {
+    try {
+        const response = await fetch('/api/ManipulationOrders/workflow-dashboard');
+        const result = await response.json();
+        
+        if (result.success) {
+            const d = result.data;
+            document.getElementById('statPendentes').textContent = d.totalPendentes || 0;
+            document.getElementById('statProducao').textContent = d.totalEmProducao || 0;
+            document.getElementById('statFinalizadas').textContent = d.totalFinalizadosHoje || 0;
+            document.getElementById('statAtrasadas').textContent = d.totalAtrasados || 0;
+        }
+        
+        // Taxa de aprovação
+        const statsResponse = await fetch('/api/ManipulationWorkflow/dashboard');
+        const statsResult = await statsResponse.json();
+        if (statsResult.success) {
+            const rate = statsResult.data.taxaAprovacao || 0;
+            document.getElementById('approvalRate').textContent = rate + '%';
+            updateApprovalChart(rate);
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function loadCharts() {
+    const days = 7;
+    const labels = [];
+    const data = [];
+    
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        labels.push(date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }));
+        data.push(Math.floor(Math.random() * 15) + 5); // Dados simulados
+    }
+    
+    // Gráfico de Produção
+    const prodCtx = document.getElementById('productionChart').getContext('2d');
+    if (productionChart) productionChart.destroy();
+    
+    productionChart = new Chart(prodCtx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Manipulações',
+                data: data,
+                borderColor: 'var(--info)',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+}
+
+function updateApprovalChart(rate) {
+    const ctx = document.getElementById('approvalChart').getContext('2d');
+    if (approvalChart) approvalChart.destroy();
+    
+    approvalChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Aprovadas', 'Rejeitadas'],
+            datasets: [{
+                data: [rate, 100 - rate],
+                backgroundColor: ['var(--ok)', 'var(--danger)'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+async function loadStatusDistribution() {
+    try {
+        const response = await fetch('/api/ManipulationOrders/workflow-dashboard');
+        const result = await response.json();
+        
+        if (result.success && result.data.ordersByStatus) {
+            const statuses = result.data.ordersByStatus;
+            const total = Object.values(statuses).reduce((a, b) => a + b, 0) || 1;
+            
+            const colors = {
+                'PENDENTE': 'secondary',
+                'SEPARACAO': 'info',
+                'PESAGEM': 'primary',
+                'MISTURA': 'purple',
+                'ENVASE': 'pink',
+                'ROTULAGEM': 'warning',
+                'CONFERENCIA': 'success',
+                'FINALIZADO': 'success',
+                'CANCELADO': 'danger'
+            };
+            
+            const html = Object.entries(statuses).map(([status, count]) => {
+                const percent = Math.round((count / total) * 100);
+                return `
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small">${status}</span>
+                            <span class="small">${count} (${percent}%)</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-${colors[status] || 'secondary'}" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('statusDistribution').innerHTML = html || '<p class="text-muted">Sem dados</p>';
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function loadRecentActivity() {
+    try {
+        const response = await fetch('/api/ManipulationOrders?pageSize=10&sortBy=updatedAt');
+        const result = await response.json();
+        
+        if (result.items && result.items.length > 0) {
+            const html = result.items.map(order => `
+                <div class="activity-item px-3">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>${order.orderNumber}</strong>
+                            <span class="badge bg-${getStatusColor(order.status)} ms-2">${order.status}</span>
+                        </div>
+                        <small class="text-muted">${order.customerName || 'N/A'}</small>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('recentActivity').innerHTML = html;
+        } else {
+            document.getElementById('recentActivity').innerHTML = '<p class="text-center py-3 text-muted">Nenhuma atividade</p>';
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function loadTopFormulas() {
+    // Dados simulados - em produção viria de uma API específica
+    const formulas = [
+        { name: 'Creme Hidratante', count: 45 },
+        { name: 'Shampoo Manipulado', count: 38 },
+        { name: 'Cápsula Vitamínica', count: 32 },
+        { name: 'Gel Anti-inflamatório', count: 28 },
+        { name: 'Pomada Cicatrizante', count: 22 }
+    ];
+    
+    const html = formulas.map((f, i) => `
+        <tr>
+            <td><span class="badge bg-${i === 0 ? 'warning' : 'secondary'}">${i + 1}</span></td>
+            <td>${f.name}</td>
+            <td class="text-end"><strong>${f.count}</strong></td>
+        </tr>
+    `).join('');
+    
+    document.getElementById('topFormulas').innerHTML = html;
+    
+    // Métricas de tempo (simuladas)
+    document.getElementById('avgTime').textContent = '2h 30min';
+    document.getElementById('minTime').textContent = '45min';
+    document.getElementById('maxTime').textContent = '6h 15min';
+    document.getElementById('dailyAvg').textContent = '12';
+}
+
+function getStatusColor(status) {
+    const colors = {
+        'PENDENTE': 'secondary',
+        'SEPARACAO': 'info',
+        'PESAGEM': 'primary',
+        'MISTURA': 'info',
+        'ENVASE': 'info',
+        'ROTULAGEM': 'warning',
+        'CONFERENCIA': 'success',
+        'FINALIZADO': 'success',
+        'CANCELADO': 'danger'
+    };
+    return colors[status] || 'light';
+}
+</script>
+}

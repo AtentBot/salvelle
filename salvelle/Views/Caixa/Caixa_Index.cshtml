@@ -1,0 +1,236 @@
+@model List<Models.CashRegister>
+@{
+    ViewData["Title"] = "Gestão de Caixa";
+    Layout = "_Layout";
+    var openCashRegister = ViewBag.OpenCashRegister as Models.CashRegister;
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-0">
+                <i class="bi bi-cash-stack me-2"></i>Gestão de Caixa
+            </h4>
+            <small class="text-muted">Controle de abertura, fechamento e movimentações</small>
+        </div>
+        <div class="d-flex gap-2">
+            @if (openCashRegister == null)
+            {
+                <a href="/Caixa/Abrir" class="btn btn-success">
+                    <i class="bi bi-unlock me-1"></i>Abrir Caixa
+                </a>
+            }
+            else
+            {
+                <a href="/PDV" class="btn btn-primary">
+                    <i class="bi bi-shop me-1"></i>Ir para PDV
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Warning"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show">
+            <i class="bi bi-exclamation-circle me-2"></i>@TempData["Warning"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Caixa Atual -->
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm @(openCashRegister != null ? "border-success" : "border-warning")">
+                <div class="card-header @(openCashRegister != null ? "bg-success" : "bg-warning") text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-@(openCashRegister != null ? "unlock" : "lock") me-2"></i>
+                        Caixa Atual
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (openCashRegister != null)
+                    {
+                        <div class="text-center mb-3">
+                            <span class="badge bg-success fs-5 px-4 py-2">ABERTO</span>
+                        </div>
+                        
+                        <table class="table table-sm">
+                            <tr>
+                                <td class="text-muted">Código:</td>
+                                <td class="fw-bold">@openCashRegister.Code</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Abertura:</td>
+                                <td>@openCashRegister.OpeningDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Saldo Inicial:</td>
+                                <td>R$ @openCashRegister.OpeningBalance.ToString("N2")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Vendas:</td>
+                                <td>@openCashRegister.SalesCount venda(s)</td>
+                            </tr>
+                        </table>
+
+                        <hr>
+
+                        <div class="row text-center mb-3">
+                            <div class="col-4">
+                                <small class="text-muted d-block">Dinheiro</small>
+                                <strong class="text-success">R$ @openCashRegister.TotalCash.ToString("N2")</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block">Cartão</small>
+                                <strong class="text-primary">R$ @openCashRegister.TotalCard.ToString("N2")</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block">PIX</small>
+                                <strong class="text-warning">R$ @openCashRegister.TotalPix.ToString("N2")</strong>
+                            </div>
+                        </div>
+
+                        <div class="text-center mb-3">
+                            <h4 class="text-success mb-0">R$ @openCashRegister.TotalSales.ToString("N2")</h4>
+                            <small class="text-muted">Total em Vendas</small>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <a href="/PDV" class="btn btn-primary">
+                                <i class="bi bi-shop me-1"></i>Ir para PDV
+                            </a>
+                            <div class="btn-group">
+                                <a href="/Caixa/Sangria" class="btn btn-outline-danger">
+                                    <i class="bi bi-arrow-up-circle"></i> Sangria
+                                </a>
+                                <a href="/Caixa/Suprimento" class="btn btn-outline-success">
+                                    <i class="bi bi-arrow-down-circle"></i> Suprimento
+                                </a>
+                            </div>
+                            <a href="/Caixa/Fechar" class="btn btn-danger">
+                                <i class="bi bi-lock me-1"></i>Fechar Caixa
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-lock fs-1 text-warning d-block mb-3"></i>
+                            <h5 class="text-muted">Nenhum caixa aberto</h5>
+                            <p class="text-muted small">
+                                Abra o caixa para começar a registrar vendas e recebimentos.
+                            </p>
+                            <a href="/Caixa/Abrir" class="btn btn-success btn-lg">
+                                <i class="bi bi-unlock me-2"></i>Abrir Caixa
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Histórico -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>Histórico de Caixas
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model != null && Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Abertura</th>
+                                        <th>Fechamento</th>
+                                        <th class="text-end">Vendas</th>
+                                        <th class="text-end">Total</th>
+                                        <th class="text-center">Status</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var caixa in Model)
+                                    {
+                                        var isOpen = caixa.Status == "ABERTO";
+                                        <tr>
+                                            <td>
+                                                <strong>@caixa.Code</strong>
+                                            </td>
+                                            <td>@caixa.OpeningDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>
+                                                @if (caixa.ClosingDate.HasValue)
+                                                {
+                                                    @caixa.ClosingDate.Value.ToString("dd/MM/yyyy HH:mm")
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td class="text-end">@caixa.SalesCount</td>
+                                            <td class="text-end">
+                                                <strong class="text-success">R$ @caixa.TotalSales.ToString("N2")</strong>
+                                            </td>
+                                            <td class="text-center">
+                                                @if (isOpen)
+                                                {
+                                                    <span class="badge bg-success">ABERTO</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">FECHADO</span>
+                                                    @if (caixa.Difference.HasValue && caixa.Difference.Value != 0)
+                                                    {
+                                                        var diffClass = caixa.Difference.Value > 0 ? "success" : "danger";
+                                                        var diffIcon = caixa.Difference.Value > 0 ? "+" : "";
+                                                        <br>
+                                                        <small class="text-@diffClass">
+                                                            @diffIcon R$ @caixa.Difference.Value.ToString("N2")
+                                                        </small>
+                                                    }
+                                                }
+                                            </td>
+                                            <td>
+                                                <a href="/Caixa/Detalhes/@caixa.Id" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                            <p>Nenhum histórico de caixa encontrado.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

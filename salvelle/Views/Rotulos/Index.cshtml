@@ -1,0 +1,670 @@
+@{
+    ViewData["Title"] = "Impressão de Rótulos";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-tag-fill text-primary me-2"></i>
+                Impressão de Rótulos
+            </h2>
+            <p class="text-muted mb-0">Rótulos conforme RDC 67/2007 ANVISA</p>
+        </div>
+        <div class="btn-group">
+            <a href="/Rotulos/Historico" class="btn btn-outline-secondary">
+                <i class="bi bi-clock-history me-1"></i> Histórico
+            </a>
+            <a href="/Rotulos/Configuracoes" class="btn btn-outline-secondary">
+                <i class="bi bi-gear me-1"></i> Configurações
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Lista de Ordens -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-check me-2"></i>
+                        Ordens para Impressão
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Filtros -->
+                    <div class="p-3 border-bottom bg-light">
+                        <div class="row g-2">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="bi bi-search"></i>
+                                    </span>
+                                    <input type="text" id="searchOrders" class="form-control" 
+                                           placeholder="Buscar por ordem, cliente, lote...">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <select id="filterStatus" class="form-select">
+                                    <option value="">Todos Status</option>
+                                    <option value="FINALIZADO" selected>Finalizado</option>
+                                    <option value="EM_PRODUCAO">Em Produção</option>
+                                    <option value="AGUARDANDO_CONFERENCIA">Aguardando Conferência</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista -->
+                    <div id="ordersList" class="list-group list-group-flush" style="max-height: 500px; overflow-y: auto;">
+                        <div class="text-center py-5 text-muted">
+                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                            Carregando ordens...
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <span id="totalOrders">0</span> ordens encontradas
+                        </small>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview e Configurações -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-eye me-2"></i>
+                        Preview do Rótulo
+                    </h5>
+                    <div id="selectedInfo" class="text-muted small"></div>
+                </div>
+                <div class="card-body">
+                    <!-- Nenhuma ordem selecionada -->
+                    <div id="noSelection" class="text-center py-5">
+                        <i class="bi bi-hand-index text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-3">Selecione uma ordem na lista para visualizar o rótulo</p>
+                    </div>
+
+                    <!-- Preview Frame -->
+                    <div id="previewContainer" class="d-none">
+                        <div class="border rounded p-2 bg-light mb-3" style="min-height: 300px;">
+                            <iframe id="labelPreview" class="w-100 border-0" style="min-height: 400px;"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configurações de Impressão -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-sliders me-2"></i>
+                        Configurações de Impressão
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Tamanho da Etiqueta</label>
+                            <select id="labelSize" class="form-select">
+                                <option value="PADRAO">Padrão (100x50mm)</option>
+                                <option value="PEQUENA">Pequena (80x40mm)</option>
+                                <option value="GRANDE">Grande (100x70mm)</option>
+                                <option value="PERSONALIZADA">Personalizada</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Número de Cópias</label>
+                            <input type="number" id="copies" class="form-control" value="1" min="1" max="10">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Formato</label>
+                            <select id="printFormat" class="form-select">
+                                <option value="HTML">HTML (Navegador)</option>
+                                <option value="ZPL">ZPL (Zebra)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input type="checkbox" id="printBarcode" class="form-check-input" checked>
+                                <label class="form-check-label" for="printBarcode">Imprimir Código de Barras</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" id="printQrCode" class="form-check-input">
+                                <label class="form-check-label" for="printQrCode">Imprimir QR Code</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input type="checkbox" id="printComposition" class="form-check-input" checked>
+                                <label class="form-check-label" for="printComposition">Composição Completa</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" id="printLogo" class="form-check-input" checked>
+                                <label class="form-check-label" for="printLogo">Imprimir Logo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tamanho Personalizado -->
+                    <div id="customSizeRow" class="row g-3 mt-1 d-none">
+                        <div class="col-md-4">
+                            <label class="form-label">Largura (mm)</label>
+                            <input type="number" id="customWidth" class="form-control" value="100" min="50" max="200">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Altura (mm)</label>
+                            <input type="number" id="customHeight" class="form-control" value="50" min="30" max="150">
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="d-flex gap-2">
+                        <button id="btnValidate" class="btn btn-outline-primary" disabled>
+                            <i class="bi bi-check-circle me-1"></i> Validar
+                        </button>
+                        <button id="btnPreview" class="btn btn-outline-secondary" disabled>
+                            <i class="bi bi-eye me-1"></i> Atualizar Preview
+                        </button>
+                        <button id="btnPrint" class="btn btn-primary" disabled>
+                            <i class="bi bi-printer me-1"></i> Imprimir Rótulo
+                        </button>
+                        <button id="btnPrintBatch" class="btn btn-success ms-auto" disabled>
+                            <i class="bi bi-collection me-1"></i> Imprimir Selecionados (<span id="selectedCount">0</span>)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alertas de Validação -->
+            <div id="validationAlerts" class="mt-3"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Impressão em Lote -->
+<div class="modal fade" id="batchPrintModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-collection me-2"></i>
+                    Impressão em Lote
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong><span id="batchCount">0</span> rótulos</strong> serão gerados para impressão.
+                </div>
+                <div id="batchList" class="list-group" style="max-height: 300px; overflow-y: auto;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmBatch">
+                    <i class="bi bi-printer me-1"></i> Confirmar Impressão
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Resultado da Validação -->
+<div class="modal fade" id="validationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="validationTitle">Validação do Rótulo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="validationBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentPage = 1;
+    let selectedOrderId = null;
+    let selectedOrders = new Set();
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadOrders();
+        setupEventListeners();
+    });
+
+    function setupEventListeners() {
+        // Busca
+        let searchTimeout;
+        document.getElementById('searchOrders').addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentPage = 1;
+                loadOrders();
+            }, 300);
+        });
+
+        // Filtro de status
+        document.getElementById('filterStatus').addEventListener('change', function() {
+            currentPage = 1;
+            loadOrders();
+        });
+
+        // Tamanho personalizado
+        document.getElementById('labelSize').addEventListener('change', function() {
+            document.getElementById('customSizeRow').classList.toggle('d-none', this.value !== 'PERSONALIZADA');
+        });
+
+        // Botões
+        document.getElementById('btnValidate').addEventListener('click', validateLabel);
+        document.getElementById('btnPreview').addEventListener('click', updatePreview);
+        document.getElementById('btnPrint').addEventListener('click', printLabel);
+        document.getElementById('btnPrintBatch').addEventListener('click', showBatchModal);
+        document.getElementById('btnConfirmBatch').addEventListener('click', printBatch);
+    }
+
+    async function loadOrders() {
+        const search = document.getElementById('searchOrders').value;
+        const status = document.getElementById('filterStatus').value;
+        
+        try {
+            const params = new URLSearchParams({
+                page: currentPage,
+                pageSize: 20,
+                search: search,
+                status: status
+            });
+
+            const response = await fetch(`/api/Labels/orders-ready?${params}`);
+            const data = await response.json();
+
+            renderOrdersList(data.orders);
+            renderPagination(data.total, data.page, data.pageSize);
+            document.getElementById('totalOrders').textContent = data.total;
+        } catch (error) {
+            console.error('Erro ao carregar ordens:', error);
+            document.getElementById('ordersList').innerHTML = `
+                <div class="text-center py-4 text-danger">
+                    <i class="bi bi-exclamation-triangle"></i> Erro ao carregar ordens
+                </div>`;
+        }
+    }
+
+    function renderOrdersList(orders) {
+        const container = document.getElementById('ordersList');
+        
+        if (!orders || orders.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    <p class="mt-2">Nenhuma ordem encontrada</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = orders.map(order => `
+            <div class="list-group-item list-group-item-action ${selectedOrderId === order.id ? 'active' : ''}" 
+                 data-id="${order.id}" onclick="selectOrder('${order.id}')">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="d-flex align-items-start">
+                        <div class="form-check me-2" onclick="event.stopPropagation()">
+                            <input type="checkbox" class="form-check-input order-checkbox" 
+                                   data-id="${order.id}" 
+                                   ${selectedOrders.has(order.id) ? 'checked' : ''}
+                                   onchange="toggleOrderSelection('${order.id}')">
+                        </div>
+                        <div>
+                            <div class="fw-bold">
+                                ${order.orderNumber}
+                                ${order.temControlado ? '<span class="badge bg-danger ms-1">Controlado</span>' : ''}
+                            </div>
+                            <div class="small">${order.formulaNome || 'Fórmula Personalizada'}</div>
+                            <div class="small text-muted">${order.clienteNome}</div>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge ${getStatusBadgeClass(order.status)}">${formatStatus(order.status)}</span>
+                        <div class="small text-muted mt-1">${order.quantity} ${order.unit}</div>
+                        <div class="small text-muted">${formatDate(order.orderDate)}</div>
+                    </div>
+                </div>
+                ${order.batchNumber ? `<div class="small mt-1"><strong>Lote:</strong> ${order.batchNumber}</div>` : ''}
+            </div>
+        `).join('');
+    }
+
+    function renderPagination(total, page, pageSize) {
+        const totalPages = Math.ceil(total / pageSize);
+        const pagination = document.getElementById('pagination');
+        
+        if (totalPages <= 1) {
+            pagination.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        
+        // Anterior
+        html += `<li class="page-item ${page === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToPage(${page - 1})">«</a>
+        </li>`;
+
+        // Páginas
+        for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) {
+            html += `<li class="page-item ${i === page ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="goToPage(${i})">${i}</a>
+            </li>`;
+        }
+
+        // Próximo
+        html += `<li class="page-item ${page === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToPage(${page + 1})">»</a>
+        </li>`;
+
+        pagination.innerHTML = html;
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        loadOrders();
+    }
+
+    function selectOrder(orderId) {
+        selectedOrderId = orderId;
+        
+        // Atualizar visual da lista
+        document.querySelectorAll('#ordersList .list-group-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.id === orderId);
+        });
+
+        // Habilitar botões
+        document.getElementById('btnValidate').disabled = false;
+        document.getElementById('btnPreview').disabled = false;
+        document.getElementById('btnPrint').disabled = false;
+
+        // Mostrar container de preview
+        document.getElementById('noSelection').classList.add('d-none');
+        document.getElementById('previewContainer').classList.remove('d-none');
+
+        // Carregar preview
+        updatePreview();
+    }
+
+    function toggleOrderSelection(orderId) {
+        if (selectedOrders.has(orderId)) {
+            selectedOrders.delete(orderId);
+        } else {
+            selectedOrders.add(orderId);
+        }
+        
+        updateBatchButton();
+    }
+
+    function updateBatchButton() {
+        const count = selectedOrders.size;
+        document.getElementById('selectedCount').textContent = count;
+        document.getElementById('btnPrintBatch').disabled = count === 0;
+    }
+
+    async function updatePreview() {
+        if (!selectedOrderId) return;
+
+        const iframe = document.getElementById('labelPreview');
+        iframe.src = `/api/Labels/preview/${selectedOrderId}`;
+        
+        document.getElementById('selectedInfo').textContent = `Ordem: ${selectedOrderId.substring(0, 8)}...`;
+    }
+
+    async function validateLabel() {
+        if (!selectedOrderId) return;
+
+        try {
+            const response = await fetch(`/api/Labels/validate/${selectedOrderId}`);
+            const result = await response.json();
+
+            showValidationResult(result);
+        } catch (error) {
+            console.error('Erro na validação:', error);
+            showAlert('danger', 'Erro ao validar rótulo');
+        }
+    }
+
+    function showValidationResult(result) {
+        const modal = new bootstrap.Modal(document.getElementById('validationModal'));
+        const title = document.getElementById('validationTitle');
+        const body = document.getElementById('validationBody');
+
+        if (result.isValid) {
+            title.innerHTML = '<i class="bi bi-check-circle text-success me-2"></i>Validação OK';
+            body.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="bi bi-check-lg me-2"></i>
+                    Rótulo válido e pronto para impressão!
+                </div>
+                ${result.avisos.length > 0 ? `
+                    <div class="alert alert-warning">
+                        <strong>Avisos:</strong>
+                        <ul class="mb-0 mt-2">
+                            ${result.avisos.map(a => `<li>${a}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+            `;
+        } else {
+            title.innerHTML = '<i class="bi bi-x-circle text-danger me-2"></i>Validação com Erros';
+            body.innerHTML = `
+                <div class="alert alert-danger">
+                    <strong>Erros encontrados:</strong>
+                    <ul class="mb-0 mt-2">
+                        ${result.erros.map(e => `<li>${e}</li>`).join('')}
+                    </ul>
+                </div>
+                ${result.avisos.length > 0 ? `
+                    <div class="alert alert-warning">
+                        <strong>Avisos:</strong>
+                        <ul class="mb-0 mt-2">
+                            ${result.avisos.map(a => `<li>${a}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        modal.show();
+    }
+
+    async function printLabel() {
+        if (!selectedOrderId) return;
+
+        const config = getConfig();
+        
+        try {
+            const response = await fetch('/api/Labels/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ordemId: selectedOrderId,
+                    config: config,
+                    formato: config.formato
+                })
+            });
+
+            const result = await response.json();
+
+            if (config.formato === 'HTML') {
+                // Abrir em nova janela para impressão
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(result.conteudo);
+                printWindow.document.close();
+                printWindow.onload = function() {
+                    printWindow.print();
+                };
+            } else if (config.formato === 'ZPL') {
+                // Download do arquivo ZPL
+                downloadFile(result.conteudo, `rotulo_${result.numeroOrdem}.zpl`, 'text/plain');
+            }
+
+            showAlert('success', `Rótulo ${result.numeroOrdem} gerado com sucesso!`);
+        } catch (error) {
+            console.error('Erro ao imprimir:', error);
+            showAlert('danger', 'Erro ao gerar rótulo');
+        }
+    }
+
+    function showBatchModal() {
+        if (selectedOrders.size === 0) return;
+
+        document.getElementById('batchCount').textContent = selectedOrders.size;
+        
+        // Montar lista
+        const list = document.getElementById('batchList');
+        const items = Array.from(document.querySelectorAll('#ordersList .list-group-item'))
+            .filter(item => selectedOrders.has(item.dataset.id));
+        
+        list.innerHTML = items.map(item => {
+            const orderNumber = item.querySelector('.fw-bold').textContent.trim();
+            const formula = item.querySelector('.small')?.textContent || '';
+            return `<div class="list-group-item">
+                <i class="bi bi-tag me-2"></i>${orderNumber} - ${formula}
+            </div>`;
+        }).join('');
+
+        const modal = new bootstrap.Modal(document.getElementById('batchPrintModal'));
+        modal.show();
+    }
+
+    async function printBatch() {
+        if (selectedOrders.size === 0) return;
+
+        const config = getConfig();
+        
+        try {
+            const response = await fetch('/api/Labels/generate-batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ordemIds: Array.from(selectedOrders),
+                    config: config,
+                    formato: config.formato
+                })
+            });
+
+            const results = await response.json();
+
+            if (config.formato === 'HTML') {
+                // Concatenar todos os HTML e abrir para impressão
+                const allHtml = results.map(r => r.conteudo).join('<div style="page-break-after: always;"></div>');
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(allHtml);
+                printWindow.document.close();
+                printWindow.onload = function() {
+                    printWindow.print();
+                };
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('batchPrintModal')).hide();
+            showAlert('success', `${results.length} rótulos gerados com sucesso!`);
+            
+            // Limpar seleção
+            selectedOrders.clear();
+            updateBatchButton();
+            loadOrders();
+        } catch (error) {
+            console.error('Erro na impressão em lote:', error);
+            showAlert('danger', 'Erro ao gerar rótulos em lote');
+        }
+    }
+
+    function getConfig() {
+        const size = document.getElementById('labelSize').value;
+        let width = 100, height = 50;
+
+        switch (size) {
+            case 'PEQUENA': width = 80; height = 40; break;
+            case 'GRANDE': width = 100; height = 70; break;
+            case 'PERSONALIZADA':
+                width = parseInt(document.getElementById('customWidth').value) || 100;
+                height = parseInt(document.getElementById('customHeight').value) || 50;
+                break;
+        }
+
+        return {
+            tamanhoEtiqueta: size,
+            larguraMm: width,
+            alturaMm: height,
+            copias: parseInt(document.getElementById('copies').value) || 1,
+            imprimirCodigoBarras: document.getElementById('printBarcode').checked,
+            imprimirQrCode: document.getElementById('printQrCode').checked,
+            imprimirComposicaoCompleta: document.getElementById('printComposition').checked,
+            imprimirLogo: document.getElementById('printLogo').checked,
+            formato: document.getElementById('printFormat').value
+        };
+    }
+
+    function downloadFile(content, filename, contentType) {
+        const blob = new Blob([content], { type: contentType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function showAlert(type, message) {
+        const container = document.getElementById('validationAlerts');
+        container.innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>`;
+        
+        setTimeout(() => {
+            const alert = container.querySelector('.alert');
+            if (alert) alert.remove();
+        }, 5000);
+    }
+
+    function getStatusBadgeClass(status) {
+        const classes = {
+            'FINALIZADO': 'bg-success',
+            'EM_PRODUCAO': 'bg-primary',
+            'AGUARDANDO_CONFERENCIA': 'bg-warning text-dark',
+            'PENDENTE': 'bg-secondary'
+        };
+        return classes[status] || 'bg-secondary';
+    }
+
+    function formatStatus(status) {
+        const labels = {
+            'FINALIZADO': 'Finalizado',
+            'EM_PRODUCAO': 'Em Produção',
+            'AGUARDANDO_CONFERENCIA': 'Conferência',
+            'PENDENTE': 'Pendente'
+        };
+        return labels[status] || status;
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleDateString('pt-BR');
+    }
+</script>
+}

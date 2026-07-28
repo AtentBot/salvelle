@@ -1,0 +1,597 @@
+﻿@{
+    ViewData["Title"] = "Detalhes do Cliente";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0">
+                    <i class="bi bi-person-vcard text-primary me-2"></i>
+                    Detalhes do Cliente
+                </h2>
+                <p class="text-muted mb-0" id="customerCode">Carregando...</p>
+            </div>
+            <div class="btn-group">
+                <a href="/Customers" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Voltar
+                </a>
+                <a href="#" id="editBtn" class="btn btn-warning">
+                    <i class="bi bi-pencil me-1"></i>
+                    Editar
+                </a>
+                <button class="btn btn-danger" id="actionBtn" onclick="handleCustomerAction()">
+                    <i class="bi bi-lock me-1"></i>
+                    <span id="actionText">Bloquear</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading -->
+<div id="loadingDiv" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Carregando...</span>
+    </div>
+    <p class="text-muted mt-3">Carregando informações do cliente...</p>
+</div>
+
+<!-- Conteúdo -->
+<div id="contentDiv" style="display: none;">
+    <!-- Status e Info Rápida -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-circle-large bg-primary bg-opacity-10 text-primary me-3">
+                            <span id="avatarInitial">C</span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h3 class="mb-1" id="customerName">-</h3>
+                            <p class="text-muted mb-0" id="customerInfo">-</p>
+                        </div>
+                        <div>
+                            <span class="badge fs-6" id="statusBadge">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <p class="text-muted mb-1 small">Idade</p>
+                    <h4 class="mb-0" id="customerAge">-</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Abas -->
+    <ul class="nav nav-tabs mb-4" id="customerTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#dadosPessoais" type="button">
+                <i class="bi bi-person me-1"></i>
+                Dados Pessoais
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#contato" type="button">
+                <i class="bi bi-telephone me-1"></i>
+                Contato
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#endereco" type="button">
+                <i class="bi bi-geo-alt me-1"></i>
+                Endereço
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#medico" type="button">
+                <i class="bi bi-heart-pulse me-1"></i>
+                Informações Médicas
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#historico" type="button">
+                <i class="bi bi-clock-history me-1"></i>
+                Histórico
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="customerTabsContent">
+        <!-- Dados Pessoais -->
+        <div class="tab-pane fade show active" id="dadosPessoais">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Nome Completo</label>
+                            <p class="mb-0 fw-semibold" id="fullName">-</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-muted small">CPF</label>
+                            <p class="mb-0" id="cpf">-</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-muted small">RG</label>
+                            <p class="mb-0" id="rg">-</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">Data de Nascimento</label>
+                            <p class="mb-0" id="birthDate">-</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">Idade</label>
+                            <p class="mb-0" id="age">-</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">Gênero</label>
+                            <p class="mb-0" id="gender">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contato -->
+        <div class="tab-pane fade" id="contato">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <label class="text-muted small">Telefone</label>
+                            <p class="mb-0" id="phone">-</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">WhatsApp</label>
+                            <p class="mb-0" id="whatsApp">-</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">Email</label>
+                            <p class="mb-0" id="email">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Endereço -->
+        <div class="tab-pane fade" id="endereco">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <label class="text-muted small">Endereço Completo</label>
+                            <p class="mb-0 fw-semibold" id="fullAddress">-</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-muted small">CEP</label>
+                            <p class="mb-0" id="zipCode">-</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Logradouro</label>
+                            <p class="mb-0" id="street">-</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-muted small">Número</label>
+                            <p class="mb-0" id="number">-</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">Complemento</label>
+                            <p class="mb-0" id="complement">-</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">Bairro</label>
+                            <p class="mb-0" id="neighborhood">-</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-muted small">Cidade</label>
+                            <p class="mb-0" id="city">-</p>
+                        </div>
+                        <div class="col-md-1">
+                            <label class="text-muted small">UF</label>
+                            <p class="mb-0" id="state">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações Médicas -->
+        <div class="tab-pane fade" id="medico">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Alergias</label>
+                            <div class="alert alert-warning" id="allergies">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Nenhuma alergia registrada
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Condições Médicas</label>
+                            <div class="alert alert-info" id="medicalConditions">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Nenhuma condição médica registrada
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="text-muted small">Observações</label>
+                            <p class="mb-0" id="observations">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Histórico -->
+        <div class="tab-pane fade" id="historico">
+            <div class="row g-4">
+                <!-- Resumo de Compras -->
+                <div class="col-md-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-cart3 text-primary fs-1 mb-2"></i>
+                            <h4 class="mb-0" id="totalOrders">0</h4>
+                            <p class="text-muted mb-0">Pedidos</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-currency-dollar text-success fs-1 mb-2"></i>
+                            <h4 class="mb-0" id="totalSpent">R$ 0,00</h4>
+                            <p class="text-muted mb-0">Total Gasto</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-calendar-check text-info fs-1 mb-2"></i>
+                            <h4 class="mb-0" id="lastOrder">-</h4>
+                            <p class="text-muted mb-0">Última Compra</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Pedidos -->
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h5 class="mb-0">Histórico de Pedidos</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info mb-0" id="ordersHistory">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Nenhum pedido encontrado (Módulo de vendas em desenvolvimento)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LGPD e Auditoria -->
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h5 class="mb-0">Informações de Sistema</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="text-muted small">Consentimento LGPD</label>
+                                    <p class="mb-0" id="consentInfo">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="text-muted small">Motivo do Bloqueio</label>
+                                    <p class="mb-0" id="blockReason">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="text-muted small">Cadastrado em</label>
+                                    <p class="mb-0" id="createdInfo">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="text-muted small">Última Atualização</label>
+                                    <p class="mb-0" id="updatedInfo">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 2rem;
+    }
+
+    .nav-tabs .nav-link {
+        color: var(--ink-3);
+    }
+
+    .nav-tabs .nav-link.active {
+        font-weight: 600;
+    }
+</style>
+
+@section Scripts {
+<script>
+    let customerId = null;
+    let customerData = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        customerId = window.location.pathname.split('/').pop();
+        loadCustomer();
+    });
+
+    async function loadCustomer() {
+        try {
+            const response = await fetch(`/api/Customers/${customerId}`, {
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error('Cliente não encontrado');
+            }
+
+            customerData = await response.json();
+            displayCustomer();
+            loadHistory();
+
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao carregar cliente');
+            window.location.href = '/Customers';
+        }
+    }
+
+    function displayCustomer() {
+        document.getElementById('loadingDiv').style.display = 'none';
+        document.getElementById('contentDiv').style.display = 'block';
+
+        // Header
+        document.getElementById('customerCode').textContent = `Código: ${customerData.code}`;
+        document.getElementById('editBtn').href = `/Customers/Edit/${customerData.id}`;
+
+        // Avatar e Nome
+        document.getElementById('avatarInitial').textContent = 
+            customerData.fullName.charAt(0).toUpperCase();
+        document.getElementById('customerName').textContent = customerData.fullName;
+        document.getElementById('customerInfo').textContent = 
+            `${formatCpf(customerData.cpf)} | ${formatPhone(customerData.phone)}`;
+        
+        // Status
+        const statusBadge = document.getElementById('statusBadge');
+        statusBadge.textContent = customerData.status;
+        statusBadge.className = 'badge fs-6 ' + getStatusClass(customerData.status);
+
+        // Botão de ação
+        updateActionButton();
+
+        // Idade
+        document.getElementById('customerAge').textContent = 
+            customerData.age ? `${customerData.age} anos` : '-';
+
+        // Dados Pessoais
+        document.getElementById('fullName').textContent = customerData.fullName;
+        document.getElementById('cpf').textContent = formatCpf(customerData.cpf);
+        document.getElementById('rg').textContent = customerData.rg || '-';
+        document.getElementById('birthDate').textContent = 
+            customerData.birthDate ? formatDate(customerData.birthDate) : '-';
+        document.getElementById('age').textContent = 
+            customerData.age ? `${customerData.age} anos` : '-';
+        document.getElementById('gender').textContent = formatGender(customerData.gender);
+
+        // Contato
+        document.getElementById('phone').textContent = formatPhone(customerData.phone);
+        
+        const whatsAppEl = document.getElementById('whatsApp');
+        if (customerData.whatsApp) {
+            whatsAppEl.innerHTML = `
+                <a href="https://wa.me/55${customerData.whatsApp}" target="_blank" class="text-success">
+                    <i class="bi bi-whatsapp"></i> ${formatPhone(customerData.whatsApp)}
+                </a>
+            `;
+        } else {
+            whatsAppEl.textContent = '-';
+        }
+        
+        document.getElementById('email').textContent = customerData.email || '-';
+
+        // Endereço
+        document.getElementById('fullAddress').textContent = customerData.fullAddress || 'Endereço não cadastrado';
+        document.getElementById('zipCode').textContent = formatZipCode(customerData.zipCode);
+        document.getElementById('street').textContent = customerData.street || '-';
+        document.getElementById('number').textContent = customerData.number || '-';
+        document.getElementById('complement').textContent = customerData.complement || '-';
+        document.getElementById('neighborhood').textContent = customerData.neighborhood || '-';
+        document.getElementById('city').textContent = customerData.city || '-';
+        document.getElementById('state').textContent = customerData.state || '-';
+
+        // Informações Médicas
+        const allergiesEl = document.getElementById('allergies');
+        if (customerData.allergies) {
+            allergiesEl.className = 'alert alert-warning';
+            allergiesEl.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>${customerData.allergies}`;
+        }
+
+        const medicalEl = document.getElementById('medicalConditions');
+        if (customerData.medicalConditions) {
+            medicalEl.className = 'alert alert-info';
+            medicalEl.innerHTML = `<i class="bi bi-info-circle me-2"></i>${customerData.medicalConditions}`;
+        }
+
+        document.getElementById('observations').textContent = customerData.observations || '-';
+
+        // LGPD
+        const consentText = customerData.consentDataProcessing 
+            ? `✓ Consentido em ${formatDate(customerData.consentDate)}`
+            : '✗ Não consentido';
+        document.getElementById('consentInfo').textContent = consentText;
+
+        document.getElementById('blockReason').textContent = customerData.blockReason || '-';
+
+        // Auditoria
+        document.getElementById('createdInfo').textContent = 
+            `${formatDate(customerData.createdAt)} por ${customerData.createdByEmployeeName}`;
+        
+        const updatedText = customerData.updatedAt 
+            ? `${formatDate(customerData.updatedAt)} por ${customerData.updatedByEmployeeName}`
+            : '-';
+        document.getElementById('updatedInfo').textContent = updatedText;
+    }
+
+    async function loadHistory() {
+        try {
+            const response = await fetch(`/api/Customers/${customerId}/history`, {
+                credentials: 'include'
+            });
+
+            if (!response.ok) return;
+
+            const history = await response.json();
+
+            document.getElementById('totalOrders').textContent = history.totalOrders;
+            document.getElementById('totalSpent').textContent = 
+                `R$ ${history.totalSpent.toFixed(2).replace('.', ',')}`;
+            document.getElementById('lastOrder').textContent = 
+                history.lastOrderDate ? formatDate(history.lastOrderDate) : '-';
+
+        } catch (error) {
+            console.error('Erro ao carregar histórico:', error);
+        }
+    }
+
+    function updateActionButton() {
+        const actionBtn = document.getElementById('actionBtn');
+        const actionText = document.getElementById('actionText');
+
+        if (customerData.status === 'BLOQUEADO') {
+            actionBtn.className = 'btn btn-success';
+            actionBtn.innerHTML = '<i class="bi bi-unlock me-1"></i><span id="actionText">Desbloquear</span>';
+        } else if (customerData.status === 'ATIVO') {
+            actionBtn.className = 'btn btn-danger';
+            actionBtn.innerHTML = '<i class="bi bi-lock me-1"></i><span id="actionText">Bloquear</span>';
+        } else {
+            actionBtn.style.display = 'none';
+        }
+    }
+
+    async function handleCustomerAction() {
+        if (customerData.status === 'BLOQUEADO') {
+            if (!confirm('Deseja realmente desbloquear este cliente?')) return;
+            await unblockCustomer();
+        } else if (customerData.status === 'ATIVO') {
+            const reason = prompt('Motivo do bloqueio (mínimo 10 caracteres):');
+            if (!reason || reason.length < 10) {
+                if (reason !== null) alert('O motivo deve ter no mínimo 10 caracteres');
+                return;
+            }
+            await blockCustomer(reason);
+        }
+    }
+
+    async function blockCustomer(reason) {
+        try {
+            const response = await fetch(`/api/Customers/${customerId}/block`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ reason })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert(result.message);
+                loadCustomer();
+            } else {
+                alert(result.message || 'Erro ao bloquear cliente');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao bloquear cliente');
+        }
+    }
+
+    async function unblockCustomer() {
+        try {
+            const response = await fetch(`/api/Customers/${customerId}/unblock`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert(result.message);
+                loadCustomer();
+            } else {
+                alert(result.message || 'Erro ao desbloquear cliente');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao desbloquear cliente');
+        }
+    }
+
+    function getStatusClass(status) {
+        const classes = {
+            'ATIVO': 'bg-success',
+            'INATIVO': 'bg-warning',
+            'BLOQUEADO': 'bg-danger'
+        };
+        return classes[status] || 'bg-secondary';
+    }
+
+    function formatCpf(cpf) {
+        if (!cpf) return '-';
+        return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    }
+
+    function formatPhone(phone) {
+        if (!phone) return '-';
+        if (phone.length === 11) {
+            return phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        }
+        return phone.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    }
+
+    function formatZipCode(zipCode) {
+        if (!zipCode) return '-';
+        return zipCode.replace(/(\d{5})(\d{3})/, '$1-$2');
+    }
+
+    function formatDate(date) {
+        if (!date) return '-';
+        return new Date(date).toLocaleDateString('pt-BR');
+    }
+
+    function formatGender(gender) {
+        const genders = {
+            'M': 'Masculino',
+            'F': 'Feminino',
+            'O': 'Outro'
+        };
+        return genders[gender] || '-';
+    }
+</script>
+}

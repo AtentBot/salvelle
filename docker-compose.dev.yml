@@ -1,0 +1,54 @@
+version: '3.8'
+
+# Ambiente local de desenvolvimento/testes
+# Uso: docker compose -f docker-compose.dev.yml up --build
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: salvelle_test_db
+    environment:
+      POSTGRES_DB: salvelle_test
+      POSTGRES_USER: salvelle
+      POSTGRES_PASSWORD: salvelle_test_pass
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U salvelle -d salvelle_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - pgdata_test:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: ./salvelle
+      dockerfile: Dockerfile
+    container_name: salvelle_test_app
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=salvelle_test;Username=salvelle;Password=salvelle_test_pass;Include Error Detail=true
+      - Jwt__Key=SuperSecretTestKeyAtLeast32CharactersLong!
+      - Jwt__Issuer=salvelle-test
+      - Jwt__Audience=salvelle-mobile
+      - Jwt__AccessTokenExpirationMinutes=15
+      - SeedAdmin__Email=admin@salvelle-test.com
+      - SeedAdmin__Password=TestAdmin@2026!
+      - EmailSettings__SmtpHost=localhost
+      - EmailSettings__SmtpPort=25
+      - EmailSettings__From=noreply@test.com
+      - EmailSettings__EnableSsl=false
+      - AtentBot__ApiKey=test-key-not-real
+      - OpenAI__ApiKey=test-key-not-real
+      - Stripe__SecretKey=sk_test_notreal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+volumes:
+  pgdata_test:

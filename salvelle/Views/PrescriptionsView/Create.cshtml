@@ -1,0 +1,294 @@
+@model Models.Prescription
+@{
+    ViewData["Title"] = "Nova Prescrição";
+}
+
+<div class="container-fluid px-4 py-3">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="bi bi-plus-circle"></i> Nova Prescrição
+            </h1>
+            <p class="text-muted mb-0">Cadastrar nova prescrição médica</p>
+        </div>
+        <div>
+            <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="row">
+            <!-- Coluna Principal -->
+            <div class="col-lg-8">
+                <!-- Dados Básicos -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Dados Básicos</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="CustomerId" class="form-label">
+                                    Paciente <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="CustomerId" class="form-select" required>
+                                    <option value="">Selecione o paciente...</option>
+                                    @foreach (var customer in ViewBag.Customers)
+                                    {
+                                        <option value="@customer.Id">@customer.FullName - @customer.Cpf</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="CustomerId" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="PrescriptionDate" class="form-label">
+                                    Data da Prescrição <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="PrescriptionDate" type="date" class="form-control" required>
+                                <span asp-validation-for="PrescriptionDate" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ExpirationDate" class="form-label">
+                                    Data de Validade
+                                </label>
+                                <input asp-for="ExpirationDate" type="date" class="form-control">
+                                <small class="text-muted">Deixe em branco se não tiver validade específica</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="PrescriptionType" class="form-label">
+                                    Tipo de Prescrição <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="PrescriptionType" class="form-select" required id="prescriptionType">
+                                    <option value="">Selecione...</option>
+                                    <option value="SIMPLES">Simples</option>
+                                    <option value="CONTROLADA">Controlada</option>
+                                    <option value="ANTIBIOTICO">Antibiótico</option>
+                                </select>
+                                <span asp-validation-for="PrescriptionType" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3" id="controlledTypeDiv" style="display: none;">
+                                <label asp-for="ControlledType" class="form-label">
+                                    Tipo Controlado
+                                </label>
+                                <select asp-for="ControlledType" class="form-select">
+                                    <option value="">Selecione...</option>
+                                    <option value="A1">A1 - Entorpecentes</option>
+                                    <option value="A2">A2 - Entorpecentes</option>
+                                    <option value="A3">A3 - Psicotrópicos</option>
+                                    <option value="B1">B1 - Psicotrópicos</option>
+                                    <option value="B2">B2 - Psicotrópicos</option>
+                                    <option value="C1">C1 - Outras Substâncias</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3" id="prescriptionColorDiv" style="display: none;">
+                                <label asp-for="PrescriptionColor" class="form-label">
+                                    Cor da Receita
+                                </label>
+                                <select asp-for="PrescriptionColor" class="form-select">
+                                    <option value="">Selecione...</option>
+                                    <option value="AMARELA">Amarela (A1/A2/A3)</option>
+                                    <option value="AZUL">Azul (B1/B2)</option>
+                                    <option value="BRANCA">Branca (C1)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dados do Médico -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-badge"></i> Dados do Médico</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DoctorName" class="form-label">
+                                    Nome do Médico
+                                </label>
+                                <input asp-for="DoctorName" class="form-control" placeholder="Dr. João Silva">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="DoctorCrm" class="form-label">
+                                    CRM
+                                </label>
+                                <input asp-for="DoctorCrm" class="form-control" placeholder="123456">
+                            </div>
+
+                            <div class="col-md-2 mb-3">
+                                <label asp-for="DoctorCrmState" class="form-label">
+                                    UF
+                                </label>
+                                <select asp-for="DoctorCrmState" class="form-select">
+                                    <option value="">--</option>
+                                    <option value="AC">AC</option>
+                                    <option value="AL">AL</option>
+                                    <option value="AP">AP</option>
+                                    <option value="AM">AM</option>
+                                    <option value="BA">BA</option>
+                                    <option value="CE">CE</option>
+                                    <option value="DF">DF</option>
+                                    <option value="ES">ES</option>
+                                    <option value="GO">GO</option>
+                                    <option value="MA">MA</option>
+                                    <option value="MT">MT</option>
+                                    <option value="MS">MS</option>
+                                    <option value="MG">MG</option>
+                                    <option value="PA">PA</option>
+                                    <option value="PB">PB</option>
+                                    <option value="PR">PR</option>
+                                    <option value="PE">PE</option>
+                                    <option value="PI">PI</option>
+                                    <option value="RJ">RJ</option>
+                                    <option value="RN">RN</option>
+                                    <option value="RS">RS</option>
+                                    <option value="RO">RO</option>
+                                    <option value="RR">RR</option>
+                                    <option value="SC">SC</option>
+                                    <option value="SP">SP</option>
+                                    <option value="SE">SE</option>
+                                    <option value="TO">TO</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medicamentos e Posologia -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-prescription2"></i> Medicamentos e Posologia</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="Medications" class="form-label">
+                                Medicamentos <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="Medications" class="form-control" rows="5" required
+                                      placeholder="Liste os medicamentos prescritos...&#10;Ex:&#10;Dipirona 500mg&#10;Paracetamol 750mg"></textarea>
+                            <span asp-validation-for="Medications" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Posology" class="form-label">
+                                Posologia
+                            </label>
+                            <textarea asp-for="Posology" class="form-control" rows="4"
+                                      placeholder="Descreva como tomar os medicamentos...&#10;Ex:&#10;Tomar 1 comprimido de 8 em 8 horas"></textarea>
+                        </div>
+
+                        <div class="mb-0">
+                            <label asp-for="Observations" class="form-label">
+                                Observações
+                            </label>
+                            <textarea asp-for="Observations" class="form-control" rows="3"
+                                      placeholder="Observações adicionais..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Lateral -->
+            <div class="col-lg-4">
+                <!-- Dicas -->
+                <div class="card shadow-sm mb-4 border-info">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Dicas</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0 ps-3">
+                            <li class="mb-2">
+                                <strong>Prescrição Simples:</strong> Medicamentos comuns, sem receituário especial
+                            </li>
+                            <li class="mb-2">
+                                <strong>Prescrição Controlada:</strong> Requer receituário específico (A1, A2, A3, B1, B2, C1)
+                            </li>
+                            <li class="mb-2">
+                                <strong>Antibiótico:</strong> Requer receita branca em 2 vias
+                            </li>
+                            <li class="mb-0">
+                                <strong>Validade:</strong> Geralmente 30 dias para antibióticos, 6 meses para outros
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Ações -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <button type="submit" class="btn btn-success w-100 mb-2">
+                            <i class="bi bi-check-circle"></i> Salvar Prescrição
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Próximos Passos -->
+                <div class="card shadow-sm mt-4 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0"><i class="bi bi-list-check"></i> Próximos Passos</h6>
+                    </div>
+                    <div class="card-body">
+                        <ol class="mb-0 ps-3">
+                            <li class="mb-2">Preencher formulário</li>
+                            <li class="mb-2">Salvar prescrição</li>
+                            <li class="mb-2">Fazer upload da imagem (opcional)</li>
+                            <li class="mb-2">Validar com farmacêutico</li>
+                            <li class="mb-0">Gerar ordem de manipulação</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+    // Mostrar/ocultar campos conforme tipo de prescrição
+    document.getElementById('prescriptionType').addEventListener('change', function() {
+        const value = this.value;
+        const controlledDiv = document.getElementById('controlledTypeDiv');
+        const colorDiv = document.getElementById('prescriptionColorDiv');
+        
+        if (value === 'CONTROLADA') {
+            controlledDiv.style.display = 'block';
+            colorDiv.style.display = 'block';
+        } else {
+            controlledDiv.style.display = 'none';
+            colorDiv.style.display = 'none';
+        }
+    });
+
+    // Definir data atual como padrão
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.querySelector('input[name="PrescriptionDate"]');
+        if (dateInput && !dateInput.value) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+        }
+    });
+</script>
+}

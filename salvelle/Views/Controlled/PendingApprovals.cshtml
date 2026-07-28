@@ -1,0 +1,100 @@
+@using Models.Pharmacy
+@model List<ManipulationOrder>
+@{
+    ViewData["Title"] = "Aprovações Pendentes - Controlados";
+}
+
+@section Styles {
+<style>
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .ds-card-eyebrow { font-family: var(--font-mono); font-size: 11px; color: var(--petrol-500); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ds-card-title { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+
+    .ds-banner { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-radius: var(--r-md); margin-bottom: 24px; border: 1px solid var(--warn-border); background: var(--warn-soft); }
+    .ds-banner i { font-size: 20px; color: var(--warn); flex-shrink: 0; }
+    .ds-banner div { font-size: 14px; color: var(--ink-2); }
+    .ds-banner strong { color: var(--ink); }
+
+    .empty-row { text-align: center; padding: 48px 24px; color: var(--ink-3); }
+    .empty-row i { font-size: 40px; display: block; margin-bottom: 10px; color: var(--ok); }
+    .empty-row p { margin: 0 0 2px; font-size: 14px; color: var(--ink-2); font-weight: 500; }
+    .empty-row small { font-size: 12px; }
+
+    @@media (max-width: 780px) {
+        table.responsive-stack thead { display: none; }
+        table.responsive-stack tbody tr { display: block; border-bottom: 1px solid var(--rule); padding: 12px 16px; }
+        table.responsive-stack tbody tr:hover td { background: transparent; }
+        table.responsive-stack tbody td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 5px 0; border: none; text-align: right; }
+        table.responsive-stack tbody td::before { content: attr(data-label); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; text-align: left; }
+    }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">SNGPC · APROVAÇÕES</div>
+            <h1>Aprovações Farmacêuticas</h1>
+            <p>Manipulações com substâncias controladas aguardando aprovação.</p>
+        </div>
+        <div class="row">
+            <a class="btn btn-secondary" href="/Controlled"><i class="bi bi-arrow-left"></i>Voltar</a>
+        </div>
+    </div>
+
+    <div class="ds-banner">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <div><strong>Atenção:</strong> somente o Farmacêutico RT pode aprovar manipulações contendo substâncias controladas (Portaria 344/98).</div>
+    </div>
+
+    <div class="ds-card">
+        <div class="ds-card-head">
+            <div>
+                <div class="ds-card-eyebrow">Fila de análise</div>
+                <h3 class="ds-card-title">Ordens pendentes de aprovação</h3>
+            </div>
+            <span class="badge badge-danger badge-no-dot">@(Model?.Count ?? 0) pendentes</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table responsive-stack mb-0">
+                <thead>
+                    <tr>
+                        <th>Ordem</th>
+                        <th>Fórmula</th>
+                        <th>Data solicitação</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Count > 0)
+                    {
+                        foreach (var order in Model)
+                        {
+                            <tr>
+                                <td data-label="Ordem" class="mono" style="color:var(--ink);font-weight:600;">#@order.OrderNumber</td>
+                                <td data-label="Fórmula">@(order.Formula?.Name ?? "N/A")</td>
+                                <td data-label="Data solicitação" class="mono">@order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td data-label="Status"><span class="badge badge-warn badge-no-dot">Aguardando aprovação</span></td>
+                                <td data-label="Ações" class="text-end">
+                                    <a href="/Controlled/Approve/@order.Id" class="btn btn-danger btn-sm"><i class="bi bi-clipboard-check"></i>Analisar</a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="empty-row">
+                                <i class="bi bi-check-circle"></i>
+                                <p>Nenhuma aprovação pendente.</p>
+                                <small>Todas as ordens com controlados foram aprovadas.</small>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

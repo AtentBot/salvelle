@@ -1,0 +1,235 @@
+@{
+    ViewData["Title"] = "Buscar Rótulos";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-0">
+                <i class="bi bi-search me-2"></i>Buscar Rótulos
+            </h2>
+        </div>
+        <div class="col-auto">
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Filtros de Busca</h5>
+        </div>
+        <div class="card-body">
+            <form id="searchForm">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Nome do Paciente</label>
+                        <input type="text" id="patientName" class="form-control" placeholder="Buscar por paciente...">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Número do Lote</label>
+                        <input type="text" id="batchNumber" class="form-control" placeholder="Ex: LOT-2024-001">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Status</label>
+                        <select id="status" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="GERADO">Gerado</option>
+                            <option value="IMPRESSO">Impresso</option>
+                            <option value="CANCELADO">Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Data Inicial</label>
+                        <input type="date" id="dateFrom" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Data Final</label>
+                        <input type="date" id="dateTo" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Controlado</label>
+                        <select id="isControlled" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="true">Sim</option>
+                            <option value="false">Não</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-2"></i>Buscar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Resultados</h5>
+            <span id="totalCount" class="badge bg-secondary">0 rótulos</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Paciente</th>
+                            <th>Fórmula</th>
+                            <th>Lote</th>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th>Impressões</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTable">
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                <i class="bi bi-info-circle me-2"></i>Use os filtros acima para buscar rótulos
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer">
+            <nav id="pagination" class="d-flex justify-content-center"></nav>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        const pageSize = 20;
+
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            currentPage = 1;
+            searchLabels();
+        });
+
+        async function searchLabels() {
+            const params = new URLSearchParams({
+                page: currentPage,
+                pageSize: pageSize
+            });
+
+            const patientName = document.getElementById('patientName').value;
+            const batchNumber = document.getElementById('batchNumber').value;
+            const status = document.getElementById('status').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            const isControlled = document.getElementById('isControlled').value;
+
+            if (patientName) params.append('patientName', patientName);
+            if (batchNumber) params.append('batchNumber', batchNumber);
+            if (status) params.append('status', status);
+            if (dateFrom) params.append('dateFrom', dateFrom);
+            if (dateTo) params.append('dateTo', dateTo);
+            if (isControlled) params.append('isControlled', isControlled);
+
+            try {
+                const response = await fetch(`/api/Labels/search?${params}`);
+                if (!response.ok) throw new Error('Erro na busca');
+                
+                const data = await response.json();
+                renderResults(data.labels);
+                renderPagination(data.pagination);
+                document.getElementById('totalCount').textContent = `${data.pagination.totalCount} rótulos`;
+            } catch (error) {
+                console.error(error);
+                document.getElementById('resultsTable').innerHTML = `
+                    <tr><td colspan="8" class="text-center text-danger py-4">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Erro ao buscar rótulos
+                    </td></tr>`;
+            }
+        }
+
+        function renderResults(labels) {
+            const tbody = document.getElementById('resultsTable');
+            
+            if (!labels || labels.length === 0) {
+                tbody.innerHTML = `
+                    <tr><td colspan="8" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox me-2"></i>Nenhum rótulo encontrado
+                    </td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = labels.map(label => `
+                <tr>
+                    <td><code>${label.labelCode || '-'}</code></td>
+                    <td>${label.patientName || '-'}</td>
+                    <td>${label.formulaName || '-'}</td>
+                    <td>${label.batchNumber || '-'}</td>
+                    <td>${formatDate(label.createdAt)}</td>
+                    <td>${getStatusBadge(label.status)}</td>
+                    <td class="text-center">${label.printCount || 0}</td>
+                    <td class="text-center">
+                        <a href="/Labels/View/${label.id}" class="btn btn-sm btn-outline-primary" title="Visualizar">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <button class="btn btn-sm btn-outline-success" onclick="printLabel('${label.id}')" title="Imprimir">
+                            <i class="bi bi-printer"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPagination(pagination) {
+            const nav = document.getElementById('pagination');
+            if (pagination.totalPages <= 1) {
+                nav.innerHTML = '';
+                return;
+            }
+
+            let html = '<ul class="pagination pagination-sm mb-0">';
+            
+            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="goToPage(${currentPage - 1})">Anterior</a>
+            </li>`;
+
+            for (let i = 1; i <= pagination.totalPages && i <= 5; i++) {
+                html += `<li class="page-item ${currentPage === i ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="goToPage(${i})">${i}</a>
+                </li>`;
+            }
+
+            html += `<li class="page-item ${currentPage === pagination.totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="goToPage(${currentPage + 1})">Próximo</a>
+            </li>`;
+
+            html += '</ul>';
+            nav.innerHTML = html;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            searchLabels();
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'GERADO': '<span class="badge bg-info">Gerado</span>',
+                'IMPRESSO': '<span class="badge bg-success">Impresso</span>',
+                'CANCELADO': '<span class="badge bg-danger">Cancelado</span>'
+            };
+            return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleDateString('pt-BR');
+        }
+
+        async function printLabel(id) {
+            window.open(`/Labels/View/${id}`, '_blank');
+        }
+    </script>
+}

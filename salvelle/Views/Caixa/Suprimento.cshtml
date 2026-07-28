@@ -1,0 +1,59 @@
+@model Models.CashRegister
+@{
+    ViewData["Title"] = "Suprimento";
+    Layout = "_Layout";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center mb-4">
+                <a href="/Caixa" class="btn btn-outline-secondary me-3">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div>
+                    <h4 class="mb-0">Suprimento</h4>
+                    <small class="text-muted">Entrada de dinheiro no caixa</small>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-arrow-down-circle me-2"></i>Realizar Suprimento</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <strong>Caixa:</strong> @Model.Code<br>
+                        <strong>Total de suprimentos hoje:</strong> R$ @Model.TotalSupplies.ToString("N2")
+                    </div>
+
+                    <form method="post" action="/Caixa/Suprimento">
+                        <input type="hidden" name="cashRegisterId" value="@Model.Id">
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Valor do Suprimento *</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" name="valor" 
+                                       step="0.01" min="0.01" required autofocus>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Motivo *</label>
+                            <textarea class="form-control" name="motivo" rows="3" 
+                                      placeholder="Ex: Reforço de troco, dinheiro do cofre..." required></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-arrow-down-circle me-2"></i>Confirmar Suprimento
+                            </button>
+                            <a href="/Caixa" class="btn btn-outline-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

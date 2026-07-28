@@ -1,0 +1,843 @@
+﻿@{
+    ViewData["Title"] = "Orçamentos de Manipulação";
+    Layout = "_Layout";
+}
+
+<style>
+    .card-stat {
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    .card-stat:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    .card-stat.active {
+        border: 2px solid var(--info);
+    }
+    .table-hover tbody tr {
+        cursor: pointer;
+    }
+    .badge-status {
+        font-size: 0.85em;
+        padding: 0.4em 0.8em;
+    }
+    .btn-whatsapp {
+        background-color: var(--ok);
+        border-color: var(--ok);
+        color: white;
+    }
+    .btn-whatsapp:hover {
+        background-color: #1da851;
+        border-color: #1da851;
+        color: white;
+    }
+    .quote-value {
+        font-weight: 600;
+        color: var(--ok);
+    }
+    .expired-row {
+        opacity: 0.7;
+        background-color: var(--bg-subtle);
+    }
+    .filter-active {
+        background-color: var(--petrol-50);
+    }
+    .copy-btn {
+        cursor: pointer;
+    }
+    .copy-btn:hover {
+        color: var(--info);
+    }
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    .empty-state {
+        padding: 60px 20px;
+        text-align: center;
+    }
+    .empty-state i {
+        font-size: 4rem;
+        color: var(--rule);
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <i class="bi bi-calculator-fill text-success"></i> Orçamentos de Manipulação
+            </h4>
+            <p class="text-muted mb-0">Gerencie orçamentos enviados aos clientes</p>
+        </div>
+        <div>
+            <a href="/PrescriptionsView/Processar" class="btn btn-success btn-lg shadow-sm">
+                <i class="bi bi-plus-lg"></i> Novo Orçamento
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Status</label>
+                    <select class="form-select" id="filterStatus">
+                        <option value="">Todos</option>
+                        <option value="PENDENTE">Pendente</option>
+                        <option value="APROVADO">Aprovado</option>
+                        <option value="RECUSADO">Recusado</option>
+                        <option value="EXPIRADO">Expirado</option>
+                        <option value="CONVERTIDO">Convertido</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Cliente</label>
+                    <input type="text" class="form-control" id="filterCustomer" placeholder="Nome, telefone ou email">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Data Inicial</label>
+                    <input type="date" class="form-control" id="filterStartDate">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Data Final</label>
+                    <input type="date" class="form-control" id="filterEndDate">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" onclick="loadQuotes()">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+                <div class="col-md-1">
+                    <button class="btn btn-outline-secondary w-100" onclick="clearFilters()" title="Limpar filtros">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="row mb-4 g-3">
+        <div class="col-6 col-md-2">
+            <div class="card card-stat h-100" onclick="filterByStatus('PENDENTE')" id="cardPendente">
+                <div class="card-body text-center py-3">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="bi bi-clock-history text-warning fs-4 me-2"></i>
+                        <h3 class="mb-0 text-warning" id="countPending">0</h3>
+                    </div>
+                    <small class="text-muted">Pendentes</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card card-stat h-100" onclick="filterByStatus('APROVADO')" id="cardAprovado">
+                <div class="card-body text-center py-3">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="bi bi-check-circle text-success fs-4 me-2"></i>
+                        <h3 class="mb-0 text-success" id="countApproved">0</h3>
+                    </div>
+                    <small class="text-muted">Aprovados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card card-stat h-100" onclick="filterByStatus('RECUSADO')" id="cardRecusado">
+                <div class="card-body text-center py-3">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="bi bi-x-circle text-danger fs-4 me-2"></i>
+                        <h3 class="mb-0 text-danger" id="countRejected">0</h3>
+                    </div>
+                    <small class="text-muted">Recusados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card card-stat h-100" onclick="filterByStatus('EXPIRADO')" id="cardExpirado">
+                <div class="card-body text-center py-3">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="bi bi-calendar-x text-secondary fs-4 me-2"></i>
+                        <h3 class="mb-0 text-secondary" id="countExpired">0</h3>
+                    </div>
+                    <small class="text-muted">Expirados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card card-stat h-100" onclick="filterByStatus('CONVERTIDO')" id="cardConvertido">
+                <div class="card-body text-center py-3">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="bi bi-bag-check text-primary fs-4 me-2"></i>
+                        <h3 class="mb-0 text-primary" id="countConverted">0</h3>
+                    </div>
+                    <small class="text-muted">Vendidos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body text-center py-3">
+                    <h4 class="mb-0" id="totalValue">R$ 0</h4>
+                    <small class="opacity-75">Valor Vendido</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">
+                <i class="bi bi-list-ul"></i> Lista de Orçamentos
+                <span class="badge bg-secondary ms-2" id="totalCount">0</span>
+            </span>
+            <div>
+                <button class="btn btn-sm btn-outline-success" onclick="exportToExcel()" title="Exportar Excel">
+                    <i class="bi bi-file-earmark-excel"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadQuotes()" title="Atualizar">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 130px;">Código</th>
+                            <th>Cliente</th>
+                            <th>Fórmula</th>
+                            <th class="text-end" style="width: 120px;">Valor</th>
+                            <th style="width: 110px;">Válido até</th>
+                            <th style="width: 120px;">Status</th>
+                            <th class="text-end" style="width: 200px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quotesTable">
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 mb-0 text-muted">Carregando orçamentos...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Detalhes -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title">
+                    <i class="bi bi-file-text"></i> Detalhes do Orçamento
+                    <span class="badge bg-secondary ms-2" id="detailCode"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailsContent">
+                <!-- Conteúdo dinâmico -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Conversão para Venda -->
+<div class="modal fade" id="convertModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-bag-check"></i> Converter em Venda</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span><strong>Orçamento:</strong> <span id="convertQuoteCode"></span></span>
+                        <span><strong>Valor:</strong> R$ <span id="convertQuoteValue"></span></span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Forma de Pagamento <span class="text-danger">*</span></label>
+                    <select class="form-select" id="paymentMethod" required>
+                        <option value="">Selecione...</option>
+                        <option value="DINHEIRO">💵 Dinheiro</option>
+                        <option value="PIX">📱 PIX</option>
+                        <option value="DEBITO">💳 Cartão Débito</option>
+                        <option value="CREDITO">💳 Cartão Crédito</option>
+                        <option value="BOLETO">📄 Boleto</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3" id="installmentsDiv" style="display: none;">
+                    <label class="form-label">Parcelas</label>
+                    <select class="form-select" id="installments">
+                        <option value="1">1x (à vista)</option>
+                        <option value="2">2x</option>
+                        <option value="3">3x</option>
+                        <option value="4">4x</option>
+                        <option value="5">5x</option>
+                        <option value="6">6x</option>
+                        <option value="10">10x</option>
+                        <option value="12">12x</option>
+                    </select>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Valor Recebido <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="number" class="form-control" id="amountPaid" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Desconto (R$)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="number" class="form-control" id="discountAmount" step="0.01" value="0">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Motivo do Desconto</label>
+                    <input type="text" class="form-control" id="discountReason" placeholder="Ex: Cliente fidelidade, promoção">
+                </div>
+
+                <div class="alert alert-light border" id="changeAlert" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Troco:</span>
+                        <strong class="text-success fs-5" id="changeAmount">R$ 0,00</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="confirmConvert()" id="btnConfirmConvert">
+                    <i class="bi bi-check-lg"></i> Confirmar Venda
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Envio WhatsApp -->
+<div class="modal fade" id="whatsappModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: var(--ok); color: white;">
+                <h5 class="modal-title"><i class="bi bi-whatsapp"></i> Enviar por WhatsApp</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Deseja enviar o orçamento <strong id="whatsappQuoteCode"></strong> para o cliente via WhatsApp?</p>
+                <div class="alert alert-light border">
+                    <i class="bi bi-person"></i> <span id="whatsappCustomerName"></span><br>
+                    <i class="bi bi-phone"></i> <span id="whatsappCustomerPhone"></span>
+                </div>
+                <p class="text-muted small">O cliente receberá uma mensagem com o link do orçamento para visualização e aprovação.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-whatsapp" onclick="confirmSendWhatsApp()">
+                    <i class="bi bi-send"></i> Enviar Agora
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay" style="display: none;">
+    <div class="text-center">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+        <p class="mt-3 text-primary fw-semibold">Processando...</p>
+    </div>
+</div>
+
+<script>
+let quotes = [];
+let allQuotes = [];
+let selectedQuoteId = null;
+let selectedQuoteValue = 0;
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', () => {
+    initializeDates();
+    loadQuotes();
+    setupEventListeners();
+});
+
+function initializeDates() {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    document.getElementById('filterStartDate').value = firstDay.toISOString().split('T')[0];
+    document.getElementById('filterEndDate').value = now.toISOString().split('T')[0];
+}
+
+function setupEventListeners() {
+    // Filtro de cliente em tempo real
+    document.getElementById('filterCustomer').addEventListener('input', debounce(filterLocal, 300));
+    
+    // Mostrar parcelas para crédito
+    document.getElementById('paymentMethod').addEventListener('change', function() {
+        document.getElementById('installmentsDiv').style.display = 
+            this.value === 'CREDITO' ? 'block' : 'none';
+    });
+    
+    // Calcular troco
+    document.getElementById('amountPaid').addEventListener('input', calculateChange);
+    document.getElementById('discountAmount').addEventListener('input', calculateChange);
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+async function loadQuotes() {
+    const status = document.getElementById('filterStatus').value;
+    const startDate = document.getElementById('filterStartDate').value;
+    const endDate = document.getElementById('filterEndDate').value;
+
+    let url = '/api/PrescriptionQuotes?';
+    if (status) url += `status=${status}&`;
+    if (startDate) url += `startDate=${startDate}&`;
+    if (endDate) url += `endDate=${endDate}&`;
+
+    try {
+        showLoading(true);
+        const response = await fetch(url);
+        
+        if (!response.ok) throw new Error('Erro ao carregar dados');
+        
+        allQuotes = await response.json();
+        quotes = [...allQuotes];
+        
+        filterLocal();
+        updateCounts();
+    } catch (error) {
+        console.error('Erro:', error);
+        showError('Erro ao carregar orçamentos. Tente novamente.');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function filterLocal() {
+    const customerFilter = document.getElementById('filterCustomer').value.toLowerCase().trim();
+    
+    if (customerFilter) {
+        quotes = allQuotes.filter(q => 
+            (q.customerName && q.customerName.toLowerCase().includes(customerFilter)) ||
+            (q.customerPhone && q.customerPhone.includes(customerFilter)) ||
+            (q.customerEmail && q.customerEmail.toLowerCase().includes(customerFilter)) ||
+            (q.code && q.code.toLowerCase().includes(customerFilter))
+        );
+    } else {
+        quotes = [...allQuotes];
+    }
+    
+    renderTable();
+}
+
+function filterByStatus(status) {
+    // Remover active de todos os cards
+    document.querySelectorAll('.card-stat').forEach(c => c.classList.remove('active'));
+    
+    const currentFilter = document.getElementById('filterStatus').value;
+    
+    if (currentFilter === status) {
+        // Se já está filtrado, limpar filtro
+        document.getElementById('filterStatus').value = '';
+    } else {
+        document.getElementById('filterStatus').value = status;
+        const cardId = `card${status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}`;
+        const card = document.getElementById(cardId);
+        if (card) card.classList.add('active');
+    }
+    
+    loadQuotes();
+}
+
+function renderTable() {
+    const tbody = document.getElementById('quotesTable');
+    document.getElementById('totalCount').textContent = quotes.length;
+    
+    if (!quotes.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <h5 class="text-muted">Nenhum orçamento encontrado</h5>
+                        <p class="text-muted">Tente ajustar os filtros ou criar um novo orçamento.</p>
+                            <a href="/PrescriptionsView/Processar" class="btn btn-success">
+                            <i class="bi bi-plus-lg"></i> Novo Orçamento
+                        </a>
+                    </div>
+                </td>
+            </tr>`;
+        return;
+    }
+
+    tbody.innerHTML = quotes.map(q => {
+        const isExpired = q.status === 'PENDENTE' && new Date(q.validUntil) < new Date();
+        const rowClass = isExpired ? 'expired-row' : '';
+        const publicUrl = q.publicUrl || `/orcamento/${q.publicToken}`;
+        
+        return `
+            <tr class="${rowClass}" ondblclick="showDetails('${q.id}')">
+                <td>
+                    <strong class="text-primary">${escapeHtml(q.code)}</strong>
+                    <small class="text-muted d-block">${formatDateTime(q.createdAt)}</small>
+                </td>
+                <td>
+                    <div class="fw-semibold">${escapeHtml(q.customerName || '-')}</div>
+                    ${q.customerPhone ? `<small class="text-muted"><i class="bi bi-phone"></i> ${escapeHtml(q.customerPhone)}</small>` : ''}
+                </td>
+                <td>
+                    <div>${escapeHtml(q.pharmaceuticalForm || '')} ${escapeHtml(q.totalQuantity || '')}</div>
+                    <small class="text-muted">${escapeHtml(q.usageType || '')}</small>
+                </td>
+                <td class="text-end">
+                    <span class="quote-value">R$ ${formatMoney(q.finalPrice)}</span>
+                </td>
+                <td>
+                    ${formatDate(q.validUntil)}
+                    ${isExpired ? '<span class="badge bg-danger ms-1">!</span>' : ''}
+                </td>
+                <td>${getStatusBadge(q.status, isExpired)}</td>
+                <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                        <a href="${publicUrl}" 
+                           class="btn btn-outline-primary" target="_blank" title="Ver orçamento">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <button class="btn btn-outline-secondary" onclick="copyLink('${escapeHtml(q.publicToken)}')" title="Copiar link">
+                            <i class="bi bi-link-45deg"></i>
+                        </button>
+                        ${q.status === 'PENDENTE' && !isExpired ? `
+                            <a href="/PrescriptionsView/Processar?quoteId=${q.id}" class="btn btn-outline-info" title="Editar orçamento">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        ` : ''}
+                        ${q.status === 'PENDENTE' && !isExpired && q.customerPhone ? `
+                            <button class="btn btn-whatsapp" onclick="openWhatsAppModal('${q.id}', '${escapeHtml(q.code)}', '${escapeHtml(q.customerName || '')}', '${escapeHtml(q.customerPhone || '')}')" title="Enviar WhatsApp">
+                                <i class="bi bi-whatsapp"></i>
+                            </button>
+                        ` : ''}
+                        ${q.status === 'APROVADO' ? `
+                            <button class="btn btn-success" onclick="openConvertModal('${q.id}', '${escapeHtml(q.code)}', ${q.finalPrice})" title="Converter em venda">
+                                <i class="bi bi-bag-check"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function getStatusBadge(status, isExpired) {
+    if (isExpired && status === 'PENDENTE') 
+        return '<span class="badge badge-status bg-secondary">Expirado</span>';
+    
+    const badges = {
+        'PENDENTE': '<span class="badge badge-status bg-warning text-dark"><i class="bi bi-clock"></i> Pendente</span>',
+        'APROVADO': '<span class="badge badge-status bg-success"><i class="bi bi-check"></i> Aprovado</span>',
+        'RECUSADO': '<span class="badge badge-status bg-danger"><i class="bi bi-x"></i> Recusado</span>',
+        'EXPIRADO': '<span class="badge badge-status bg-secondary"><i class="bi bi-calendar-x"></i> Expirado</span>',
+        'CONVERTIDO': '<span class="badge badge-status bg-primary"><i class="bi bi-bag-check"></i> Vendido</span>'
+    };
+    return badges[status] || `<span class="badge badge-status bg-secondary">${status}</span>`;
+}
+
+function updateCounts() {
+    const pending = allQuotes.filter(q => q.status === 'PENDENTE' && new Date(q.validUntil) >= new Date());
+    const approved = allQuotes.filter(q => q.status === 'APROVADO');
+    const rejected = allQuotes.filter(q => q.status === 'RECUSADO');
+    const expired = allQuotes.filter(q => q.status === 'EXPIRADO' || (q.status === 'PENDENTE' && new Date(q.validUntil) < new Date()));
+    const converted = allQuotes.filter(q => q.status === 'CONVERTIDO');
+    
+    document.getElementById('countPending').textContent = pending.length;
+    document.getElementById('countApproved').textContent = approved.length;
+    document.getElementById('countRejected').textContent = rejected.length;
+    document.getElementById('countExpired').textContent = expired.length;
+    document.getElementById('countConverted').textContent = converted.length;
+    
+    const totalValue = converted.reduce((sum, q) => sum + (q.finalPrice || 0), 0);
+    document.getElementById('totalValue').textContent = `R$ ${formatMoney(totalValue)}`;
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('pt-BR');
+}
+
+function formatDateTime(dateStr) {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleString('pt-BR', { 
+        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' 
+    });
+}
+
+function formatMoney(value) {
+    return (value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function copyLink(token) {
+    const url = `${window.location.origin}/orcamento/${token}`;
+    navigator.clipboard.writeText(url).then(() => {
+        showToast('Link copiado para a área de transferência!', 'success');
+    }).catch(() => {
+        prompt('Copie o link:', url);
+    });
+}
+
+function clearFilters() {
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterCustomer').value = '';
+    document.querySelectorAll('.card-stat').forEach(c => c.classList.remove('active'));
+    initializeDates();
+    loadQuotes();
+}
+
+// WhatsApp
+function openWhatsAppModal(id, code, name, phone) {
+    selectedQuoteId = id;
+    document.getElementById('whatsappQuoteCode').textContent = code;
+    document.getElementById('whatsappCustomerName').textContent = name || '-';
+    document.getElementById('whatsappCustomerPhone').textContent = phone || '-';
+    new bootstrap.Modal(document.getElementById('whatsappModal')).show();
+}
+
+async function confirmSendWhatsApp() {
+    try {
+        showLoading(true);
+        const response = await fetch(`/api/PrescriptionQuotes/${selectedQuoteId}/send-whatsapp`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        bootstrap.Modal.getInstance(document.getElementById('whatsappModal')).hide();
+        
+        if (response.ok) {
+            showToast('Orçamento enviado por WhatsApp!', 'success');
+            loadQuotes();
+        } else {
+            showToast('Erro: ' + data.message, 'error');
+        }
+    } catch (error) {
+        showToast('Erro ao enviar: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Conversão para Venda
+function openConvertModal(id, code, value) {
+    selectedQuoteId = id;
+    selectedQuoteValue = value;
+    document.getElementById('convertQuoteCode').textContent = code;
+    document.getElementById('convertQuoteValue').textContent = formatMoney(value);
+    document.getElementById('amountPaid').value = value.toFixed(2);
+    document.getElementById('discountAmount').value = '0';
+    document.getElementById('discountReason').value = '';
+    document.getElementById('paymentMethod').value = '';
+    document.getElementById('installments').value = '1';
+    document.getElementById('installmentsDiv').style.display = 'none';
+    document.getElementById('changeAlert').style.display = 'none';
+    
+    new bootstrap.Modal(document.getElementById('convertModal')).show();
+}
+
+function calculateChange() {
+    const paid = parseFloat(document.getElementById('amountPaid').value) || 0;
+    const discount = parseFloat(document.getElementById('discountAmount').value) || 0;
+    const finalValue = selectedQuoteValue - discount;
+    const change = paid - finalValue;
+    
+    if (change > 0) {
+        document.getElementById('changeAlert').style.display = 'block';
+        document.getElementById('changeAmount').textContent = `R$ ${formatMoney(change)}`;
+    } else {
+        document.getElementById('changeAlert').style.display = 'none';
+    }
+}
+
+async function confirmConvert() {
+    const paymentMethod = document.getElementById('paymentMethod').value;
+    const amountPaid = parseFloat(document.getElementById('amountPaid').value);
+    const discountAmount = parseFloat(document.getElementById('discountAmount').value) || 0;
+    const discountReason = document.getElementById('discountReason').value;
+    const installments = parseInt(document.getElementById('installments').value) || 1;
+    
+    if (!paymentMethod) {
+        showToast('Selecione a forma de pagamento', 'warning');
+        return;
+    }
+    
+    if (!amountPaid || amountPaid <= 0) {
+        showToast('Informe o valor recebido', 'warning');
+        return;
+    }
+    
+    const finalValue = selectedQuoteValue - discountAmount;
+    if (amountPaid < finalValue) {
+        if (!confirm(`Valor recebido (R$ ${formatMoney(amountPaid)}) é menor que o total (R$ ${formatMoney(finalValue)}). Confirmar mesmo assim?`)) {
+            return;
+        }
+    }
+    
+    try {
+        showLoading(true);
+        const response = await fetch(`/api/PrescriptionQuotes/${selectedQuoteId}/convert-to-sale`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                paymentMethod,
+                amountPaid,
+                installments,
+                discountAmount,
+                discountReason
+            })
+        });
+        
+        const data = await response.json();
+        bootstrap.Modal.getInstance(document.getElementById('convertModal')).hide();
+        
+        if (response.ok) {
+            showToast('Venda e Ordem de Manipulação criadas com sucesso!', 'success');
+            loadQuotes();
+        } else {
+            showToast('Erro: ' + data.message, 'error');
+        }
+    } catch (error) {
+        showToast('Erro: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Detalhes
+async function showDetails(id) {
+    const quote = quotes.find(q => q.id === id);
+    if (!quote) return;
+    
+    document.getElementById('detailCode').textContent = quote.code;
+    document.getElementById('detailsContent').innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-muted mb-2">Cliente</h6>
+                <p class="mb-1"><strong>${escapeHtml(quote.customerName || '-')}</strong></p>
+                <p class="mb-1"><i class="bi bi-phone"></i> ${escapeHtml(quote.customerPhone || '-')}</p>
+                <p class="mb-3"><i class="bi bi-envelope"></i> ${escapeHtml(quote.customerEmail || '-')}</p>
+                
+                <h6 class="text-muted mb-2">Prescritor</h6>
+                <p class="mb-1"><strong>Dr(a). ${escapeHtml(quote.doctorName || '-')}</strong></p>
+                <p class="mb-3">CRM: ${escapeHtml(quote.doctorCrm || '-')}/${escapeHtml(quote.doctorCrmState || '-')}</p>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-muted mb-2">Fórmula</h6>
+                <p class="mb-1"><strong>Uso:</strong> ${escapeHtml(quote.usageType || '-')}</p>
+                <p class="mb-1"><strong>Forma:</strong> ${escapeHtml(quote.pharmaceuticalForm || '-')}</p>
+                <p class="mb-1"><strong>Quantidade:</strong> ${escapeHtml(quote.totalQuantity || '-')}</p>
+                <p class="mb-3"><strong>Posologia:</strong> ${escapeHtml(quote.instructions || '-')}</p>
+                
+                <h6 class="text-muted mb-2">Valores</h6>
+                <table class="table table-sm">
+                    <tr><td>Materiais:</td><td class="text-end">R$ ${formatMoney(quote.materialsCost)}</td></tr>
+                    <tr><td>Markup (${quote.markupPercentage || 150}%):</td><td class="text-end">R$ ${formatMoney(quote.markupValue)}</td></tr>
+                    <tr><td>Mão de obra:</td><td class="text-end">R$ ${formatMoney(quote.laborCost)}</td></tr>
+                    <tr><td>Embalagem:</td><td class="text-end">R$ ${formatMoney(quote.packagingCost)}</td></tr>
+                    ${quote.discountValue > 0 ? `<tr class="text-danger"><td>Desconto:</td><td class="text-end">- R$ ${formatMoney(quote.discountValue)}</td></tr>` : ''}
+                    <tr class="table-success"><th>Total:</th><th class="text-end">R$ ${formatMoney(quote.finalPrice)}</th></tr>
+                </table>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="d-flex gap-3 flex-wrap text-muted small">
+                    <span><i class="bi bi-calendar"></i> Criado: ${formatDateTime(quote.createdAt)}</span>
+                    <span><i class="bi bi-calendar-check"></i> Válido até: ${formatDate(quote.validUntil)}</span>
+                    <span><i class="bi bi-truck"></i> Prazo: ${quote.estimatedDays || 3} dias</span>
+                    <span><i class="bi bi-eye"></i> Visualizações: ${quote.viewCount || 0}</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    new bootstrap.Modal(document.getElementById('detailsModal')).show();
+}
+
+// Exportar
+function exportToExcel() {
+    showToast('Funcionalidade em desenvolvimento', 'info');
+}
+
+// Helpers
+function showLoading(show) {
+    document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+}
+
+function showError(message) {
+    document.getElementById('quotesTable').innerHTML = `
+        <tr>
+            <td colspan="7" class="text-center py-5 text-danger">
+                <i class="bi bi-exclamation-triangle fs-1"></i>
+                <p class="mt-2">${message}</p>
+                <button class="btn btn-primary" onclick="loadQuotes()">Tentar novamente</button>
+            </td>
+        </tr>`;
+}
+
+function showToast(message, type = 'info') {
+    const alertClass = type === 'error' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+    const iconClass = type === 'error' ? 'x-circle' : type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-circle' : 'info-circle';
+    
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${alertClass} position-fixed shadow-lg`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px; max-width: 400px;';
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="bi bi-${iconClass} me-2 fs-5"></i>
+            <span>${escapeHtml(message)}</span>
+            <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+</script>

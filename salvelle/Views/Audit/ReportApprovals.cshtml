@@ -1,0 +1,155 @@
+@model List<Models.Controlled.PharmacistApproval>
+@{
+    ViewData["Title"] = "Relatório de Aprovações";
+}
+
+@section Styles {
+<style>
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card.pad { padding: 20px; }
+    .ds-card + .ds-card { margin-top: 24px; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .ds-card-eyebrow { font-family: var(--font-mono); font-size: 11px; color: var(--petrol-500); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ds-card-title { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+
+    .filter-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 14px; align-items: end; }
+    .check-yes { color: var(--ok); font-weight: 600; }
+    .check-no { color: var(--danger); font-weight: 600; }
+
+    .empty-row { text-align: center; color: var(--ink-3); padding: 40px 24px; }
+    .empty-row i { font-size: 30px; display: block; margin-bottom: 8px; color: var(--ink-5); }
+
+    .summary-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--rule); border-top: 1px solid var(--rule); }
+    .summary-cell { background: var(--surface); padding: 14px 16px; text-align: center; }
+    .summary-cell .s-val { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+    .summary-cell .s-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; margin-top: 2px; }
+
+    @@media (max-width: 780px) {
+        .filter-grid { grid-template-columns: 1fr; }
+        table.responsive-stack thead { display: none; }
+        table.responsive-stack tbody tr { display: block; border-bottom: 1px solid var(--rule); padding: 12px 16px; }
+        table.responsive-stack tbody tr:hover td { background: transparent; }
+        table.responsive-stack tbody td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 5px 0; border: none; text-align: right; }
+        table.responsive-stack tbody td::before { content: attr(data-label); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; text-align: left; }
+    }
+    @@media print {
+        .page-head .row, form { display: none !important; }
+        .ds-card { border: 1px solid #000 !important; box-shadow: none !important; }
+    }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">AUDITORIA · APROVAÇÕES</div>
+            <h1>Aprovações RT</h1>
+            <p>Histórico de aprovações farmacêuticas.</p>
+        </div>
+        <div class="row">
+            <a href="/Audit" class="btn btn-secondary"><i class="bi bi-arrow-left"></i>Voltar</a>
+            <button onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer"></i>Imprimir</button>
+        </div>
+    </div>
+
+    <div class="ds-card pad" style="margin-bottom:24px;">
+        <form method="get" class="filter-grid">
+            <div>
+                <label class="input-label">Data inicial</label>
+                <input type="date" name="startDate" class="input" value="@(((DateTime?)ViewBag.StartDate)?.ToString("yyyy-MM-dd"))">
+            </div>
+            <div>
+                <label class="input-label">Data final</label>
+                <input type="date" name="endDate" class="input" value="@(((DateTime?)ViewBag.EndDate)?.ToString("yyyy-MM-dd"))">
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i>Filtrar</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="ds-card">
+        <div class="ds-card-head">
+            <div>
+                <div class="ds-card-eyebrow">Registro</div>
+                <h3 class="ds-card-title">Aprovações farmacêuticas</h3>
+            </div>
+            <span class="badge badge-neutral badge-no-dot">@(Model?.Count ?? 0) registro(s)</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table responsive-stack mb-0">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Farmacêutico</th>
+                        <th>Tipo</th>
+                        <th>Status</th>
+                        <th>Receita válida</th>
+                        <th>Dose OK</th>
+                        <th>Observações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var a in Model)
+                        {
+                            <tr>
+                                <td data-label="Data/Hora" class="mono" style="color:var(--ink-3);">@a.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td data-label="Farmacêutico"><span style="color:var(--ink);font-weight:500;">@a.PharmacistName</span></td>
+                                <td data-label="Tipo">@a.ApprovalType</td>
+                                <td data-label="Status">
+                                    @if (a.ApprovalStatus == "APPROVED")
+                                    {
+                                        <span class="badge badge-ok badge-no-dot">Aprovado</span>
+                                    }
+                                    else if (a.ApprovalStatus == "REJECTED")
+                                    {
+                                        <span class="badge badge-danger badge-no-dot">Rejeitado</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-warn badge-no-dot">@a.ApprovalStatus</span>
+                                    }
+                                </td>
+                                <td data-label="Receita válida"><span class="@(a.PrescriptionValid ? "check-yes" : "check-no")">@(a.PrescriptionValid ? "✓" : "✗")</span></td>
+                                <td data-label="Dose OK"><span class="@(a.DoseWithinLimits ? "check-yes" : "check-no")">@(a.DoseWithinLimits ? "✓" : "✗")</span></td>
+                                <td data-label="Observações">
+                                    @if (!string.IsNullOrEmpty(a.RejectionReason))
+                                    {
+                                        <small style="color:var(--danger);">@a.RejectionReason</small>
+                                    }
+                                    else if (!string.IsNullOrEmpty(a.Observations))
+                                    {
+                                        <small style="color:var(--ink-3);">@a.Observations</small>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--ink-5);">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="empty-row">
+                                <i class="bi bi-inbox"></i>
+                                Nenhuma aprovação encontrada no período.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Model != null && Model.Any())
+        {
+            <div class="summary-bar">
+                <div class="summary-cell"><div class="s-val">@Model.Count</div><div class="s-lbl">Total</div></div>
+                <div class="summary-cell"><div class="s-val" style="color:var(--ok);">@Model.Count(a => a.ApprovalStatus == "APPROVED")</div><div class="s-lbl">Aprovados</div></div>
+                <div class="summary-cell"><div class="s-val" style="color:var(--danger);">@Model.Count(a => a.ApprovalStatus == "REJECTED")</div><div class="s-lbl">Rejeitados</div></div>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,1132 @@
+@{
+    ViewData["Title"] = "Configurações";
+    ViewData["Subtitle"] = "Configurações do sistema";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="row g-4">
+    <!-- Perfil do Admin -->
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="card-header">
+                <i class="bi bi-person-gear me-2"></i>Meu Perfil
+            </div>
+            <div class="card-body">
+                <form id="profileForm">
+                    <div class="mb-3">
+                        <label class="form-label">Nome Completo</label>
+                        <input type="text" class="form-control" id="adminName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">E-mail</label>
+                        <input type="email" class="form-control" id="adminEmail" readonly>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>Salvar Alterações
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alterar Senha -->
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="card-header">
+                <i class="bi bi-key me-2"></i>Alterar Senha
+            </div>
+            <div class="card-body">
+                <form id="passwordForm">
+                    <div class="mb-3">
+                        <label class="form-label">Senha Atual</label>
+                        <input type="password" class="form-control" id="currentPassword" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nova Senha</label>
+                        <input type="password" class="form-control" id="newPassword" required minlength="8">
+                        <small class="text-muted">Mínimo 8 caracteres</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirmar Nova Senha</label>
+                        <input type="password" class="form-control" id="confirmPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-shield-lock me-2"></i>Alterar Senha
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- GATEWAYS DE PAGAMENTO -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-credit-card me-2"></i>Gateways de Pagamento
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="openAddGatewayModal()">
+                    <i class="bi bi-plus-lg me-1"></i>Adicionar Gateway
+                </button>
+            </div>
+            <div class="card-body">
+                <!-- Tabs Sandbox/Produção -->
+                <ul class="nav nav-tabs mb-4" id="gatewayTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="sandbox-tab" data-bs-toggle="tab" 
+                                data-bs-target="#sandbox" type="button" role="tab">
+                            <i class="bi bi-bug me-1"></i>Sandbox / Homologação
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="production-tab" data-bs-toggle="tab" 
+                                data-bs-target="#production" type="button" role="tab">
+                            <i class="bi bi-shield-check me-1"></i>Produção
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="gatewayTabsContent">
+                    <!-- Tab Sandbox -->
+                    <div class="tab-pane fade show active" id="sandbox" role="tabpanel">
+                        <div class="row g-3" id="sandboxGateways">
+                            <div class="col-12 text-center text-muted py-4">
+                                <i class="bi bi-hourglass-split"></i> Carregando...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Produção -->
+                    <div class="tab-pane fade" id="production" role="tabpanel">
+                        <div class="row g-3" id="productionGateways">
+                            <div class="col-12 text-center text-muted py-4">
+                                <i class="bi bi-hourglass-split"></i> Carregando...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configurações do Sistema -->
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="card-header">
+                <i class="bi bi-gear me-2"></i>Sistema
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <label class="form-label">Dias de Trial Padrão</label>
+                    <input type="number" class="form-control" id="defaultTrialDays" value="14">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">E-mail de Suporte</label>
+                    <input type="email" class="form-control" id="supportEmail" value="suporte@salvelle.com">
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="maintenanceMode">
+                    <label class="form-check-label" for="maintenanceMode">Modo Manutenção</label>
+                </div>
+                <button class="btn btn-primary" onclick="saveSystemSettings()">
+                    <i class="bi bi-check-lg me-2"></i>Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações do Sistema -->
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i>Informações
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td class="text-muted">Versão</td>
+                        <td><strong>1.0.0</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Ambiente</td>
+                        <td><span class="badge bg-warning">Development</span></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Banco de Dados</td>
+                        <td><span class="badge bg-success">Conectado</span></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Gateway Padrão</td>
+                        <td><span class="badge bg-info" id="defaultGatewayBadge">-</span></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">WhatsApp API</td>
+                        <td><span class="badge bg-success">Ativo</span></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- MODAL: ADICIONAR/EDITAR GATEWAY -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="gatewayModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="gatewayModalTitle">
+                    <i class="bi bi-credit-card me-2"></i>Configurar Gateway
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="gatewayForm">
+                <div class="modal-body">
+                    <input type="hidden" id="gatewayId">
+                    
+                    <!-- Tipo e Ambiente -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Gateway <span class="text-danger">*</span></label>
+                            <select class="form-select" id="gatewayType" required onchange="updateFieldLabels()">
+                                <option value="">Selecione...</option>
+                                <option value="1">Stripe</option>
+                                <option value="2">Mercado Pago</option>
+                                <option value="3">Abacatepay</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Ambiente <span class="text-danger">*</span></label>
+                            <select class="form-select" id="gatewayEnvironment" required>
+                                <option value="1">Sandbox / Homologação</option>
+                                <option value="2">Produção</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Nome de exibição -->
+                    <div class="mb-3">
+                        <label class="form-label">Nome de Exibição <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="gatewayDisplayName" 
+                               placeholder="Ex: Stripe - Produção" required>
+                    </div>
+
+                    <!-- Credenciais -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light py-2">
+                            <i class="bi bi-key me-2"></i>Credenciais
+                            <small class="text-muted ms-2">(armazenadas com criptografia AES-256)</small>
+                        </div>
+                        <div class="card-body">
+                            <!-- Public Key -->
+                            <div class="mb-3">
+                                <label class="form-label" id="labelPublicKey">Chave Pública</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="gatewayPublicKey" 
+                                           placeholder="pk_test_... ou pk_live_...">
+                                    <button class="btn btn-outline-secondary" type="button" 
+                                            onclick="togglePassword('gatewayPublicKey')">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted" id="hintPublicKey">Stripe: pk_test_* / pk_live_*</small>
+                            </div>
+
+                            <!-- Secret Key -->
+                            <div class="mb-3">
+                                <label class="form-label" id="labelSecretKey">Chave Secreta <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="gatewaySecretKey" 
+                                           placeholder="sk_test_... ou sk_live_...">
+                                    <button class="btn btn-outline-secondary" type="button" 
+                                            onclick="togglePassword('gatewaySecretKey')">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted" id="hintSecretKey">Stripe: sk_test_* / sk_live_*</small>
+                            </div>
+
+                            <!-- Webhook Secret -->
+                            <div class="mb-3">
+                                <label class="form-label" id="labelWebhookSecret">Webhook Secret</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="gatewayWebhookSecret" 
+                                           placeholder="whsec_...">
+                                    <button class="btn btn-outline-secondary" type="button" 
+                                            onclick="togglePassword('gatewayWebhookSecret')">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted" id="hintWebhookSecret">Para validar webhooks</small>
+                            </div>
+
+                            <!-- Access Token (para Mercado Pago) -->
+                            <div class="mb-3" id="accessTokenGroup" style="display: none;">
+                                <label class="form-label">Access Token</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="gatewayAccessToken" 
+                                           placeholder="APP_USR-...">
+                                    <button class="btn btn-outline-secondary" type="button" 
+                                            onclick="togglePassword('gatewayAccessToken')">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Opções -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="gatewayIsActive" checked>
+                                <label class="form-check-label" for="gatewayIsActive">Ativo</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="gatewaySetDefault">
+                                <label class="form-check-label" for="gatewaySetDefault">Definir como Padrão</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- MODAL: TESTAR CONEXÃO -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="testResultModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plug me-2"></i>Resultado do Teste
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center" id="testResultContent">
+                <!-- Conteúdo dinâmico -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════ GESTÃO DE ADMINISTRADORES ════ -->
+<div class="row g-4 mt-2">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-shield-lock me-2"></i>Administradores</span>
+                <button class="btn btn-sm btn-primary" onclick="openInviteModal()" id="inviteBtn">
+                    <i class="bi bi-person-plus me-1"></i>Convidar
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Papel</th>
+                                <th>Status</th>
+                                <th>Último acesso</th>
+                                <th>Sessões</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminsTable">
+                            <tr><td colspan="7" class="text-center py-3">
+                                <div class="spinner-border spinner-border-sm me-2"></div>Carregando...
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Convidar Admin -->
+<div class="modal fade" id="inviteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Convidar Administrador</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Nome Completo <span class="text-danger">*</span></label>
+                    <input type="text" id="inviteName" class="form-control" placeholder="Ex: Maria Silva">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Email <span class="text-danger">*</span></label>
+                    <input type="email" id="inviteEmail" class="form-control" placeholder="email@empresa.com">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Papel</label>
+                    <select id="inviteRole" class="form-select">
+                        <option value="SUPPORT">Suporte — visualiza chamados e responde</option>
+                        <option value="ADMIN" selected>Administrador — acesso completo exceto gestão de admins</option>
+                        <option value="SUPER_ADMIN">Super Admin — acesso total</option>
+                    </select>
+                </div>
+                <div class="alert alert-info py-2 small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Um email com link de acesso será enviado. O link expira em 3 dias.
+                </div>
+                <div id="inviteError" class="alert alert-danger d-none py-2 small"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" id="inviteSubmitBtn" onclick="submitInvite()">
+                    <i class="bi bi-send me-1"></i>Enviar convite
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Alterar Papel -->
+<div class="modal fade" id="roleModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Alterar Papel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3" id="roleModalName"></p>
+                <select id="roleSelect" class="form-select">
+                    <option value="SUPPORT">Suporte</option>
+                    <option value="ADMIN">Administrador</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary btn-sm" onclick="submitRoleChange()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+// ════ GESTÃO DE ADMINS ════════════════════════════════════════════════════
+
+let currentAdminId = null;
+let currentUserRole = null;
+
+const ROLE_BADGE = {
+    SUPER_ADMIN: '<span class="badge bg-danger">Super Admin</span>',
+    ADMIN:       '<span class="badge bg-primary">Admin</span>',
+    SUPPORT:     '<span class="badge bg-secondary">Suporte</span>'
+};
+
+async function loadAdmins() {
+    const r = await fetch('/api/admin/users');
+    if (!r.ok) {
+        if (r.status === 401 || r.status === 403) {
+            document.getElementById('inviteBtn').classList.add('d-none');
+            document.getElementById('adminsTable').innerHTML =
+                '<tr><td colspan="7" class="text-center py-3 text-muted">Sem permissão para visualizar</td></tr>';
+            return;
+        }
+        return;
+    }
+    const admins = await r.json();
+
+    // detecta papel do usuário atual pelo botão de toggle (se ele mesmo aparece na lista)
+    const meEl = document.getElementById('adminEmail');
+    const myEmail = meEl ? meEl.value : '';
+    const me = admins.find(a => a.email === myEmail);
+    currentUserRole = me?.role ?? 'ADMIN';
+
+    if (currentUserRole !== 'SUPER_ADMIN') {
+        document.getElementById('inviteBtn').classList.add('d-none');
+    }
+
+    const tbody = document.getElementById('adminsTable');
+    tbody.innerHTML = admins.map(a => {
+        const isSelf = a.email === myEmail;
+        const canAct = currentUserRole === 'SUPER_ADMIN' && !isSelf;
+        return `
+        <tr>
+            <td><span class="fw-medium">${escHtml(a.fullName)}</span>${isSelf ? ' <span class="badge bg-light text-dark border">Você</span>' : ''}</td>
+            <td><small class="text-muted">${escHtml(a.email)}</small></td>
+            <td>${ROLE_BADGE[a.role] || a.role}</td>
+            <td>
+                ${a.isActive
+                    ? '<span class="badge bg-success">Ativo</span>'
+                    : '<span class="badge bg-warning text-dark">Pendente / Inativo</span>'}
+            </td>
+            <td><small class="text-muted">${a.lastLoginAt ? fmtDate(a.lastLoginAt) : '—'}</small></td>
+            <td><small>${a.activeSessions > 0 ? `<span class="text-success">${a.activeSessions} ativa(s)</span>` : '—'}</small></td>
+            <td>
+                ${canAct ? `
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" onclick="openRoleModal('${a.id}','${jsAttr(a.fullName)}','${a.role}')">
+                            <i class="bi bi-person-gear me-2"></i>Alterar papel
+                        </a></li>
+                        ${!a.isActive ? `
+                        <li><a class="dropdown-item" href="#" onclick="resendInvite('${a.id}','${jsAttr(a.email)}')">
+                            <i class="bi bi-envelope-arrow-up me-2"></i>Reenviar convite
+                        </a></li>` : ''}
+                        ${a.activeSessions > 0 ? `
+                        <li><a class="dropdown-item text-warning" href="#" onclick="revokeSessions('${a.id}')">
+                            <i class="bi bi-box-arrow-right me-2"></i>Revogar sessões
+                        </a></li>` : ''}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item ${a.isActive ? 'text-danger' : 'text-success'}" href="#" onclick="toggleAdmin('${a.id}')">
+                            <i class="bi bi-${a.isActive ? 'person-x' : 'person-check'} me-2"></i>
+                            ${a.isActive ? 'Desativar' : 'Ativar'}
+                        </a></li>
+                    </ul>
+                </div>` : ''}
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function openInviteModal() {
+    document.getElementById('inviteName').value = '';
+    document.getElementById('inviteEmail').value = '';
+    document.getElementById('inviteRole').value = 'ADMIN';
+    document.getElementById('inviteError').classList.add('d-none');
+    new bootstrap.Modal(document.getElementById('inviteModal')).show();
+}
+
+async function submitInvite() {
+    const btn = document.getElementById('inviteSubmitBtn');
+    const errEl = document.getElementById('inviteError');
+    errEl.classList.add('d-none');
+
+    const fullName = document.getElementById('inviteName').value.trim();
+    const email = document.getElementById('inviteEmail').value.trim();
+    const role = document.getElementById('inviteRole').value;
+
+    if (!fullName || !email) { errEl.textContent = 'Preencha nome e email.'; errEl.classList.remove('d-none'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...';
+
+    const r = await fetch('/api/admin/users/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName, email, role })
+    });
+    const d = await r.json();
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-send me-1"></i>Enviar convite';
+
+    if (r.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('inviteModal')).hide();
+        showToast('success', d.message);
+        await loadAdmins();
+    } else {
+        errEl.textContent = d.message || 'Erro ao enviar convite.';
+        errEl.classList.remove('d-none');
+    }
+}
+
+function openRoleModal(id, name, currentRole) {
+    currentAdminId = id;
+    document.getElementById('roleModalName').textContent = name;
+    document.getElementById('roleSelect').value = currentRole;
+    new bootstrap.Modal(document.getElementById('roleModal')).show();
+}
+
+async function submitRoleChange() {
+    const role = document.getElementById('roleSelect').value;
+    const r = await fetch(`/api/admin/users/${currentAdminId}/role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+    });
+    const d = await r.json();
+    bootstrap.Modal.getInstance(document.getElementById('roleModal')).hide();
+    showToast(r.ok ? 'success' : 'danger', d.message);
+    if (r.ok) await loadAdmins();
+}
+
+async function toggleAdmin(id) {
+    if (!confirm('Confirmar esta ação?')) return;
+    const r = await fetch(`/api/admin/users/${id}/toggle`, { method: 'POST' });
+    const d = await r.json();
+    showToast(r.ok ? 'success' : 'danger', d.message);
+    if (r.ok) await loadAdmins();
+}
+
+async function revokeSessions(id) {
+    if (!confirm('Revogar todas as sessões ativas deste admin?')) return;
+    const r = await fetch(`/api/admin/users/${id}/revoke-sessions`, { method: 'POST' });
+    const d = await r.json();
+    showToast(r.ok ? 'success' : 'danger', d.message);
+    if (r.ok) await loadAdmins();
+}
+
+async function resendInvite(id, email) {
+    if (!confirm(`Reenviar convite para ${email}?`)) return;
+    const r = await fetch(`/api/admin/users/${id}/resend-invite`, { method: 'POST' });
+    const d = await r.json();
+    showToast(r.ok ? 'success' : 'danger', d.message);
+}
+
+function showToast(type, message) {
+    const t = document.createElement('div');
+    t.className = `alert alert-${type} position-fixed bottom-0 end-0 m-3`;
+    t.style.cssText = 'z-index:9999;min-width:260px;border-radius:10px;';
+    t.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${escHtml(message)}`;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 4000);
+}
+
+function fmtDate(d) {
+    return d ? new Date(d).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) : '—';
+}
+
+function escHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Escapa valores embutidos como argumento de string dentro de onclick="fn('...')":
+// precisa neutralizar tanto aspas simples (quebra o literal JS) quanto os
+// caracteres de atributo HTML — escHtml sozinho não protege esse contexto.
+function jsAttr(s) {
+    if (!s) return '';
+    return escHtml(String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+}
+
+loadAdmins();
+</script>
+
+
+<script>
+    // ════════════════════════════════════════════════════════════════════
+    // VARIÁVEIS GLOBAIS
+    // ════════════════════════════════════════════════════════════════════
+    let gatewayModal;
+    let testResultModal;
+    const gatewayNames = { 1: 'Stripe', 2: 'Mercado Pago', 3: 'Abacatepay' };
+    const envNames = { 1: 'Sandbox', 2: 'Production' };
+
+    // ════════════════════════════════════════════════════════════════════
+    // INICIALIZAÇÃO
+    // ════════════════════════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', function() {
+        gatewayModal = new bootstrap.Modal(document.getElementById('gatewayModal'));
+        testResultModal = new bootstrap.Modal(document.getElementById('testResultModal'));
+        
+        loadProfile();
+        loadGateways();
+    });
+
+    // ════════════════════════════════════════════════════════════════════
+    // CARREGAR GATEWAYS
+    // ════════════════════════════════════════════════════════════════════
+    async function loadGateways() {
+        try {
+            const response = await fetch('/api/admin/payment-gateways');
+            if (!response.ok) throw new Error('Erro ao carregar gateways');
+            
+            const data = await response.json();
+            const gateways = data.gateways || [];
+
+            // Separar por ambiente
+            const sandbox = gateways.filter(g => g.environment === 1 || g.environmentName === 'Sandbox');
+            const production = gateways.filter(g => g.environment === 2 || g.environmentName === 'Production');
+
+            renderGateways('sandboxGateways', sandbox);
+            renderGateways('productionGateways', production);
+
+            // Atualizar badge do gateway padrão
+            const defaultGw = gateways.find(g => g.isDefault && g.isActive);
+            document.getElementById('defaultGatewayBadge').textContent = 
+                defaultGw ? `${defaultGw.gatewayTypeName} (${defaultGw.environmentName})` : 'Não definido';
+
+        } catch (error) {
+            console.error('Erro:', error);
+            document.getElementById('sandboxGateways').innerHTML = 
+                '<div class="col-12 text-center text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Erro ao carregar gateways</div>';
+            document.getElementById('productionGateways').innerHTML = 
+                '<div class="col-12 text-center text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Erro ao carregar gateways</div>';
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // RENDERIZAR CARDS DE GATEWAYS
+    // ════════════════════════════════════════════════════════════════════
+    function renderGateways(containerId, gateways) {
+        const container = document.getElementById(containerId);
+        
+        if (gateways.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center text-muted py-4">
+                    <i class="bi bi-inbox me-2"></i>Nenhum gateway configurado
+                    <br><small>Clique em "Adicionar Gateway" para começar</small>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = gateways.map(gw => `
+            <div class="col-md-6 col-xl-4">
+                <div class="card h-100 ${!gw.isActive ? 'opacity-50' : ''}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h6 class="mb-1">
+                                    ${getGatewayIcon(gw.gatewayType)}
+                                    ${escHtml(gw.displayName)}
+                                </h6>
+                                <small class="text-muted">${gw.gatewayTypeName}</small>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="#" onclick="editGateway('${gw.id}')">
+                                        <i class="bi bi-pencil me-2"></i>Editar
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="testGateway('${gw.id}')">
+                                        <i class="bi bi-plug me-2"></i>Testar Conexão
+                                    </a></li>
+                                    ${!gw.isDefault ? `
+                                    <li><a class="dropdown-item" href="#" onclick="setDefaultGateway('${gw.id}')">
+                                        <i class="bi bi-star me-2"></i>Definir como Padrão
+                                    </a></li>` : ''}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#" onclick="toggleGateway('${gw.id}')">
+                                        <i class="bi bi-${gw.isActive ? 'pause' : 'play'} me-2"></i>
+                                        ${gw.isActive ? 'Desativar' : 'Ativar'}
+                                    </a></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteGateway('${gw.id}')">
+                                        <i class="bi bi-trash me-2"></i>Remover
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Status badges -->
+                        <div class="mb-3">
+                            ${gw.isActive 
+                                ? '<span class="badge bg-success me-1"><i class="bi bi-check-circle me-1"></i>Ativo</span>' 
+                                : '<span class="badge bg-secondary me-1"><i class="bi bi-pause-circle me-1"></i>Inativo</span>'}
+                            ${gw.isDefault 
+                                ? '<span class="badge bg-primary me-1"><i class="bi bi-star-fill me-1"></i>Padrão</span>' 
+                                : ''}
+                            ${getTestStatusBadge(gw.lastTestStatus)}
+                        </div>
+
+                        <!-- Credenciais -->
+                        <div class="small text-muted mb-2">
+                            <div><strong>Public Key:</strong> ${gw.publicKeyMasked || '<span class="text-warning">Não configurada</span>'}</div>
+                            <div><strong>Secret Key:</strong> ${gw.secretKeyMasked || '<span class="text-warning">Não configurada</span>'}</div>
+                        </div>
+
+                        <!-- Último teste -->
+                        ${gw.lastTestedAt ? `
+                        <div class="small text-muted border-top pt-2 mt-2">
+                            <i class="bi bi-clock me-1"></i>
+                            Testado em ${new Date(gw.lastTestedAt).toLocaleString('pt-BR')}
+                            ${gw.lastTestMessage ? `<br><small>${escHtml(gw.lastTestMessage)}</small>` : ''}
+                        </div>` : ''}
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <button class="btn btn-sm btn-outline-primary w-100" onclick="testGateway('${gw.id}')">
+                            <i class="bi bi-plug me-1"></i>Testar Conexão
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function getGatewayIcon(type) {
+        const icons = {
+            1: '<i class="bi bi-stripe text-primary me-2"></i>',
+            2: '<i class="bi bi-credit-card text-info me-2"></i>',
+            3: '<i class="bi bi-cash-coin text-success me-2"></i>'
+        };
+        return icons[type] || '<i class="bi bi-credit-card me-2"></i>';
+    }
+
+    function getTestStatusBadge(status) {
+        if (!status) return '';
+        const badges = {
+            'Success': '<span class="badge bg-success"><i class="bi bi-check me-1"></i>OK</span>',
+            'Failed': '<span class="badge bg-danger"><i class="bi bi-x me-1"></i>Falhou</span>',
+            'Pending': '<span class="badge bg-warning"><i class="bi bi-hourglass me-1"></i>Pendente</span>',
+            1: '<span class="badge bg-success"><i class="bi bi-check me-1"></i>OK</span>',
+            2: '<span class="badge bg-danger"><i class="bi bi-x me-1"></i>Falhou</span>',
+            3: '<span class="badge bg-warning"><i class="bi bi-hourglass me-1"></i>Pendente</span>'
+        };
+        return badges[status] || '';
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // MODAL: ADICIONAR/EDITAR GATEWAY
+    // ════════════════════════════════════════════════════════════════════
+    function openAddGatewayModal() {
+        document.getElementById('gatewayModalTitle').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Adicionar Gateway';
+        document.getElementById('gatewayForm').reset();
+        document.getElementById('gatewayId').value = '';
+        document.getElementById('gatewayIsActive').checked = true;
+        updateFieldLabels();
+        gatewayModal.show();
+    }
+
+    async function editGateway(id) {
+        try {
+            const response = await fetch(`/api/admin/payment-gateways/${id}`);
+            if (!response.ok) throw new Error('Gateway não encontrado');
+            
+            const gw = await response.json();
+            
+            document.getElementById('gatewayModalTitle').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Gateway';
+            document.getElementById('gatewayId').value = gw.id;
+            document.getElementById('gatewayType').value = gw.gatewayType;
+            document.getElementById('gatewayEnvironment').value = gw.environment;
+            document.getElementById('gatewayDisplayName').value = gw.displayName;
+            document.getElementById('gatewayIsActive').checked = gw.isActive;
+            document.getElementById('gatewaySetDefault').checked = gw.isDefault;
+            
+            // Limpar campos de credenciais (não retornamos os valores reais)
+            document.getElementById('gatewayPublicKey').value = '';
+            document.getElementById('gatewaySecretKey').value = '';
+            document.getElementById('gatewayWebhookSecret').value = '';
+            document.getElementById('gatewayAccessToken').value = '';
+            
+            // Placeholders indicando que já existe valor
+            document.getElementById('gatewayPublicKey').placeholder = gw.hasPublicKey ? '••••••• (já configurada)' : 'Não configurada';
+            document.getElementById('gatewaySecretKey').placeholder = gw.hasSecretKey ? '••••••• (já configurada)' : 'Não configurada';
+            document.getElementById('gatewayWebhookSecret').placeholder = gw.hasWebhookSecret ? '••••••• (já configurada)' : 'Não configurada';
+            
+            updateFieldLabels();
+            gatewayModal.show();
+            
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao carregar gateway');
+        }
+    }
+
+    function updateFieldLabels() {
+        const type = parseInt(document.getElementById('gatewayType').value);
+        const accessTokenGroup = document.getElementById('accessTokenGroup');
+        
+        // Labels e hints por gateway
+        const configs = {
+            1: { // Stripe
+                publicKey: { label: 'Chave Pública (Publishable Key)', hint: 'pk_test_* ou pk_live_*' },
+                secretKey: { label: 'Chave Secreta (Secret Key)', hint: 'sk_test_* ou sk_live_*' },
+                webhookSecret: { label: 'Webhook Secret', hint: 'whsec_* (obtido no Dashboard Stripe)' },
+                showAccessToken: false
+            },
+            2: { // Mercado Pago
+                publicKey: { label: 'Public Key', hint: 'APP_USR-...' },
+                secretKey: { label: 'Access Token', hint: 'APP_USR-...-...-...' },
+                webhookSecret: { label: 'Webhook Secret', hint: 'Assinatura para validação' },
+                showAccessToken: false
+            },
+            3: { // Abacatepay
+                publicKey: { label: 'API Key', hint: 'Sua API Key' },
+                secretKey: { label: 'Secret Key', hint: 'Sua Secret Key' },
+                webhookSecret: { label: 'Webhook Secret', hint: 'Para validação de webhooks' },
+                showAccessToken: false
+            }
+        };
+
+        const config = configs[type] || configs[1];
+        
+        document.getElementById('labelPublicKey').textContent = config.publicKey.label;
+        document.getElementById('hintPublicKey').textContent = config.publicKey.hint;
+        document.getElementById('labelSecretKey').innerHTML = config.secretKey.label + ' <span class="text-danger">*</span>';
+        document.getElementById('hintSecretKey').textContent = config.secretKey.hint;
+        document.getElementById('labelWebhookSecret').textContent = config.webhookSecret.label;
+        document.getElementById('hintWebhookSecret').textContent = config.webhookSecret.hint;
+        
+        accessTokenGroup.style.display = config.showAccessToken ? 'block' : 'none';
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // SALVAR GATEWAY
+    // ════════════════════════════════════════════════════════════════════
+    document.getElementById('gatewayForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const id = document.getElementById('gatewayId').value;
+        const isEdit = !!id;
+        
+        const data = {
+            gatewayType: parseInt(document.getElementById('gatewayType').value),
+            environment: parseInt(document.getElementById('gatewayEnvironment').value),
+            displayName: document.getElementById('gatewayDisplayName').value,
+            isActive: document.getElementById('gatewayIsActive').checked,
+            setAsDefault: document.getElementById('gatewaySetDefault').checked
+        };
+
+        // Credenciais (só envia se preenchidas)
+        const publicKey = document.getElementById('gatewayPublicKey').value.trim();
+        const secretKey = document.getElementById('gatewaySecretKey').value.trim();
+        const webhookSecret = document.getElementById('gatewayWebhookSecret').value.trim();
+        const accessToken = document.getElementById('gatewayAccessToken').value.trim();
+
+        if (publicKey) data.publicKey = publicKey;
+        if (secretKey) data.secretKey = secretKey;
+        if (webhookSecret) data.webhookSecret = webhookSecret;
+        if (accessToken) data.accessToken = accessToken;
+
+        // Validação para criação
+        if (!isEdit && !secretKey) {
+            alert('A Chave Secreta é obrigatória');
+            return;
+        }
+
+        try {
+            const url = isEdit 
+                ? `/api/admin/payment-gateways/${id}` 
+                : '/api/admin/payment-gateways';
+            
+            const response = await fetch(url, {
+                method: isEdit ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                gatewayModal.hide();
+                loadGateways();
+                alert(result.message || 'Gateway salvo com sucesso!');
+            } else {
+                alert(result.message || 'Erro ao salvar gateway');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao salvar gateway');
+        }
+    });
+
+    // ════════════════════════════════════════════════════════════════════
+    // AÇÕES DOS GATEWAYS
+    // ════════════════════════════════════════════════════════════════════
+    async function testGateway(id) {
+        const content = document.getElementById('testResultContent');
+        content.innerHTML = `
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Testando...</span>
+            </div>
+            <p class="mt-3">Testando conexão com o gateway...</p>
+        `;
+        testResultModal.show();
+
+        try {
+            const response = await fetch(`/api/admin/payment-gateways/${id}/test`, { method: 'POST' });
+            const result = await response.json();
+
+            if (result.success) {
+                content.innerHTML = `
+                    <div class="text-success mb-3">
+                        <i class="bi bi-check-circle" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="text-success">Conexão OK!</h5>
+                    <p class="text-muted">${result.message}</p>
+                    <small class="text-muted">Tempo de resposta: ${result.responseTimeMs}ms</small>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="text-danger mb-3">
+                        <i class="bi bi-x-circle" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="text-danger">Falha na Conexão</h5>
+                    <p class="text-muted">${result.message}</p>
+                `;
+            }
+            
+            loadGateways(); // Recarrega para atualizar status
+            
+        } catch (error) {
+            content.innerHTML = `
+                <div class="text-danger mb-3">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 4rem;"></i>
+                </div>
+                <h5 class="text-danger">Erro</h5>
+                <p class="text-muted">Não foi possível realizar o teste</p>
+            `;
+        }
+    }
+
+    async function setDefaultGateway(id) {
+        if (!confirm('Definir este gateway como padrão?')) return;
+
+        try {
+            const response = await fetch(`/api/admin/payment-gateways/${id}/set-default`, { method: 'POST' });
+            const result = await response.json();
+
+            if (response.ok) {
+                loadGateways();
+                alert(result.message);
+            } else {
+                alert(result.message || 'Erro ao definir padrão');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao definir gateway padrão');
+        }
+    }
+
+    async function toggleGateway(id) {
+        try {
+            const response = await fetch(`/api/admin/payment-gateways/${id}/toggle`, { method: 'POST' });
+            const result = await response.json();
+
+            if (response.ok) {
+                loadGateways();
+            } else {
+                alert(result.message || 'Erro ao alterar status');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao alterar status do gateway');
+        }
+    }
+
+    async function deleteGateway(id) {
+        if (!confirm('Tem certeza que deseja remover este gateway?\n\nEsta ação não pode ser desfeita.')) return;
+
+        try {
+            const response = await fetch(`/api/admin/payment-gateways/${id}`, { method: 'DELETE' });
+            const result = await response.json();
+
+            if (response.ok) {
+                loadGateways();
+                alert(result.message);
+            } else {
+                alert(result.message || 'Erro ao remover gateway');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao remover gateway');
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // UTILITÁRIOS
+    // ════════════════════════════════════════════════════════════════════
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        const icon = input.nextElementSibling.querySelector('i');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('bi-eye', 'bi-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('bi-eye-slash', 'bi-eye');
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // FUNÇÕES ORIGINAIS (Perfil, Senha, Sistema)
+    // ════════════════════════════════════════════════════════════════════
+    async function loadProfile() {
+        try {
+            const response = await fetch('/api/admin/auth/me');
+            if (response.ok) {
+                const admin = await response.json();
+                document.getElementById('adminName').value = admin.fullName;
+                document.getElementById('adminEmail').value = admin.email;
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        try {
+            const response = await fetch('/api/admin/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fullName: document.getElementById('adminName').value
+                })
+            });
+
+            if (response.ok) {
+                alert('Perfil atualizado com sucesso!');
+            } else {
+                alert('Erro ao atualizar perfil');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao atualizar perfil');
+        }
+    });
+
+    document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        if (newPassword !== confirmPassword) {
+            alert('As senhas não coincidem');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/admin/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    currentPassword: document.getElementById('currentPassword').value,
+                    newPassword: newPassword
+                })
+            });
+
+            if (response.ok) {
+                alert('Senha alterada com sucesso!');
+                document.getElementById('passwordForm').reset();
+            } else {
+                const data = await response.json();
+                alert(data.message || 'Erro ao alterar senha');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao alterar senha');
+        }
+    });
+
+    function saveSystemSettings() {
+        alert('Configurações salvas! (Funcionalidade em desenvolvimento)');
+    }
+</script>
+}

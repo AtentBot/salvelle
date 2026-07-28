@@ -1,0 +1,537 @@
+@{
+    ViewData["Title"] = "Controle de Caixa";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-cash-stack me-2"></i>Controle de Caixa</h4>
+            <p class="text-muted mb-0">Abertura, fechamento e movimentações</p>
+        </div>
+        <div>
+            <a href="/Caixa/Historico" class="btn btn-outline-secondary">
+                <i class="bi bi-clock-history me-1"></i>Histórico
+            </a>
+        </div>
+    </div>
+
+    <!-- Status do Caixa -->
+    <div class="card mb-4" id="cardStatus">
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <span class="ms-3">Verificando status do caixa...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ações do Caixa Aberto -->
+    <div class="row g-4 d-none" id="acoesCaixa">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Suprimento</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Adicionar dinheiro ao caixa</p>
+                    <div class="mb-3">
+                        <label class="form-label">Valor (R$)</label>
+                        <input type="number" class="form-control" id="valorSuprimento" step="0.01" min="0.01">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descrição</label>
+                        <input type="text" class="form-control" id="descricaoSuprimento" placeholder="Ex: Troco inicial">
+                    </div>
+                    <button class="btn btn-success w-100" onclick="realizarSuprimento()">
+                        <i class="bi bi-plus-lg me-1"></i>Realizar Suprimento
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0"><i class="bi bi-dash-circle me-2"></i>Sangria</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Retirar dinheiro do caixa</p>
+                    <div class="mb-3">
+                        <label class="form-label">Valor (R$)</label>
+                        <input type="number" class="form-control" id="valorSangria" step="0.01" min="0.01">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descrição</label>
+                        <input type="text" class="form-control" id="descricaoSangria" placeholder="Ex: Depósito bancário">
+                    </div>
+                    <button class="btn btn-danger w-100" onclick="realizarSangria()">
+                        <i class="bi bi-dash-lg me-1"></i>Realizar Sangria
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo por Forma de Pagamento -->
+    <div class="card mt-4 d-none" id="cardResumo">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Resumo por Forma de Pagamento</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3" id="resumoPagamentos">
+                <!-- Preenchido via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Movimentações Recentes -->
+    <div class="card mt-4 d-none" id="cardMovimentacoes">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-list-ul me-2"></i>Movimentações de Hoje</h6>
+            <span class="badge bg-primary" id="totalMovimentacoes">0</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Hora</th>
+                            <th>Tipo</th>
+                            <th>Descrição</th>
+                            <th class="text-end">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaMovimentacoes">
+                        <tr><td colspan="4" class="text-center py-3">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Abrir Caixa -->
+<div class="modal fade" id="modalAbrirCaixa" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-unlock me-2"></i>Abrir Caixa</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Valor Inicial em Dinheiro (R$)</label>
+                    <input type="number" class="form-control form-control-lg" id="valorAbertura" 
+                           step="0.01" min="0" value="0" required>
+                    <div class="form-text">Informe o valor em dinheiro disponível no caixa</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Observações</label>
+                    <textarea class="form-control" id="obsAbertura" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="abrirCaixa()">
+                    <i class="bi bi-check-lg me-1"></i>Abrir Caixa
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Fechar Caixa -->
+<div class="modal fade" id="modalFecharCaixa" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="bi bi-lock me-2"></i>Fechar Caixa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <strong>Saldo Esperado:</strong> R$ <span id="saldoEsperado">0,00</span>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Valor Contado em Dinheiro (R$)</label>
+                    <input type="number" class="form-control form-control-lg" id="valorFechamento" 
+                           step="0.01" min="0" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Observações do Fechamento</label>
+                    <textarea class="form-control" id="obsFechamento" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="fecharCaixa()">
+                    <i class="bi bi-check-lg me-1"></i>Fechar Caixa
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let caixaAtual = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        verificarStatus();
+    });
+
+    async function verificarStatus() {
+        try {
+            const response = await fetch('/api/caixa/status');
+            const data = await response.json();
+
+            if (data.isOpen) {
+                caixaAtual = data;
+                mostrarCaixaAberto(data);
+                carregarMovimentacoes(data.cashRegisterId);
+                carregarResumo(data.cashRegisterId);
+            } else {
+                mostrarCaixaFechado(data);
+            }
+        } catch (error) {
+            console.error('Erro ao verificar status:', error);
+            document.getElementById('cardStatus').innerHTML = `
+                <div class="card-body text-center text-danger">
+                    <i class="bi bi-exclamation-circle fs-1"></i>
+                    <p class="mt-2">Erro ao verificar status do caixa</p>
+                </div>`;
+        }
+    }
+
+    function mostrarCaixaAberto(data) {
+        const saldoAtual = data.currentBalance || 0;
+        
+        document.getElementById('cardStatus').innerHTML = `
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="rounded-circle bg-success p-3 me-3">
+                        <i class="bi bi-unlock-fill text-white fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="mb-0 text-success">Caixa Aberto</h5>
+                        <small class="text-muted">Código: ${data.code} | Aberto às ${new Date(data.openingDate).toLocaleTimeString('pt-BR')}</small>
+                    </div>
+                    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalFecharCaixa"
+                            onclick="document.getElementById('saldoEsperado').textContent = '${saldoAtual.toLocaleString('pt-BR', {minimumFractionDigits: 2})}'">
+                        <i class="bi bi-lock me-1"></i>Fechar Caixa
+                    </button>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-6 col-md-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <div class="fs-5 fw-bold text-primary">R$ ${(data.totalSales || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                            <small class="text-muted">Total Vendas</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <div class="fs-5 fw-bold text-success">R$ ${saldoAtual.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                            <small class="text-muted">Saldo em Dinheiro</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <div class="fs-5 fw-bold">${data.salesCount || 0}</div>
+                            <small class="text-muted">Vendas</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <div class="fs-5 fw-bold text-info">R$ ${(data.totalPix || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                            <small class="text-muted">PIX</small>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+        document.getElementById('acoesCaixa').classList.remove('d-none');
+        document.getElementById('cardResumo').classList.remove('d-none');
+        document.getElementById('cardMovimentacoes').classList.remove('d-none');
+    }
+
+    function mostrarCaixaFechado(data) {
+        document.getElementById('cardStatus').innerHTML = `
+            <div class="card-body text-center py-5">
+                <div class="rounded-circle bg-secondary bg-opacity-10 p-4 d-inline-block mb-3">
+                    <i class="bi bi-lock-fill text-secondary fs-1"></i>
+                </div>
+                <h5 class="text-secondary mb-3">Caixa Fechado</h5>
+                <p class="text-muted mb-4">Nenhum caixa aberto hoje. Abra o caixa para iniciar as operações.</p>
+                ${data.canOpen ? `
+                    <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalAbrirCaixa">
+                        <i class="bi bi-unlock me-2"></i>Abrir Caixa
+                    </button>
+                ` : `<div class="alert alert-warning">Você não tem permissão para abrir o caixa</div>`}
+            </div>`;
+    }
+
+    async function abrirCaixa() {
+        const valor = parseFloat(document.getElementById('valorAbertura').value) || 0;
+        const obs = document.getElementById('obsAbertura').value;
+
+        try {
+            const response = await fetch('/api/caixa/abrir', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    openingBalance: valor,
+                    observations: obs
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('modalAbrirCaixa')).hide();
+                mostrarToast('success', data.message);
+                verificarStatus();
+            } else {
+                mostrarToast('danger', data.error);
+            }
+        } catch (error) {
+            console.error('Erro ao abrir caixa:', error);
+            mostrarToast('danger', 'Erro ao abrir caixa');
+        }
+    }
+
+    async function fecharCaixa() {
+        const valor = parseFloat(document.getElementById('valorFechamento').value);
+        const obs = document.getElementById('obsFechamento').value;
+
+        if (isNaN(valor) || valor < 0) {
+            mostrarToast('warning', 'Informe o valor contado');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/caixa/fechar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cashRegisterId: caixaAtual.cashRegisterId,
+                    closingBalance: valor,
+                    closingObservations: obs
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('modalFecharCaixa')).hide();
+                
+                let mensagem = data.message;
+                if (data.difference !== 0) {
+                    mensagem += ` - Diferença: R$ ${Math.abs(data.difference).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                }
+                
+                mostrarToast(data.differenceStatus === 'OK' ? 'success' : 'warning', mensagem);
+                verificarStatus();
+            } else {
+                mostrarToast('danger', data.error);
+            }
+        } catch (error) {
+            console.error('Erro ao fechar caixa:', error);
+            mostrarToast('danger', 'Erro ao fechar caixa');
+        }
+    }
+
+    async function realizarSuprimento() {
+        const valor = parseFloat(document.getElementById('valorSuprimento').value);
+        const descricao = document.getElementById('descricaoSuprimento').value;
+
+        if (!valor || valor <= 0) {
+            mostrarToast('warning', 'Informe um valor válido');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/caixa/suprimento', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cashRegisterId: caixaAtual.cashRegisterId,
+                    amount: valor,
+                    description: descricao
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                mostrarToast('success', data.message);
+                document.getElementById('valorSuprimento').value = '';
+                document.getElementById('descricaoSuprimento').value = '';
+                verificarStatus();
+            } else {
+                mostrarToast('danger', data.error);
+            }
+        } catch (error) {
+            mostrarToast('danger', 'Erro ao realizar suprimento');
+        }
+    }
+
+    async function realizarSangria() {
+        const valor = parseFloat(document.getElementById('valorSangria').value);
+        const descricao = document.getElementById('descricaoSangria').value;
+
+        if (!valor || valor <= 0) {
+            mostrarToast('warning', 'Informe um valor válido');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/caixa/sangria', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cashRegisterId: caixaAtual.cashRegisterId,
+                    amount: valor,
+                    description: descricao
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                mostrarToast('success', data.message);
+                document.getElementById('valorSangria').value = '';
+                document.getElementById('descricaoSangria').value = '';
+                verificarStatus();
+            } else {
+                mostrarToast('danger', data.error);
+            }
+        } catch (error) {
+            mostrarToast('danger', 'Erro ao realizar sangria');
+        }
+    }
+
+    async function carregarMovimentacoes(cashRegisterId) {
+        try {
+            const response = await fetch(`/api/caixa/movimentacoes/${cashRegisterId}`);
+            const data = await response.json();
+
+            const tbody = document.getElementById('tabelaMovimentacoes');
+            document.getElementById('totalMovimentacoes').textContent = data.total;
+
+            if (!data.movimentacoes?.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Nenhuma movimentação</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.movimentacoes.slice(0, 10).map(m => {
+                const corValor = m.amount >= 0 ? 'text-success' : 'text-danger';
+                return `
+                    <tr>
+                        <td>${new Date(m.movementDate).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</td>
+                        <td><span class="badge bg-${getBadgeColor(m.movementType)}">${m.movementType}</span></td>
+                        <td>${m.description || '-'}</td>
+                        <td class="text-end ${corValor} fw-bold">R$ ${Math.abs(m.amount).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Erro ao carregar movimentações:', error);
+        }
+    }
+
+    async function carregarResumo(cashRegisterId) {
+        try {
+            const response = await fetch(`/api/caixa/resumo-pagamentos/${cashRegisterId}`);
+            const data = await response.json();
+
+            const container = document.getElementById('resumoPagamentos');
+            const r = data.resumo;
+
+            container.innerHTML = `
+                <div class="col-6 col-md-2">
+                    <div class="text-center">
+                        <i class="bi bi-cash fs-3 text-success"></i>
+                        <div class="fw-bold">R$ ${(r.dinheiro || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                        <small class="text-muted">Dinheiro</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="text-center">
+                        <i class="bi bi-credit-card fs-3 text-primary"></i>
+                        <div class="fw-bold">R$ ${(r.cartaoDebito || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                        <small class="text-muted">Débito</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="text-center">
+                        <i class="bi bi-credit-card-2-front fs-3 text-info"></i>
+                        <div class="fw-bold">R$ ${(r.cartaoCredito || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                        <small class="text-muted">Crédito</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="text-center">
+                        <i class="bi bi-qr-code fs-3 text-success"></i>
+                        <div class="fw-bold">R$ ${(r.pix || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                        <small class="text-muted">PIX</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="text-center">
+                        <i class="bi bi-arrow-down-circle fs-3 text-danger"></i>
+                        <div class="fw-bold">R$ ${(r.sangrias || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                        <small class="text-muted">Sangrias</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="text-center">
+                        <i class="bi bi-arrow-up-circle fs-3 text-primary"></i>
+                        <div class="fw-bold">R$ ${(r.suprimentos || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                        <small class="text-muted">Suprimentos</small>
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Erro ao carregar resumo:', error);
+        }
+    }
+
+    function getBadgeColor(tipo) {
+        const cores = {
+            'ABERTURA': 'primary',
+            'FECHAMENTO': 'secondary',
+            'VENDA': 'success',
+            'SANGRIA': 'danger',
+            'SUPRIMENTO': 'info',
+            'ESTORNO': 'warning'
+        };
+        return cores[tipo] || 'secondary';
+    }
+
+    function mostrarToast(tipo, mensagem) {
+        const toastHtml = `
+            <div class="toast align-items-center text-white bg-${tipo}" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">${mensagem}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>`;
+        
+        let container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(container);
+        }
+        
+        container.insertAdjacentHTML('beforeend', toastHtml);
+        const toast = container.lastElementChild;
+        new bootstrap.Toast(toast).show();
+        toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    }
+</script>
+}

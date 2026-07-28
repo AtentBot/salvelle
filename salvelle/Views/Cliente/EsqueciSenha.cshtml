@@ -1,0 +1,90 @@
+@{
+    ViewData["Title"] = "Esqueci Minha Senha";
+    ViewData["HideNav"] = true;
+    Layout = "_LayoutCliente";
+}
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="logo" style="background: var(--amber-500);">
+                <i class="bi bi-key"></i>
+            </div>
+            <h4 class="mb-1">Recuperar Senha</h4>
+            <p class="text-muted mb-0">Enviaremos um código para seu WhatsApp</p>
+        </div>
+
+        <form id="resetForm">
+            <div class="form-floating mb-4">
+                <input type="tel" class="form-control" id="phone" placeholder="Telefone" 
+                       oninput="formatPhone(this)" required>
+                <label for="phone"><i class="bi bi-whatsapp me-2"></i>Telefone cadastrado</label>
+            </div>
+
+            <div id="alertArea"></div>
+
+            <button type="submit" class="btn btn-primary w-100 mb-3" id="btnSubmit">
+                <span class="spinner-border spinner-border-sm d-none me-2" id="spinner"></span>
+                <span id="btnText">Enviar Código</span>
+            </button>
+        </form>
+
+        <div class="text-center">
+            <a href="/Cliente/Login" class="text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i>Voltar para login
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.getElementById('resetForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const phone = document.getElementById('phone').value;
+        
+        if (!phone || phone.replace(/\D/g, '').length < 10) {
+            showAlert('Informe um telefone válido', 'danger');
+            return;
+        }
+        
+        setLoading(true);
+        document.getElementById('alertArea').innerHTML = '';
+        
+        try {
+            const response = await fetch('/api/cliente/auth/request-reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: phone.replace(/\D/g, '') })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showAlert('Código enviado! Redirecionando...', 'success');
+                setTimeout(() => {
+                    window.location.href = `/Cliente/RedefinirSenha?phone=${encodeURIComponent(phone)}`;
+                }, 2000);
+            } else {
+                showAlert(data.message, 'danger');
+                setLoading(false);
+            }
+        } catch (error) {
+            showAlert('Erro de conexão', 'danger');
+            setLoading(false);
+        }
+    });
+    
+    function setLoading(loading) {
+        document.getElementById('spinner').classList.toggle('d-none', !loading);
+        document.getElementById('btnSubmit').disabled = loading;
+    }
+    
+    function showAlert(message, type) {
+        document.getElementById('alertArea').innerHTML = `
+            <div class="alert alert-${type} small py-2">${message}</div>
+        `;
+    }
+</script>
+}

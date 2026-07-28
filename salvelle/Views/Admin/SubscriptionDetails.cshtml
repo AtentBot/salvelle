@@ -1,0 +1,559 @@
+@{
+    ViewData["Title"] = "Detalhes da Assinatura";
+    ViewData["Subtitle"] = "Visualizar e gerenciar assinatura";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/dashboard">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/admin/subscriptions">Assinaturas</a></li>
+        <li class="breadcrumb-item active">Detalhes</li>
+    </ol>
+</nav>
+
+<!-- Loading -->
+<div id="loadingState" class="text-center py-5">
+    <div class="spinner-border text-primary mb-3"></div>
+    <p class="text-muted">Carregando dados da assinatura...</p>
+</div>
+
+<!-- Error -->
+<div id="errorState" class="text-center py-5" style="display: none;">
+    <i class="bi bi-exclamation-triangle text-danger fs-1"></i>
+    <h5 class="mt-3">Erro ao carregar assinatura</h5>
+    <p class="text-muted" id="errorMessage">Assinatura não encontrada</p>
+    <a href="/admin/subscriptions" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left me-2"></i>Voltar para lista
+    </a>
+</div>
+
+<!-- Content -->
+<div id="contentState" style="display: none;">
+    <!-- Header Card -->
+    <div class="admin-card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-1" id="establishmentName">-</h4>
+                    <p class="text-muted mb-0">
+                        <span id="planName">-</span> • 
+                        <span id="billingCycle">-</span>
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <span class="status-badge fs-6" id="statusBadge">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Info Card -->
+        <div class="col-lg-8">
+            <div class="admin-card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informações da Assinatura</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <small class="text-muted d-block">ID da Assinatura</small>
+                                <code id="subscriptionId" class="small">-</code>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <small class="text-muted d-block">Valor</small>
+                                <strong class="text-success fs-5" id="amount">-</strong>
+                                <small class="text-muted" id="cycleLabel"></small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <small class="text-muted d-block">Período Atual</small>
+                                <span id="currentPeriod">-</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <small class="text-muted d-block">Próximo Vencimento</small>
+                                <span id="nextDue">-</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <small class="text-muted d-block">Trial</small>
+                                <span id="trialInfo">-</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <small class="text-muted d-block">Criada em</small>
+                                <span id="createdAt">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stripe Info -->
+                    <div class="bg-light rounded p-3 mt-4">
+                        <h6 class="mb-3"><i class="bi bi-stripe me-2"></i>Informações Stripe</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">Subscription ID</small>
+                                <div><code id="stripeSubId" class="small">-</code></div>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">Customer ID</small>
+                                <div><code id="stripeCusId" class="small">-</code></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invoices -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-receipt me-2"></i>Histórico de Faturas</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Pago em</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoicesTable">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">Carregando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions Card -->
+        <div class="col-lg-4">
+            <div class="admin-card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Ações</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-primary" onclick="showChangePlanModal()">
+                            <i class="bi bi-arrow-repeat me-2"></i>Alterar Plano
+                        </button>
+                        <button type="button" class="btn btn-outline-success" id="btnReactivate" onclick="reactivateSubscription()" style="display: none;">
+                            <i class="bi bi-check-circle me-2"></i>Reativar Assinatura
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" id="btnCancel" onclick="showCancelModal()">
+                            <i class="bi bi-x-circle me-2"></i>Cancelar Assinatura
+                        </button>
+                        <hr>
+                        <a href="#" id="btnViewEstablishment" class="btn btn-outline-secondary">
+                            <i class="bi bi-building me-2"></i>Ver Estabelecimento
+                        </a>
+                        <a href="/admin/subscriptions" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Voltar para Lista
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cancelation Info (if canceled) -->
+            <div class="admin-card mt-4" id="cancelationCard" style="display: none;">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0"><i class="bi bi-x-circle me-2"></i>Cancelamento</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Cancelada em:</strong></p>
+                    <p id="canceledAt" class="text-muted">-</p>
+                    <p class="mb-2"><strong>Motivo:</strong></p>
+                    <p id="cancelReason" class="text-muted">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cancelar -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancelar Assinatura</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Esta ação irá cancelar a assinatura imediatamente. O estabelecimento perderá acesso ao sistema.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Motivo do cancelamento</label>
+                    <textarea class="form-control" id="cancelReasonInput" rows="3" placeholder="Informe o motivo (opcional)..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-danger" onclick="confirmCancel()">
+                    <i class="bi bi-x-circle me-2"></i>Confirmar Cancelamento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Alterar Plano -->
+<div class="modal fade" id="changePlanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Alterar Plano</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Plano atual</label>
+                    <input type="text" class="form-control" id="currentPlanName" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Novo plano</label>
+                    <select class="form-select" id="newPlanSelect">
+                        <option value="">Carregando planos...</option>
+                    </select>
+                </div>
+                <div class="alert alert-info small">
+                    <i class="bi bi-info-circle me-2"></i>
+                    A alteração de plano será aplicada imediatamente. A cobrança será ajustada proporcionalmente.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" onclick="confirmChangePlan()">
+                    <i class="bi bi-check me-2"></i>Confirmar Alteração
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const subscriptionId = '@ViewBag.SubscriptionId';
+    let currentSubscription = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadSubscription();
+    });
+
+    async function loadSubscription() {
+        try {
+            const response = await fetch(`/api/admin/subscriptions/${subscriptionId}`);
+            
+            if (!response.ok) {
+                throw new Error('Assinatura não encontrada');
+            }
+
+            currentSubscription = await response.json();
+            renderSubscription(currentSubscription);
+
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('contentState').style.display = 'block';
+        } catch (error) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorMessage').textContent = error.message;
+            document.getElementById('errorState').style.display = 'block';
+        }
+    }
+
+    function renderSubscription(data) {
+        // Header
+        document.getElementById('establishmentName').textContent = data.establishmentName || '-';
+        document.getElementById('planName').textContent = data.planName || '-';
+        document.getElementById('billingCycle').textContent = data.billingCycle === 'YEARLY' ? 'Anual' : 'Mensal';
+
+        // Status Badge
+        const statusBadge = document.getElementById('statusBadge');
+        statusBadge.textContent = getStatusLabel(data.status);
+        statusBadge.className = `status-badge fs-6 ${getStatusClass(data.status)}`;
+
+        // Info
+        document.getElementById('subscriptionId').textContent = data.id;
+        document.getElementById('amount').textContent = formatCurrency(data.amount || 0);
+        document.getElementById('cycleLabel').textContent = data.billingCycle === 'YEARLY' ? '/ano' : '/mês';
+        document.getElementById('currentPeriod').textContent = 
+            `${formatDate(data.currentPeriodStart)} - ${formatDate(data.currentPeriodEnd)}`;
+        document.getElementById('nextDue').textContent = formatDate(data.currentPeriodEnd);
+        document.getElementById('trialInfo').textContent = data.trialEnd 
+            ? `Até ${formatDate(data.trialEnd)}` 
+            : 'Sem trial';
+        document.getElementById('createdAt').textContent = formatDateTime(data.createdAt);
+
+        // Stripe
+        document.getElementById('stripeSubId').textContent = data.stripeSubscriptionId || '-';
+        document.getElementById('stripeCusId').textContent = data.stripeCustomerId || '-';
+
+        // Establishment link
+        document.getElementById('btnViewEstablishment').href = `/admin/establishments/${data.establishmentId}`;
+
+        // Action buttons based on status
+        if (data.status === 'CANCELED') {
+            document.getElementById('btnCancel').style.display = 'none';
+            document.getElementById('btnReactivate').style.display = 'block';
+            
+            // Show cancellation info
+            document.getElementById('cancelationCard').style.display = 'block';
+            document.getElementById('canceledAt').textContent = formatDateTime(data.canceledAt);
+            document.getElementById('cancelReason').textContent = data.cancelReason || 'Não informado';
+        } else {
+            document.getElementById('btnCancel').style.display = 'block';
+            document.getElementById('btnReactivate').style.display = 'none';
+            document.getElementById('cancelationCard').style.display = 'none';
+        }
+
+        // Invoices
+        renderInvoices(data.invoices || []);
+    }
+
+    function renderInvoices(invoices) {
+        const tbody = document.getElementById('invoicesTable');
+
+        if (!invoices || invoices.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">
+                        <i class="bi bi-receipt fs-3 d-block mb-2"></i>
+                        Nenhuma fatura encontrada
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = invoices.map(inv => `
+            <tr>
+                <td>${formatDate(inv.createdAt)}</td>
+                <td><strong>${formatCurrency(inv.amount)}</strong></td>
+                <td>
+                    <span class="badge ${inv.status === 'PAID' ? 'bg-success' : 'bg-warning'}">
+                        ${inv.status === 'PAID' ? 'Paga' : 'Pendente'}
+                    </span>
+                </td>
+                <td>${inv.paidAt ? formatDate(inv.paidAt) : '-'}</td>
+                <td>
+                    ${inv.invoiceUrl 
+                        ? `<a href="${inv.invoiceUrl}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver PDF">
+                            <i class="bi bi-file-pdf"></i>
+                           </a>` 
+                        : ''}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function showCancelModal() {
+        document.getElementById('cancelReasonInput').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
+        modal.show();
+    }
+
+    async function confirmCancel() {
+        const reason = document.getElementById('cancelReasonInput').value;
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Cancelando...';
+
+        try {
+            const response = await fetch(`/api/admin/subscriptions/${subscriptionId}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason })
+            });
+
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('cancelModal')).hide();
+                showToast('Assinatura cancelada com sucesso!', 'success');
+                loadSubscription(); // Reload data
+            } else {
+                const error = await response.json();
+                showToast('Erro: ' + (error.message || 'Erro ao cancelar'), 'danger');
+            }
+        } catch (error) {
+            showToast('Erro ao cancelar assinatura', 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-x-circle me-2"></i>Confirmar Cancelamento';
+        }
+    }
+
+    async function reactivateSubscription() {
+        if (!confirm('Deseja reativar esta assinatura? Um novo período de cobrança será iniciado.')) return;
+
+        const btn = document.getElementById('btnReactivate');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Reativando...';
+
+        try {
+            const response = await fetch(`/api/admin/subscriptions/${subscriptionId}/reactivate`, {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                showToast('Assinatura reativada com sucesso!', 'success');
+                loadSubscription(); // Reload data
+            } else {
+                const error = await response.json();
+                showToast('Erro: ' + (error.message || 'Erro ao reativar'), 'danger');
+            }
+        } catch (error) {
+            showToast('Erro ao reativar assinatura', 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Reativar Assinatura';
+        }
+    }
+
+    async function showChangePlanModal() {
+        document.getElementById('currentPlanName').value = currentSubscription?.planName || '-';
+        
+        const select = document.getElementById('newPlanSelect');
+        select.innerHTML = '<option value="">Carregando...</option>';
+
+        const modal = new bootstrap.Modal(document.getElementById('changePlanModal'));
+        modal.show();
+
+        try {
+            const response = await fetch('/api/subscriptionplans');
+            if (response.ok) {
+                const plans = await response.json();
+                select.innerHTML = '<option value="">Selecione um plano</option>' + 
+                    plans.map(p => 
+                        `<option value="${p.id}" ${p.id === currentSubscription?.planId ? 'disabled' : ''}>
+                            ${p.name} - ${formatCurrency(p.priceMonthly)}/mês | ${formatCurrency(p.priceYearly)}/ano
+                        </option>`
+                    ).join('');
+            }
+        } catch (error) {
+            select.innerHTML = '<option value="">Erro ao carregar planos</option>';
+        }
+    }
+
+    async function confirmChangePlan() {
+        const newPlanId = document.getElementById('newPlanSelect').value;
+        if (!newPlanId) {
+            showToast('Selecione um plano', 'warning');
+            return;
+        }
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Alterando...';
+
+        try {
+            const response = await fetch(`/api/admin/subscriptions/${subscriptionId}/change-plan`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newPlanId })
+            });
+
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('changePlanModal')).hide();
+                showToast('Plano alterado com sucesso!', 'success');
+                loadSubscription(); // Reload data
+            } else {
+                const error = await response.json();
+                showToast('Erro: ' + (error.message || 'Erro ao alterar plano'), 'danger');
+            }
+        } catch (error) {
+            showToast('Erro ao alterar plano', 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check me-2"></i>Confirmar Alteração';
+        }
+    }
+
+    function showToast(message, type = 'info') {
+        // Create toast container if not exists
+        let container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '1100';
+            document.body.appendChild(container);
+        }
+
+        const toastId = 'toast-' + Date.now();
+        const iconMap = {
+            success: 'bi-check-circle-fill text-success',
+            danger: 'bi-x-circle-fill text-danger',
+            warning: 'bi-exclamation-triangle-fill text-warning',
+            info: 'bi-info-circle-fill text-primary'
+        };
+
+        const toastHtml = `
+            <div id="${toastId}" class="toast align-items-center border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi ${iconMap[type] || iconMap.info} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', toastHtml);
+        const toastEl = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    function getStatusClass(status) {
+        switch (status?.toUpperCase()) {
+            case 'ACTIVE': return 'active';
+            case 'TRIALING': return 'trialing';
+            case 'PAST_DUE': return 'past-due';
+            case 'CANCELED': return 'canceled';
+            default: return 'inactive';
+        }
+    }
+
+    function getStatusLabel(status) {
+        switch (status?.toUpperCase()) {
+            case 'ACTIVE': return 'Ativa';
+            case 'TRIALING': return 'Trial';
+            case 'PAST_DUE': return 'Inadimplente';
+            case 'CANCELED': return 'Cancelada';
+            default: return '-';
+        }
+    }
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleDateString('pt-BR');
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleString('pt-BR');
+    }
+</script>
+}

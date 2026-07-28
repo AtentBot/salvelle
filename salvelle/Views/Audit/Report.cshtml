@@ -1,0 +1,185 @@
+@model List<Models.ControlledSubstanceMovement>
+@{
+    var reportType = ViewBag.ReportType as string;
+    var reportTitle = ViewBag.ReportTitle as string;
+    ViewData["Title"] = reportTitle ?? "Relatório";
+}
+
+@section Styles {
+<style>
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card.pad { padding: 20px; }
+    .ds-card + .ds-card { margin-top: 24px; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .ds-card-eyebrow { font-family: var(--font-mono); font-size: 11px; color: var(--petrol-500); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ds-card-title { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+
+    .filter-grid { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 14px; align-items: end; }
+
+    .list-badge { font-family: var(--font-mono); font-weight: 600; font-size: 12px; }
+    .move-in { color: var(--ok); font-weight: 500; display: inline-flex; align-items: center; gap: 5px; }
+    .move-out { color: var(--danger); font-weight: 500; display: inline-flex; align-items: center; gap: 5px; }
+
+    .empty-row { text-align: center; color: var(--ink-3); padding: 40px 24px; }
+    .empty-row i { font-size: 30px; display: block; margin-bottom: 8px; color: var(--ink-5); }
+
+    .summary-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--rule); border-top: 1px solid var(--rule); }
+    .summary-cell { background: var(--surface); padding: 14px 16px; text-align: center; }
+    .summary-cell .s-val { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+    .summary-cell .s-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; margin-top: 2px; }
+
+    @@media (max-width: 780px) {
+        .filter-grid { grid-template-columns: 1fr 1fr; }
+        .summary-bar { grid-template-columns: repeat(2, 1fr); }
+        table.responsive-stack thead { display: none; }
+        table.responsive-stack tbody tr { display: block; border-bottom: 1px solid var(--rule); padding: 12px 16px; }
+        table.responsive-stack tbody tr:hover td { background: transparent; }
+        table.responsive-stack tbody td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 5px 0; border: none; text-align: right; }
+        table.responsive-stack tbody td::before { content: attr(data-label); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; text-align: left; }
+    }
+
+    @@media print {
+        .page-head .row, .no-print, form { display: none !important; }
+        .ds-card { border: 1px solid #000 !important; box-shadow: none !important; }
+    }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">AUDITORIA · @reportType</div>
+            <h1>@reportTitle</h1>
+            <p>
+                @if (reportType == "BMPO")
+                {
+                    <span>Mês @ViewBag.Month/@ViewBag.Year — Listas B1/B2</span>
+                }
+                else if (reportType == "BSPO")
+                {
+                    <span>@(ViewBag.Quarter)º trimestre/@ViewBag.Year — Listas A1/A2/A3</span>
+                }
+                else
+                {
+                    <span>@(((DateTime?)ViewBag.StartDate)?.ToString("dd/MM/yyyy")) a @(((DateTime?)ViewBag.EndDate)?.ToString("dd/MM/yyyy"))</span>
+                }
+            </p>
+        </div>
+        <div class="row">
+            <a href="/Audit" class="btn btn-secondary"><i class="bi bi-arrow-left"></i>Voltar</a>
+            <button onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer"></i>Imprimir</button>
+        </div>
+    </div>
+
+    @if (reportType == "Movements")
+    {
+        <div class="ds-card pad" style="margin-bottom:24px;">
+            <form method="get" class="filter-grid">
+                <div>
+                    <label class="input-label">Data inicial</label>
+                    <input type="date" name="startDate" class="input" value="@(((DateTime?)ViewBag.StartDate)?.ToString("yyyy-MM-dd"))">
+                </div>
+                <div>
+                    <label class="input-label">Data final</label>
+                    <input type="date" name="endDate" class="input" value="@(((DateTime?)ViewBag.EndDate)?.ToString("yyyy-MM-dd"))">
+                </div>
+                <div>
+                    <label class="input-label">Lista</label>
+                    <select name="list" class="select">
+                        <option value="">Todas</option>
+                        <option value="A1">A1 — Entorpecentes</option>
+                        <option value="A2">A2 — Entorpecentes uso permitido</option>
+                        <option value="A3">A3 — Psicotrópicos</option>
+                        <option value="B1">B1 — Psicotrópicos</option>
+                        <option value="B2">B2 — Psicotrópicos anorexígenos</option>
+                        <option value="C1">C1 — Outras substâncias</option>
+                        <option value="C2">C2 — Retinóides</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i>Filtrar</button>
+                </div>
+            </form>
+        </div>
+    }
+
+    <div class="ds-card">
+        <div class="ds-card-head">
+            <div>
+                <div class="ds-card-eyebrow">Escrituração</div>
+                <h3 class="ds-card-title">Movimentações de controlados</h3>
+            </div>
+            <span class="badge badge-neutral badge-no-dot">@(Model?.Count ?? 0) registro(s)</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table responsive-stack mb-0">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Substância</th>
+                        <th>Lista</th>
+                        <th>Tipo</th>
+                        <th class="text-end">Quantidade</th>
+                        <th>Lote</th>
+                        <th>NF/Receita</th>
+                        <th>SNGPC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var mov in Model)
+                        {
+                            <tr>
+                                <td data-label="Data" class="mono" style="color:var(--ink-3);">@mov.MovementDate.ToString("dd/MM/yyyy")</td>
+                                <td data-label="Substância"><span style="color:var(--ink);font-weight:500;">@mov.SubstanceName</span></td>
+                                <td data-label="Lista"><span class="badge badge-neutral badge-no-dot list-badge">@mov.ControlledList</span></td>
+                                <td data-label="Tipo">
+                                    @if (mov.MovementType == "ENTRADA")
+                                    {
+                                        <span class="move-in"><i class="bi bi-arrow-down-circle"></i>Entrada</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="move-out"><i class="bi bi-arrow-up-circle"></i>Saída</span>
+                                    }
+                                </td>
+                                <td data-label="Quantidade" class="text-end mono" style="color:var(--ink);font-weight:600;">@mov.Quantity @mov.Unit</td>
+                                <td data-label="Lote" class="mono" style="color:var(--ink-3);">@(mov.BatchId?.ToString().Substring(0, 8) ?? "—")</td>
+                                <td data-label="NF/Receita" class="mono" style="color:var(--ink-2);">@(mov.InvoiceNumber ?? mov.PrescriptionNumber ?? "—")</td>
+                                <td data-label="SNGPC">
+                                    @if (mov.SngpcSent)
+                                    {
+                                        <span class="badge badge-ok badge-no-dot"><i class="bi bi-check"></i>&nbsp;Enviado</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-warn badge-no-dot">Pendente</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="empty-row">
+                                <i class="bi bi-inbox"></i>
+                                Nenhuma movimentação encontrada no período.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Model != null && Model.Any())
+        {
+            <div class="summary-bar">
+                <div class="summary-cell"><div class="s-val">@Model.Count</div><div class="s-lbl">Total registros</div></div>
+                <div class="summary-cell"><div class="s-val" style="color:var(--ok);">@Model.Count(m => m.MovementType == "ENTRADA")</div><div class="s-lbl">Entradas</div></div>
+                <div class="summary-cell"><div class="s-val" style="color:var(--danger);">@Model.Count(m => m.MovementType == "SAIDA")</div><div class="s-lbl">Saídas</div></div>
+                <div class="summary-cell"><div class="s-val" style="color:var(--warn);">@Model.Count(m => !m.SngpcSent)</div><div class="s-lbl">Pendentes SNGPC</div></div>
+            </div>
+        }
+    </div>
+</div>

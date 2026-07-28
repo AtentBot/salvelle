@@ -1,0 +1,259 @@
+@{
+    ViewData["Title"] = "Gestão de Estoque";
+}
+
+@section Styles {
+<style>
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .ds-stat {
+        background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md);
+        padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; position: relative; overflow: hidden;
+    }
+    .ds-stat::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ink-5); }
+    .ds-stat.is-ok::before { background: var(--ok); }
+    .ds-stat.is-warn::before { background: var(--amber-500); }
+    .ds-stat.is-danger::before { background: var(--danger); }
+    .ds-stat.is-petrol::before { background: var(--petrol-500); }
+    .ds-stat-label { font-size: 12px; color: var(--ink-3); font-weight: 500; }
+    .ds-stat-value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--ink); }
+    .ds-stat-delta { font-size: 12px; color: var(--ink-3); display: inline-flex; align-items: center; gap: 4px; }
+    .ds-stat-delta.warn { color: var(--warn); }
+    .ds-stat-delta.danger { color: var(--danger); }
+    .ds-stat-delta.ok { color: var(--ok); }
+
+    .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .quick-action {
+        background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md);
+        padding: 16px; text-decoration: none; color: var(--ink-2);
+        display: flex; gap: 12px; align-items: center;
+        transition: all var(--t-fast); position: relative;
+    }
+    .quick-action:hover { border-color: var(--petrol-500); color: var(--ink); transform: translateY(-1px); box-shadow: var(--shadow-2); }
+    .quick-action-icon {
+        width: 38px; height: 38px; border-radius: var(--r-sm);
+        background: var(--petrol-50); color: var(--petrol-500);
+        display: grid; place-items: center; font-size: 16px; flex-shrink: 0;
+    }
+    .quick-action.warn .quick-action-icon { background: var(--amber-50); color: var(--amber-700); }
+    .quick-action.success .quick-action-icon { background: var(--ok-soft); color: var(--ok); }
+    .quick-action.info .quick-action-icon { background: var(--info-soft); color: var(--info); }
+    .quick-action-text { font-size: 13px; font-weight: 500; }
+    .quick-action small { display: block; font-size: 11px; color: var(--ink-3); font-weight: 400; margin-top: 2px; }
+    .badge-count { background: var(--danger); color: #fff; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: var(--r-pill); position: absolute; top: 8px; right: 8px; min-width: 18px; text-align: center; }
+    .badge-count.bg-warn { background: var(--amber-500); }
+
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .ds-card-eyebrow { font-family: var(--font-mono); font-size: 11px; color: var(--petrol-500); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ds-card-title { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--ink-3); }
+    .empty-state i { font-size: 40px; color: var(--ok); }
+    .empty-state p { margin: 12px 0 0; font-size: 14px; }
+
+    @@media (max-width: 980px) {
+        .stat-grid, .quick-actions { grid-template-columns: repeat(2, 1fr); }
+    }
+    @@media (max-width: 560px) {
+        .stat-grid, .quick-actions { grid-template-columns: 1fr; }
+    }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">ESTOQUE</div>
+            <h1 style="font-size: var(--t-h2); font-weight: 600; letter-spacing: -0.025em; margin: 0 0 4px;">Gestão de Estoque</h1>
+            <p style="color: var(--ink-3); font-size: 14px; margin: 0;" id="headSummary">Carregando visão geral do estoque…</p>
+        </div>
+        <div class="row">
+            <button class="btn btn-secondary" onclick="loadStats(this)"><i class="bi bi-arrow-clockwise"></i>Atualizar</button>
+            <a class="btn btn-primary" href="/Stock/Movements"><i class="bi bi-plus"></i>Nova movimentação</a>
+        </div>
+    </div>
+
+    <div class="stat-grid">
+        <div class="ds-stat is-petrol">
+            <div class="ds-stat-label">Itens ativos</div>
+            <div class="ds-stat-value" id="totalItems">—</div>
+            <div class="ds-stat-delta" id="totalItemsDelta"><i class="bi bi-boxes"></i>matérias-primas cadastradas</div>
+        </div>
+        <div class="ds-stat is-warn" id="statLow">
+            <div class="ds-stat-label">Estoque baixo</div>
+            <div class="ds-stat-value" id="lowStockItems">—</div>
+            <div class="ds-stat-delta warn" id="lowStockDelta"><i class="bi bi-exclamation-triangle"></i>abaixo do mínimo</div>
+        </div>
+        <div class="ds-stat is-danger" id="statOut">
+            <div class="ds-stat-label">Sem estoque</div>
+            <div class="ds-stat-value" id="outOfStockItems">—</div>
+            <div class="ds-stat-delta danger" id="outOfStockDelta"><i class="bi bi-x-circle"></i>zerados</div>
+        </div>
+        <div class="ds-stat" id="statAlerts">
+            <div class="ds-stat-label">Total de alertas</div>
+            <div class="ds-stat-value" id="totalAlerts">—</div>
+            <div class="ds-stat-delta" id="totalAlertsDelta"><i class="bi bi-bell"></i>itens para reposição</div>
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <a class="quick-action" href="/Stock/Movements">
+            <div class="quick-action-icon"><i class="bi bi-arrow-left-right"></i></div>
+            <div class="quick-action-text">
+                Movimentações
+                <small>Entradas, saídas e ajustes</small>
+            </div>
+        </a>
+        <a class="quick-action warn" href="/Stock/LowStock">
+            <div class="quick-action-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="quick-action-text">
+                Estoque Baixo
+                <small>Alertas de reposição</small>
+            </div>
+            <span class="badge-count bg-warn" id="badgeLowStock" style="display:none;">0</span>
+        </a>
+        <a class="quick-action success" href="/materias-primas">
+            <div class="quick-action-icon"><i class="bi bi-box-seam"></i></div>
+            <div class="quick-action-text">
+                Matérias-Primas
+                <small>Cadastro e consulta</small>
+            </div>
+        </a>
+        <a class="quick-action info" href="/compras">
+            <div class="quick-action-icon"><i class="bi bi-cart3"></i></div>
+            <div class="quick-action-text">
+                Pedidos de Compra
+                <small>Solicitações e aprovações</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="ds-card">
+        <div class="ds-card-head">
+            <div>
+                <div class="ds-card-eyebrow">Reposição prioritária</div>
+                <h3 class="ds-card-title">Itens que precisam de atenção</h3>
+            </div>
+            <a class="btn btn-ghost btn-sm" href="/Stock/LowStock">Ver todos<i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="table-responsive">
+            <table class="table mb-0" id="lowStockPreview">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Matéria-prima</th>
+                        <th class="text-end">Estoque atual</th>
+                        <th class="text-end">Mínimo</th>
+                        <th class="text-end">Faltante</th>
+                    </tr>
+                </thead>
+                <tbody id="lowStockPreviewBody">
+                    <tr><td colspan="5" style="text-align:center;color:var(--ink-3);padding:32px;">Carregando itens…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        loadStats();
+    });
+
+    function fmtQty(n) {
+        return (n ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    async function loadStats(btn) {
+        if (btn) { btn.disabled = true; }
+        try {
+            const [alertsRes, rmRes] = await Promise.all([
+                fetch('/api/PDV/low-stock-alerts', { credentials: 'include' }).then(r => r.json()).catch(() => ({ success: false })),
+                fetch('/api/RawMaterials', { credentials: 'include' }).then(r => r.json()).catch(() => ({ success: false }))
+            ]);
+
+            let lowStock = 0, outOfStock = 0, alerts = [];
+            if (alertsRes.success && Array.isArray(alertsRes.data)) {
+                alerts = alertsRes.data;
+                outOfStock = alerts.filter(i => i.currentQuantity <= 0).length;
+                lowStock = alerts.filter(i => i.currentQuantity > 0).length;
+            }
+
+            const totalItems = (rmRes.success && Array.isArray(rmRes.data)) ? rmRes.data.length : null;
+            const totalAlerts = alerts.length;
+
+            document.getElementById('totalItems').textContent = totalItems ?? '—';
+            document.getElementById('lowStockItems').textContent = lowStock;
+            document.getElementById('outOfStockItems').textContent = outOfStock;
+            document.getElementById('totalAlerts').textContent = totalAlerts;
+
+            // Ajusta ênfase visual conforme severidade
+            document.getElementById('statLow').classList.toggle('is-warn', lowStock > 0);
+            document.getElementById('statOut').classList.toggle('is-danger', outOfStock > 0);
+            document.getElementById('statAlerts').classList.toggle('is-ok', totalAlerts === 0);
+            document.getElementById('totalAlertsDelta').className = 'ds-stat-delta ' + (totalAlerts === 0 ? 'ok' : '');
+            document.getElementById('totalAlertsDelta').innerHTML = totalAlerts === 0
+                ? '<i class="bi bi-check2-circle"></i>estoque em dia'
+                : '<i class="bi bi-bell"></i>itens para reposição';
+
+            // Badge no atalho
+            const badge = document.getElementById('badgeLowStock');
+            if (totalAlerts > 0) { badge.textContent = totalAlerts; badge.style.display = ''; }
+            else { badge.style.display = 'none'; }
+
+            // Resumo no cabeçalho
+            const summary = document.getElementById('headSummary');
+            if (totalAlerts === 0) {
+                summary.textContent = (totalItems ?? 0) + ' matérias-primas ativas · estoque dentro do nível mínimo.';
+            } else {
+                summary.innerHTML = (totalItems ?? 0) + ' matérias-primas ativas · '
+                    + '<strong style="color:var(--warn)">' + lowStock + '</strong> abaixo do mínimo · '
+                    + '<strong style="color:var(--danger)">' + outOfStock + '</strong> zeradas.';
+            }
+
+            renderPreview(alerts);
+        } catch (error) {
+            console.error('Erro ao carregar estatísticas:', error);
+            document.getElementById('headSummary').textContent = 'Não foi possível carregar a visão geral do estoque.';
+            document.getElementById('lowStockPreviewBody').innerHTML =
+                '<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:32px;">Erro ao carregar dados.</td></tr>';
+        } finally {
+            if (btn) { btn.disabled = false; }
+        }
+    }
+
+    function renderPreview(alerts) {
+        const tbody = document.getElementById('lowStockPreviewBody');
+        if (!alerts.length) {
+            tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">'
+                + '<i class="bi bi-check-circle"></i>'
+                + '<p>Nenhum item abaixo do mínimo. Estoque em dia.</p>'
+                + '</div></td></tr>';
+            return;
+        }
+
+        const rows = alerts
+            .slice()
+            .sort((a, b) => a.currentQuantity - b.currentQuantity)
+            .slice(0, 6)
+            .map(item => {
+                const out = item.currentQuantity <= 0;
+                const missing = Math.max(0, (item.minimumStock ?? 0) - (item.currentQuantity ?? 0));
+                const status = out
+                    ? '<span class="badge badge-danger badge-no-dot">Sem estoque</span>'
+                    : '<span class="badge badge-warn badge-no-dot">Baixo</span>';
+                const unit = item.unit || '';
+                return `<tr>
+                    <td>${status}</td>
+                    <td style="color:var(--ink);font-weight:500;">${item.name ?? '—'}</td>
+                    <td class="text-end mono" style="color:${out ? 'var(--danger)' : 'var(--warn)'};font-weight:600;">${fmtQty(item.currentQuantity)} ${unit}</td>
+                    <td class="text-end mono">${fmtQty(item.minimumStock)} ${unit}</td>
+                    <td class="text-end mono" style="color:var(--danger);font-weight:600;">${fmtQty(missing)} ${unit}</td>
+                </tr>`;
+            }).join('');
+
+        tbody.innerHTML = rows;
+    }
+</script>
+}

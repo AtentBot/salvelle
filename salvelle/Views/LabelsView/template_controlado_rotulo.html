@@ -1,0 +1,263 @@
+<!-- 
+    TEMPLATE PARA MEDICAMENTOS CONTROLADOS
+    Dimensões recomendadas: 100mm x 70mm
+    
+    Template específico para substâncias controladas (Portaria 344/98)
+    Com destaque visual para lista de controle
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 9pt;
+            line-height: 1.3;
+            padding: 3mm;
+            width: 100mm;
+            height: 70mm;
+            border: 3px solid #dc3545;
+        }
+        
+        .controlled-header {
+            background-color: #dc3545;
+            color: white;
+            text-align: center;
+            padding: 2mm;
+            margin: -3mm -3mm 3mm -3mm;
+            font-weight: bold;
+            font-size: 12pt;
+        }
+        
+        .control-list {
+            display: inline-block;
+            background-color: #000;
+            color: white;
+            padding: 1mm 3mm;
+            font-size: 14pt;
+            font-weight: bold;
+            margin-left: 2mm;
+        }
+        
+        .pharmacy-section {
+            border-bottom: 2px solid #dc3545;
+            padding-bottom: 2mm;
+            margin-bottom: 2mm;
+        }
+        
+        .pharmacy-name {
+            font-weight: bold;
+            font-size: 10pt;
+        }
+        
+        .pharmacy-details {
+            font-size: 7pt;
+            color: #555;
+        }
+        
+        .patient-box {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 2mm;
+            margin-bottom: 2mm;
+        }
+        
+        .patient-name {
+            font-weight: bold;
+            font-size: 11pt;
+            color: #000;
+        }
+        
+        .section {
+            margin-bottom: 2mm;
+        }
+        
+        .label-title {
+            font-weight: bold;
+            font-size: 7pt;
+            color: #dc3545;
+            text-transform: uppercase;
+        }
+        
+        .formula-name {
+            font-weight: bold;
+            font-size: 11pt;
+            color: #000;
+            margin: 1mm 0;
+        }
+        
+        .composition-box {
+            border: 2px solid #dc3545;
+            padding: 2mm;
+            background-color: #fff;
+            font-size: 8pt;
+            margin: 2mm 0;
+        }
+        
+        .warning-critical {
+            background-color: #dc3545;
+            color: white;
+            padding: 2mm;
+            text-align: center;
+            font-weight: bold;
+            font-size: 8pt;
+            margin: 2mm 0;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2mm;
+            margin: 2mm 0;
+        }
+        
+        .info-item {
+            border: 1px solid #ccc;
+            padding: 1mm;
+            background-color: #f8f9fa;
+        }
+        
+        .info-label {
+            font-size: 6pt;
+            font-weight: bold;
+            color: #666;
+            text-transform: uppercase;
+        }
+        
+        .info-value {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #000;
+        }
+        
+        .footer-controlled {
+            border-top: 2px solid #dc3545;
+            padding-top: 2mm;
+            margin-top: 2mm;
+        }
+        
+        .pharmacist-info {
+            font-weight: bold;
+            font-size: 8pt;
+        }
+        
+        .legal-notice {
+            background-color: #ffe5e5;
+            border: 1px solid #dc3545;
+            padding: 1.5mm;
+            margin-top: 2mm;
+            font-size: 6pt;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .qr-section {
+            position: absolute;
+            top: 25mm;
+            right: 5mm;
+            text-align: center;
+        }
+        
+        .qr-code {
+            width: 18mm;
+            height: 18mm;
+            border: 2px solid #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <!-- Cabeçalho Controlado -->
+    <div class="controlled-header">
+        ⚠️ MEDICAMENTO CONTROLADO
+        <span class="control-list">LISTA {{CONTROL_SCHEDULE}}</span>
+    </div>
+    
+    <!-- Informações da Farmácia -->
+    <div class="pharmacy-section">
+        <div class="pharmacy-name">{{PHARMACY_NAME}}</div>
+        <div class="pharmacy-details">
+            CNPJ: {{PHARMACY_CNPJ}} | Aut. ANVISA: {{AUTHORIZATION_NUMBER}}<br>
+            {{PHARMACY_ADDRESS}} | Tel: {{PHARMACY_PHONE}}
+        </div>
+    </div>
+    
+    <!-- Paciente (Destaque) -->
+    <div class="patient-box">
+        <div class="label-title">Paciente:</div>
+        <div class="patient-name">{{PATIENT_NAME}}</div>
+    </div>
+    
+    <!-- QR Code -->
+    <div class="qr-section">
+        <div class="qr-code">{{QR_CODE}}</div>
+        <div style="font-size: 6pt; margin-top: 1mm;">{{LABEL_CODE}}</div>
+    </div>
+    
+    <!-- Fórmula -->
+    <div class="section">
+        <div class="label-title">Fórmula Manipulada:</div>
+        <div class="formula-name">{{FORMULA_NAME}}</div>
+        <div style="font-size: 7pt; color: #666;">{{PHARMACEUTICAL_FORM}}</div>
+    </div>
+    
+    <!-- Composição -->
+    <div class="composition-box">
+        <div class="label-title">Composição Qualitativa e Quantitativa:</div>
+        <div style="margin-top: 1mm;">{{COMPOSITION}}</div>
+    </div>
+    
+    <!-- Posologia -->
+    <div class="section">
+        <div class="label-title">Posologia:</div>
+        <div style="font-size: 9pt; margin-top: 1mm;">{{POSOLOGY}}</div>
+    </div>
+    
+    <!-- Grid de Informações -->
+    <div class="info-grid">
+        <div class="info-item">
+            <div class="info-label">Lote</div>
+            <div class="info-value">{{BATCH_NUMBER}}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Manipulação</div>
+            <div class="info-value">{{MANIPULATION_DATE}}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Validade</div>
+            <div class="info-value">{{EXPIRATION_DATE}}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Quantidade</div>
+            <div class="info-value">{{QUANTITY}} {{UNIT}}</div>
+        </div>
+    </div>
+    
+    <!-- Advertência Crítica -->
+    <div class="warning-critical">
+        ⚠️ {{WARNINGS}}
+    </div>
+    
+    <!-- Rodapé -->
+    <div class="footer-controlled">
+        <div class="pharmacist-info">
+            Farmacêutico Responsável: {{PHARMACIST_NAME}}<br>
+            CRF: {{PHARMACIST_CRF}}
+        </div>
+        
+        <div class="legal-notice">
+            VENDA SOB PRESCRIÇÃO MÉDICA | RETENÇÃO DA RECEITA<br>
+            Portaria SVS/MS 344/98 | RDC ANVISA 67/2007<br>
+            Este medicamento é de uso exclusivo do paciente identificado.<br>
+            Conservar em temperatura ambiente. Manter fora do alcance de crianças.
+        </div>
+    </div>
+</body>
+</html>

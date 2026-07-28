@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Salvelle — OCR de receita</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap');</style>
+<link rel="stylesheet" href="ds/tokens.css">
+<link rel="stylesheet" href="ds/components.css">
+<style>
+  .ocr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .ocr-pane { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); display: flex; flex-direction: column; }
+  .ocr-pane-head { padding: 14px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; }
+  .ocr-pane-head h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.015em; }
+  .ocr-pane-head .meta { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+
+  .doc-area { padding: 24px; flex: 1; background: var(--bg-subtle); display: flex; align-items: flex-start; justify-content: center; min-height: 600px; }
+  .scan-doc { background: #fdfdf9; width: 100%; max-width: 420px; border-radius: 4px; box-shadow: 0 1px 0 rgba(0,0,0,.08), 0 12px 32px rgba(0,0,0,.08); position: relative; padding: 32px 36px 40px; font-family: 'Times New Roman', serif; color: #1a1a1a; margin-right: 80px; }
+  .scan-doc::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 26px, rgba(0,0,0,.02) 26px 27px); pointer-events: none; border-radius: inherit; }
+  .doc-clinic-bar { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 14px; border-bottom: 2px solid #1a3357; margin-bottom: 18px; }
+  .doc-clinic-bar .clinic { font-family: 'Times New Roman', serif; }
+  .doc-clinic-bar .clinic-name { font-size: 14px; font-weight: 700; color: #1a3357; letter-spacing: 0.02em; }
+  .doc-clinic-bar .clinic-sub { font-size: 9px; color: #666; margin-top: 2px; line-height: 1.5; }
+  .doc-clinic-bar .clinic-mark { width: 28px; height: 28px; border-radius: 50%; background: #1a3357; color: #fff; display: grid; place-items: center; font-size: 10px; font-weight: 700; }
+
+  .doc-field { position: relative; display: grid; grid-template-columns: 70px 1fr; gap: 8px; padding: 7px 8px; margin-bottom: 4px; font-size: 11px; align-items: baseline; }
+  .doc-field .lbl { color: #777; font-size: 10px; }
+  .doc-field .v { color: #1a1a1a; font-size: 12px; font-weight: 500; }
+  .doc-field .v.handwritten { font-family: 'Bradley Hand', 'Brush Script MT', cursive; font-size: 14px; color: #142a52; font-weight: 400; letter-spacing: 0.02em; }
+
+  .doc-rx-title { font-family: 'Times New Roman', serif; font-size: 22px; color: #1a3357; font-style: italic; margin: 18px 8px 8px; font-weight: 400; }
+  .doc-rx { display: flex; flex-direction: column; gap: 12px; margin: 0 4px; }
+  .doc-rx-item { position: relative; padding: 8px 10px; border-radius: 3px; }
+  .doc-rx-item .rx-row { display: flex; gap: 10px; align-items: baseline; }
+  .doc-rx-item .num { font-family: 'Times New Roman', serif; font-size: 13px; color: #1a3357; font-style: italic; min-width: 16px; }
+  .doc-rx-item .name { font-family: 'Bradley Hand', 'Brush Script MT', cursive; font-size: 18px; color: #142a52; font-weight: 500; line-height: 1.1; transform: rotate(-0.4deg); }
+  .doc-rx-item .pos { font-family: 'Bradley Hand', 'Brush Script MT', cursive; font-size: 13px; color: #2c4670; margin-left: 26px; margin-top: 2px; transform: rotate(-0.6deg); }
+
+  .doc-sig { margin-top: 28px; padding-top: 16px; border-top: 1px solid #ccc; display: flex; justify-content: space-between; align-items: flex-end; }
+  .doc-sig .sig-line { width: 60%; }
+  .doc-sig .sig-line .scribble { font-family: 'Brush Script MT', cursive; font-size: 22px; color: #1a3357; transform: rotate(-2deg); display: block; margin-bottom: -2px; }
+  .doc-sig .sig-line hr { border: none; border-top: 1px solid #999; margin: 0 0 4px; }
+  .doc-sig .sig-line .sig-name { font-size: 10px; color: #555; font-family: 'Times New Roman', serif; }
+  .doc-sig .stamp { width: 58px; height: 58px; border: 2px solid #1a3357; border-radius: 50%; display: grid; place-items: center; opacity: 0.5; transform: rotate(-8deg); font-size: 8px; text-align: center; line-height: 1.2; color: #1a3357; padding: 4px; font-family: 'Times New Roman', serif; font-weight: 700; }
+
+  /* Bounding boxes — wrap each labeled element */
+  .ocr-target { position: relative; }
+  .ocr-target.detected::after { content: ''; position: absolute; inset: -2px; border: 2px solid var(--petrol-500); border-radius: 4px; background: color-mix(in oklch, var(--petrol-500) 8%, transparent); pointer-events: none; }
+  .ocr-target.detected.warn::after { border-color: var(--warn); background: color-mix(in oklch, var(--warn) 10%, transparent); }
+  .ocr-target.pulse::after { animation: scan-pulse 2.4s ease-in-out infinite; }
+  .ocr-target .ocr-tag { position: absolute; top: 50%; right: -8px; transform: translate(100%, -50%); background: var(--petrol-500); color: #fff; font-family: var(--font-mono); font-size: 9px; padding: 3px 7px; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 3px; white-space: nowrap; z-index: 2; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .ocr-target .ocr-tag::before { content: ''; position: absolute; left: -4px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-right: 4px solid var(--petrol-500); }
+  .ocr-target.warn .ocr-tag { background: var(--warn); }
+  .ocr-target.warn .ocr-tag::before { border-right-color: var(--warn); }
+
+  .extract-list { padding: 8px 0; flex: 1; overflow: auto; }
+  .extract-row { padding: 14px 20px; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 28px 1fr; gap: 12px; }
+  .extract-row .num { width: 24px; height: 24px; border-radius: 50%; background: var(--petrol-50); color: var(--petrol-700); display: grid; place-items: center; font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+  .extract-row .label { font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .extract-row .val { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .extract-row.warn .num { background: var(--warn-soft); color: var(--warn); }
+  .extract-row .conf { display: inline-flex; gap: 6px; align-items: center; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); margin-top: 4px; }
+  .extract-row .conf-bar { width: 60px; height: 4px; background: var(--rule); border-radius: 2px; overflow: hidden; }
+  .extract-row .conf-bar .fill { height: 100%; background: var(--ok); }
+  .extract-row .conf-bar .fill.mid { background: var(--warn); }
+  .extract-row .actions { margin-top: 8px; display: flex; gap: 8px; }
+  .meds-table { width: 100%; }
+  .meds-table th, .meds-table td { padding: 10px 12px; font-size: 12px; border-bottom: 1px solid var(--rule); text-align: left; }
+  .meds-table th { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); font-weight: 500; background: var(--bg-subtle); }
+
+  .pulse { animation: scan-pulse 2.4s ease-in-out infinite; }
+  @keyframes scan-pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+  .step-pills { display: flex; gap: 6px; padding: 12px 20px; background: var(--bg-subtle); border-bottom: 1px solid var(--rule); }
+  .step-pills .pill { font-family: var(--font-mono); font-size: 10px; padding: 4px 10px; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-pill); color: var(--ink-3); display: inline-flex; gap: 6px; align-items: center; letter-spacing: 0.04em; text-transform: uppercase; }
+  .step-pills .pill.done { color: var(--ok); border-color: color-mix(in oklch, var(--ok) 30%, var(--rule)); }
+  .step-pills .pill.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/shell.jsx"></script>
+<script type="text/babel" data-presets="react">
+function App() {
+  return (
+    <div className="app-shell">
+      <Sidebar active="ocr" />
+      <div className="app-main">
+        <Topbar />
+        <div className="app-content">
+          <PageHead
+            breadcrumb="OPERAÇÃO · OCR DE RECEITA"
+            title="Receita digitalizada · Clínica Vita"
+            subtitle="Reconhecimento automático com confirmação humana antes de virar pedido."
+            actions={<>
+              <button className="btn btn-secondary"><Icon name="archive"/>Histórico</button>
+              <button className="btn btn-secondary"><Icon name="x"/>Descartar</button>
+              <button className="btn btn-primary"><Icon name="check"/>Confirmar e criar pedidos</button>
+            </>}
+          />
+
+          <div className="ocr-grid">
+            <div className="ocr-pane">
+              <div className="ocr-pane-head">
+                <h2><Icon name="scan" style={{marginRight:8,verticalAlign:'-2px'}}/>Imagem original</h2>
+                <span className="meta">receita-2604-1842.jpg · 2.4 MB · 1654 × 2300</span>
+              </div>
+              <div className="step-pills">
+                <span className="pill done"><Icon name="check"/>Upload</span>
+                <span className="pill done"><Icon name="check"/>Auto-rotação</span>
+                <span className="pill done"><Icon name="check"/>Realce</span>
+                <span className="pill done"><Icon name="check"/>OCR</span>
+                <span className="pill active"><Icon name="dot"/>Validação humana</span>
+              </div>
+              <div className="doc-area">
+                <div className="scan-doc">
+                  <div className="doc-clinic-bar">
+                    <div className="clinic">
+                      <div className="clinic-name">CLÍNICA VITA</div>
+                      <div className="clinic-sub">Dr. Felipe Costa<br/>Clínico Geral · Endocrinologia<br/>Av. Paulista 1842 · sala 712 · São Paulo</div>
+                    </div>
+                    <div className="clinic-mark">CV</div>
+                  </div>
+
+                  <div className="ocr-target detected pulse" style={{margin:'0 0 6px'}}>
+                    <span className="ocr-tag">médico · 98%</span>
+                    <div className="doc-field">
+                      <span className="lbl">Médico</span>
+                      <span className="v">Dr. Felipe Costa</span>
+                    </div>
+                  </div>
+                  <div className="ocr-target detected" style={{margin:'0 0 6px'}}>
+                    <span className="ocr-tag">crm · 95%</span>
+                    <div className="doc-field">
+                      <span className="lbl">CRM</span>
+                      <span className="v">CRM/SP 87654</span>
+                    </div>
+                  </div>
+                  <div className="ocr-target detected" style={{margin:'0 0 6px'}}>
+                    <span className="ocr-tag">paciente · 92%</span>
+                    <div className="doc-field">
+                      <span className="lbl">Paciente</span>
+                      <span className="v handwritten">Henrique Sá Pereira</span>
+                    </div>
+                  </div>
+                  <div className="doc-field">
+                    <span className="lbl">Data</span>
+                    <span className="v handwritten">26 / 04 / 2026</span>
+                  </div>
+
+                  <div className="doc-rx-title">℞</div>
+                  <div className="doc-rx">
+                    <div className="ocr-target detected warn">
+                      <span className="ocr-tag">item 1 · 76%</span>
+                      <div className="doc-rx-item">
+                        <div className="rx-row"><span className="num">1.</span><span className="name">Bupropiona 150mg</span></div>
+                        <div className="pos">30 cáps — 1 cáps de manhã</div>
+                      </div>
+                    </div>
+                    <div className="ocr-target detected">
+                      <span className="ocr-tag">item 2 · 88%</span>
+                      <div className="doc-rx-item">
+                        <div className="rx-row"><span className="num">2.</span><span className="name">Vit. D3 50.000 UI</span></div>
+                        <div className="pos">8 cáps — 1 por semana</div>
+                      </div>
+                    </div>
+                    <div className="ocr-target detected">
+                      <span className="ocr-tag">item 3 · 91%</span>
+                      <div className="doc-rx-item">
+                        <div className="rx-row"><span className="num">3.</span><span className="name">Magnésio Quelato 300mg</span></div>
+                        <div className="pos">60 cáps — 1 cáps à noite</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="doc-sig">
+                    <div className="sig-line">
+                      <span className="scribble">F. Costa</span>
+                      <hr/>
+                      <span className="sig-name">Dr. Felipe Costa · CRM/SP 87654</span>
+                    </div>
+                    <div className="stamp">CRM/SP<br/>87654</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="ocr-pane">
+              <div className="ocr-pane-head">
+                <h2><Icon name="bolt" style={{marginRight:8,verticalAlign:'-2px'}}/>Dados extraídos</h2>
+                <span className="meta">Confiança média 91%</span>
+              </div>
+
+              <div className="extract-list">
+                <div className="extract-row">
+                  <div className="num">1</div>
+                  <div>
+                    <div className="label">Médico</div>
+                    <div className="val">Dr. Felipe Costa</div>
+                    <div className="conf"><div className="conf-bar"><div className="fill" style={{width:'98%'}}/></div>98%</div>
+                  </div>
+                </div>
+                <div className="extract-row">
+                  <div className="num">2</div>
+                  <div>
+                    <div className="label">CRM</div>
+                    <div className="val">CRM/SP 87654 <span className="badge badge-ok" style={{marginLeft:8}}>Válido</span></div>
+                    <div className="conf"><div className="conf-bar"><div className="fill" style={{width:'95%'}}/></div>95%</div>
+                  </div>
+                </div>
+                <div className="extract-row">
+                  <div className="num">3</div>
+                  <div>
+                    <div className="label">Paciente</div>
+                    <div className="val">Henrique Sá Pereira</div>
+                    <div className="conf"><div className="conf-bar"><div className="fill" style={{width:'92%'}}/></div>92% · <a href="#" style={{color:'var(--petrol-500)'}}>vincular cliente</a></div>
+                  </div>
+                </div>
+                <div className="extract-row">
+                  <div className="num">4</div>
+                  <div>
+                    <div className="label">Itens prescritos</div>
+                    <div className="val" style={{marginBottom:8}}>3 medicamentos identificados</div>
+                    <table className="meds-table">
+                      <thead><tr><th></th><th>Item</th><th>Qtd</th><th>Conf.</th><th></th></tr></thead>
+                      <tbody>
+                        <tr style={{background:'var(--warn-soft)'}}>
+                          <td><Icon name="dot" style={{color:'var(--warn)'}}/></td>
+                          <td><b>Bupropiona 150mg</b><div style={{fontSize:10,color:'var(--ink-3)'}}>1 cáps/manhã · Lista B</div></td>
+                          <td className="mono">30 cáps</td>
+                          <td className="mono" style={{color:'var(--warn)'}}>76%</td>
+                          <td><button className="btn btn-secondary btn-sm">Revisar</button></td>
+                        </tr>
+                        <tr>
+                          <td><Icon name="dot" style={{color:'var(--ok)'}}/></td>
+                          <td><b>Vitamina D3 50.000 UI</b><div style={{fontSize:10,color:'var(--ink-3)'}}>1 cáps/semana</div></td>
+                          <td className="mono">8 cáps</td>
+                          <td className="mono">88%</td>
+                          <td><Icon name="check" style={{color:'var(--ok)'}}/></td>
+                        </tr>
+                        <tr>
+                          <td><Icon name="dot" style={{color:'var(--ok)'}}/></td>
+                          <td><b>Magnésio Quelato 300mg</b><div style={{fontSize:10,color:'var(--ink-3)'}}>1 cáps/noite</div></td>
+                          <td className="mono">60 cáps</td>
+                          <td className="mono">91%</td>
+                          <td><Icon name="check" style={{color:'var(--ok)'}}/></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="extract-row warn">
+                  <div className="num">!</div>
+                  <div>
+                    <div className="label">Atenção</div>
+                    <div className="val" style={{fontSize:13, fontWeight:400}}>Item 1 contém <b>Bupropiona</b> (Lista B). Receita original deve ser <b>azul</b> e ficará retida na farmácia. Confira a numeração da notificação no campo CRM antes de aprovar.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

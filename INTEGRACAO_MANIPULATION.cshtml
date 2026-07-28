@@ -1,0 +1,206 @@
+@* 
+   EXEMPLO DE INTEGRAÇÃO
+   =====================
+   
+   Este arquivo mostra ONDE e COMO adicionar o botão "Gerar Rótulo" 
+   nas views existentes de Manipulation Orders
+*@
+
+@* 
+   OPÇÃO 1: Adicionar no cabeçalho da página de detalhes
+   ======================================================
+   Arquivo: Views/ManipulationOrders/Details.cshtml
+*@
+
+@model ManipulationOrderDetailsDto
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-0">Ordem de Manipulação #@Model.OrderCode</h2>
+        </div>
+        <div class="col-auto">
+            @* ADICIONAR AQUI *@
+            <partial name="_GenerateLabelButton" model="@Model.Id" />
+            @* FIM DA ADIÇÃO *@
+            
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary btn-sm">
+                <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+    </div>
+    
+    @* Resto do conteúdo... *@
+</div>
+
+@* 
+   OPÇÃO 2: Adicionar em card de ações
+   ====================================
+*@
+
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Ações</h5>
+    </div>
+    <div class="card-body">
+        <div class="d-grid gap-2">
+            @* ADICIONAR AQUI *@
+            <a href="/Labels/Generate/@Model.Id" class="btn btn-success">
+                <i class="bi bi-file-earmark-text me-2"></i>Gerar Rótulo
+            </a>
+            @* FIM DA ADIÇÃO *@
+            
+            <button class="btn btn-primary">
+                <i class="bi bi-check-circle me-2"></i>Aprovar
+            </button>
+            <button class="btn btn-warning">
+                <i class="bi bi-pause-circle me-2"></i>Pausar
+            </button>
+        </div>
+    </div>
+</div>
+
+@* 
+   OPÇÃO 3: Adicionar coluna de ações na tabela (Index)
+   =====================================================
+   Arquivo: Views/ManipulationOrders/Index.cshtml
+*@
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Código</th>
+            <th>Paciente</th>
+            <th>Status</th>
+            <th class="text-end">Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var order in Model)
+        {
+            <tr>
+                <td>@order.OrderCode</td>
+                <td>@order.CustomerName</td>
+                <td>@order.Status</td>
+                <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                        <a asp-action="Details" asp-route-id="@order.Id" 
+                           class="btn btn-outline-info">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a asp-action="Edit" asp-route-id="@order.Id" 
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        @* ADICIONAR AQUI *@
+                        <a href="/Labels/Generate/@order.Id" 
+                           class="btn btn-outline-success"
+                           title="Gerar Rótulo">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </a>
+                        @* FIM DA ADIÇÃO *@
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@* 
+   OPÇÃO 4: Verificar se já tem rótulo e mostrar botão apropriado
+   ==============================================================
+*@
+
+<div id="labelActions-@Model.Id">
+    @* Carregamento dinâmico via JavaScript *@
+    <a href="/Labels/Generate/@Model.Id" class="btn btn-success btn-sm">
+        <i class="bi bi-file-earmark-text me-1"></i>Gerar Rótulo
+    </a>
+</div>
+
+<script>
+    (async function() {
+        const orderId = '@Model.Id';
+        const container = document.getElementById(`labelActions-${orderId}`);
+        
+        try {
+            const response = await fetch(`/api/Labels/search?manipulationOrderId=${orderId}&pageSize=1`);
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.items && data.items.length > 0) {
+                    const label = data.items[0];
+                    
+                    // Já existe rótulo - mostrar botões de visualizar e imprimir
+                    container.innerHTML = `
+                        <div class="btn-group btn-group-sm">
+                            <a href="/Labels/View/${label.id}" class="btn btn-info">
+                                <i class="bi bi-eye me-1"></i>Ver Rótulo
+                            </a>
+                            <button class="btn btn-primary" onclick="printLabel('${label.id}')">
+                                <i class="bi bi-printer me-1"></i>Imprimir
+                            </button>
+                            <a href="/Labels/Generate/${orderId}" class="btn btn-success">
+                                <i class="bi bi-plus-circle me-1"></i>Novo
+                            </a>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                Último rótulo: ${label.labelCode} 
+                                (${label.printCount} impressão${label.printCount !== 1 ? 'ões' : ''})
+                            </small>
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao verificar rótulo:', error);
+        }
+    })();
+    
+    async function printLabel(labelId) {
+        try {
+            const response = await fetch(`/api/Labels/${labelId}/print`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    copies: 1,
+                    format: 'HTML',
+                    printReason: 'IMPRESSAO'
+                })
+            });
+            
+            if (response.ok) {
+                window.open(`/Labels/View/${labelId}`, '_blank');
+            } else {
+                alert('Erro ao imprimir rótulo');
+            }
+        } catch (error) {
+            alert('Erro ao imprimir: ' + error.message);
+        }
+    }
+</script>
+
+@* 
+   RESUMO DE INTEGRAÇÃO
+   ====================
+   
+   1. ADICIONAR em Views/ManipulationOrders/Details.cshtml:
+      - No cabeçalho, junto com botões de ação
+      - Usar: <partial name="_GenerateLabelButton" model="@Model.Id" />
+   
+   2. ADICIONAR em Views/ManipulationOrders/Index.cshtml:
+      - Nova coluna "Rótulo" na tabela
+      - Ou adicionar ícone na coluna de ações
+   
+   3. ADICIONAR em card de status/ações:
+      - Link direto para geração
+      - Verificação se já existe rótulo
+   
+   4. MENU DE NAVEGAÇÃO:
+      - Adicionar item "Rótulos" no menu principal
+      - Link para /Labels/Index
+*@

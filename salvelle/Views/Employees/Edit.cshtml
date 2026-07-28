@@ -1,0 +1,655 @@
+﻿@{
+    ViewData["Title"] = "Editar Funcionário";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0">
+                    <i class="bi bi-pencil-square me-2 text-primary"></i>
+                    Editar Funcionário
+                </h2>
+                <p class="text-muted mb-0" id="breadcrumb">Carregando...</p>
+            </div>
+            <div>
+                <button class="btn btn-outline-secondary me-2" onclick="cancelEdit()">
+                    <i class="bi bi-x-lg me-2"></i>
+                    Cancelar
+                </button>
+                <button class="btn btn-success" onclick="saveChanges()" id="btnSave">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Salvar Alterações
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading State -->
+<div id="loadingState" class="text-center py-5">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Carregando...</span>
+    </div>
+    <p class="text-muted mt-3">Carregando dados do funcionário...</p>
+</div>
+
+<!-- Form -->
+<form id="editForm" style="display: none;">
+    <div class="row">
+        <!-- Dados Pessoais -->
+        <div class="col-md-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person me-2"></i>
+                        Dados Pessoais
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Nome Completo</label>
+                            <input type="text" class="form-control" name="fullName" readonly>
+                            <small class="text-muted">Nome completo não pode ser alterado</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Nome Social</label>
+                            <input type="text" class="form-control" name="socialName">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-envelope"></i>
+                                </span>
+                                <input type="email" class="form-control" name="email">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Telefone</label>
+                            <input type="text" class="form-control phone-mask" name="phone" 
+                                   placeholder="(00) 00000-0000">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">WhatsApp</label>
+                            <input type="text" class="form-control phone-mask" name="whatsApp" 
+                                   placeholder="(00) 00000-0000">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status e Cargo -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-toggle-on me-2"></i>
+                        Status e Cargo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="status">
+                            <option value="Ativo">Ativo</option>
+                            <option value="Férias">Férias</option>
+                            <option value="Afastado">Afastado</option>
+                            <option value="Experiência">Experiência</option>
+                            <option value="Demitido">Demitido</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Departamento</label>
+                        <input type="text" class="form-control" name="department">
+                    </div>
+                    
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <small>Para alterar o cargo, use o histórico de cargos</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Endereço -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        Endereço
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">CEP</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control cep-mask" name="postalCode" 
+                                       placeholder="00000-000">
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        onclick="searchCep()" id="btnSearchCep">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Logradouro</label>
+                            <input type="text" class="form-control" name="street">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Número</label>
+                            <input type="text" class="form-control" name="number">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Complemento</label>
+                            <input type="text" class="form-control" name="complement">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Bairro</label>
+                            <input type="text" class="form-control" name="neighborhood">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Cidade</label>
+                            <input type="text" class="form-control" name="city">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">UF</label>
+                            <input type="text" class="form-control" name="state" maxlength="2">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dados Bancários -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bank me-2"></i>
+                        Dados Bancários
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Código</label>
+                            <input type="text" class="form-control" name="bankCode" 
+                                   placeholder="000" maxlength="3">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Banco</label>
+                            <input type="text" class="form-control" name="bankName">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Agência</label>
+                            <input type="text" class="form-control" name="bankBranch">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Tipo de Conta</label>
+                            <select class="form-select" name="bankAccountType">
+                                <option value="">Selecione</option>
+                                <option value="Corrente">Corrente</option>
+                                <option value="Poupança">Poupança</option>
+                                <option value="Salário">Salário</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Conta</label>
+                            <input type="text" class="form-control" name="bankAccount">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Dígito</label>
+                            <input type="text" class="form-control" name="bankAccountDigit" 
+                                   maxlength="2">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contato de Emergência -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-telephone-forward me-2"></i>
+                        Contato de Emergência
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Nome</label>
+                            <input type="text" class="form-control" name="emergencyContactName">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Parentesco</label>
+                            <input type="text" class="form-control" name="emergencyContactRelationship" 
+                                   placeholder="Ex: Pai, Mãe, Cônjuge">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Telefone</label>
+                            <input type="text" class="form-control phone-mask" name="emergencyContactPhone">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dados de Trabalho -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-briefcase me-2"></i>
+                        Dados de Trabalho
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Salário</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="text" class="form-control money-mask" name="salary">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Número de Dependentes</label>
+                            <input type="number" class="form-control" name="dependentsCount" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-warning mb-0">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <small>Alterações salariais devem ser registradas no histórico</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auditoria -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm bg-light">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <small class="text-muted">Criado em:</small>
+                            <p class="mb-0" id="createdAt">-</p>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Última atualização:</small>
+                            <p class="mb-0" id="updatedAt">-</p>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">CPF:</small>
+                            <p class="mb-0" id="employeeCpf">-</p>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Data de Admissão:</small>
+                            <p class="mb-0" id="hireDate">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<style>
+.form-control:focus, .form-select:focus {
+    border-color: var(--petrol-700);
+    box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.15);
+}
+
+.card {
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+.card-header {
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+}
+
+.phone-mask::placeholder,
+.cep-mask::placeholder,
+.money-mask::placeholder {
+    color: var(--ink-4);
+}
+
+.input-group-text {
+    background-color: var(--bg);
+    border-color: var(--rule);
+}
+
+.alert-info {
+    background-color: var(--info-soft);
+    border-color: #bfdbfe;
+    color: #1e40af;
+}
+
+.alert-warning {
+    background-color: var(--warn-soft);
+    border-color: var(--warn-border);
+    color: var(--amber-700);
+}
+</style>
+
+<script>
+let employeeId = null;
+let originalData = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Obter ID da URL
+    const pathParts = window.location.pathname.split('/');
+    employeeId = pathParts[pathParts.length - 1];
+    
+    if (employeeId) {
+        loadEmployee();
+    } else {
+        showError('ID do funcionário não informado');
+    }
+    
+    initializeMasks();
+});
+
+async function loadEmployee() {
+    try {
+        const response = await fetch(`/api/Employees/${employeeId}`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                window.location.href = '/Account/Login';
+                return;
+            }
+            throw new Error('Funcionário não encontrado');
+        }
+        
+        const employee = await response.json();
+        originalData = employee;
+        
+        populateForm(employee);
+        
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('editForm').style.display = 'block';
+    } catch (error) {
+        console.error('Erro:', error);
+        showError('Erro ao carregar dados do funcionário');
+    }
+}
+
+function populateForm(data) {
+    // Breadcrumb
+    document.getElementById('breadcrumb').textContent = 
+        `${data.fullName} • ${data.jobPosition?.name || 'Funcionário'}`;
+    
+    // Form fields
+    const form = document.getElementById('editForm');
+    
+    form.querySelector('[name="fullName"]').value = data.fullName || '';
+    form.querySelector('[name="socialName"]').value = data.socialName || '';
+    form.querySelector('[name="email"]').value = data.email || '';
+    form.querySelector('[name="phone"]').value = data.phone ? formatPhone(data.phone) : '';
+    form.querySelector('[name="whatsApp"]').value = data.whatsApp ? formatPhone(data.whatsApp) : '';
+    
+    form.querySelector('[name="status"]').value = data.status || '';
+    form.querySelector('[name="department"]').value = data.department || '';
+    
+    form.querySelector('[name="postalCode"]').value = data.postalCode ? formatCep(data.postalCode) : '';
+    form.querySelector('[name="street"]').value = data.street || '';
+    form.querySelector('[name="number"]').value = data.number || '';
+    form.querySelector('[name="complement"]').value = data.complement || '';
+    form.querySelector('[name="neighborhood"]').value = data.neighborhood || '';
+    form.querySelector('[name="city"]').value = data.city || '';
+    form.querySelector('[name="state"]').value = data.state || '';
+    
+    form.querySelector('[name="bankCode"]').value = data.bankCode || '';
+    form.querySelector('[name="bankName"]').value = data.bankName || '';
+    form.querySelector('[name="bankBranch"]').value = data.bankBranch || '';
+    form.querySelector('[name="bankAccountType"]').value = data.bankAccountType || '';
+    form.querySelector('[name="bankAccount"]').value = data.bankAccount || '';
+    form.querySelector('[name="bankAccountDigit"]').value = data.bankAccountDigit || '';
+    
+    form.querySelector('[name="emergencyContactName"]').value = data.emergencyContactName || '';
+    form.querySelector('[name="emergencyContactRelationship"]').value = data.emergencyContactRelationship || '';
+    form.querySelector('[name="emergencyContactPhone"]').value = data.emergencyContactPhone ? formatPhone(data.emergencyContactPhone) : '';
+    
+    form.querySelector('[name="salary"]').value = data.salary ? formatMoney(data.salary) : '';
+    form.querySelector('[name="dependentsCount"]').value = data.dependentsCount || 0;
+    
+    // Auditoria
+    document.getElementById('createdAt').textContent = formatDateTime(data.createdAt);
+    document.getElementById('updatedAt').textContent = formatDateTime(data.updatedAt);
+    document.getElementById('employeeCpf').textContent = formatCpf(data.cpf);
+    document.getElementById('hireDate').textContent = formatDate(data.hireDate);
+}
+
+function initializeMasks() {
+    // Phone
+    document.querySelectorAll('.phone-mask').forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/(\d{2})(\d)/, '($1) $2');
+                value = value.replace(/(\d{5})(\d)/, '$1-$2');
+                e.target.value = value;
+            }
+        });
+    });
+    
+    // CEP
+    document.querySelectorAll('.cep-mask').forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 8) {
+                value = value.replace(/(\d{5})(\d)/, '$1-$2');
+                e.target.value = value;
+            }
+        });
+    });
+    
+    // Money
+    document.querySelectorAll('.money-mask').forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value) {
+                value = (parseInt(value) / 100).toFixed(2);
+                e.target.value = value.replace('.', ',');
+            }
+        });
+    });
+}
+
+async function saveChanges() {
+    const form = document.getElementById('editForm');
+    const btnSave = document.getElementById('btnSave');
+    
+    // Coletar dados do formulário
+    const formData = {
+        fullName: form.querySelector('[name="fullName"]').value,
+        socialName: form.querySelector('[name="socialName"]').value || null,
+        email: form.querySelector('[name="email"]').value,
+        phone: form.querySelector('[name="phone"]').value.replace(/\D/g, '') || null,
+        whatsApp: form.querySelector('[name="whatsApp"]').value.replace(/\D/g, '') || null,
+        
+        status: form.querySelector('[name="status"]').value || null,
+        department: form.querySelector('[name="department"]').value || null,
+        
+        postalCode: form.querySelector('[name="postalCode"]').value.replace(/\D/g, '') || null,
+        street: form.querySelector('[name="street"]').value || null,
+        number: form.querySelector('[name="number"]').value || null,
+        complement: form.querySelector('[name="complement"]').value || null,
+        neighborhood: form.querySelector('[name="neighborhood"]').value || null,
+        city: form.querySelector('[name="city"]').value || null,
+        state: form.querySelector('[name="state"]').value || null,
+        
+        bankCode: form.querySelector('[name="bankCode"]').value || null,
+        bankName: form.querySelector('[name="bankName"]').value || null,
+        bankBranch: form.querySelector('[name="bankBranch"]').value || null,
+        bankAccountType: form.querySelector('[name="bankAccountType"]').value || null,
+        bankAccount: form.querySelector('[name="bankAccount"]').value || null,
+        bankAccountDigit: form.querySelector('[name="bankAccountDigit"]').value || null,
+        
+        emergencyContactName: form.querySelector('[name="emergencyContactName"]').value || null,
+        emergencyContactRelationship: form.querySelector('[name="emergencyContactRelationship"]').value || null,
+        emergencyContactPhone: form.querySelector('[name="emergencyContactPhone"]').value.replace(/\D/g, '') || null,
+        
+        salary: parseMoney(form.querySelector('[name="salary"]').value),
+        dependentsCount: parseInt(form.querySelector('[name="dependentsCount"]').value) || 0
+    };
+    
+    // Desabilitar botão
+    btnSave.disabled = true;
+    btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+    
+    try {
+        const response = await fetch(`/api/Employees/${employeeId}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                window.location.href = '/Account/Login';
+                return;
+            }
+        }
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('Funcionário atualizado com sucesso!');
+            window.location.href = `/Employees/Details/${employeeId}`;
+        } else {
+            alert('Erro: ' + (result.error || 'Erro ao atualizar funcionário'));
+            btnSave.disabled = false;
+            btnSave.innerHTML = '<i class="bi bi-check-circle me-2"></i>Salvar Alterações';
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao salvar alterações. Tente novamente.');
+        btnSave.disabled = false;
+        btnSave.innerHTML = '<i class="bi bi-check-circle me-2"></i>Salvar Alterações';
+    }
+}
+
+function cancelEdit() {
+    if (confirm('Deseja descartar as alterações?')) {
+        window.location.href = `/Employees/Details/${employeeId}`;
+    }
+}
+
+async function searchCep() {
+    const form = document.getElementById('editForm');
+    const cepInput = form.querySelector('[name="postalCode"]');
+    const cep = cepInput.value.replace(/\D/g, '');
+    
+    if (cep.length !== 8) {
+        alert('CEP inválido');
+        return;
+    }
+    
+    const btnSearch = document.getElementById('btnSearchCep');
+    btnSearch.disabled = true;
+    btnSearch.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    
+    try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await response.json();
+        
+        if (data.erro) {
+            alert('CEP não encontrado');
+        } else {
+            form.querySelector('[name="street"]').value = data.logradouro;
+            form.querySelector('[name="neighborhood"]').value = data.bairro;
+            form.querySelector('[name="city"]').value = data.localidade;
+            form.querySelector('[name="state"]').value = data.uf;
+            form.querySelector('[name="number"]').focus();
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao buscar CEP');
+    } finally {
+        btnSearch.disabled = false;
+        btnSearch.innerHTML = '<i class="bi bi-search"></i>';
+    }
+}
+
+// Helper Functions
+function formatCpf(cpf) {
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+}
+
+function formatCep(cep) {
+    return cep.replace(/(\d{5})(\d{3})/, '$1-$2');
+}
+
+function formatPhone(phone) {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length === 11) {
+        return digits.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    }
+    return phone;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toLocaleDateString('pt-BR');
+}
+
+function formatDateTime(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleString('pt-BR');
+}
+
+function formatMoney(value) {
+    return value.toFixed(2).replace('.', ',');
+}
+
+function parseMoney(value) {
+    if (!value) return 0;
+    return parseFloat(value.replace(',', '.'));
+}
+
+function showError(message) {
+    document.getElementById('loadingState').innerHTML = `
+        <div class="text-center py-5">
+            <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
+            <p class="text-danger mt-3">${message}</p>
+            <button class="btn btn-primary mt-2" onclick="window.location.href='/Employees/List'">
+                Voltar para Lista
+            </button>
+        </div>
+    `;
+}
+</script>

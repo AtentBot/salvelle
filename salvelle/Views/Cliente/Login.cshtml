@@ -1,0 +1,174 @@
+﻿@{
+    ViewData["Title"] = "Entrar";
+    ViewData["HideNav"] = true;
+    Layout = "_LayoutCliente";
+    
+    var returnUrl = ViewBag.ReturnUrl as string;
+}
+
+<style>
+    .auth-container {
+        min-height: 100vh; display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+        background: linear-gradient(135deg, var(--petrol-700) 0%, var(--petrol-500) 60%, var(--petrol-400) 100%);
+        position: relative; overflow: hidden;
+    }
+    .auth-container::before { content: ''; position: absolute; inset: 0; background: radial-gradient(900px 500px at 80% 100%, rgba(255,255,255,.10), transparent 60%); pointer-events: none; }
+    .auth-card {
+        background: var(--surface);
+        border-radius: var(--r-lg);
+        padding: 36px 30px;
+        width: 100%; max-width: 420px;
+        box-shadow: var(--shadow-3);
+        position: relative; z-index: 1;
+    }
+    .auth-header { text-align: center; margin-bottom: 26px; }
+    .auth-header h1 { color: var(--ink); font-weight: 600; letter-spacing: -0.025em; font-size: 22px; margin-bottom: 6px; display: inline-flex; align-items: center; gap: 8px; }
+    .auth-header h1 .brand-glyph { width: 36px; height: 36px; font-size: 18px; }
+    .auth-header p { color: var(--ink-3); font-size: 14px; margin: 0; }
+    .form-floating > label { color: var(--ink-3); }
+    .form-control { border-radius: var(--r-sm); border-color: var(--rule); }
+    .form-control:focus { border-color: var(--petrol-500); box-shadow: var(--ring-focus); }
+    .btn-primary { padding: 12px; font-weight: 500; border-radius: var(--r-sm); }
+    .btn-outline-primary { border-color: var(--petrol-500); color: var(--petrol-500); padding: 12px; font-weight: 500; border-radius: var(--r-sm); }
+    .btn-outline-primary:hover { background: var(--petrol-500); color: #fff; }
+    .password-toggle { cursor: pointer; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-3); }
+</style>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1><svg width="50" height="50" viewBox="0 0 88 88" style="height:50px;width:auto;vertical-align:middle" class="me-2" role="img" aria-label="Salvelle"><rect width="88" height="88" rx="20" fill="#0F6E78"/><text x="44" y="65" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-weight="600" font-size="68" fill="#FAF9F5">S</text></svg>Salvelle</h1>
+            <p>Portal do Cliente</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="mb-3">
+                <label class="form-label">Telefone (WhatsApp)</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-whatsapp text-success"></i></span>
+                    <input type="tel" class="form-control" id="phone" 
+                           placeholder="(00) 00000-0000" oninput="formatPhone(this)" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Senha</label>
+                <div class="input-group position-relative">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input type="password" class="form-control" id="password" 
+                           placeholder="Digite sua senha" required>
+                    <i class="bi bi-eye password-toggle" onclick="togglePassword()"></i>
+                </div>
+            </div>
+
+            <div id="alertArea" class="mb-3"></div>
+
+            <button type="submit" class="btn btn-primary w-100 mb-3" id="btnSubmit">
+                <span class="spinner-border spinner-border-sm d-none me-2" id="spinner"></span>
+                <span id="btnText">Entrar</span>
+            </button>
+
+            <div class="text-center mb-3">
+                <a href="/Cliente/EsqueciSenha" class="text-decoration-none small text-muted">
+                    <i class="bi bi-key me-1"></i>Esqueci minha senha
+                </a>
+            </div>
+        </form>
+
+        <hr class="my-4">
+
+        <div class="text-center">
+            <p class="text-muted mb-3">Ainda não tem conta?</p>
+            <a href="/Cliente/Cadastro" class="btn btn-outline-primary w-100">
+                <i class="bi bi-person-plus me-2"></i>Criar minha conta
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const returnUrl = '@Html.Raw(returnUrl ?? "/Cliente/Inicio")';
+    
+    function formatPhone(input) {
+        let value = input.value.replace(/\D/g, '');
+        if (value.length > 11) value = value.slice(0, 11);
+        if (value.length > 6) {
+            input.value = `(${value.slice(0,2)}) ${value.slice(2,7)}-${value.slice(7)}`;
+        } else if (value.length > 2) {
+            input.value = `(${value.slice(0,2)}) ${value.slice(2)}`;
+        } else if (value.length > 0) {
+            input.value = `(${value}`;
+        }
+    }
+    
+    function togglePassword() {
+        const input = document.getElementById('password');
+        const icon = document.querySelector('.password-toggle');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+
+    const form = document.getElementById('loginForm');
+    const alertArea = document.getElementById('alertArea');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const phone = document.getElementById('phone').value;
+        const password = document.getElementById('password').value;
+        
+        if (!phone || !password) {
+            showAlert('Preencha todos os campos', 'danger');
+            return;
+        }
+        
+        setLoading(true);
+        alertArea.innerHTML = '';
+        
+        try {
+            const response = await fetch('/api/cliente/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    phone: phone.replace(/\D/g, ''), 
+                    password: password
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showAlert('Login realizado! Redirecionando...', 'success');
+                setTimeout(() => {
+                    window.location.href = returnUrl;
+                }, 1000);
+            } else {
+                showAlert(data.message || 'Telefone ou senha inválidos', 'danger');
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showAlert('Erro de conexão. Tente novamente.', 'danger');
+            setLoading(false);
+        }
+    });
+    
+    function setLoading(loading) {
+        document.getElementById('spinner').classList.toggle('d-none', !loading);
+        document.getElementById('btnSubmit').disabled = loading;
+    }
+    
+    function showAlert(message, type) {
+        alertArea.innerHTML = `<div class="alert alert-${type} small py-2 mb-0">${message}</div>`;
+    }
+</script>
+}

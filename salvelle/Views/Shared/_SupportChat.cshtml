@@ -1,0 +1,18 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration _cfg
+@{
+    var crispId = _cfg["SupportChat:CrispWebsiteId"];
+}
+@if (!string.IsNullOrWhiteSpace(crispId) && crispId != "__SET_VIA_ENV_VAR__")
+{
+    <script type="text/javascript">
+        window.$crisp = [];
+        window.CRISP_WEBSITE_ID = "@crispId";
+        (function () {
+            var d = document;
+            var s = d.createElement("script");
+            s.src = "https://client.crisp.chat/l.js";
+            s.async = 1;
+            d.getElementsByTagName("head")[0].appendChild(s);
+        })();
+    </script>
+}

@@ -1,0 +1,586 @@
+﻿@{
+    ViewData["Title"] = "Funcionários";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0">
+                    <i class="bi bi-people-fill me-2 text-primary"></i>
+                    Funcionários
+                </h2>
+                <p class="text-muted mb-0">Gerenciar equipe e colaboradores</p>
+            </div>
+            <div>
+                <button class="btn btn-primary" onclick="window.location.href='/Employees/Create'">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Novo Funcionário
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-search me-1"></i>
+                            Buscar
+                        </label>
+                        <input type="text" class="form-control" id="searchInput" 
+                               placeholder="Nome, CPF, email...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-briefcase me-1"></i>
+                            Cargo
+                        </label>
+                        <select class="form-select" id="filterPosition">
+                            <option value="">Todos os cargos</option>
+                            <option value="OWNER">Proprietário</option>
+                            <option value="GENERAL_MANAGER">Gerente</option>
+                            <option value="pharmacist_rt">Farmacêutico RT</option>
+                            <option value="PHARMACIST">Farmacêutico</option>
+                            <option value="SUPERVISOR">Supervisor</option>
+                            <option value="TECHNICIAN">Técnico</option>
+                            <option value="STOCK_CONTROLLER">Controle de Estoque</option>
+                            <option value="PURCHASER">Comprador</option>
+                            <option value="ATTENDANT">Atendente</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-toggle-on me-1"></i>
+                            Status
+                        </label>
+                        <select class="form-select" id="filterStatus">
+                            <option value="" selected>Todos</option>
+                            <option value="Ativo">Ativos</option>
+                            <option value="Demitido">Demitidos</option>
+                            <option value="Afastado">Afastados</option>
+                            <option value="Férias">Férias</option>
+                            <option value="Experiência">Experiência</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-sort-down me-1"></i>
+                            Ordenar por
+                        </label>
+                        <select class="form-select" id="sortBy">
+                            <option value="name">Nome (A-Z)</option>
+                            <option value="name-desc">Nome (Z-A)</option>
+                            <option value="hire-date">Data de admissão (mais recente)</option>
+                            <option value="hire-date-desc">Data de admissão (mais antigo)</option>
+                            <option value="position">Cargo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">
+                            <i class="bi bi-x-circle me-1"></i>
+                            Limpar Filtros
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="exportToExcel()">
+                            <i class="bi bi-file-earmark-excel me-1"></i>
+                            Exportar Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Total de Funcionários</p>
+                        <h3 class="mb-0" id="totalEmployees">0</h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-people text-primary fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Ativos</p>
+                        <h3 class="mb-0 text-success" id="activeEmployees">0</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-person-check text-success fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Em Experiência</p>
+                        <h3 class="mb-0 text-warning" id="probationEmployees">0</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-hourglass-split text-warning fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Admissões (mês)</p>
+                        <h3 class="mb-0 text-info" id="monthlyHires">0</h3>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-calendar-plus text-info fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Funcionários -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-table me-2"></i>
+                        Lista de Funcionários
+                    </h5>
+                    <span class="badge bg-secondary" id="recordCount">0 registros</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="employeesTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>
+                                    <i class="bi bi-person-circle me-1"></i>
+                                    Funcionário
+                                </th>
+                                <th>
+                                    <i class="bi bi-briefcase me-1"></i>
+                                    Cargo
+                                </th>
+                                <th>
+                                    <i class="bi bi-envelope me-1"></i>
+                                    Contato
+                                </th>
+                                <th>
+                                    <i class="bi bi-calendar me-1"></i>
+                                    Admissão
+                                </th>
+                                <th>
+                                    <i class="bi bi-toggle-on me-1"></i>
+                                    Status
+                                </th>
+                                <th class="text-center">
+                                    <i class="bi bi-gear me-1"></i>
+                                    Ações
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeesTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Carregando...</span>
+                                    </div>
+                                    <p class="text-muted mt-2">Carregando funcionários...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-white">
+                <nav>
+                    <ul class="pagination mb-0 justify-content-center" id="pagination">
+                        <!-- Paginação será gerada via JavaScript -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-hover tbody tr { transition: background-color var(--t-fast); }
+    .table-hover tbody tr:hover { background-color: var(--bg-subtle); }
+
+    .avatar-circle {
+        width: 36px; height: 36px; border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-weight: 600; font-size: 13px; margin-right: 10px;
+        background: var(--petrol-50); color: var(--petrol-700);
+    }
+
+    .employee-info { display: flex; align-items: center; }
+    .employee-details { display: flex; flex-direction: column; }
+    .employee-name { font-weight: 500; color: var(--ink); margin-bottom: 2px; font-size: 14px; }
+    .employee-cpf { font-size: 12px; color: var(--ink-3); font-family: var(--font-mono); }
+
+    .action-btn { padding: 4px 8px; font-size: 13px; margin: 0 2px; }
+    .status-badge { padding: 3px 10px; border-radius: var(--r-pill); font-size: 11px; font-weight: 500; }
+</style>
+
+<script>
+let employees = [];
+let filteredEmployees = [];
+let currentPage = 1;
+const itemsPerPage = 10;
+
+// Carregar funcionários ao carregar a página
+document.addEventListener('DOMContentLoaded', function() {
+    loadEmployees();
+    
+    // Event listeners para filtros
+    document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 300));
+    document.getElementById('filterPosition').addEventListener('change', applyFilters);
+    document.getElementById('filterStatus').addEventListener('change', applyFilters);
+    document.getElementById('sortBy').addEventListener('change', applyFilters);
+});
+
+async function loadEmployees() {
+    try {
+        const response = await fetch('/api/Employees', {
+            method: 'GET',
+            credentials: 'include', // ✅ Enviar cookies
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                window.location.href = '/Account/Login';
+                return;
+            }
+            throw new Error('Erro ao carregar funcionários');
+        }
+        
+        const data = await response.json();
+        employees = data.items || data; // API pode retornar {items: [...]} ou array direto
+        filteredEmployees = employees;
+        
+        updateStatistics();
+        applyFilters();
+    } catch (error) {
+        console.error('Erro:', error);
+        showError('Erro ao carregar funcionários. Tente novamente.');
+    }
+}
+
+function updateStatistics() {
+    document.getElementById('totalEmployees').textContent = employees.length;
+    document.getElementById('activeEmployees').textContent = 
+        employees.filter(e => e.status === 'Ativo').length;
+    document.getElementById('probationEmployees').textContent = 
+        employees.filter(e => e.status === 'Experiência').length;
+    
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const monthlyHires = employees.filter(e => {
+        const hireDate = new Date(e.hireDate);
+        return hireDate.getMonth() === currentMonth && hireDate.getFullYear() === currentYear;
+    }).length;
+    document.getElementById('monthlyHires').textContent = monthlyHires;
+}
+
+function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const positionFilter = document.getElementById('filterPosition').value;
+    const statusFilter = document.getElementById('filterStatus').value;
+    const sortBy = document.getElementById('sortBy').value;
+    
+    // Filtrar
+    filteredEmployees = employees.filter(emp => {
+        const matchesSearch = !searchTerm || 
+            emp.fullName.toLowerCase().includes(searchTerm) ||
+            emp.cpf.includes(searchTerm.replace(/\D/g, '')) ||
+            emp.email.toLowerCase().includes(searchTerm);
+        
+        const matchesPosition = !positionFilter || emp.jobPosition?.code === positionFilter;
+        const matchesStatus = !statusFilter || emp.status === statusFilter;
+        
+        return matchesSearch && matchesPosition && matchesStatus;
+    });
+    
+    // Ordenar
+    filteredEmployees.sort((a, b) => {
+        switch(sortBy) {
+            case 'name':
+                return a.fullName.localeCompare(b.fullName);
+            case 'name-desc':
+                return b.fullName.localeCompare(a.fullName);
+            case 'hire-date':
+                return new Date(b.hireDate) - new Date(a.hireDate);
+            case 'hire-date-desc':
+                return new Date(a.hireDate) - new Date(b.hireDate);
+            case 'position':
+                return (a.jobPosition?.name || '').localeCompare(b.jobPosition?.name || '');
+            default:
+                return 0;
+        }
+    });
+    
+    currentPage = 1;
+    renderTable();
+    renderPagination();
+}
+
+function renderTable() {
+    const tbody = document.getElementById('employeesTableBody');
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageEmployees = filteredEmployees.slice(start, end);
+    
+    document.getElementById('recordCount').textContent = `${filteredEmployees.length} registro${filteredEmployees.length !== 1 ? 's' : ''}`;
+    
+    if (pageEmployees.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-5">
+                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                    <p class="text-muted mt-2">Nenhum funcionário encontrado</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = pageEmployees.map(emp => {
+        const initials = emp.fullName.split(' ')
+            .map(n => n[0])
+            .slice(0, 2)
+            .join('');
+        
+        const avatarColor = getAvatarColor(emp.fullName);
+        
+        return `
+            <tr>
+                <td>
+                    <div class="employee-info">
+                        <div class="avatar-circle" style="background-color: ${avatarColor}; color: white;">
+                            ${initials}
+                        </div>
+                        <div class="employee-details">
+                            <span class="employee-name">${emp.fullName}</span>
+                            <span class="employee-cpf">${formatCpf(emp.cpf)}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge bg-secondary">
+                        ${emp.jobPosition?.name || 'Sem cargo'}
+                    </span>
+                </td>
+                <td>
+                    <div>
+                        <i class="bi bi-envelope me-1 text-muted"></i>
+                        <small>${emp.email}</small>
+                    </div>
+                    ${emp.whatsApp ? `
+                    <div>
+                        <i class="bi bi-whatsapp me-1 text-success"></i>
+                        <small>${formatPhone(emp.whatsApp)}</small>
+                    </div>
+                    ` : ''}
+                </td>
+                <td>
+                    <small>${formatDate(emp.hireDate)}</small>
+                </td>
+                <td>
+                    ${getStatusBadge(emp.status)}
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-primary action-btn" 
+                            onclick="viewEmployee('${emp.id}')" 
+                            title="Ver detalhes">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-success action-btn" 
+                            onclick="editEmployee('${emp.id}')" 
+                            title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger action-btn" 
+                            onclick="deleteEmployee('${emp.id}', '${emp.fullName}')" 
+                            title="Desativar">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderPagination() {
+    const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+    const pagination = document.getElementById('pagination');
+    
+    if (totalPages <= 1) {
+        pagination.innerHTML = '';
+        return;
+    }
+    
+    let html = `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+    `;
+    
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                </li>
+            `;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+    }
+    
+    html += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+    `;
+    
+    pagination.innerHTML = html;
+}
+
+function changePage(page) {
+    const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+    if (page >= 1 && page <= totalPages) {
+        currentPage = page;
+        renderTable();
+        renderPagination();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    return false;
+}
+
+function viewEmployee(id) {
+    window.location.href = `/Employees/Details/${id}`;
+}
+
+function editEmployee(id) {
+    window.location.href = `/Employees/Edit/${id}`;
+}
+
+async function deleteEmployee(id, name) {
+    if (!confirm(`Tem certeza que deseja desativar ${name}?`)) {
+        return;
+    }
+    
+    // Implementar lógica de desativação
+    alert('Funcionalidade de desativação será implementada');
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterPosition').value = '';
+    document.getElementById('filterStatus').value = 'Ativo';
+    document.getElementById('sortBy').value = 'name';
+    applyFilters();
+}
+
+function exportToExcel() {
+    alert('Funcionalidade de exportação será implementada');
+}
+
+// Funções auxiliares
+function formatCpf(cpf) {
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+}
+
+function formatPhone(phone) {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length === 11) {
+        return digits.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    }
+    return phone;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toLocaleDateString('pt-BR');
+}
+
+function getStatusBadge(status) {
+    const badges = {
+        'Ativo': '<span class="status-badge bg-success">Ativo</span>',
+        'Demitido': '<span class="status-badge bg-danger">Demitido</span>',
+        'Afastado': '<span class="status-badge bg-warning">Afastado</span>',
+        'Férias': '<span class="status-badge bg-info">Férias</span>',
+        'Experiência': '<span class="status-badge bg-primary">Experiência</span>'
+    };
+    return badges[status] || `<span class="status-badge bg-secondary">${status}</span>`;
+}
+
+function getAvatarColor(name) {
+    const colors = [
+        'var(--petrol-700)', 'var(--controlled-black)', '#db2777', 'var(--danger)', 
+        '#ea580c', '#ca8a04', 'var(--ok)', 'var(--info)', 'var(--info)'
+    ];
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function showError(message) {
+    const tbody = document.getElementById('employeesTableBody');
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="6" class="text-center py-5">
+                <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
+                <p class="text-danger mt-2">${message}</p>
+            </td>
+        </tr>
+    `;
+}
+</script>

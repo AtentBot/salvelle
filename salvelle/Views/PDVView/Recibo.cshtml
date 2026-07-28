@@ -1,0 +1,267 @@
+@model Models.Sale
+@{
+    ViewData["Title"] = "Recibo de Venda";
+    Layout = "_Layout";
+    var establishment = ViewBag.Establishment as Models.Establishment;
+    var customer = ViewBag.Customer as Models.Customer;
+    var payments = ViewBag.Payments as List<Models.SalePayment>;
+    if (payments == null) { payments = new List<Models.SalePayment>(); }
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="d-flex justify-content-between mb-3 d-print-none">
+                <a href="/pdv" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Voltar ao PDV
+                </a>
+                <button class="btn btn-primary" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i>Imprimir
+                </button>
+            </div>
+
+            <div class="card border-0 shadow" id="receipt">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        @if (establishment != null)
+                        {
+                            <h4 class="mb-1">@establishment.NomeFantasia</h4>
+                            <p class="text-muted mb-0 small">
+                                @establishment.Street, @establishment.Number
+                                @if (!string.IsNullOrEmpty(establishment.Complement))
+                                {
+                                    <text> - @establishment.Complement</text>
+                                }
+                                <br>
+                                @establishment.Neighborhood - @establishment.City/@establishment.State
+                                <br>
+                                CEP: @establishment.PostalCode
+                                @if (!string.IsNullOrEmpty(establishment.Phone))
+                                {
+                                    <text> | Tel: @establishment.Phone</text>
+                                }
+                            </p>
+                            <p class="text-muted small mb-0">CNPJ: @establishment.Cnpj</p>
+                        }
+                        else
+                        {
+                            <h4 class="mb-1">Salvelle</h4>
+                            <p class="text-muted small mb-0">Farmácia de Manipulação</p>
+                        }
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="mb-0">Venda #@Model.Code</h5>
+                            <small class="text-muted">@Model.SaleDate.ToString("dd/MM/yyyy HH:mm")</small>
+                        </div>
+                        @{
+                            var statusClass = "bg-warning";
+                            if (Model.Status == "FINALIZADA") { statusClass = "bg-success"; }
+                            else if (Model.Status == "CANCELADA") { statusClass = "bg-danger"; }
+                        }
+                        <span class="badge @statusClass fs-6">@Model.Status</span>
+                    </div>
+
+                    <div class="bg-light rounded p-3 mb-3">
+                        <h6 class="mb-2"><i class="bi bi-person me-1"></i>Cliente</h6>
+                        @if (customer != null)
+                        {
+                            <p class="mb-0">
+                                <strong>@customer.FullName</strong>
+                                @if (!string.IsNullOrEmpty(customer.Cpf))
+                                {
+                                    <br><small>CPF: @customer.Cpf</small>
+                                }
+                                @if (!string.IsNullOrEmpty(customer.Phone))
+                                {
+                                    <br><small>Tel: @customer.Phone</small>
+                                }
+                            </p>
+                        }
+                        else
+                        {
+                            <p class="mb-0 text-muted">Consumidor Final</p>
+                        }
+                    </div>
+
+                    <h6 class="mb-2"><i class="bi bi-bag me-1"></i>Itens</h6>
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Descrição</th>
+                                <th class="text-center">Qtd</th>
+                                <th class="text-end">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td>
+                                        @item.Description
+                                        @if (item.ManipulationOrderId.HasValue)
+                                        {
+                                            <br><small class="text-muted">
+                                                <i class="bi bi-gear me-1"></i>Manipulação
+                                            </small>
+                                        }
+                                        @if (!string.IsNullOrEmpty(item.ControlType) && item.ControlType != "COMUM")
+                                        {
+                                            <br><small class="text-danger">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>@item.ControlType
+                                            </small>
+                                        }
+                                    </td>
+                                    <td class="text-center">@item.Quantity</td>
+                                    <td class="text-end">R$ @item.TotalPrice.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <div class="border-top pt-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Subtotal:</span>
+                            <span>R$ @Model.Subtotal.ToString("N2")</span>
+                        </div>
+                        @if (Model.DiscountAmount > 0)
+                        {
+                            <div class="d-flex justify-content-between text-success">
+                                <span>Desconto:</span>
+                                <span>- R$ @Model.DiscountAmount.ToString("N2")</span>
+                            </div>
+                        }
+                        <div class="d-flex justify-content-between fs-5 fw-bold mt-2 pt-2 border-top">
+                            <span>TOTAL:</span>
+                            <span>R$ @Model.TotalAmount.ToString("N2")</span>
+                        </div>
+                    </div>
+
+                    @if (payments.Any())
+                    {
+                        <div class="mt-4">
+                            <h6 class="mb-2"><i class="bi bi-credit-card me-1"></i>Pagamento(s)</h6>
+                            <table class="table table-sm mb-0">
+                                <tbody>
+                                    @foreach (var payment in payments.Where(p => p.PaymentStatus == "APPROVED"))
+                                    {
+                                        var icon = "bi-wallet";
+                                        var methodName = payment.PaymentMethod ?? "Outro";
+                                        
+                                        if (payment.PaymentMethod == "DINHEIRO") { icon = "bi-cash-coin"; methodName = "Dinheiro"; }
+                                        else if (payment.PaymentMethod == "CARTAO_CREDITO") { icon = "bi-credit-card"; methodName = "Cartão de Crédito"; }
+                                        else if (payment.PaymentMethod == "CARTAO_DEBITO") { icon = "bi-credit-card-2-front"; methodName = "Cartão de Débito"; }
+                                        else if (payment.PaymentMethod == "PIX") { icon = "bi-qr-code"; methodName = "PIX"; }
+                                        else if (payment.PaymentMethod == "BOLETO") { icon = "bi-upc"; methodName = "Boleto"; }
+                                        
+                                        <tr>
+                                            <td>
+                                                <i class="bi @icon me-1"></i>
+                                                @methodName
+                                                @if (payment.Installments > 1)
+                                                {
+                                                    <small class="text-muted">(@payment.Installments x)</small>
+                                                }
+                                                @if (!string.IsNullOrEmpty(payment.CardBrand))
+                                                {
+                                                    <small class="text-muted">(@payment.CardBrand)</small>
+                                                }
+                                            </td>
+                                            <td class="text-end">R$ @payment.Amount.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                            
+                                decimal totalChange = 0;
+                                foreach (var p in payments)
+                                {
+                                    if (p.ChangeAmount.HasValue)
+                                    {
+                                        totalChange += p.ChangeAmount.Value;
+                                    }
+                                }
+                            
+                        @if (totalChange > 0)
+                        {
+                            <div class="alert alert-warning mt-3 mb-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-cash-coin me-1"></i>Troco:</span>
+                                    <strong class="fs-5">R$ @totalChange.ToString("N2")</strong>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @{
+                        var manipulationItems = Model.Items.Where(i => i.ManipulationOrderId.HasValue).ToList();
+                    }
+                    @if (manipulationItems.Any())
+                    {
+                        <div class="mt-4 p-3 bg-light rounded">
+                            <h6 class="mb-2"><i class="bi bi-gear me-1"></i>Manipulação</h6>
+                            <p class="mb-1 small text-muted">
+                                Os itens de manipulação entrarão em produção.
+                                <br>Prazo estimado: <strong>3 dias úteis</strong>
+                            </p>
+                        </div>
+                    }
+
+                    <hr>
+                    <div class="text-center">
+                        <p class="mb-1 small text-muted">
+                            Documento sem valor fiscal
+                        </p>
+                        <p class="mb-0 small text-muted">
+                            Obrigado pela preferência!
+                        </p>
+                        <p class="mb-0 small text-muted">
+                            @Model.SaleDate.ToString("dd/MM/yyyy HH:mm:ss")
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-center gap-2 mt-3 d-print-none">
+                @if (manipulationItems.Any())
+                {
+                    <a href="/Manipulacoes/Workflow" class="btn btn-outline-primary">
+                        <i class="bi bi-gear-wide-connected me-1"></i>Ver Produção
+                    </a>
+                }
+                <a href="/pdv/historico" class="btn btn-outline-secondary">
+                    <i class="bi bi-clock-history me-1"></i>Histórico
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+        #receipt, #receipt * {
+            visibility: visible;
+        }
+        #receipt {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            box-shadow: none !important;
+        }
+        .card {
+            border: none !important;
+        }
+        .d-print-none {
+            display: none !important;
+        }
+    }
+</style>

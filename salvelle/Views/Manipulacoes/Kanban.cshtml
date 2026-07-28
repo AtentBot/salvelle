@@ -1,0 +1,590 @@
+﻿@{
+    ViewData["Title"] = "Kanban de Produção";
+    Layout = "_Layout";
+}
+
+<style>
+    .kanban-container {
+        display: flex; gap: 14px;
+        overflow-x: auto; padding-bottom: 16px;
+        min-height: calc(100vh - 200px);
+    }
+    .kanban-column {
+        min-width: 280px; max-width: 280px;
+        background: var(--bg-subtle);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-md);
+        display: flex; flex-direction: column;
+    }
+    .kanban-header {
+        padding: 12px 16px;
+        font-weight: 600;
+        border-radius: var(--r-md) var(--r-md) 0 0;
+        display: flex; justify-content: space-between; align-items: center;
+        color: #fff;
+        font-size: 13px; letter-spacing: -0.005em;
+    }
+    .kanban-header .badge {
+        background: rgba(255,255,255,0.22) !important;
+        color: #fff !important;
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+    .kanban-body {
+        flex: 1; padding: 8px;
+        overflow-y: auto;
+        max-height: calc(100vh - 280px);
+    }
+    .kanban-card {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-sm);
+        padding: 12px;
+        margin-bottom: 8px;
+        box-shadow: var(--shadow-1);
+        cursor: pointer;
+        transition: all var(--t-fast);
+        border-left: 3px solid transparent;
+    }
+    .kanban-card:hover {
+        box-shadow: var(--shadow-2);
+        transform: translateY(-2px);
+        border-color: var(--rule);
+        border-left-color: var(--petrol-500);
+    }
+    .kanban-card.urgent { border-left-color: var(--danger); }
+    .kanban-card.controlled { border-left-color: var(--controlled-black); }
+    .kanban-card-title { font-weight: 500; font-size: 13px; margin-bottom: 4px; color: var(--ink); }
+    .kanban-card-meta { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); }
+    .kanban-card-footer {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: 10px; padding-top: 10px;
+        border-top: 1px solid var(--rule);
+    }
+    .step-icon {
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        display: grid; place-items: center;
+        font-size: 11px; color: #fff;
+    }
+    /* Cores por etapa - design system */
+    .bg-pendente   { background: var(--ink-3) !important; }
+    .bg-separacao  { background: var(--info) !important; }
+    .bg-pesagem    { background: var(--petrol-400) !important; }
+    .bg-mistura    { background: var(--petrol-500) !important; }
+    .bg-envase     { background: var(--amber-500) !important; }
+    .bg-rotulagem  { background: var(--amber-700) !important; }
+    .bg-conferencia { background: var(--petrol-600) !important; }
+    .bg-aprovacao  { background: var(--ok) !important; }
+    .bg-finalizado { background: var(--ink) !important; }
+
+    .progress-mini { height: 4px; border-radius: 2px; margin-top: 8px; background: var(--bg-subtle); }
+    .timer-badge { font-size: 11px; padding: 2px 8px; font-family: var(--font-mono); }
+    .quick-action-btn { padding: 4px 10px; font-size: 12px; }
+</style>
+
+<div class="container-fluid py-3">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-0"><i class="bi bi-kanban me-2"></i>Kanban de Produção</h4>
+            <small class="text-muted">Workflow de manipulação em tempo real</small>
+        </div>
+        <div class="d-flex gap-2">
+            <div class="input-group input-group-sm" style="width: 200px;">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" id="searchOrder" placeholder="Buscar ordem...">
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" onclick="loadKanban()">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <a href="@Url.Action("Create", "Manipulacoes")" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Nova Ordem
+            </a>
+        </div>
+    </div>
+
+    <!-- Estatísticas Rápidas -->
+    <div class="row g-2 mb-3">
+        <div class="col">
+            <div class="card border-0 bg-light">
+                <div class="card-body py-2 px-3 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">Pendentes</span>
+                    <span class="badge bg-secondary fs-6" id="statPendentes">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 bg-light">
+                <div class="card-body py-2 px-3 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">Em Produção</span>
+                    <span class="badge bg-primary fs-6" id="statProducao">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 bg-light">
+                <div class="card-body py-2 px-3 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">Finalizados Hoje</span>
+                    <span class="badge bg-success fs-6" id="statFinalizados">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 bg-light">
+                <div class="card-body py-2 px-3 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">Atrasados</span>
+                    <span class="badge bg-danger fs-6" id="statAtrasados">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban-container" id="kanbanBoard">
+        <!-- Coluna: Pendente -->
+        <div class="kanban-column">
+            <div class="kanban-header bg-pendente">
+                <span><i class="bi bi-inbox me-2"></i>Pendente</span>
+                <span class="badge" id="countPendente">0</span>
+            </div>
+            <div class="kanban-body" id="colPendente"></div>
+        </div>
+
+        <!-- Coluna: Separação -->
+        <div class="kanban-column">
+            <div class="kanban-header bg-separacao">
+                <span><i class="bi bi-box-seam me-2"></i>Separação</span>
+                <span class="badge" id="countSeparacao">0</span>
+            </div>
+            <div class="kanban-body" id="colSeparacao"></div>
+        </div>
+
+        <!-- Coluna: Pesagem -->
+        <div class="kanban-column">
+            <div class="kanban-header bg-pesagem">
+                <span><i class="bi bi-speedometer me-2"></i>Pesagem</span>
+                <span class="badge" id="countPesagem">0</span>
+            </div>
+            <div class="kanban-body" id="colPesagem"></div>
+        </div>
+
+        <!-- Coluna: Mistura -->
+        <div class="kanban-column">
+            <div class="kanban-header bg-mistura">
+                <span><i class="bi bi-arrow-repeat me-2"></i>Mistura</span>
+                <span class="badge" id="countMistura">0</span>
+            </div>
+            <div class="kanban-body" id="colMistura"></div>
+        </div>
+
+        <!-- Coluna: Envase -->
+        <div class="kanban-column">
+            <div class="kanban-header bg-envase">
+                <span><i class="bi bi-droplet me-2"></i>Envase</span>
+                <span class="badge" id="countEnvase">0</span>
+            </div>
+            <div class="kanban-body" id="colEnvase"></div>
+        </div>
+
+        <!-- Coluna: Rotulagem -->
+        <div class="kanban-column">
+            <div class="kanban-header bg-rotulagem">
+                <span><i class="bi bi-tag me-2"></i>Rotulagem</span>
+                <span class="badge" id="countRotulagem">0</span>
+            </div>
+            <div class="kanban-body" id="colRotulagem"></div>
+        </div>
+
+        <!-- Coluna: Conferência -->
+        <div class="kanban-column">
+            <div class="kanban-header bg-conferencia">
+                <span><i class="bi bi-check2-square me-2"></i>Conferência</span>
+                <span class="badge" id="countConferencia">0</span>
+            </div>
+            <div class="kanban-body" id="colConferencia"></div>
+        </div>
+
+        <!-- Coluna: Aprovação/Finalizado -->
+        <div class="kanban-column">
+            <div class="kanban-header bg-aprovacao">
+                <span><i class="bi bi-patch-check me-2"></i>Aprovação</span>
+                <span class="badge" id="countAprovacao">0</span>
+            </div>
+            <div class="kanban-body" id="colAprovacao"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Detalhes da Ordem -->
+<div class="modal fade" id="modalOrdem" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-clipboard-data me-2"></i>Detalhes da Ordem</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalOrdemContent">
+                <div class="text-center py-4"><div class="spinner-border"></div></div>
+            </div>
+            <div class="modal-footer" id="modalOrdemFooter"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Ação Rápida -->
+<div class="modal fade" id="modalAcao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAcaoTitle">Executar Etapa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalAcaoContent"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarAcao">
+                    <i class="bi bi-check-lg me-1"></i>Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let orders = [];
+let currentOrderId = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadKanban();
+    // Auto-refresh a cada 30 segundos
+    setInterval(loadKanban, 30000);
+});
+
+// Busca
+document.getElementById('searchOrder').addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    renderKanban(orders.filter(o => 
+        o.orderNumber.toLowerCase().includes(term) ||
+        (o.customerName && o.customerName.toLowerCase().includes(term)) ||
+        (o.formulaName && o.formulaName.toLowerCase().includes(term))
+    ));
+});
+
+async function loadKanban() {
+    try {
+        // Carregar ordens
+        const response = await fetch('/api/ManipulationOrders?pageSize=100');
+        const result = await response.json();
+        orders = result.items || [];
+        
+        // Carregar dashboard
+        const dashResponse = await fetch('/api/ManipulationOrders/workflow-dashboard');
+        const dashResult = await dashResponse.json();
+        
+        if (dashResult.success) {
+            const d = dashResult.data;
+            document.getElementById('statPendentes').textContent = d.totalPendentes || 0;
+            document.getElementById('statProducao').textContent = d.totalEmProducao || 0;
+            document.getElementById('statFinalizados').textContent = d.totalFinalizadosHoje || 0;
+            document.getElementById('statAtrasados').textContent = d.totalAtrasados || 0;
+        }
+        
+        renderKanban(orders);
+    } catch (error) {
+        console.error('Erro ao carregar kanban:', error);
+    }
+}
+
+function renderKanban(data) {
+    const columns = {
+        'PENDENTE': 'colPendente',
+        'SEPARACAO': 'colSeparacao',
+        'PESAGEM': 'colPesagem',
+        'MISTURA': 'colMistura',
+        'ENVASE': 'colEnvase',
+        'ROTULAGEM': 'colRotulagem',
+        'CONFERENCIA': 'colConferencia',
+        'APROVACAO': 'colAprovacao',
+        'FINALIZADO': 'colAprovacao',
+        'EM_PRODUCAO': 'colSeparacao'
+    };
+    
+    // Limpar colunas
+    Object.values(columns).forEach(colId => {
+        const col = document.getElementById(colId);
+        if (col) col.innerHTML = '';
+    });
+    
+    // Contadores
+    const counts = {};
+    Object.keys(columns).forEach(k => counts[k] = 0);
+    
+    // Renderizar cards
+    data.forEach(order => {
+        const colId = columns[order.status] || 'colPendente';
+        const col = document.getElementById(colId);
+        if (!col) return;
+        
+        counts[order.status] = (counts[order.status] || 0) + 1;
+        
+        const isUrgent = order.isOverdue || order.daysUntilExpected < 0;
+        const isControlled = order.formulaName?.includes('Controlado');
+        
+        const card = document.createElement('div');
+        card.className = `kanban-card ${isUrgent ? 'urgent' : ''} ${isControlled ? 'controlled' : ''}`;
+        card.onclick = () => showOrderDetails(order.id);
+        
+        card.innerHTML = `
+            <div class="kanban-card-title">${order.orderNumber}</div>
+            <div class="kanban-card-meta">
+                <div><i class="bi bi-prescription2 me-1"></i>${order.formulaName || 'Fórmula Livre'}</div>
+                <div><i class="bi bi-person me-1"></i>${order.customerName || 'N/A'}</div>
+            </div>
+            <div class="kanban-card-footer">
+                <span class="badge ${isUrgent ? 'bg-danger' : 'bg-light text-dark'} timer-badge">
+                    <i class="bi bi-clock me-1"></i>${formatDaysLeft(order.daysUntilExpected)}
+                </span>
+                <button class="btn btn-sm btn-outline-primary quick-action-btn" 
+                        onclick="event.stopPropagation(); advanceStep('${order.id}', '${order.status}')">
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+            </div>
+            ${order.quantityToProduce ? `
+            <div class="progress progress-mini">
+                <div class="progress-bar bg-${getProgressColor(order.status)}" 
+                     style="width: ${getProgressPercent(order.status)}%"></div>
+            </div>
+            ` : ''}
+        `;
+        
+        col.appendChild(card);
+    });
+    
+    // Atualizar contadores
+    document.getElementById('countPendente').textContent = counts['PENDENTE'] || 0;
+    document.getElementById('countSeparacao').textContent = (counts['SEPARACAO'] || 0) + (counts['EM_PRODUCAO'] || 0);
+    document.getElementById('countPesagem').textContent = counts['PESAGEM'] || 0;
+    document.getElementById('countMistura').textContent = counts['MISTURA'] || 0;
+    document.getElementById('countEnvase').textContent = counts['ENVASE'] || 0;
+    document.getElementById('countRotulagem').textContent = counts['ROTULAGEM'] || 0;
+    document.getElementById('countConferencia').textContent = counts['CONFERENCIA'] || 0;
+    document.getElementById('countAprovacao').textContent = (counts['APROVACAO'] || 0) + (counts['FINALIZADO'] || 0);
+}
+
+function formatDaysLeft(days) {
+    if (days === undefined || days === null) return 'N/A';
+    if (days < 0) return `${Math.abs(days)}d atrasado`;
+    if (days === 0) return 'Hoje';
+    return `${days}d`;
+}
+
+function getProgressColor(status) {
+    const colors = {
+        'PENDENTE': 'secondary',
+        'SEPARACAO': 'info',
+        'PESAGEM': 'primary',
+        'MISTURA': 'purple',
+        'ENVASE': 'pink',
+        'ROTULAGEM': 'warning',
+        'CONFERENCIA': 'success',
+        'APROVACAO': 'success',
+        'FINALIZADO': 'success'
+    };
+    return colors[status] || 'secondary';
+}
+
+function getProgressPercent(status) {
+    const percents = {
+        'PENDENTE': 0,
+        'SEPARACAO': 12.5,
+        'PESAGEM': 25,
+        'MISTURA': 37.5,
+        'ENVASE': 50,
+        'ROTULAGEM': 62.5,
+        'CONFERENCIA': 75,
+        'APROVACAO': 87.5,
+        'FINALIZADO': 100
+    };
+    return percents[status] || 0;
+}
+
+async function showOrderDetails(id) {
+    currentOrderId = id;
+    const modal = new bootstrap.Modal(document.getElementById('modalOrdem'));
+    modal.show();
+    
+    document.getElementById('modalOrdemContent').innerHTML = `
+        <div class="text-center py-4"><div class="spinner-border"></div></div>
+    `;
+    
+    try {
+        const response = await fetch(`/api/ManipulationOrders/${id}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            const o = result.data;
+            document.getElementById('modalOrdemContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">${o.orderNumber}</h6>
+                        <p><strong>Fórmula:</strong> ${o.formulaName || 'Fórmula Livre'}</p>
+                        <p><strong>Cliente:</strong> ${o.customerName || 'N/A'}</p>
+                        <p><strong>Quantidade:</strong> ${o.quantityToProduce} ${o.unit}</p>
+                        <p><strong>Status:</strong> <span class="badge bg-${getProgressColor(o.status)}">${o.status}</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Data Pedido:</strong> ${formatDate(o.orderDate)}</p>
+                        <p><strong>Previsão:</strong> ${formatDate(o.expectedDate)}</p>
+                        <p><strong>Prescritor:</strong> ${o.prescriberName || 'N/A'}</p>
+                        <p><strong>Receita:</strong> ${o.prescriptionNumber || 'N/A'}</p>
+                    </div>
+                </div>
+                <hr>
+                <h6>Progresso do Workflow</h6>
+                <div class="progress mb-3" style="height: 25px;">
+                    <div class="progress-bar bg-success" style="width: ${getProgressPercent(o.status)}%">
+                        ${Math.round(getProgressPercent(o.status))}%
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>Separação</span>
+                    <span>Pesagem</span>
+                    <span>Mistura</span>
+                    <span>Envase</span>
+                    <span>Rotulagem</span>
+                    <span>Conferência</span>
+                    <span>Aprovação</span>
+                </div>
+                ${o.specialInstructions ? `
+                <hr>
+                <h6>Instruções Especiais</h6>
+                <p class="text-muted">${o.specialInstructions}</p>
+                ` : ''}
+            `;
+            
+            document.getElementById('modalOrdemFooter').innerHTML = `
+                <a href="/Manipulacoes/Producao/${o.id}" class="btn btn-primary">
+                    <i class="bi bi-play-fill me-1"></i>Iniciar Produção
+                </a>
+                <a href="/Manipulacoes/FichaPesagem/${o.id}" class="btn btn-outline-secondary" target="_blank">
+                    <i class="bi bi-printer me-1"></i>Ficha Pesagem
+                </a>
+                <a href="/Manipulacoes/Historico/${o.id}" class="btn btn-outline-secondary">
+                    <i class="bi bi-clock-history me-1"></i>Histórico
+                </a>
+            `;
+        }
+    } catch (error) {
+        document.getElementById('modalOrdemContent').innerHTML = `
+            <div class="alert alert-danger">Erro ao carregar detalhes</div>
+        `;
+    }
+}
+
+async function advanceStep(orderId, currentStatus) {
+    const nextSteps = {
+        'PENDENTE': { step: 'separacao', label: 'Iniciar Separação' },
+        'SEPARACAO': { step: 'pesagem', label: 'Iniciar Pesagem' },
+        'PESAGEM': { step: 'mistura', label: 'Iniciar Mistura' },
+        'MISTURA': { step: 'envase', label: 'Iniciar Envase' },
+        'ENVASE': { step: 'rotulagem', label: 'Iniciar Rotulagem' },
+        'ROTULAGEM': { step: 'conferencia', label: 'Iniciar Conferência' },
+        'CONFERENCIA': { step: 'aprovacao', label: 'Solicitar Aprovação' },
+        'EM_PRODUCAO': { step: 'separacao', label: 'Iniciar Separação' }
+    };
+    
+    const next = nextSteps[currentStatus];
+    if (!next) {
+        alert('Esta ordem já está finalizada ou não pode avançar.');
+        return;
+    }
+    
+    currentOrderId = orderId;
+    
+    // Abrir modal de ação
+    document.getElementById('modalAcaoTitle').textContent = next.label;
+    document.getElementById('modalAcaoContent').innerHTML = `
+        <p>Deseja avançar esta ordem para a etapa de <strong>${next.step.toUpperCase()}</strong>?</p>
+        <div class="mb-3">
+            <label class="form-label">Observações (opcional)</label>
+            <textarea class="form-control" id="stepObservations" rows="2"></textarea>
+        </div>
+    `;
+    
+    document.getElementById('btnConfirmarAcao').onclick = () => executeStep(orderId, next.step);
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalAcao'));
+    modal.show();
+}
+
+async function executeStep(orderId, stepType) {
+    const observations = document.getElementById('stepObservations')?.value || '';
+    
+    try {
+        let endpoint = `/api/ManipulationOrders/${orderId}/steps/${stepType}/start`;
+        let body = { observations, startTime: new Date().toISOString() };
+        
+        // Cada etapa pode ter campos específicos
+        if (stepType === 'separacao') {
+            body.items = []; // Simplificado - na versão completa, preencher itens
+            body.areaSeparacao = 'AREA_PRINCIPAL';
+        } else if (stepType === 'pesagem') {
+            body.components = [];
+        } else if (stepType === 'mistura') {
+            body.mixingMethod = 'MANUAL';
+            body.equipment = 'GRAU_E_PISTILO';
+            body.mixingDuration = 15;
+        } else if (stepType === 'envase') {
+            body.packagingType = 'POTE_PLASTICO';
+            body.packagedQuantity = 100;
+            body.batchNumber = `L${Date.now()}`;
+            body.manufacturingDate = new Date().toISOString();
+            body.expiryDate = new Date(Date.now() + 180*24*60*60*1000).toISOString(); // +180 dias
+        } else if (stepType === 'rotulagem') {
+            body.batchNumber = `L${Date.now()}`;
+            body.manufacturingDate = new Date().toISOString();
+            body.expiryDate = new Date(Date.now() + 180*24*60*60*1000).toISOString();
+        } else if (stepType === 'conferencia') {
+            body.itensVerificados = true;
+            body.rotulagemCorreta = true;
+            body.embagemIntegra = true;
+        } else if (stepType === 'aprovacao') {
+            endpoint = `/api/ManipulationWorkflow/${orderId}/approve-final`;
+            body = {
+                aprovado: true,
+                farmaceuticoId: null, // Preencher com ID do farmacêutico logado
+                farmaceuticoNome: 'Farmacêutico RT',
+                crf: '12345-SP',
+                observacoes: observations
+            };
+        }
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        
+        const result = await response.json();
+        
+        bootstrap.Modal.getInstance(document.getElementById('modalAcao')).hide();
+        
+        if (result.success || response.ok) {
+            alert('✅ ' + (result.message || 'Etapa concluída com sucesso!'));
+            loadKanban();
+        } else {
+            alert('❌ ' + (result.message || 'Erro ao executar etapa'));
+        }
+    } catch (error) {
+        alert('Erro: ' + error.message);
+    }
+}
+
+function formatDate(d) {
+    if (!d) return 'N/A';
+    return new Date(d).toLocaleDateString('pt-BR');
+}
+</script>
+}

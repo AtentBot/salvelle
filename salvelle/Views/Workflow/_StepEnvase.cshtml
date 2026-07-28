@@ -1,0 +1,238 @@
+@* Partial View para Etapa de Envase *@
+@model dynamic
+
+<div class="card border-primary mb-4" id="stepEnvase">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-box-seam me-2"></i>
+            Etapa 4: Envase
+        </h5>
+        <span class="badge bg-white text-primary" id="statusEnvase">PENDENTE</span>
+    </div>
+    <div class="card-body">
+        <form id="formEnvase">
+            <div class="row g-3">
+                <!-- Tipo de Embalagem -->
+                <div class="col-md-4">
+                    <label class="form-label">Tipo de Embalagem <span class="text-danger">*</span></label>
+                    <select id="tipoEmbalagem" name="PackagingType" class="form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="POTE_PLASTICO">Pote Plástico</option>
+                        <option value="POTE_VIDRO">Pote de Vidro</option>
+                        <option value="BISNAGA">Bisnaga</option>
+                        <option value="FRASCO_CONTA_GOTAS">Frasco Conta-Gotas</option>
+                        <option value="FRASCO_SPRAY">Frasco Spray</option>
+                        <option value="FRASCO_PUMP">Frasco Pump</option>
+                        <option value="SACHÊ">Sachê</option>
+                        <option value="CAPSULA">Cápsula</option>
+                        <option value="ENVELOPE">Envelope</option>
+                    </select>
+                </div>
+
+                <!-- Quantidade Envasada -->
+                <div class="col-md-4">
+                    <label class="form-label">Quantidade Envasada <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="number" id="quantidadeEnvasada" name="PackagedQuantity" 
+                            class="form-control" step="0.01" min="0" required
+                            onchange="calcularRendimento()">
+                        <select id="unidadeEnvase" class="form-select" style="max-width: 80px;">
+                            <option value="g">g</option>
+                            <option value="mg">mg</option>
+                            <option value="ml">mL</option>
+                            <option value="un">un</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Rendimento Calculado -->
+                <div class="col-md-4">
+                    <label class="form-label">Rendimento</label>
+                    <div class="input-group">
+                        <input type="text" id="rendimentoCalculado" class="form-control fw-bold" readonly>
+                        <span class="input-group-text">%</span>
+                    </div>
+                    <small class="text-muted" id="rendimentoStatus"></small>
+                </div>
+
+                <!-- Número do Lote -->
+                <div class="col-md-4">
+                    <label class="form-label">Número do Lote <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="text" id="numeroLote" name="BatchNumber" class="form-control" required readonly>
+                        <button type="button" class="btn btn-outline-secondary" onclick="gerarNumeroLote()">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Data de Fabricação -->
+                <div class="col-md-4">
+                    <label class="form-label">Data de Fabricação <span class="text-danger">*</span></label>
+                    <input type="date" id="dataFabricacao" name="ManufacturingDate" class="form-control" required>
+                </div>
+
+                <!-- Data de Validade -->
+                <div class="col-md-4">
+                    <label class="form-label">Data de Validade <span class="text-danger">*</span></label>
+                    <input type="date" id="dataValidade" name="ExpiryDate" class="form-control" required>
+                </div>
+
+                <!-- Número de Unidades (para cápsulas/sachês) -->
+                <div class="col-md-6">
+                    <label class="form-label">Número de Unidades</label>
+                    <input type="number" id="numeroUnidades" name="NumberOfUnits" class="form-control" min="1"
+                        placeholder="Ex: 60 cápsulas, 30 sachês...">
+                </div>
+
+                <!-- Peso Total -->
+                <div class="col-md-6">
+                    <label class="form-label">Peso Total (g)</label>
+                    <input type="number" id="pesoTotal" name="TotalWeight" class="form-control" step="0.01" min="0">
+                </div>
+
+                <!-- Observações -->
+                <div class="col-12">
+                    <label class="form-label">Observações</label>
+                    <textarea id="observacoesEnvase" name="Observations" class="form-control" rows="2" 
+                        placeholder="Observações sobre o envase..."></textarea>
+                </div>
+            </div>
+
+            <!-- Alerta de Rendimento -->
+            <div class="alert alert-warning mt-3 d-none" id="alertaRendimento">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Atenção:</strong> Rendimento fora da faixa aceitável (95% - 105%). 
+                Verifique possíveis perdas ou erros de pesagem.
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="mt-4 d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary" onclick="voltarEtapa('MISTURA')">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </button>
+                <div>
+                    <button type="button" class="btn btn-outline-warning me-2" onclick="salvarRascunho('envase')">
+                        <i class="bi bi-save me-1"></i> Salvar Rascunho
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-lg me-1"></i> Concluir Envase
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Quantidade esperada (vem do modelo/ordem)
+    let quantidadeEsperada = parseFloat(document.getElementById('quantidadeProduzir')?.value) || 100;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Definir data de fabricação como hoje
+        document.getElementById('dataFabricacao').value = new Date().toISOString().split('T')[0];
+        
+        // Gerar número de lote automaticamente
+        gerarNumeroLote();
+        
+        // Calcular data de validade baseado na fórmula
+        calcularDataValidade();
+    });
+
+    function gerarNumeroLote() {
+        const hoje = new Date();
+        const ano = hoje.getFullYear();
+        const mes = (hoje.getMonth() + 1).toString().padStart(2, '0');
+        const dia = hoje.getDate().toString().padStart(2, '0');
+        const seq = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+        
+        document.getElementById('numeroLote').value = `LM-${ano}${mes}${dia}-${seq}`;
+    }
+
+    function calcularDataValidade() {
+        // Pegar prazo de validade da fórmula (em dias)
+        const prazoValidadeDias = parseInt(document.getElementById('prazoValidade')?.value) || 90;
+        
+        const dataFab = new Date();
+        dataFab.setDate(dataFab.getDate() + prazoValidadeDias);
+        
+        document.getElementById('dataValidade').value = dataFab.toISOString().split('T')[0];
+    }
+
+    function calcularRendimento() {
+        const quantidadeEnvasada = parseFloat(document.getElementById('quantidadeEnvasada').value) || 0;
+        
+        if (quantidadeEsperada > 0 && quantidadeEnvasada > 0) {
+            const rendimento = (quantidadeEnvasada / quantidadeEsperada) * 100;
+            
+            document.getElementById('rendimentoCalculado').value = rendimento.toFixed(2);
+            
+            const statusEl = document.getElementById('rendimentoStatus');
+            const alertEl = document.getElementById('alertaRendimento');
+            const inputEl = document.getElementById('rendimentoCalculado');
+            
+            if (rendimento >= 95 && rendimento <= 105) {
+                statusEl.textContent = '✓ Rendimento dentro do esperado';
+                statusEl.className = 'text-success';
+                inputEl.className = 'form-control fw-bold text-success';
+                alertEl.classList.add('d-none');
+            } else if (rendimento < 95) {
+                statusEl.textContent = '⚠ Rendimento abaixo do esperado';
+                statusEl.className = 'text-danger';
+                inputEl.className = 'form-control fw-bold text-danger';
+                alertEl.classList.remove('d-none');
+            } else {
+                statusEl.textContent = '⚠ Rendimento acima do esperado';
+                statusEl.className = 'text-warning';
+                inputEl.className = 'form-control fw-bold text-warning';
+                alertEl.classList.remove('d-none');
+            }
+        }
+    }
+
+    document.getElementById('formEnvase').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const orderId = document.getElementById('orderId').value;
+        
+        const data = {
+            packagingType: document.getElementById('tipoEmbalagem').value,
+            packagedQuantity: parseFloat(document.getElementById('quantidadeEnvasada').value),
+            batchNumber: document.getElementById('numeroLote').value,
+            manufacturingDate: document.getElementById('dataFabricacao').value,
+            expiryDate: document.getElementById('dataValidade').value,
+            numberOfUnits: parseInt(document.getElementById('numeroUnidades').value) || null,
+            totalWeight: parseFloat(document.getElementById('pesoTotal').value) || null,
+            observations: document.getElementById('observacoesEnvase').value
+        };
+
+        try {
+            const response = await fetch(`/api/ManipulationWorkflow/${orderId}/complete-envase`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showToast('Envase concluído com sucesso!', 'success');
+                
+                if (result.data?.alertaRendimento) {
+                    showToast(`Atenção: Rendimento de ${result.data.rendimento.toFixed(1)}%`, 'warning');
+                }
+                
+                document.getElementById('statusEnvase').textContent = 'CONCLUÍDA';
+                document.getElementById('statusEnvase').className = 'badge bg-success';
+                
+                // Avançar para próxima etapa
+                avancarEtapa('ROTULAGEM');
+            } else {
+                showToast(result.message || 'Erro ao concluir envase', 'danger');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showToast('Erro ao processar requisição', 'danger');
+        }
+    });
+</script>

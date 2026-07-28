@@ -1,0 +1,179 @@
+@using Models.Pharmacy
+@using Helpers
+@model List<RawMaterial>
+@{
+    ViewData["Title"] = "Inventário de Substâncias Controladas";
+    var existingCheck = ViewBag.ExistingCheck;
+    var currentMonth = (int)(ViewBag.CurrentMonth ?? BrazilTime.Now.Month);
+    var currentYear = (int)(ViewBag.CurrentYear ?? BrazilTime.Now.Year);
+    var monthNames = new[] { "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                             "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro" };
+}
+
+@section Styles {
+<style>
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card.pad { padding: 20px; }
+    .ds-card + .ds-card { margin-top: 24px; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .ds-card-eyebrow { font-family: var(--font-mono); font-size: 11px; color: var(--petrol-500); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ds-card-title { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+    .list-badge { font-family: var(--font-mono); font-weight: 600; font-size: 12px; }
+
+    .status-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; position: relative; overflow: hidden; }
+    .status-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+    .status-card.is-ok::before { background: var(--ok); }
+    .status-card.is-warn::before { background: var(--amber-500); }
+    .status-eyebrow { font-size: 12px; font-weight: 500; color: var(--ink-3); }
+    .status-title { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin: 2px 0 4px; }
+    .status-sub { font-size: 13px; margin: 0; display: inline-flex; align-items: center; gap: 6px; }
+    .status-sub.ok { color: var(--ok); }
+    .status-sub.warn { color: var(--warn); }
+
+    .info-note { display: flex; gap: 12px; align-items: flex-start; }
+    .info-note i { color: var(--info); font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .info-note p { margin: 0; font-size: 13px; color: var(--ink-3); line-height: 1.5; }
+    .info-note b { color: var(--ink-2); }
+
+    .empty-row { text-align: center; color: var(--ink-3); padding: 48px 24px; }
+    .empty-row i { font-size: 32px; display: block; margin-bottom: 8px; color: var(--ink-5); }
+
+    @@media (max-width: 780px) {
+        table.responsive-stack thead { display: none; }
+        table.responsive-stack tbody tr { display: block; border-bottom: 1px solid var(--rule); padding: 12px 16px; }
+        table.responsive-stack tbody tr:hover td { background: transparent; }
+        table.responsive-stack tbody td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 5px 0; border: none; text-align: right; }
+        table.responsive-stack tbody td::before { content: attr(data-label); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; text-align: left; }
+    }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">SNGPC · INVENTÁRIO</div>
+            <h1>Inventário de Controlados</h1>
+            <p>Conferência física obrigatória mensal (Portaria 344/98 e RDC 67/2007).</p>
+        </div>
+        <div class="row">
+            <a class="btn btn-secondary" href="/Controlled"><i class="bi bi-arrow-left"></i>Voltar</a>
+        </div>
+    </div>
+
+    <div class="ds-card pad status-card @(existingCheck != null ? "is-ok" : "is-warn")" style="margin-bottom:24px;">
+        <div>
+            <div class="status-eyebrow">Competência</div>
+            <div class="status-title">@monthNames[currentMonth] de @currentYear</div>
+            @if (existingCheck != null)
+            {
+                <p class="status-sub ok"><i class="bi bi-check-circle-fill"></i>Inventário em andamento</p>
+            }
+            else
+            {
+                <p class="status-sub warn"><i class="bi bi-exclamation-circle-fill"></i>Inventário não iniciado</p>
+            }
+        </div>
+        <div>
+            @if (existingCheck == null)
+            {
+                <form method="post" asp-action="StartInventory" asp-controller="Controlled" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-play-circle"></i>Iniciar inventário</button>
+                </form>
+            }
+            else
+            {
+                <a href="/Controlled/Inventory/@existingCheck.Id" class="btn btn-primary"><i class="bi bi-pencil"></i>Continuar</a>
+            }
+        </div>
+    </div>
+
+    <div class="ds-card">
+        <div class="ds-card-head">
+            <div>
+                <div class="ds-card-eyebrow">Estoque</div>
+                <h3 class="ds-card-title">Substâncias controladas em estoque</h3>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table responsive-stack mb-0">
+                <thead>
+                    <tr>
+                        <th>Substância</th>
+                        <th>DCB</th>
+                        <th>Lista</th>
+                        <th class="text-end">Saldo sistema</th>
+                        <th>Lotes</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Count > 0)
+                    {
+                        foreach (var material in Model)
+                        {
+                            decimal totalStock = 0;
+                            int activeBatches = 0;
+
+                            if (material.Batches != null)
+                            {
+                                foreach (var batch in material.Batches)
+                                {
+                                    if (batch.CurrentQuantity > 0)
+                                    {
+                                        totalStock += batch.CurrentQuantity;
+                                        activeBatches++;
+                                    }
+                                }
+                            }
+
+                            var listBadge = "badge-neutral";
+                            if (!string.IsNullOrEmpty(material.ControlType))
+                            {
+                                if (material.ControlType.StartsWith("A")) listBadge = "badge-danger";
+                                else if (material.ControlType.StartsWith("B")) listBadge = "badge-petrol";
+                            }
+
+                            <tr>
+                                <td data-label="Substância">
+                                    <span style="color:var(--ink);font-weight:500;">@material.Name</span>
+                                    @if (!string.IsNullOrEmpty(material.Description))
+                                    {
+                                        <br /><small style="color:var(--ink-3);">@material.Description</small>
+                                    }
+                                </td>
+                                <td data-label="DCB" class="mono" style="color:var(--ink-3);">@material.DcbCode</td>
+                                <td data-label="Lista"><span class="badge @listBadge badge-no-dot list-badge">@material.ControlType</span></td>
+                                <td data-label="Saldo sistema" class="text-end mono" style="color:var(--ink);font-weight:600;">@totalStock.ToString("N3") @material.Unit</td>
+                                <td data-label="Lotes">@activeBatches lote(s)</td>
+                                <td data-label="Ações" class="text-end">
+                                    <a href="/RawMaterials/Details/@material.Id" class="btn btn-ghost btn-sm"><i class="bi bi-eye"></i>Ver</a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="empty-row">
+                                <i class="bi bi-inbox"></i>
+                                Nenhuma substância controlada cadastrada.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="ds-card pad">
+        <div class="info-note">
+            <i class="bi bi-info-circle-fill"></i>
+            <p>
+                De acordo com a <b>Portaria 344/98</b> e <b>RDC 67/2007</b>, o inventário físico de substâncias controladas deve ser realizado
+                mensalmente para as listas A1, A2, A3, B1 e B2; e trimestralmente para as listas C1 a C5.
+                Todas as divergências devem ser justificadas e registradas.
+            </p>
+        </div>
+    </div>
+</div>

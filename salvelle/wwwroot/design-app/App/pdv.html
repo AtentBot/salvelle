@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Salvelle — PDV</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88'><rect width='88' height='88' rx='18' fill='%230F6E78'/><path d='M30 26 H42 a10 10 0 0 1 10 10 V52 H42 a10 10 0 0 1 -10 -10 V26 Z' fill='white'/><rect x='52' y='26' width='14' height='8' rx='4' fill='white'/><rect x='52' y='38' width='10' height='7' rx='3.5' fill='white'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<style>@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=cabinet-grotesk@500,700,800&display=swap');</style>
+<link rel="stylesheet" href="ds/tokens.css">
+<link rel="stylesheet" href="ds/components.css">
+<style>
+  body { background: var(--bg); }
+  .pdv-app { display: grid; grid-template-rows: auto 1fr; min-height: 100vh; }
+  .pdv-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: var(--ink); color: #fff; }
+  .pdv-bar .row { gap: 24px; }
+  .pdv-bar .pill { background: rgba(255,255,255,.08); padding: 6px 12px; border-radius: var(--r-pill); font-size: 12px; display: inline-flex; gap: 8px; align-items: center; }
+  .pdv-bar .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+  .pdv-bar .brand, .pdv-bar .brand-name { color: #fff; }
+  .pdv-bar .brand-glyph svg path, .pdv-bar .brand-glyph svg rect { fill: #fff !important; }
+  .pdv-grid { display: grid; grid-template-columns: 1fr 460px; gap: 0; flex: 1; }
+  .pdv-main { padding: 24px; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+  .scan-bar { background: var(--surface); border: 2px solid var(--petrol-500); border-radius: var(--r-md); padding: 14px 20px; display: flex; gap: 14px; align-items: center; box-shadow: var(--shadow-1); }
+  .scan-bar svg { color: var(--petrol-500); }
+  .scan-bar input { flex: 1; border: none; outline: none; background: transparent; font-size: 18px; font-family: var(--font-mono); color: var(--ink); }
+  .scan-bar input::placeholder { color: var(--ink-3); }
+  .scan-bar .kbd-hint { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+  .quick-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .quick-item { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); padding: 12px; cursor: pointer; transition: all .12s; display: flex; flex-direction: column; gap: 6px; min-height: 90px; justify-content: space-between; }
+  .quick-item:hover { border-color: var(--petrol-500); }
+  .quick-item .name { font-size: 13px; font-weight: 500; color: var(--ink); line-height: 1.3; }
+  .quick-item .price { font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .quick-item .cat { font-size: 10px; color: var(--ink-3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; }
+  .cat-tabs { display: flex; gap: 4px; padding: 4px; background: var(--bg-subtle); border-radius: var(--r-pill); width: fit-content; }
+  .cat-tabs button { font-size: 12px; padding: 6px 14px; border: none; background: transparent; border-radius: var(--r-pill); cursor: pointer; color: var(--ink-3); font-weight: 500; }
+  .cat-tabs button.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+  .cart-pane { background: var(--surface); border-left: 1px solid var(--rule); display: flex; flex-direction: column; }
+  .cart-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; }
+  .cart-head h2 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: -0.015em; }
+  .cart-customer { padding: 14px 20px; background: var(--bg-subtle); border-bottom: 1px solid var(--rule); font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+  .cart-customer b { font-weight: 500; color: var(--ink); }
+  .cart-list { flex: 1; overflow: auto; padding: 8px 0; }
+  .cart-item { padding: 14px 20px; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  .cart-item:last-child { border-bottom: none; }
+  .cart-item .name { font-size: 13px; font-weight: 500; color: var(--ink); }
+  .cart-item .meta { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  .cart-item .price { font-family: var(--font-mono); font-size: 13px; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+  .cart-item .qty-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+  .cart-item .qty-row button { width: 22px; height: 22px; border: 1px solid var(--rule); background: var(--surface); border-radius: var(--r-xs); font-size: 12px; cursor: pointer; color: var(--ink-2); }
+  .cart-item .qty-row .q { width: 30px; text-align: center; font-family: var(--font-mono); font-size: 12px; }
+  .cart-totals { padding: 16px 20px; border-top: 1px solid var(--rule); background: var(--bg-subtle); }
+  .total-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+  .total-row .l { color: var(--ink-3); }
+  .total-row .v { font-family: var(--font-mono); color: var(--ink-2); }
+  .total-row.grand { padding: 12px 0 4px; border-top: 1px solid var(--rule); margin-top: 8px; }
+  .total-row.grand .l { font-size: 14px; color: var(--ink); font-weight: 500; font-family: var(--font-sans); }
+  .total-row.grand .v { font-size: 24px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px 20px; }
+  .pay-btn { padding: 14px; border: 1px solid var(--rule); border-radius: var(--r-sm); background: var(--surface); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); }
+  .pay-btn:hover { border-color: var(--petrol-500); color: var(--petrol-500); }
+  .pay-btn.full { grid-column: span 2; background: var(--petrol-500); color: #fff; border-color: var(--petrol-500); padding: 16px; font-size: 14px; font-weight: 500; flex-direction: row; }
+  .pay-btn.full:hover { background: var(--petrol-600); }
+  .controlled-banner { padding: 10px 20px; background: var(--warn-soft); border-bottom: 1px solid color-mix(in oklch, var(--warn) 30%, transparent); display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--ink); }
+  .controlled-banner b { font-weight: 500; }
+  .controlled-banner svg { color: var(--warn); flex-shrink: 0; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/shell.jsx"></script>
+<script type="text/babel" data-presets="react">
+const QUICK = [
+  { name:'Dipirona 500mg · 20 cp', price:'12,90', cat:'OTC' },
+  { name:'Paracetamol 750mg · 20 cp', price:'15,40', cat:'OTC' },
+  { name:'Loratadina 10mg · 12 cp', price:'18,50', cat:'OTC' },
+  { name:'Vitamina C 1g · 30 cp', price:'24,90', cat:'Suplemento' },
+  { name:'Omeprazol 20mg · 28 cáps', price:'19,80', cat:'Genérico' },
+  { name:'Buscopan composto · 20 cp', price:'21,60', cat:'OTC' },
+  { name:'Protetor solar FPS 70', price:'78,00', cat:'Cosmético' },
+  { name:'Hidratante facial 50g', price:'42,00', cat:'Cosmético' },
+  { name:'Álcool gel 70% · 500mL', price:'9,90', cat:'OTC' },
+  { name:'Termômetro digital', price:'32,00', cat:'OTC' },
+  { name:'Fralda geriátrica P · 8 un', price:'48,00', cat:'OTC' },
+  { name:'Sabonete dermatológico', price:'19,90', cat:'Cosmético' },
+];
+
+function App() {
+  return (
+    <div className="pdv-app">
+      <div className="pdv-bar">
+        <div className="row">
+          <Brand size="sm"/>
+          <span style={{color:'rgba(255,255,255,.4)', fontSize:11}}>›</span>
+          <span style={{fontSize:14, fontWeight:500}}>PDV · Caixa 02</span>
+        </div>
+        <div className="row" style={{gap:12}}>
+          <span className="pill"><span className="dot"/>SAT online</span>
+          <span className="pill" style={{background:'rgba(255,255,255,.08)'}}>Op: Douglas B.</span>
+          <span className="pill" style={{background:'rgba(255,255,255,.08)'}}>Caixa: R$ 1.480,00</span>
+          <button className="btn btn-secondary btn-sm" style={{background:'transparent', color:'#fff', borderColor:'rgba(255,255,255,.15)'}}>Fechar caixa</button>
+        </div>
+      </div>
+
+      <div className="pdv-grid">
+        <div className="pdv-main">
+          <div className="scan-bar">
+            <Icon name="scan"/>
+            <input placeholder="Bipe o produto, digite o código ou nome…" autoFocus/>
+            <span className="kbd-hint"><span className="kbd">↵</span> adicionar · <span className="kbd">F2</span> cliente · <span className="kbd">F4</span> finalizar</span>
+          </div>
+
+          <div className="cat-tabs">
+            <button className="active">Mais vendidos</button>
+            <button>OTC</button>
+            <button>Genéricos</button>
+            <button>Cosméticos</button>
+            <button>Suplementos</button>
+            <button>Manipulação</button>
+          </div>
+
+          <div className="quick-grid">
+            {QUICK.map((q, i) => (
+              <div key={i} className="quick-item">
+                <div>
+                  <div className="cat">{q.cat}</div>
+                  <div className="name">{q.name}</div>
+                </div>
+                <div className="price">R$ {q.price}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="cart-pane">
+          <div className="cart-head">
+            <h2>Carrinho · 4 itens</h2>
+            <button className="btn btn-ghost btn-sm"><Icon name="x"/>Limpar</button>
+          </div>
+
+          <div className="cart-customer">
+            <div><b>Henrique Sá</b><div style={{fontSize:11,color:'var(--ink-3)',marginTop:2}}>CPF 123.•••.•••-99 · Convênio Vita</div></div>
+            <button className="btn btn-secondary btn-sm">Trocar</button>
+          </div>
+
+          <div className="controlled-banner">
+            <Icon name="lock"/>
+            <div><b>Pedido inclui Bupropiona 150mg.</b> Receita azul nº 045821 retida.</div>
+          </div>
+
+          <div className="cart-list">
+            <div className="cart-item">
+              <div>
+                <div className="name">Bupropiona 150mg · 30 cáps</div>
+                <div className="meta">ORD-1182 · Manipulado · Lista B</div>
+                <div className="qty-row"><button>−</button><span className="q">1</span><button>+</button><span style={{fontSize:11,color:'var(--ink-3)',marginLeft:8}}>R$ 124,00 / un</span></div>
+              </div>
+              <div className="price">R$ 124,00</div>
+            </div>
+            <div className="cart-item">
+              <div>
+                <div className="name">Dipirona 500mg · 20 cp</div>
+                <div className="meta">EAN 7891234567890 · Genérico</div>
+                <div className="qty-row"><button>−</button><span className="q">2</span><button>+</button><span style={{fontSize:11,color:'var(--ink-3)',marginLeft:8}}>R$ 12,90 / un</span></div>
+              </div>
+              <div className="price">R$ 25,80</div>
+            </div>
+            <div className="cart-item">
+              <div>
+                <div className="name">Vitamina C 1g · 30 cp</div>
+                <div className="meta">EAN 7892345678901 · Suplemento</div>
+                <div className="qty-row"><button>−</button><span className="q">1</span><button>+</button><span style={{fontSize:11,color:'var(--ink-3)',marginLeft:8}}>R$ 24,90 / un</span></div>
+              </div>
+              <div className="price">R$ 24,90</div>
+            </div>
+            <div className="cart-item">
+              <div>
+                <div className="name">Protetor solar FPS 70</div>
+                <div className="meta">EAN 7893456789012 · Cosmético</div>
+                <div className="qty-row"><button>−</button><span className="q">1</span><button>+</button><span style={{fontSize:11,color:'var(--ink-3)',marginLeft:8}}>R$ 78,00 / un</span></div>
+              </div>
+              <div className="price">R$ 78,00</div>
+            </div>
+          </div>
+
+          <div className="cart-totals">
+            <div className="total-row"><span className="l">Subtotal</span><span className="v">R$ 252,70</span></div>
+            <div className="total-row"><span className="l">Convênio Vita (−10%)</span><span className="v" style={{color:'var(--ok)'}}>−R$ 25,27</span></div>
+            <div className="total-row"><span className="l">Acréscimo</span><span className="v">R$ 0,00</span></div>
+            <div className="total-row grand"><span className="l">Total</span><span className="v">R$ 227,43</span></div>
+          </div>
+
+          <div className="pay-grid">
+            <button className="pay-btn"><Icon name="dollar"/>Dinheiro</button>
+            <button className="pay-btn"><Icon name="credit-card"/>Cartão</button>
+            <button className="pay-btn"><Icon name="qr"/>Pix</button>
+            <button className="pay-btn"><Icon name="receipt"/>Convênio</button>
+            <button className="pay-btn full"><Icon name="check"/>Finalizar venda · F4</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

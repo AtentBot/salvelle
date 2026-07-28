@@ -1,0 +1,121 @@
+@{
+    ViewData["Title"] = "Redefinir Senha";
+    ViewData["HideNav"] = true;
+    Layout = "_LayoutCliente";
+    var phone = ViewBag.Phone ?? "";
+}
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="logo" style="background: var(--petrol-500);">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <h4 class="mb-1">Nova Senha</h4>
+            <p class="text-muted mb-0">Digite o código e sua nova senha</p>
+        </div>
+
+        <form id="resetForm">
+            <input type="hidden" id="phone" value="@phone">
+
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control text-center" id="code" placeholder="Código" 
+                       maxlength="6" style="letter-spacing: 5px; font-weight: bold;" required>
+                <label for="code">Código de verificação</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input type="password" class="form-control" id="newPassword" placeholder="Nova senha" required>
+                <label for="newPassword">Nova senha</label>
+            </div>
+
+            <div class="form-floating mb-4">
+                <input type="password" class="form-control" id="confirmPassword" placeholder="Confirmar" required>
+                <label for="confirmPassword">Confirmar nova senha</label>
+            </div>
+
+            <div id="alertArea"></div>
+
+            <button type="submit" class="btn btn-primary w-100 mb-3" id="btnSubmit">
+                <span class="spinner-border spinner-border-sm d-none me-2" id="spinner"></span>
+                <span id="btnText">Redefinir Senha</span>
+            </button>
+        </form>
+
+        <div class="text-center">
+            <a href="/Cliente/Login" class="text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i>Voltar para login
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.getElementById('resetForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const phone = document.getElementById('phone').value;
+        const code = document.getElementById('code').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        if (code.length !== 6) {
+            showAlert('Digite o código de 6 dígitos', 'danger');
+            return;
+        }
+        
+        if (newPassword.length < 6) {
+            showAlert('Senha deve ter no mínimo 6 caracteres', 'danger');
+            return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            showAlert('Senhas não conferem', 'danger');
+            return;
+        }
+        
+        setLoading(true);
+        document.getElementById('alertArea').innerHTML = '';
+        
+        try {
+            const response = await fetch('/api/cliente/auth/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    phone: phone.replace(/\D/g, ''), 
+                    code, 
+                    newPassword,
+                    confirmPassword
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showAlert('Senha redefinida! Redirecionando...', 'success');
+                setTimeout(() => {
+                    window.location.href = '/Cliente/Login';
+                }, 2000);
+            } else {
+                showAlert(data.message, 'danger');
+                setLoading(false);
+            }
+        } catch (error) {
+            showAlert('Erro de conexão', 'danger');
+            setLoading(false);
+        }
+    });
+    
+    function setLoading(loading) {
+        document.getElementById('spinner').classList.toggle('d-none', !loading);
+        document.getElementById('btnSubmit').disabled = loading;
+    }
+    
+    function showAlert(message, type) {
+        document.getElementById('alertArea').innerHTML = `
+            <div class="alert alert-${type} small py-2">${message}</div>
+        `;
+    }
+</script>
+}

@@ -1,0 +1,320 @@
+@* Partial View para Etapa de Conferência *@
+@model dynamic
+
+<div class="card border-warning mb-4" id="stepConferencia">
+    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-clipboard-check me-2"></i>
+            Etapa 6: Conferência Final
+            <small class="ms-2 text-danger">(Requer Farmacêutico)</small>
+        </h5>
+        <span class="badge bg-dark" id="statusConferencia">PENDENTE</span>
+    </div>
+    <div class="card-body">
+        <!-- Alerta Farmacêutico -->
+        <div class="alert alert-info mb-4">
+            <i class="bi bi-shield-check me-2"></i>
+            <strong>Atenção:</strong> Esta etapa deve ser realizada exclusivamente por um 
+            <strong>Farmacêutico</strong> com CRF válido.
+        </div>
+
+        <form id="formConferencia">
+            <!-- Identificação do Farmacêutico -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <i class="bi bi-person-badge me-2"></i>
+                    Identificação do Farmacêutico
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Farmacêutico Responsável <span class="text-danger">*</span></label>
+                            <select id="farmaceuticoConferencia" name="PharmacistEmployeeId" class="form-select" required
+                                onchange="preencherDadosFarmaceutico(this)">
+                                <option value="">Selecione o farmacêutico...</option>
+                                <!-- Opções carregadas via JS -->
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">CRF <span class="text-danger">*</span></label>
+                            <input type="text" id="crfConferencia" name="PharmacistCRF" class="form-control" required readonly>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Data/Hora</label>
+                            <input type="text" id="dataHoraConferencia" class="form-control" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Checklist de Qualidade -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <i class="bi bi-list-check me-2"></i>
+                    Checklist de Qualidade
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- Aspectos Visuais -->
+                        <div class="col-md-6">
+                            <label class="form-label">Aspectos Visuais <span class="text-danger">*</span></label>
+                            <select id="aspectosVisuais" name="VisualAspects" class="form-select" required>
+                                <option value="">Selecione...</option>
+                                <option value="CONFORME">Conforme - Sem alterações</option>
+                                <option value="OBSERVACAO">Conforme com Observação</option>
+                                <option value="NAO_CONFORME">Não Conforme</option>
+                            </select>
+                        </div>
+
+                        <!-- Checklist Principal -->
+                        <div class="col-12">
+                            <div class="table-responsive">
+                                <table class="table table-bordered mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Item</th>
+                                            <th style="width: 100px;" class="text-center">Conforme</th>
+                                            <th style="width: 100px;" class="text-center">N/Conforme</th>
+                                            <th style="width: 100px;" class="text-center">N/A</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <i class="bi bi-box-seam me-2 text-primary"></i>
+                                                Embalagem íntegra
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="embalagem" value="CONFORME" required>
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="embalagem" value="NAO_CONFORME">
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="embalagem" value="NA">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <i class="bi bi-tag me-2 text-primary"></i>
+                                                Rótulo correto e legível
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="rotulo" value="CONFORME" required>
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="rotulo" value="NAO_CONFORME">
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="rotulo" value="NA">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <i class="bi bi-123 me-2 text-primary"></i>
+                                                Quantidade correta
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="quantidade" value="CONFORME" required>
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="quantidade" value="NAO_CONFORME">
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="quantidade" value="NA">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <i class="bi bi-file-text me-2 text-primary"></i>
+                                                Documentação completa
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="documentacao" value="CONFORME" required>
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="documentacao" value="NAO_CONFORME">
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="documentacao" value="NA">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <i class="bi bi-palette me-2 text-primary"></i>
+                                                Cor dentro do padrão
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="cor" value="CONFORME">
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="cor" value="NAO_CONFORME">
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="cor" value="NA">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <i class="bi bi-wind me-2 text-primary"></i>
+                                                Odor característico
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="odor" value="CONFORME">
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="odor" value="NAO_CONFORME">
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="odor" value="NA">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <i class="bi bi-droplet me-2 text-primary"></i>
+                                                Homogeneidade
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="homogeneidade" value="CONFORME">
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="homogeneidade" value="NAO_CONFORME">
+                                            </td>
+                                            <td class="text-center">
+                                                <input class="form-check-input" type="radio" name="homogeneidade" value="NA">
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observações -->
+            <div class="mb-4">
+                <label class="form-label">Observações da Conferência</label>
+                <textarea id="observacoesConferencia" name="Observations" class="form-control" rows="3" 
+                    placeholder="Observações adicionais sobre a conferência..."></textarea>
+            </div>
+
+            <!-- Decisão -->
+            <div class="card border-2 mb-4">
+                <div class="card-body">
+                    <h6 class="mb-3"><i class="bi bi-check2-circle me-2"></i>Decisão da Conferência</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="decisao" id="decisaoAprovar" value="true" required>
+                                <label class="form-check-label text-success fw-bold" for="decisaoAprovar">
+                                    <i class="bi bi-check-circle me-1"></i> APROVAR
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="decisao" id="decisaoReprovar" value="false">
+                                <label class="form-check-label text-danger fw-bold" for="decisaoReprovar">
+                                    <i class="bi bi-x-circle me-1"></i> REPROVAR
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary" onclick="voltarEtapa('ROTULAGEM')">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </button>
+                <button type="submit" class="btn btn-warning">
+                    <i class="bi bi-clipboard-check me-1"></i> Registrar Conferência
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        carregarFarmaceuticos();
+        document.getElementById('dataHoraConferencia').value = new Date().toLocaleString('pt-BR');
+    });
+
+    async function carregarFarmaceuticos() {
+        try {
+            const response = await fetch('/api/Employees?jobPosition=PHARMACIST');
+            const result = await response.json();
+            
+            if (result.success) {
+                const select = document.getElementById('farmaceuticoConferencia');
+                result.data.forEach(farm => {
+                    const option = document.createElement('option');
+                    option.value = farm.id;
+                    option.textContent = farm.fullName;
+                    option.dataset.crf = farm.crf || '';
+                    option.dataset.name = farm.fullName;
+                    select.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Erro ao carregar farmacêuticos:', error);
+        }
+    }
+
+    function preencherDadosFarmaceutico(select) {
+        const option = select.options[select.selectedIndex];
+        document.getElementById('crfConferencia').value = option.dataset.crf || '';
+    }
+
+    document.getElementById('formConferencia').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const orderId = document.getElementById('orderId').value;
+        const farmSelect = document.getElementById('farmaceuticoConferencia');
+        const farmOption = farmSelect.options[farmSelect.selectedIndex];
+        
+        const aprovado = document.querySelector('input[name="decisao"]:checked').value === 'true';
+        
+        const data = {
+            pharmacistEmployeeId: farmSelect.value,
+            pharmacistName: farmOption.dataset.name,
+            pharmacistCRF: document.getElementById('crfConferencia').value,
+            visualAspects: document.getElementById('aspectosVisuais').value,
+            packagingIntact: document.querySelector('input[name="embalagem"]:checked')?.value === 'CONFORME',
+            labelCorrect: document.querySelector('input[name="rotulo"]:checked')?.value === 'CONFORME',
+            quantityCorrect: document.querySelector('input[name="quantidade"]:checked')?.value === 'CONFORME',
+            documentationComplete: document.querySelector('input[name="documentacao"]:checked')?.value === 'CONFORME',
+            approvedByPharmacist: aprovado,
+            observations: document.getElementById('observacoesConferencia').value
+        };
+
+        try {
+            const response = await fetch(`/api/ManipulationWorkflow/${orderId}/complete-conferencia`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                if (aprovado) {
+                    showToast('Conferência aprovada! Aguardando aprovação final.', 'success');
+                    document.getElementById('statusConferencia').textContent = 'APROVADA';
+                    document.getElementById('statusConferencia').className = 'badge bg-success';
+                    avancarEtapa('APROVACAO');
+                } else {
+                    showToast('Conferência reprovada. Correções necessárias.', 'warning');
+                    document.getElementById('statusConferencia').textContent = 'REPROVADA';
+                    document.getElementById('statusConferencia').className = 'badge bg-danger';
+                }
+            } else {
+                showToast(result.message || 'Erro ao registrar conferência', 'danger');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showToast('Erro ao processar requisição', 'danger');
+        }
+    });
+</script>

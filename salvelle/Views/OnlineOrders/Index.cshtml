@@ -1,0 +1,571 @@
+﻿@{
+    ViewData["Title"] = "Pedidos Online";
+    Layout = "_Layout";
+    
+    var orders = ViewBag.Orders as List<Models.OnlineOrder> ?? new();
+    var currentStatus = ViewBag.CurrentStatus as string;
+    var search = ViewBag.Search as string;
+    var currentPage = (int)(ViewBag.CurrentPage ?? 1);
+    var totalPages = (int)(ViewBag.TotalPages ?? 1);
+    var totalItems = (int)(ViewBag.TotalItems ?? 0);
+}
+
+<style>
+    .status-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+    .status-card {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+        text-decoration: none;
+        color: inherit;
+    }
+    .status-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .status-card.active {
+        border-color: var(--petrol-500);
+    }
+    .status-card .count {
+        font-size: 28px;
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+    .status-card .label {
+        font-size: 12px;
+        color: var(--ink-3);
+        text-transform: uppercase;
+    }
+    .status-card.pending .count { color: var(--amber-500); }
+    .status-card.confirmed .count { color: var(--info); }
+    .status-card.preparing .count { color: var(--petrol-500); }
+    .status-card.ready .count { color: var(--ok); }
+    .status-card.delivered .count { color: var(--ink-3); }
+    .status-card.cancelled .count { color: var(--danger); }
+    
+    .order-card {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        transition: all 0.2s;
+    }
+    .order-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+    .order-number {
+        font-weight: 600;
+        font-size: 16px;
+        color: var(--ink);
+    }
+    .order-time {
+        font-size: 12px;
+        color: var(--ink-3);
+    }
+    .order-customer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    .order-customer i {
+        color: var(--petrol-500);
+    }
+    .order-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid var(--rule);
+    }
+    .order-total {
+        font-weight: 600;
+        font-size: 18px;
+        color: var(--ok);
+    }
+    .order-actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .badge-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    .badge-pending { background: var(--warn-soft); color: var(--amber-700); }
+    .badge-confirmed { background: var(--info-soft); color: #1e40af; }
+    .badge-preparing { background: #ede9fe; color: #5b21b6; }
+    .badge-ready { background: var(--ok-soft); color: #065f46; }
+    .badge-delivered { background: var(--bg-subtle); color: var(--ink-2); }
+    .badge-cancelled { background: var(--danger-soft); color: var(--danger); }
+    
+    .search-box {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 12px;
+    }
+    .empty-state i {
+        font-size: 48px;
+        color: var(--rule);
+        margin-bottom: 16px;
+    }
+    
+    .action-btn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .action-btn:hover {
+        transform: scale(1.05);
+    }
+    .btn-confirm { background: var(--info); color: white; }
+    .btn-prepare { background: var(--petrol-500); color: white; }
+    .btn-ready { background: var(--ok); color: white; }
+    .btn-deliver { background: var(--ok); color: white; }
+    .btn-cancel { background: var(--danger-soft); color: var(--danger); }
+    
+    .pagination-wrapper {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 20px;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-bag-check me-2"></i>Pedidos Online</h4>
+            <p class="text-muted mb-0">Gerencie os pedidos do portal do cliente</p>
+        </div>
+        <a href="/OnlineOrders/Dashboard" class="btn btn-outline-primary">
+            <i class="bi bi-graph-up me-1"></i>Dashboard
+        </a>
+    </div>
+
+    <!-- Status Cards -->
+    <div class="status-cards">
+        <a href="/OnlineOrders" class="status-card @(string.IsNullOrEmpty(currentStatus) || currentStatus == "todos" ? "active" : "")">
+            <div class="count">@ViewBag.CountTotal</div>
+            <div class="label">Todos</div>
+        </a>
+        <a href="/OnlineOrders?status=PENDING" class="status-card pending @(currentStatus == "PENDING" ? "active" : "")">
+            <div class="count">@ViewBag.CountPending</div>
+            <div class="label">Pendentes</div>
+        </a>
+        <a href="/OnlineOrders?status=CONFIRMED" class="status-card confirmed @(currentStatus == "CONFIRMED" ? "active" : "")">
+            <div class="count">@ViewBag.CountConfirmed</div>
+            <div class="label">Confirmados</div>
+        </a>
+        <a href="/OnlineOrders?status=PREPARING" class="status-card preparing @(currentStatus == "PREPARING" ? "active" : "")">
+            <div class="count">@ViewBag.CountPreparing</div>
+            <div class="label">Preparando</div>
+        </a>
+        <a href="/OnlineOrders?status=READY" class="status-card ready @(currentStatus == "READY" ? "active" : "")">
+            <div class="count">@ViewBag.CountReady</div>
+            <div class="label">Prontos</div>
+        </a>
+        <a href="/OnlineOrders?status=DELIVERED" class="status-card delivered @(currentStatus == "DELIVERED" ? "active" : "")">
+            <div class="count">@ViewBag.CountDelivered</div>
+            <div class="label">Entregues</div>
+        </a>
+    </div>
+
+    <!-- Search -->
+    <div class="search-box">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-8">
+                <label class="form-label small">Buscar pedido</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="Número do pedido, nome ou telefone do cliente..."
+                           value="@search">
+                </div>
+            </div>
+            <input type="hidden" name="status" value="@currentStatus">
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search me-1"></i>Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results info -->
+    @if (!string.IsNullOrEmpty(search) || !string.IsNullOrEmpty(currentStatus))
+    {
+        <div class="mb-3">
+            <span class="text-muted">@totalItems pedido(s) encontrado(s)</span>
+            @if (!string.IsNullOrEmpty(search))
+            {
+                <a href="/OnlineOrders?status=@currentStatus" class="ms-2 small">
+                    <i class="bi bi-x"></i>Limpar busca
+                </a>
+            }
+        </div>
+    }
+
+    <!-- Orders List -->
+    @if (orders.Any())
+    {
+        foreach (var order in orders)
+        {
+            var statusClass = order.Status?.ToLower() ?? "pending";
+            var statusDisplay = order.Status switch
+            {
+                "PENDING" => "Pendente",
+                "CONFIRMED" => "Confirmado",
+                "PREPARING" => "Em Preparação",
+                "READY" => "Pronto",
+                "DELIVERED" => "Entregue",
+                "CANCELLED" => "Cancelado",
+                _ => order.Status
+            };
+            var timeAgo = GetTimeAgo(order.CreatedAt);
+            
+            <div class="order-card" data-order-id="@order.Id">
+                <div class="order-header">
+                    <div>
+                        <div class="order-number">
+                            <a href="/OnlineOrders/@order.Id" class="text-decoration-none">
+                                #@order.OrderNumber
+                            </a>
+                        </div>
+                        <div class="order-time">
+                            <i class="bi bi-clock me-1"></i>@order.CreatedAt.ToString("dd/MM HH:mm") (@timeAgo)
+                        </div>
+                    </div>
+                    <span class="badge-status badge-@statusClass">@statusDisplay</span>
+                </div>
+                
+                <div class="order-customer">
+                    <i class="bi bi-person-circle"></i>
+                    <div>
+                        <div>@order.Customer?.FullName</div>
+                        <small class="text-muted">
+                            <i class="bi bi-whatsapp text-success me-1"></i>@order.Customer?.Phone
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="d-flex gap-2 mb-3">
+                    <span class="badge bg-light text-dark">
+                        <i class="bi bi-box me-1"></i>@order.Items?.Count item(s)
+                    </span>
+                    @if (order.DeliveryType == "DELIVERY")
+                    {
+                        <span class="badge bg-info text-white">
+                            <i class="bi bi-truck me-1"></i>Entrega
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-shop me-1"></i>Retirada
+                        </span>
+                    }
+                </div>
+                
+                <div class="order-footer">
+                    <div class="order-total">R$ @order.Total.ToString("N2")</div>
+                    <div class="order-actions">
+                        @if (order.Status == "PENDING")
+                        {
+                            <button class="action-btn btn-confirm" onclick="confirmOrder('@order.Id')">
+                                <i class="bi bi-check-lg me-1"></i>Confirmar
+                            </button>
+                            <button class="action-btn btn-cancel" onclick="cancelOrder('@order.Id')">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        }
+                        else if (order.Status == "CONFIRMED")
+                        {
+                            <button class="action-btn btn-prepare" onclick="updateStatus('@order.Id', 'PREPARING')">
+                                <i class="bi bi-gear me-1"></i>Preparar
+                            </button>
+                        }
+                        else if (order.Status == "PREPARING")
+                        {
+                            <button class="action-btn btn-ready" onclick="markReady('@order.Id')">
+                                <i class="bi bi-check-circle me-1"></i>Pronto
+                            </button>
+                        }
+                        else if (order.Status == "READY")
+                        {
+                            <button class="action-btn btn-deliver" onclick="markDelivered('@order.Id')">
+                                <i class="bi bi-bag-check me-1"></i>Entregue
+                            </button>
+                        }
+                        <a href="/OnlineOrders/@order.Id" class="action-btn btn btn-outline-secondary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+        
+        <!-- Pagination -->
+        @if (totalPages > 1)
+        {
+            <div class="pagination-wrapper">
+                @if (currentPage > 1)
+                {
+                    <a href="/OnlineOrders?status=@currentStatus&search=@search&page=@(currentPage-1)" 
+                       class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                }
+                
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    <a href="/OnlineOrders?status=@currentStatus&search=@search&page=@i" 
+                       class="btn btn-sm @(i == currentPage ? "btn-primary" : "btn-outline-secondary")">
+                        @i
+                    </a>
+                }
+                
+                @if (currentPage < totalPages)
+                {
+                    <a href="/OnlineOrders?status=@currentStatus&search=@search&page=@(currentPage+1)" 
+                       class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <h5>Nenhum pedido encontrado</h5>
+            <p class="text-muted">
+                @if (!string.IsNullOrEmpty(search))
+                {
+                    <span>Nenhum resultado para "@search"</span>
+                }
+                else if (!string.IsNullOrEmpty(currentStatus))
+                {
+                    <span>Não há pedidos com este status</span>
+                }
+                else
+                {
+                    <span>Os pedidos online aparecerão aqui</span>
+                }
+            </p>
+        </div>
+    }
+</div>
+
+<!-- Modal Cancelar -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancelar Pedido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="cancelOrderId">
+                <div class="mb-3">
+                    <label class="form-label">Motivo do cancelamento</label>
+                    <textarea id="cancelReason" class="form-control" rows="3" 
+                              placeholder="Informe o motivo..."></textarea>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="notifyCancel" checked>
+                    <label class="form-check-label" for="notifyCancel">
+                        Notificar cliente por WhatsApp
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Voltar</button>
+                <button type="button" class="btn btn-danger" onclick="confirmCancel()">
+                    <i class="bi bi-x-circle me-1"></i>Confirmar Cancelamento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="toast" class="toast" role="alert">
+        <div class="toast-header">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            <strong class="me-auto">Sucesso</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    async function confirmOrder(orderId) {
+        if (!confirm('Confirmar este pedido?')) return;
+        
+        try {
+            const response = await fetch(`/api/online-orders/${orderId}/confirm`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            const data = await response.json();
+            if (data.success) {
+                showToast(data.message);
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao confirmar pedido');
+        }
+    }
+    
+    async function updateStatus(orderId, status) {
+        try {
+            const response = await fetch(`/api/online-orders/${orderId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status, notifyCustomer: true })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showToast(data.message);
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao atualizar status');
+        }
+    }
+    
+    async function markReady(orderId) {
+        if (!confirm('Marcar pedido como pronto? O cliente será notificado.')) return;
+        
+        try {
+            const response = await fetch(`/api/online-orders/${orderId}/ready`, {
+                method: 'PUT'
+            });
+            const data = await response.json();
+            if (data.success) {
+                showToast(data.message);
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao atualizar pedido');
+        }
+    }
+    
+    async function markDelivered(orderId) {
+        if (!confirm('Confirmar entrega do pedido?')) return;
+        
+        try {
+            const response = await fetch(`/api/online-orders/${orderId}/deliver`, {
+                method: 'PUT'
+            });
+            const data = await response.json();
+            if (data.success) {
+                showToast(data.message);
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao confirmar entrega');
+        }
+    }
+    
+    function cancelOrder(orderId) {
+        document.getElementById('cancelOrderId').value = orderId;
+        document.getElementById('cancelReason').value = '';
+        new bootstrap.Modal(document.getElementById('cancelModal')).show();
+    }
+    
+    async function confirmCancel() {
+        const orderId = document.getElementById('cancelOrderId').value;
+        const reason = document.getElementById('cancelReason').value;
+        const notify = document.getElementById('notifyCancel').checked;
+        
+        if (!reason.trim()) {
+            alert('Informe o motivo do cancelamento');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/online-orders/${orderId}/cancel`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason, notifyCustomer: notify })
+            });
+            const data = await response.json();
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('cancelModal')).hide();
+                showToast('Pedido cancelado');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao cancelar pedido');
+        }
+    }
+    
+    function showToast(message) {
+        document.getElementById('toastMessage').textContent = message;
+        new bootstrap.Toast(document.getElementById('toast')).show();
+    }
+    
+    // Auto-refresh a cada 30 segundos
+    setTimeout(() => location.reload(), 30000);
+</script>
+}
+
+@functions {
+    string GetTimeAgo(DateTime date)
+    {
+        var diff = DateTime.UtcNow - date;
+        if (diff.TotalMinutes < 1) return "agora";
+        if (diff.TotalMinutes < 60) return $"há {(int)diff.TotalMinutes}min";
+        if (diff.TotalHours < 24) return $"há {(int)diff.TotalHours}h";
+        if (diff.TotalDays < 7) return $"há {(int)diff.TotalDays}d";
+        return date.ToString("dd/MM");
+    }
+}

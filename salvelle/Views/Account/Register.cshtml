@@ -1,0 +1,415 @@
+﻿@{
+    ViewData["Title"] = "Criar Conta";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Salvelle</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+    
+    <style>
+        :root {
+            --primary-color: var(--info);
+            --primary-dark: var(--info);
+        }
+
+        body {
+            background: var(--ink);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding: 2rem 0;
+        }
+
+        .register-container {
+            max-width: 550px;
+            width: 100%;
+            padding: 0 1rem;
+        }
+
+        .register-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .register-header {
+            background: linear-gradient(135deg, var(--info) 0%, var(--info) 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .register-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .register-body {
+            padding: 2rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--ink-2);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-control, .form-select {
+            border-radius: 0.5rem;
+            border: 2px solid var(--rule);
+            padding: 0.75rem 1rem;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            border: none;
+            padding: 0.875rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        .input-group-text {
+            background: var(--bg);
+            border: 2px solid var(--rule);
+            border-right: none;
+        }
+
+        .input-group .form-control {
+            border-left: none;
+        }
+
+        .input-group:focus-within .input-group-text {
+            border-color: var(--primary-color);
+        }
+
+        .link-primary {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .link-primary:hover {
+            text-decoration: underline;
+        }
+
+        .password-strength {
+            height: 4px;
+            background: var(--rule);
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            width: 0;
+            transition: all 0.3s;
+        }
+
+        .strength-weak { background: var(--danger); width: 33%; }
+        .strength-medium { background: var(--amber-500); width: 66%; }
+        .strength-strong { background: var(--ok); width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-card">
+            <div class="register-header">
+                <i class="bi bi-person-plus" style="font-size: 2.5rem;"></i>
+                <h1>Criar Conta no Salvelle</h1>
+                <p>Preencha seus dados para começar</p>
+            </div>
+
+            <div class="register-body">
+                <div id="alertContainer"></div>
+
+                <form id="registerForm">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label for="fullName" class="form-label">Nome Completo *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-person"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="fullName" 
+                                       name="fullName"
+                                       placeholder="João Silva"
+                                       required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="cpf" class="form-label">CPF *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-card-text"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="cpf" 
+                                       name="cpf"
+                                       placeholder="000.000.000-00"
+                                       maxlength="14"
+                                       required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="whatsapp" class="form-label">WhatsApp *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-whatsapp"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="whatsapp" 
+                                       name="whatsapp"
+                                       placeholder="(00) 00000-0000"
+                                       maxlength="15"
+                                       required>
+                            </div>
+                            <small class="text-muted">Será usado para autenticação</small>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label for="email" class="form-label">E-mail</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-envelope"></i>
+                                </span>
+                                <input type="email" 
+                                       class="form-control" 
+                                       id="email" 
+                                       name="email"
+                                       placeholder="seu@email.com">
+                            </div>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label for="password" class="form-label">Senha *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-lock"></i>
+                                </span>
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="password" 
+                                       name="password"
+                                       placeholder="Mínimo 8 caracteres"
+                                       required>
+                            </div>
+                            <div class="password-strength">
+                                <div class="password-strength-bar" id="strengthBar"></div>
+                            </div>
+                            <small id="strengthText" class="text-muted"></small>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label for="confirmPassword" class="form-label">Confirmar Senha *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-lock-fill"></i>
+                                </span>
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="confirmPassword" 
+                                       name="confirmPassword"
+                                       placeholder="Digite a senha novamente"
+                                       required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="terms" required>
+                        <label class="form-check-label" for="terms">
+                            Aceito os <a href="#" class="link-primary">termos de uso</a> e 
+                            <a href="#" class="link-primary">política de privacidade</a>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" id="btnRegister">
+                        <span id="btnText">Criar Conta</span>
+                        <span id="btnLoader" class="d-none">
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            Criando conta...
+                        </span>
+                    </button>
+                </form>
+
+                <div class="text-center mt-3">
+                    <p class="mb-0">
+                        Já tem uma conta? 
+                        <a href="/Account/Login" class="link-primary">Fazer login</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Máscara de CPF
+        document.getElementById('cpf').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                e.target.value = value;
+            }
+        });
+
+        // Máscara de WhatsApp
+        document.getElementById('whatsapp').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+                value = value.replace(/(\d)(\d{4})$/, '$1-$2');
+                e.target.value = value;
+            }
+        });
+
+        // Validação de força da senha
+        document.getElementById('password').addEventListener('input', function(e) {
+            const password = e.target.value;
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthText = document.getElementById('strengthText');
+            
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+            if (/\d/.test(password)) strength++;
+            if (/[^a-zA-Z\d]/.test(password)) strength++;
+            
+            strengthBar.className = 'password-strength-bar';
+            
+            if (strength === 0 || password.length === 0) {
+                strengthBar.classList.add('strength-weak');
+                strengthBar.style.width = '0';
+                strengthText.textContent = '';
+            } else if (strength <= 2) {
+                strengthBar.classList.add('strength-weak');
+                strengthText.textContent = 'Senha fraca';
+                strengthText.className = 'text-danger';
+            } else if (strength === 3) {
+                strengthBar.classList.add('strength-medium');
+                strengthText.textContent = 'Senha média';
+                strengthText.className = 'text-warning';
+            } else {
+                strengthBar.classList.add('strength-strong');
+                strengthText.textContent = 'Senha forte';
+                strengthText.className = 'text-success';
+            }
+        });
+
+        // Submit do formulário
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btnRegister = document.getElementById('btnRegister');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            const alertContainer = document.getElementById('alertContainer');
+            
+            // Limpar alertas anteriores
+            alertContainer.innerHTML = '';
+            
+            // Validar senhas
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                showAlert('As senhas não coincidem', 'danger');
+                return;
+            }
+            
+            if (password.length < 8) {
+                showAlert('A senha deve ter no mínimo 8 caracteres', 'danger');
+                return;
+            }
+            
+            // Mostrar loading
+            btnRegister.disabled = true;
+            btnText.classList.add('d-none');
+            btnLoader.classList.remove('d-none');
+            
+            try {
+                const formData = {
+                    fullName: document.getElementById('fullName').value,
+                    cpf: document.getElementById('cpf').value,
+                    whatsapp: document.getElementById('whatsapp').value,
+                    email: document.getElementById('email').value || null,
+                    password: password,
+                    jobPositionId: 1,
+                    establishmentId: 1
+                };
+                
+                const response = await fetch('/api/Employees', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showAlert('Conta criada com sucesso! Redirecionando...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/Account/Login';
+                    }, 2000);
+                } else {
+                    showAlert(data.error || 'Erro ao criar conta', 'danger');
+                }
+            } catch (error) {
+                showAlert('Erro de conexão. Tente novamente.', 'danger');
+            } finally {
+                btnRegister.disabled = false;
+                btnText.classList.remove('d-none');
+                btnLoader.classList.add('d-none');
+            }
+        });
+        
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            alertContainer.appendChild(alert);
+        }
+    </script>
+</body>
+</html>

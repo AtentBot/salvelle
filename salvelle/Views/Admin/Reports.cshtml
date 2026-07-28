@@ -1,0 +1,282 @@
+﻿@{
+    ViewData["Title"] = "Relatórios";
+    ViewData["Subtitle"] = "Análises e métricas do sistema";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<!-- Period Filter -->
+<div class="admin-card mb-4">
+    <div class="card-body">
+        <div class="row align-items-end g-3">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Data Inicial</label>
+                <input type="date" class="form-control" id="startDate">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Data Final</label>
+                <input type="date" class="form-control" id="endDate">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Período</label>
+                <select class="form-select" id="periodSelect" onchange="setPeriod()">
+                    <option value="7">Últimos 7 dias</option>
+                    <option value="30" selected>Últimos 30 dias</option>
+                    <option value="90">Últimos 90 dias</option>
+                    <option value="365">Último ano</option>
+                    <option value="custom">Personalizado</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-primary w-100" onclick="loadReports()">
+                    <i class="bi bi-search me-2"></i>Filtrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon success"><i class="bi bi-currency-dollar"></i></div>
+            <div class="stat-value" id="totalRevenue">R$ -</div>
+            <div class="stat-label">Receita Total</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon primary"><i class="bi bi-person-plus"></i></div>
+            <div class="stat-value" id="newSignups">-</div>
+            <div class="stat-label">Novos Cadastros</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon warning"><i class="bi bi-arrow-repeat"></i></div>
+            <div class="stat-value" id="renewals">-</div>
+            <div class="stat-label">Renovações</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon danger"><i class="bi bi-x-circle"></i></div>
+            <div class="stat-value" id="cancellations">-</div>
+            <div class="stat-label">Cancelamentos</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <div class="card-header">
+                <i class="bi bi-graph-up me-2"></i>Receita por Período
+            </div>
+            <div class="card-body">
+                <canvas id="revenueChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="admin-card h-100">
+            <div class="card-header">
+                <i class="bi bi-pie-chart me-2"></i>Assinaturas por Plano
+            </div>
+            <div class="card-body">
+                <canvas id="plansChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Signups Chart -->
+<div class="row g-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="card-header">
+                <i class="bi bi-people me-2"></i>Novos Cadastros por Período
+            </div>
+            <div class="card-body">
+                <canvas id="signupsChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let revenueChart, plansChart, signupsChart;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setPeriod();
+        loadReports();
+    });
+
+    function setPeriod() {
+        const days = document.getElementById('periodSelect').value;
+        
+        if (days === 'custom') return;
+
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - parseInt(days));
+
+        document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+        document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+    }
+
+    async function loadReports() {
+        await loadMetrics();
+        await loadRevenueChart();
+        await loadPlansChart();
+        await loadSignupsChart();
+    }
+
+    async function loadMetrics() {
+        try {
+            const response = await fetch('/api/admin/dashboard/metrics');
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('totalRevenue').textContent = formatCurrency(data.monthlyRecurringRevenue * 12 || 0);
+                document.getElementById('newSignups').textContent = data.newSubscriptionsThisMonth || 0;
+                document.getElementById('renewals').textContent = data.activeEstablishments || 0;
+                document.getElementById('cancellations').textContent = '0';
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    }
+
+    async function loadRevenueChart() {
+        try {
+            const response = await fetch('/api/admin/dashboard/revenue-chart?months=12');
+            if (response.ok) {
+                const data = await response.json();
+
+                const ctx = document.getElementById('revenueChart').getContext('2d');
+                
+                if (revenueChart) revenueChart.destroy();
+
+                revenueChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.map(d => d.label),
+                        datasets: [{
+                            label: 'Receita',
+                            data: data.map(d => d.value),
+                            borderColor: 'var(--controlled-black)',
+                            backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: value => 'R$ ' + value.toLocaleString('pt-BR')
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    }
+
+    async function loadPlansChart() {
+        try {
+            const response = await fetch('/api/admin/dashboard/metrics');
+            if (response.ok) {
+                const data = await response.json();
+
+                if (!data.subscriptionsByPlan) return;
+
+                const ctx = document.getElementById('plansChart').getContext('2d');
+                
+                if (plansChart) plansChart.destroy();
+
+                const labels = Object.keys(data.subscriptionsByPlan);
+                const values = Object.values(data.subscriptionsByPlan);
+                const colors = ['var(--controlled-black)', 'var(--ok)', 'var(--amber-500)', 'var(--danger)', 'var(--info)'];
+
+                plansChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: colors.slice(0, labels.length)
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '60%'
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    }
+
+    async function loadSignupsChart() {
+        try {
+            const response = await fetch('/api/admin/dashboard/recent-signups?limit=30');
+            if (response.ok) {
+                const data = await response.json();
+
+                // Group by date
+                const grouped = {};
+                data.forEach(e => {
+                    const date = new Date(e.createdAt).toLocaleDateString('pt-BR');
+                    grouped[date] = (grouped[date] || 0) + 1;
+                });
+
+                const ctx = document.getElementById('signupsChart').getContext('2d');
+                
+                if (signupsChart) signupsChart.destroy();
+
+                signupsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(grouped),
+                        datasets: [{
+                            label: 'Cadastros',
+                            data: Object.values(grouped),
+                            backgroundColor: 'var(--controlled-black)',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    }
+</script>
+}

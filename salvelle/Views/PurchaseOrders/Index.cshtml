@@ -1,0 +1,375 @@
+@{
+    ViewData["Title"] = "Matérias-Primas";
+}
+
+@section Styles {
+<style>
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card.pad { padding: 18px 20px; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 24px 0; }
+    .ds-stat { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); padding: 16px 18px; position: relative; overflow: hidden; }
+    .ds-stat::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ink-5); }
+    .ds-stat.is-ok::before { background: var(--ok); }
+    .ds-stat.is-warn::before { background: var(--amber-500); }
+    .ds-stat.is-danger::before { background: var(--danger); }
+    .ds-stat.is-petrol::before { background: var(--petrol-500); }
+    .ds-stat-value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--ink); }
+    .ds-stat-label { font-size: 12px; color: var(--ink-3); font-weight: 500; margin-top: 2px; }
+
+    .filter-grid { display: grid; grid-template-columns: 2fr 1fr 1fr auto auto; gap: 12px; align-items: end; }
+    .switch-cell { display: flex; align-items: center; gap: 8px; height: 38px; }
+
+    .ds-table { width: 100%; border-collapse: collapse; }
+    .ds-table thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; padding: 11px 16px; border-bottom: 1px solid var(--rule); background: var(--bg-subtle); white-space: nowrap; }
+    .ds-table tbody td { padding: 12px 16px; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink-2); vertical-align: middle; }
+    .ds-table tbody tr:last-child td { border-bottom: none; }
+    .ds-table tbody tr:hover td { background: var(--bg-subtle); }
+    .ds-table code { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); background: var(--bg-subtle); padding: 1px 6px; border-radius: var(--r-sm); }
+    .ds-table .progress { height: 4px; border-radius: var(--r-pill); background: var(--rule); margin-top: 6px; overflow: hidden; }
+    .ds-table .progress-bar { height: 100%; }
+    .ds-table .progress-bar.bg-danger { background: var(--danger) !important; }
+    .ds-table .progress-bar.bg-warning { background: var(--amber-500) !important; }
+    .ds-table .progress-bar.bg-success { background: var(--ok) !important; }
+
+    /* Bootstrap → design system (markup injetado via JS) */
+    .badge { font-family: var(--font-mono); font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: var(--r-pill); letter-spacing: 0.02em; }
+    .badge.bg-success { background: var(--ok-soft) !important; color: var(--ok) !important; }
+    .badge.bg-warning { background: var(--amber-50) !important; color: var(--amber-700) !important; }
+    .badge.bg-info { background: var(--info-soft) !important; color: var(--info) !important; }
+    .badge.bg-danger { background: var(--danger-soft) !important; color: var(--danger) !important; }
+    .badge.bg-secondary { background: var(--bg-subtle) !important; color: var(--ink-3) !important; }
+    .badge.bg-primary { background: var(--petrol-50) !important; color: var(--petrol-600) !important; }
+    .btn-group .btn-outline-primary, .btn-group .btn-outline-secondary { border: 1px solid var(--rule); color: var(--ink-2); background: var(--surface); }
+    .btn-group .btn-outline-primary:hover { border-color: var(--petrol-500); color: var(--petrol-600); }
+    .btn-group .btn-outline-secondary:hover { border-color: var(--ink-3); color: var(--ink); }
+
+    .empty-row, .loading-row { text-align: center; color: var(--ink-3); padding: 44px 24px; }
+    .empty-row i, .loading-row i { font-size: 32px; display: block; margin-bottom: 8px; color: var(--ink-5); }
+
+    @@media (max-width: 1080px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } .filter-grid { grid-template-columns: 1fr 1fr; } }
+    @@media (max-width: 560px) { .stat-grid { grid-template-columns: 1fr; } .filter-grid { grid-template-columns: 1fr; } }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">ESTOQUE · INSUMOS</div>
+            <h1>Matérias-Primas</h1>
+            <p>Gerencie o cadastro de insumos e matérias-primas.</p>
+        </div>
+        <div class="row">
+            <a href="/MateriasPrimas/Criar" class="btn btn-primary"><i class="bi bi-plus-lg"></i>Nova matéria-prima</a>
+        </div>
+    </div>
+
+    <div class="ds-card pad">
+        <div class="filter-grid">
+            <div>
+                <label class="input-label">Buscar</label>
+                <div class="input-group">
+                    <span class="input-icon"><i class="bi bi-search"></i></span>
+                    <input type="text" class="input" id="searchInput" placeholder="Nome, CAS, DCB...">
+                </div>
+            </div>
+            <div>
+                <label class="input-label">Tipo</label>
+                <select class="select" id="filterControlType">
+                    <option value="">Todos os tipos</option>
+                    <option value="COMUM">Comum</option>
+                    <option value="A1">Lista A1</option>
+                    <option value="A2">Lista A2</option>
+                    <option value="A3">Lista A3</option>
+                    <option value="B1">Lista B1</option>
+                    <option value="B2">Lista B2</option>
+                    <option value="C1">Lista C1</option>
+                    <option value="C2">Lista C2</option>
+                    <option value="C4">Lista C4</option>
+                    <option value="C5">Lista C5</option>
+                </select>
+            </div>
+            <div>
+                <label class="input-label">Status</label>
+                <select class="select" id="filterStatus">
+                    <option value="">Todos status</option>
+                    <option value="NORMAL">Estoque normal</option>
+                    <option value="BAIXO">Estoque baixo</option>
+                    <option value="EXCESSO">Excesso</option>
+                </select>
+            </div>
+            <div class="switch-cell">
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" id="filterLowStock">
+                    <label class="form-check-label" for="filterLowStock" style="font-size:13px;color:var(--ink-2);">Só baixo</label>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-secondary" onclick="clearFilters()"><i class="bi bi-x-lg"></i>Limpar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-grid">
+        <div class="ds-stat is-petrol">
+            <div class="ds-stat-value" id="statTotal">-</div>
+            <div class="ds-stat-label">Total cadastradas</div>
+        </div>
+        <div class="ds-stat is-ok">
+            <div class="ds-stat-value" id="statNormal">-</div>
+            <div class="ds-stat-label">Estoque normal</div>
+        </div>
+        <div class="ds-stat is-warn">
+            <div class="ds-stat-value" id="statLow">-</div>
+            <div class="ds-stat-label">Estoque baixo</div>
+        </div>
+        <div class="ds-stat is-danger">
+            <div class="ds-stat-value" id="statControlled">-</div>
+            <div class="ds-stat-label">Controladas</div>
+        </div>
+    </div>
+
+    <div class="ds-card">
+        <div class="table-responsive">
+            <table class="ds-table">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>CAS</th>
+                        <th>DCB/DCI</th>
+                        <th class="text-center">Estoque atual</th>
+                        <th class="text-center">Mín/Máx</th>
+                        <th class="text-center">Tipo controle</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Especial</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="9" class="loading-row">
+                            <div class="spinner-border text-primary" role="status" style="width:1.6rem;height:1.6rem;">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <p class="mt-2" style="margin:0;">Carregando matérias-primas...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3" id="paginationInfo" style="display: none !important;">
+        <small style="color:var(--ink-3);" id="paginationText">Mostrando 0 de 0 registros</small>
+        <nav>
+            <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+        </nav>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var allMaterials = [];
+    var filteredMaterials = [];
+    var pagination = { currentPage: 1, totalPages: 1, totalRecords: 0 };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadMaterials();
+        loadStatistics();
+
+        document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 300));
+        document.getElementById('filterControlType').addEventListener('change', applyFilters);
+        document.getElementById('filterStatus').addEventListener('change', applyFilters);
+        document.getElementById('filterLowStock').addEventListener('change', applyFilters);
+    });
+
+    async function loadMaterials() {
+        try {
+            var search = document.getElementById('searchInput').value;
+            var controlType = document.getElementById('filterControlType').value;
+            var lowStock = document.getElementById('filterLowStock').checked;
+
+            var url = '/api/RawMaterials?pageSize=100';
+            if (search) url += '&search=' + encodeURIComponent(search);
+            if (controlType) url += '&controlType=' + encodeURIComponent(controlType);
+            if (lowStock) url += '&lowStock=true';
+
+            var response = await fetch(url, {
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    showError('Sessão expirada. Faça login novamente.');
+                } else {
+                    showError('Erro HTTP ' + response.status);
+                }
+                return;
+            }
+
+            var result = await response.json();
+
+            if (result.data) {
+                allMaterials = result.data;
+                filteredMaterials = allMaterials;
+
+                if (result.pagination) {
+                    pagination = result.pagination;
+                }
+
+                applyLocalFilters();
+            } else if (result.error) {
+                showError(result.error);
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showError('Erro ao conectar: ' + error.message);
+        }
+    }
+
+    async function loadStatistics() {
+        try {
+            var response = await fetch('/api/RawMaterials/statistics', {
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                var stats = await response.json();
+                document.getElementById('statTotal').textContent = stats.totalMaterials || 0;
+                document.getElementById('statNormal').textContent = stats.normalStock || 0;
+                document.getElementById('statLow').textContent = stats.lowStock || 0;
+                document.getElementById('statControlled').textContent = stats.controlledSubstances || 0;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar estatísticas:', error);
+        }
+    }
+
+    function applyFilters() {
+        loadMaterials();
+    }
+
+    function applyLocalFilters() {
+        var statusFilter = document.getElementById('filterStatus').value;
+
+        if (statusFilter) {
+            filteredMaterials = allMaterials.filter(function(m) {
+                return m.stockStatus === statusFilter;
+            });
+        } else {
+            filteredMaterials = allMaterials;
+        }
+
+        renderTable();
+    }
+
+    function clearFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterControlType').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterLowStock').checked = false;
+        loadMaterials();
+    }
+
+    function renderTable() {
+        var tbody = document.getElementById('tableBody');
+
+        if (filteredMaterials.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="empty-row">' +
+                '<i class="bi bi-inbox"></i>Nenhuma matéria-prima encontrada</td></tr>';
+            document.getElementById('paginationInfo').style.display = 'none';
+            return;
+        }
+
+        var html = '';
+        filteredMaterials.forEach(function(m) {
+            // Status badge
+            var statusBadge = '';
+            if (m.stockStatus === 'NORMAL') {
+                statusBadge = '<span class="badge bg-success">Normal</span>';
+            } else if (m.stockStatus === 'BAIXO') {
+                statusBadge = '<span class="badge bg-warning">Baixo</span>';
+            } else if (m.stockStatus === 'EXCESSO') {
+                statusBadge = '<span class="badge bg-info">Excesso</span>';
+            } else {
+                statusBadge = '<span class="badge bg-secondary">-</span>';
+            }
+
+            // Tipo de controle badge
+            var controlBadge = m.controlType === 'COMUM' ?
+                '<span class="badge bg-secondary">Comum</span>' :
+                '<span class="badge bg-danger">' + m.controlType + '</span>';
+
+            // Ícones especiais
+            var specialIcons = '';
+            if (m.requiresRefrigeration) specialIcons += '<i class="bi bi-snow text-info me-1" title="Refrigeração"></i>';
+            if (m.lightSensitive) specialIcons += '<i class="bi bi-sun text-warning me-1" title="Sensível à luz"></i>';
+            if (m.humiditySensitive) specialIcons += '<i class="bi bi-droplet text-primary me-1" title="Sensível à umidade"></i>';
+            if (m.requiresSpecialAuthorization) specialIcons += '<i class="bi bi-shield-exclamation text-danger me-1" title="Autorização especial"></i>';
+            if (!specialIcons) specialIcons = '<span style="color:var(--ink-5);">-</span>';
+
+            // DCB/DCI
+            var dcbDci = m.dcbCode || m.dciCode || '-';
+
+            // Barra de progresso do estoque
+            var stockPercent = m.stockPercentage || 0;
+            var barColor = stockPercent < 25 ? 'bg-danger' : stockPercent < 50 ? 'bg-warning' : 'bg-success';
+
+            html += '<tr>' +
+                '<td>' +
+                    '<strong style="color:var(--ink);font-weight:500;">' + (m.name || '-') + '</strong>' +
+                    '<div class="progress">' +
+                        '<div class="progress-bar ' + barColor + '" style="width: ' + Math.min(stockPercent, 100) + '%"></div>' +
+                    '</div>' +
+                '</td>' +
+                '<td><code>' + (m.casNumber || '-') + '</code></td>' +
+                '<td><small style="color:var(--ink-3);">' + dcbDci + '</small></td>' +
+                '<td class="text-center"><strong style="color:var(--ink);">' + formatNumber(m.currentStock) + '</strong> <small style="color:var(--ink-3);">' + (m.unit || '') + '</small></td>' +
+                '<td class="text-center"><small>' + formatNumber(m.minimumStock) + ' / ' + formatNumber(m.maximumStock) + '</small></td>' +
+                '<td class="text-center">' + controlBadge + '</td>' +
+                '<td class="text-center">' + statusBadge + '</td>' +
+                '<td class="text-center">' + specialIcons + '</td>' +
+                '<td class="text-end">' +
+                    '<div class="btn-group btn-group-sm">' +
+                        '<a href="/MateriasPrimas/Detalhes/' + m.id + '" class="btn btn-outline-primary" title="Detalhes">' +
+                            '<i class="bi bi-eye"></i>' +
+                        '</a>' +
+                        '<a href="/MateriasPrimas/Editar/' + m.id + '" class="btn btn-outline-secondary" title="Editar">' +
+                            '<i class="bi bi-pencil"></i>' +
+                        '</a>' +
+                    '</div>' +
+                '</td>' +
+            '</tr>';
+        });
+
+        tbody.innerHTML = html;
+
+        // Atualizar info de paginação
+        document.getElementById('paginationInfo').style.display = 'flex';
+        document.getElementById('paginationText').textContent =
+            'Mostrando ' + filteredMaterials.length + ' de ' + pagination.totalRecords + ' registros';
+    }
+
+    function formatNumber(num) {
+        if (num === null || num === undefined) return '0';
+        return parseFloat(num).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+
+    function showError(message) {
+        var tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-row" style="color:var(--danger);">' +
+            '<i class="bi bi-exclamation-triangle"></i>' + message + '</td></tr>';
+    }
+
+    function debounce(func, wait) {
+        var timeout;
+        return function() {
+            var context = this, args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(function() {
+                func.apply(context, args);
+            }, wait);
+        };
+    }
+</script>
+}

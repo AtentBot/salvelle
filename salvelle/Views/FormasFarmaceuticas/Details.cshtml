@@ -1,0 +1,641 @@
+﻿@{
+    ViewData["Title"] = "Detalhes da Forma Farmacêutica";
+    Layout = "_Layout";
+    var formId = ViewData["FormId"];
+}
+
+<style>
+    .detail-header {
+        background: linear-gradient(135deg, var(--controlled-black) 0%, var(--danger) 100%);
+        color: white;
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .detail-icon {
+        font-size: 3rem;
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,0.2);
+        border-radius: 16px;
+        color: white;
+    }
+    .detail-icon i {
+        font-size: 3rem;
+    }
+
+    .info-card {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid var(--bg-subtle);
+        padding: 1.5rem;
+        height: 100%;
+    }
+
+    .info-card h6 {
+        color: var(--ink-3);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--bg-subtle);
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--bg-subtle);
+    }
+    .info-item:last-child { border-bottom: none; }
+    .info-label { color: var(--ink-3); }
+    .info-value { font-weight: 600; }
+
+    .subtype-card {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid var(--bg-subtle);
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s;
+    }
+    .subtype-card:hover { 
+        border-color: var(--controlled-black);
+        box-shadow: 0 4px 12px rgba(111, 66, 193, 0.1);
+    }
+    .subtype-card.inactive { opacity: 0.6; }
+
+    .capsule-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--bg-subtle);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+    .capsule-size {
+        font-size: 1.25rem;
+        color: var(--controlled-black);
+    }
+</style>
+
+<!-- Header -->
+<div class="detail-header" id="headerSection">
+    <div class="d-flex align-items-center gap-4">
+        <div class="detail-icon" id="formIcon">💊</div>
+        <div class="flex-grow-1">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2" style="--bs-breadcrumb-divider-color: rgba(255,255,255,0.5);">
+                    <li class="breadcrumb-item"><a href="/FormasFarmaceuticas" class="text-white-50">Formas Farmacêuticas</a></li>
+                    <li class="breadcrumb-item active text-white" id="breadcrumbName">Carregando...</li>
+                </ol>
+            </nav>
+            <h2 class="mb-1" id="formName">Carregando...</h2>
+            <div class="d-flex gap-2 flex-wrap">
+                <span class="badge bg-light text-dark" id="formCode">-</span>
+                <span class="badge" id="formUsage">-</span>
+                <span class="badge" id="formStatus">-</span>
+            </div>
+        </div>
+        <div>
+            <button class="btn btn-light me-2" onclick="editForm()">
+                <i class="bi bi-pencil me-1"></i>Editar
+            </button>
+            <a href="/FormasFarmaceuticas" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Info Cards -->
+    <div class="col-md-4">
+        <div class="info-card">
+            <h6><i class="bi bi-info-circle me-2"></i>Informações Gerais</h6>
+            <div id="generalInfo">
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="info-card">
+            <h6><i class="bi bi-cash me-2"></i>Precificação</h6>
+            <div id="pricingInfo">
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="info-card">
+            <h6><i class="bi bi-clock me-2"></i>Configurações</h6>
+            <div id="configInfo">
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Subtipos Section -->
+<div class="mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4><i class="bi bi-layers me-2"></i>Subtipos</h4>
+        <button class="btn btn-primary btn-sm" onclick="openSubtypeModal()">
+            <i class="bi bi-plus-lg me-1"></i>Novo Subtipo
+        </button>
+    </div>
+
+    <div class="row g-3" id="subtypesGrid">
+        <div class="col-12 text-center py-4">
+            <div class="spinner-border spinner-border-sm"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Subtipo Modal -->
+<div class="modal fade" id="subtypeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="subtypeModalTitle">Novo Subtipo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="subtypeId">
+                
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Código *</label>
+                        <input type="text" class="form-control" id="subtypeCode" style="text-transform: uppercase;">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Nome *</label>
+                        <input type="text" class="form-control" id="subtypeName">
+                    </div>
+                    
+                    <div class="col-12">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-control" id="subtypeDescription" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Preço Mínimo (R$)</label>
+                        <input type="number" class="form-control" id="subtypeMinPrice" step="0.01">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Custo Base (R$)</label>
+                        <input type="number" class="form-control" id="subtypeBaseCost" step="0.01">
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Rendimento</label>
+                        <input type="number" class="form-control" id="subtypeYieldQty">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Unidade Rendimento</label>
+                        <input type="text" class="form-control" id="subtypeYieldUnit" placeholder="unidade">
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Validade (dias)</label>
+                        <input type="number" class="form-control" id="subtypeValidityDays">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Ordem</label>
+                        <input type="number" class="form-control" id="subtypeSortOrder" value="99">
+                    </div>
+                    
+                    <!-- Campos específicos de cápsulas -->
+                    <div class="col-12" id="capsuleFields" style="display: none;">
+                        <hr>
+                        <h6 class="text-muted">Configuração de Cápsula</h6>
+                        <div class="row g-2 mt-2">
+                            <div class="col-md-3">
+                                <label class="form-label">Tamanho</label>
+                                <select class="form-select" id="subtypeCapsuleSize">
+                                    <option value="">-</option>
+                                    <option value="000">000</option>
+                                    <option value="00">00</option>
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Volume (mL)</label>
+                                <input type="number" class="form-control" id="subtypeCapsuleVolume" step="0.01">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Cap. Mín (mg)</label>
+                                <input type="number" class="form-control" id="subtypeCapsuleMin">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Cap. Máx (mg)</label>
+                                <input type="number" class="form-control" id="subtypeCapsuleMax">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Cor</label>
+                                <input type="text" class="form-control" id="subtypeCapsuleColor" placeholder="Transparente">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="subtypeIsDefault">
+                            <label class="form-check-label" for="subtypeIsDefault">Subtipo Padrão</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="subtypeIsActive" checked>
+                            <label class="form-check-label" for="subtypeIsActive">Ativo</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveSubtype()">
+                    <i class="bi bi-check-lg me-1"></i>Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const formId = '@formId';
+    let currentForm = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (formId) {
+            loadFormDetails();
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CARREGAR DETALHES
+    // ═══════════════════════════════════════════════════════════════════════
+    async function loadFormDetails() {
+        try {
+            const response = await fetch(`/api/PharmaceuticalForms/${formId}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            currentForm = await response.json();
+            renderDetails();
+            renderSubtypes();
+            
+            // Mostrar/ocultar campos de cápsula baseado no código
+            if (currentForm.code?.toUpperCase().includes('CAP')) {
+                document.getElementById('capsuleFields').style.display = 'block';
+            }
+        } catch (e) {
+            console.error('Erro ao carregar:', e);
+            showToast('Erro ao carregar detalhes', 'danger');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // UTILITÁRIO - RENDERIZAR ÍCONE
+    // ═══════════════════════════════════════════════════════════════════════
+    function renderIcon(icon, size = '2rem') {
+        if (!icon) {
+            return '<i class="bi bi-capsule" style="font-size: ' + size + ';"></i>';
+        }
+        
+        // Se começa com "bi-", é uma classe Bootstrap Icons
+        if (icon.startsWith('bi-') || icon.startsWith('bi ')) {
+            const iconClass = icon.startsWith('bi ') ? icon : 'bi ' + icon;
+            return '<i class="' + iconClass + '" style="font-size: ' + size + ';"></i>';
+        }
+        
+        // Senão, é um emoji ou texto
+        return '<span style="font-size: ' + size + ';">' + icon + '</span>';
+    }
+
+    function renderDetails() {
+        // Header - usa innerHTML para renderizar ícone corretamente
+        document.getElementById('formIcon').innerHTML = renderIcon(currentForm.icon, '3rem');
+        document.getElementById('formName').textContent = currentForm.name;
+        document.getElementById('breadcrumbName').textContent = currentForm.name;
+        document.getElementById('formCode').textContent = currentForm.code;
+        
+        // Badges
+        const usageBadge = document.getElementById('formUsage');
+        usageBadge.className = `badge ${getUsageClass(currentForm.usageType)}`;
+        usageBadge.textContent = formatUsage(currentForm.usageType);
+        
+        const statusBadge = document.getElementById('formStatus');
+        statusBadge.className = `badge ${currentForm.isActive ? 'bg-success' : 'bg-danger'}`;
+        statusBadge.textContent = currentForm.isActive ? 'Ativa' : 'Inativa';
+
+        // Info Geral
+        document.getElementById('generalInfo').innerHTML = `
+            <div class="info-item">
+                <span class="info-label">Descrição</span>
+                <span class="info-value">${currentForm.description || '-'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Tipo de Uso</span>
+                <span class="info-value">${formatUsage(currentForm.usageType)}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Unidade Padrão</span>
+                <span class="info-value">${currentForm.defaultUnit || '-'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Tipo</span>
+                <span class="info-value">${currentForm.isSystemDefault ? 'Padrão do Sistema' : 'Personalizada'}</span>
+            </div>
+        `;
+
+        // Info Precificação
+        document.getElementById('pricingInfo').innerHTML = `
+            <div class="info-item">
+                <span class="info-label">Preço Mínimo</span>
+                <span class="info-value">${currentForm.minimumPrice ? 'R$ ' + currentForm.minimumPrice.toFixed(2) : '-'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Qtd. Máxima</span>
+                <span class="info-value">${currentForm.maxQuantityLimit || '-'}</span>
+            </div>
+        `;
+
+        // Info Configurações
+        document.getElementById('configInfo').innerHTML = `
+            <div class="info-item">
+                <span class="info-label">Validade Padrão</span>
+                <span class="info-value">${currentForm.defaultValidityDays || '-'} dias</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Tempo de Preparo</span>
+                <span class="info-value">${currentForm.preparationTimeHours ? currentForm.preparationTimeHours + 'h' : '-'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Ordem de Exibição</span>
+                <span class="info-value">${currentForm.sortOrder || '-'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Total de Subtipos</span>
+                <span class="info-value">${currentForm.subtypes?.length || 0}</span>
+            </div>
+        `;
+    }
+
+    function renderSubtypes() {
+        const grid = document.getElementById('subtypesGrid');
+        const subtypes = currentForm.subtypes || [];
+
+        if (subtypes.length === 0) {
+            grid.innerHTML = `
+                <div class="col-12 text-center py-4 text-muted">
+                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    <p class="mt-2">Nenhum subtipo cadastrado</p>
+                    <button class="btn btn-primary btn-sm" onclick="openSubtypeModal()">
+                        <i class="bi bi-plus-lg me-1"></i>Criar Primeiro Subtipo
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = subtypes.map(sub => `
+            <div class="col-md-6 col-lg-4">
+                <div class="subtype-card ${sub.isActive ? '' : 'inactive'}">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="mb-0">${sub.name}</h6>
+                            <small class="text-muted">${sub.code}</small>
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary" onclick="editSubtype('${sub.id}')" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deleteSubtype('${sub.id}')" title="Excluir">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    ${sub.description ? `<p class="text-muted small mb-2">${sub.description}</p>` : ''}
+                    
+                    ${sub.capsuleSize ? `
+                        <div class="capsule-badge mb-2">
+                            <span class="capsule-size">${sub.capsuleSize}</span>
+                            <span>${sub.capsuleVolumeMl ? sub.capsuleVolumeMl + ' mL' : ''}</span>
+                            ${sub.capsuleColor ? `<small>(${sub.capsuleColor})</small>` : ''}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="d-flex flex-wrap gap-2 small">
+                        ${sub.minimumPrice ? `<span class="badge bg-light text-dark">Mín: R$ ${sub.minimumPrice.toFixed(2)}</span>` : ''}
+                        ${sub.baseCost ? `<span class="badge bg-light text-dark">Custo: R$ ${sub.baseCost.toFixed(2)}</span>` : ''}
+                        ${sub.validityDays ? `<span class="badge bg-light text-dark">${sub.validityDays} dias</span>` : ''}
+                        ${sub.isDefault ? '<span class="badge bg-primary">Padrão</span>' : ''}
+                        ${!sub.isActive ? '<span class="badge bg-danger">Inativo</span>' : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // EDITAR FORMA
+    // ═══════════════════════════════════════════════════════════════════════
+    function editForm() {
+        window.location.href = `/FormasFarmaceuticas/Edit/${formId}`;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SUBTIPOS - CRUD
+    // ═══════════════════════════════════════════════════════════════════════
+    function openSubtypeModal() {
+        document.getElementById('subtypeId').value = '';
+        document.getElementById('subtypeModalTitle').textContent = 'Novo Subtipo';
+        document.getElementById('subtypeCode').value = '';
+        document.getElementById('subtypeCode').disabled = false;
+        document.getElementById('subtypeName').value = '';
+        document.getElementById('subtypeDescription').value = '';
+        document.getElementById('subtypeMinPrice').value = '';
+        document.getElementById('subtypeBaseCost').value = '';
+        document.getElementById('subtypeYieldQty').value = '';
+        document.getElementById('subtypeYieldUnit').value = '';
+        document.getElementById('subtypeValidityDays').value = currentForm.defaultValidityDays || '';
+        document.getElementById('subtypeSortOrder').value = '99';
+        document.getElementById('subtypeCapsuleSize').value = '';
+        document.getElementById('subtypeCapsuleVolume').value = '';
+        document.getElementById('subtypeCapsuleMin').value = '';
+        document.getElementById('subtypeCapsuleMax').value = '';
+        document.getElementById('subtypeCapsuleColor').value = '';
+        document.getElementById('subtypeIsDefault').checked = false;
+        document.getElementById('subtypeIsActive').checked = true;
+
+        new bootstrap.Modal(document.getElementById('subtypeModal')).show();
+    }
+
+    async function editSubtype(id) {
+        const sub = currentForm.subtypes?.find(s => s.id === id);
+        if (!sub) return;
+
+        document.getElementById('subtypeId').value = sub.id;
+        document.getElementById('subtypeModalTitle').textContent = 'Editar Subtipo';
+        document.getElementById('subtypeCode').value = sub.code;
+        document.getElementById('subtypeCode').disabled = true;
+        document.getElementById('subtypeName').value = sub.name;
+        document.getElementById('subtypeDescription').value = sub.description || '';
+        document.getElementById('subtypeMinPrice').value = sub.minimumPrice || '';
+        document.getElementById('subtypeBaseCost').value = sub.baseCost || '';
+        document.getElementById('subtypeYieldQty').value = sub.yieldQuantity || '';
+        document.getElementById('subtypeYieldUnit').value = sub.yieldUnit || '';
+        document.getElementById('subtypeValidityDays').value = sub.validityDays || '';
+        document.getElementById('subtypeSortOrder').value = sub.sortOrder || 99;
+        document.getElementById('subtypeCapsuleSize').value = sub.capsuleSize || '';
+        document.getElementById('subtypeCapsuleVolume').value = sub.capsuleVolumeMl || '';
+        document.getElementById('subtypeCapsuleMin').value = sub.capsuleCapacityMgMin || '';
+        document.getElementById('subtypeCapsuleMax').value = sub.capsuleCapacityMgMax || '';
+        document.getElementById('subtypeCapsuleColor').value = sub.capsuleColor || '';
+        document.getElementById('subtypeIsDefault').checked = sub.isDefault;
+        document.getElementById('subtypeIsActive').checked = sub.isActive;
+
+        new bootstrap.Modal(document.getElementById('subtypeModal')).show();
+    }
+
+    async function saveSubtype() {
+        const id = document.getElementById('subtypeId').value;
+        const code = document.getElementById('subtypeCode').value.trim().toUpperCase();
+        const name = document.getElementById('subtypeName').value.trim();
+
+        if (!code || !name) {
+            showToast('Código e Nome são obrigatórios', 'warning');
+            return;
+        }
+
+        const data = {
+            pharmaceuticalFormId: formId,
+            code: code,
+            name: name,
+            description: document.getElementById('subtypeDescription').value || null,
+            minimumPrice: parseFloat(document.getElementById('subtypeMinPrice').value) || null,
+            baseCost: parseFloat(document.getElementById('subtypeBaseCost').value) || null,
+            yieldQuantity: parseInt(document.getElementById('subtypeYieldQty').value) || null,
+            yieldUnit: document.getElementById('subtypeYieldUnit').value || null,
+            validityDays: parseInt(document.getElementById('subtypeValidityDays').value) || null,
+            sortOrder: parseInt(document.getElementById('subtypeSortOrder').value) || 99,
+            capsuleSize: document.getElementById('subtypeCapsuleSize').value || null,
+            capsuleVolumeMl: parseFloat(document.getElementById('subtypeCapsuleVolume').value) || null,
+            capsuleCapacityMgMin: parseInt(document.getElementById('subtypeCapsuleMin').value) || null,
+            capsuleCapacityMgMax: parseInt(document.getElementById('subtypeCapsuleMax').value) || null,
+            capsuleColor: document.getElementById('subtypeCapsuleColor').value || null,
+            isDefault: document.getElementById('subtypeIsDefault').checked,
+            isActive: document.getElementById('subtypeIsActive').checked
+        };
+
+        const url = id ? `/api/PharmaceuticalForms/subtypes/${id}` : '/api/PharmaceuticalForms/subtypes';
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                showToast(id ? 'Subtipo atualizado!' : 'Subtipo criado!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('subtypeModal')).hide();
+                loadFormDetails();
+            } else {
+                const err = await response.json();
+                showToast(err.message || 'Erro ao salvar', 'danger');
+            }
+        } catch (e) {
+            showToast('Erro ao salvar', 'danger');
+        }
+    }
+
+    async function deleteSubtype(id) {
+        if (!confirm('Tem certeza que deseja excluir este subtipo?')) return;
+
+        try {
+            const response = await fetch(`/api/PharmaceuticalForms/subtypes/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                showToast('Subtipo excluído!', 'success');
+                loadFormDetails();
+            } else {
+                const err = await response.json();
+                showToast(err.message || 'Erro ao excluir', 'danger');
+            }
+        } catch (e) {
+            showToast('Erro ao excluir', 'danger');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // UTILITÁRIOS
+    // ═══════════════════════════════════════════════════════════════════════
+    function formatUsage(usage) {
+        const map = {
+            'ORAL': '💊 Oral',
+            'TOPICAL': '🧴 Tópico',
+            'BOTH': '💊🧴 Ambos'
+        };
+        return map[usage] || usage || 'Oral';
+    }
+
+    function getUsageClass(usage) {
+        const map = {
+            'ORAL': 'bg-success',
+            'TOPICAL': 'bg-info',
+            'BOTH': 'bg-warning text-dark'
+        };
+        return map[usage] || 'bg-secondary';
+    }
+
+    function showToast(message, type = 'info') {
+        let container = document.querySelector('.toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1100';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type} border-0`;
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        container.appendChild(toast);
+        new bootstrap.Toast(toast).show();
+        toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    }
+</script>
+}

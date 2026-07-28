@@ -1,0 +1,343 @@
+@model Models.Prescription
+@{
+    ViewData["Title"] = "Validar Prescrição";
+}
+
+<div class="container-fluid px-4 py-3">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="bi bi-check-circle"></i> Validar Prescrição
+            </h1>
+            <p class="text-muted mb-0">Validação farmacêutica da prescrição @Model.Code</p>
+        </div>
+        <div>
+            <a href="@Url.Action("Details", new { id = Model.Id })" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Coluna Principal -->
+        <div class="col-lg-8">
+            <!-- Revisão da Prescrição -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Revisão da Prescrição</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Informações Básicas -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted small mb-2">CÓDIGO</h6>
+                            <p class="mb-0"><strong>@Model.Code</strong></p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted small mb-2">DATA</h6>
+                            <p class="mb-0">@Model.PrescriptionDate.ToString("dd/MM/yyyy")</p>
+                        </div>
+                    </div>
+
+                    <!-- Paciente -->
+                    <div class="mb-4">
+                        <h6 class="text-muted small mb-2">PACIENTE</h6>
+                        <div class="border rounded p-3 bg-light">
+                            <p class="mb-0">
+                                <strong>Nome:</strong> 
+                                @{
+                                    var customerName = ViewBag.CustomerName ?? "Não informado";
+                                }
+                                @customerName
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Médico -->
+                    <div class="mb-4">
+                        <h6 class="text-muted small mb-2">MÉDICO</h6>
+                        <div class="border rounded p-3 bg-light">
+                            <p class="mb-1">
+                                <strong>Nome:</strong> @(Model.DoctorName ?? "Não informado")
+                            </p>
+                            <p class="mb-0">
+                                <strong>CRM:</strong> 
+                                @if (!string.IsNullOrEmpty(Model.DoctorCrm))
+                                {
+                                    @($"{Model.DoctorCrm}/{Model.DoctorCrmState}")
+                                }
+                                else
+                                {
+                                    <span>Não informado</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Tipo de Prescrição -->
+                    <div class="mb-4">
+                        <h6 class="text-muted small mb-2">TIPO DE PRESCRIÇÃO</h6>
+                        <div class="border rounded p-3 bg-light">
+                            <p class="mb-1">
+                                <strong>Tipo:</strong> 
+                                @switch (Model.PrescriptionType)
+                                {
+                                    case "SIMPLES":
+                                        <span class="badge bg-secondary">Simples</span>
+                                        break;
+                                    case "CONTROLADA":
+                                        <span class="badge bg-danger">Controlada</span>
+                                        if (!string.IsNullOrEmpty(Model.ControlledType))
+                                        {
+                                            <span class="ms-2">(@Model.ControlledType)</span>
+                                        }
+                                        break;
+                                    case "ANTIBIOTICO":
+                                        <span class="badge bg-warning text-dark">Antibiótico</span>
+                                        break;
+                                }
+                            </p>
+                            @if (Model.ExpirationDate > DateTime.MinValue)
+                            {
+                                <p class="mb-0">
+                                    <strong>Validade:</strong> @Model.ExpirationDate.ToString("dd/MM/yyyy")
+                                </p>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Medicamentos -->
+                    <div class="mb-4">
+                        <h6 class="text-muted small mb-2">MEDICAMENTOS</h6>
+                        <div class="border rounded p-3 bg-light">
+                            @if (!string.IsNullOrEmpty(Model.Medications))
+                            {
+                                <pre class="mb-0" style="white-space: pre-wrap;">@Model.Medications</pre>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Não informado</span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Posologia -->
+                    @if (!string.IsNullOrEmpty(Model.Posology))
+                    {
+                        <div class="mb-4">
+                            <h6 class="text-muted small mb-2">POSOLOGIA</h6>
+                            <div class="border rounded p-3 bg-light">
+                                <pre class="mb-0" style="white-space: pre-wrap;">@Model.Posology</pre>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Observações -->
+                    @if (!string.IsNullOrEmpty(Model.Observations))
+                    {
+                        <div class="mb-0">
+                            <h6 class="text-muted small mb-2">OBSERVAÇÕES</h6>
+                            <div class="border rounded p-3 bg-light">
+                                <pre class="mb-0" style="white-space: pre-wrap;">@Model.Observations</pre>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Formulário de Validação -->
+            <div class="card shadow-sm mb-4 border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-pen"></i> Validação Farmacêutica</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Validate" asp-route-id="@Model.Id" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label for="validationNotes" class="form-label">
+                                Observações da Validação
+                            </label>
+                            <textarea name="validationNotes" 
+                                      id="validationNotes" 
+                                      class="form-control" 
+                                      rows="4"
+                                      placeholder="Digite observações sobre a validação (opcional)...&#10;Ex: Verificada posologia, doses corretas, sem interações medicamentosas."></textarea>
+                            <small class="text-muted">
+                                Campo opcional. Use para registrar observações importantes sobre a validação.
+                            </small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Atenção:</strong> Ao validar esta prescrição, você está confirmando que:
+                            <ul class="mb-0 mt-2">
+                                <li>Os dados do médico e paciente estão corretos</li>
+                                <li>A prescrição está legível e compreensível</li>
+                                <li>Os medicamentos e dosagens estão adequados</li>
+                                <li>Não há contraindicações conhecidas</li>
+                                <li>A prescrição segue as normas da ANVISA</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-check-circle"></i> Confirmar Validação
+                            </button>
+                            <a href="@Url.Action("Details", new { id = Model.Id })" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna Lateral -->
+        <div class="col-lg-4">
+            <!-- Checklist de Validação -->
+            <div class="card shadow-sm mb-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="bi bi-list-check"></i> Checklist de Validação</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="check1">
+                        <label class="form-check-label" for="check1">
+                            Dados do médico completos e corretos
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="check2">
+                        <label class="form-check-label" for="check2">
+                            CRM válido e regularizado
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="check3">
+                        <label class="form-check-label" for="check3">
+                            Prescrição legível e clara
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="check4">
+                        <label class="form-check-label" for="check4">
+                            Medicamentos e doses adequados
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="check5">
+                        <label class="form-check-label" for="check5">
+                            Sem interações medicamentosas
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="check6">
+                        <label class="form-check-label" for="check6">
+                            Posologia clara e compreensível
+                        </label>
+                    </div>
+                    @if (Model.PrescriptionType == "CONTROLADA")
+                    {
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="check7">
+                            <label class="form-check-label" for="check7">
+                                Receituário controlado adequado
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="check8">
+                            <label class="form-check-label" for="check8">
+                                Notificação de receita presente
+                            </label>
+                        </div>
+                    }
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="check9">
+                        <label class="form-check-label" for="check9">
+                            Prescrição dentro da validade
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informações Importantes -->
+            <div class="card shadow-sm mb-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h6>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-primary">Responsabilidade Técnica</h6>
+                    <p class="small mb-3">
+                        Como farmacêutico responsável técnico, você é legalmente responsável 
+                        pela validação desta prescrição conforme RDC 67/2007 da ANVISA.
+                    </p>
+
+                    <h6 class="text-primary">Validades Legais</h6>
+                    <ul class="small mb-0">
+                        <li><strong>Antibióticos:</strong> 10 dias</li>
+                        <li><strong>Controlados:</strong> 30 dias</li>
+                        <li><strong>Simples:</strong> Sem limite</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Contatos de Emergência -->
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0"><i class="bi bi-telephone"></i> Contatos</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-2">
+                        <strong>CRF (Conselho Regional):</strong><br>
+                        <a href="tel:0800..." class="text-decoration-none">0800 XXX XXXX</a>
+                    </p>
+                    <p class="small mb-2">
+                        <strong>ANVISA (Dúvidas):</strong><br>
+                        <a href="tel:0800642..." class="text-decoration-none">0800 642 9782</a>
+                    </p>
+                    <p class="small mb-0">
+                        <strong>Em caso de dúvida:</strong><br>
+                        Entre em contato com o médico prescritor antes de validar.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Controlar ativação do botão de validação baseado no checklist
+    const checkboxes = document.querySelectorAll('.form-check-input');
+    const submitBtn = document.querySelector('button[type="submit"]');
+    
+    function updateButtonState() {
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        if (allChecked) {
+            submitBtn.classList.remove('btn-outline-success');
+            submitBtn.classList.add('btn-success');
+        } else {
+            submitBtn.classList.remove('btn-success');
+            submitBtn.classList.add('btn-outline-success');
+        }
+    }
+    
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateButtonState);
+    });
+    
+    // Estado inicial
+    updateButtonState();
+</script>
+}

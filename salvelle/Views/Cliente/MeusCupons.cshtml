@@ -1,0 +1,406 @@
+﻿@using Models.Pharmacy
+
+@{
+    ViewData["Title"] = "Meus Cupons";
+    Layout = null;
+    var coupons = ViewBag.Coupons as List<Coupon> ?? new List<Coupon>();
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="var(--petrol-500)">
+    <title>@ViewData["Title"] - Salvelle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: var(--petrol-500);
+            --primary-light: var(--petrol-200);
+            --secondary: var(--ok);
+            --accent: var(--amber-500);
+            --danger: var(--danger);
+            --gray-900: var(--ink);
+            --gray-700: var(--ink-2);
+            --gray-500: var(--ink-3);
+            --gray-400: var(--ink-4);
+            --gray-200: var(--rule);
+            --gray-100: var(--bg-subtle);
+            --gray-50: var(--bg);
+            --white: #ffffff;
+            --gradient-primary: var(--petrol-500);
+            --gradient-secondary: var(--ok);
+            --gradient-accent: var(--amber-500);
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.1);
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-900);
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .app-header {
+            background: var(--white);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid var(--gray-100);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            background: var(--gray-100);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: var(--gray-700);
+            cursor: pointer;
+        }
+
+        .header-title {
+            flex: 1;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .main-content {
+            padding: 20px;
+        }
+
+        /* Coupon Card */
+        .coupons-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .coupon-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .coupon-card::before,
+        .coupon-card::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--gray-50);
+            border-radius: var(--radius-full);
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .coupon-card::before { left: -10px; }
+        .coupon-card::after { right: -10px; }
+
+        .coupon-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .coupon-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--white);
+            flex-shrink: 0;
+        }
+
+        .coupon-icon.percentage {
+            background: var(--gradient-accent);
+        }
+
+        .coupon-icon.value {
+            background: var(--gradient-secondary);
+        }
+
+        .coupon-info {
+            flex: 1;
+        }
+
+        .coupon-discount {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--gray-900);
+        }
+
+        .coupon-description {
+            font-size: 14px;
+            color: var(--gray-500);
+            margin-top: 2px;
+        }
+
+        .coupon-body {
+            padding: 0 20px 16px;
+            border-top: 2px dashed var(--gray-200);
+        }
+
+        .coupon-code-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+        }
+
+        .coupon-code {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--primary);
+        }
+
+        .copy-btn {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .copy-btn.copied {
+            background: var(--secondary);
+        }
+
+        .coupon-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        .coupon-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .coupon-expiring {
+            background: var(--warn-soft);
+            color: var(--amber-700);
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+        }
+
+        .empty-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: var(--radius-full);
+            background: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: var(--gray-400);
+            margin: 0 auto 20px;
+        }
+
+        .empty-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .empty-text {
+            font-size: 15px;
+            color: var(--gray-500);
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border-top: 1px solid var(--gray-100);
+            padding: 8px 16px;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom));
+            display: flex;
+            justify-content: space-around;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 16px;
+            text-decoration: none;
+            color: var(--gray-500);
+        }
+
+        .nav-item.active { color: var(--primary); }
+        .nav-item i { font-size: 22px; }
+        .nav-item span { font-size: 11px; font-weight: 600; }
+
+        @@media (min-width: 768px) {
+            body { max-width: 480px; margin: 0 auto; }
+            .bottom-nav { max-width: 480px; left: 50%; transform: translateX(-50%); }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <button class="back-btn" onclick="history.back()">
+            <i class="bi bi-arrow-left"></i>
+        </button>
+        <h1 class="header-title">Meus Cupons</h1>
+    </header>
+
+    <main class="main-content">
+        @if(coupons.Any())
+        {
+            <div class="coupons-list">
+                @foreach(var coupon in coupons)
+                {
+                    var isExpiring = coupon.DaysRemaining <= 3;
+                    
+                    <div class="coupon-card">
+                        @if(isExpiring)
+                        {
+                            <div class="coupon-expiring">
+                                <i class="bi bi-clock"></i>
+                                Expira em @coupon.DaysRemaining dia(s)!
+                            </div>
+                        }
+                        <div class="coupon-header">
+                            <div class="coupon-icon @(coupon.DiscountType == "PERCENTAGE" ? "percentage" : "value")">
+                                <i class="bi bi-@(coupon.DiscountType == "PERCENTAGE" ? "percent" : "currency-dollar")"></i>
+                            </div>
+                            <div class="coupon-info">
+                                <div class="coupon-discount">@coupon.DiscountDisplay</div>
+                                <div class="coupon-description">@(coupon.Description ?? "Desconto em pedidos")</div>
+                            </div>
+                        </div>
+                        <div class="coupon-body">
+                            <div class="coupon-code-row">
+                                <span class="coupon-code">@coupon.Code</span>
+                                <button class="copy-btn" onclick="copyCoupon(this, '@coupon.Code')">
+                                    <i class="bi bi-clipboard"></i>
+                                    Copiar
+                                </button>
+                            </div>
+                            <div class="coupon-meta">
+                                @if(coupon.MinOrderValue.HasValue)
+                                {
+                                    <span>
+                                        <i class="bi bi-cart"></i>
+                                        Mín. R$ @coupon.MinOrderValue.Value.ToString("N2")
+                                    </span>
+                                }
+                                <span>
+                                    <i class="bi bi-calendar"></i>
+                                    Até @coupon.ValidUntil.ToString("dd/MM/yyyy")
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="bi bi-ticket-perforated"></i>
+                </div>
+                <h3 class="empty-title">Nenhum cupom disponível</h3>
+                <p class="empty-text">Fique atento às nossas promoções!</p>
+            </div>
+        }
+    </main>
+
+    <nav class="bottom-nav">
+        <a href="/Cliente/Inicio" class="nav-item">
+            <i class="bi bi-house"></i>
+            <span>Início</span>
+        </a>
+        <a href="/Cliente/Buscar" class="nav-item">
+            <i class="bi bi-search"></i>
+            <span>Buscar</span>
+        </a>
+        <a href="/Cliente/MeusPedidos" class="nav-item">
+            <i class="bi bi-bag"></i>
+            <span>Pedidos</span>
+        </a>
+        <a href="/Cliente/Carrinho" class="nav-item">
+            <i class="bi bi-cart3"></i>
+            <span>Carrinho</span>
+        </a>
+        <a href="/Cliente/Perfil" class="nav-item">
+            <i class="bi bi-person"></i>
+            <span>Perfil</span>
+        </a>
+    </nav>
+
+    <script>
+        function copyCoupon(btn, code) {
+            navigator.clipboard.writeText(code).then(() => {
+                btn.innerHTML = '<i class="bi bi-check"></i> Copiado!';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="bi bi-clipboard"></i> Copiar';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

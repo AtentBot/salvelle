@@ -1,0 +1,578 @@
+﻿@{
+    ViewData["Title"] = "Buscar";
+    Layout = null;
+    var searchQuery = ViewBag.SearchQuery as string ?? "";
+    var searchResults = ViewBag.SearchResults as List<dynamic> ?? new List<dynamic>();
+    var pharmacyName = ViewBag.PharmacyName ?? "Farmácia";
+    var cartCount = ViewBag.CartCount ?? 0;
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="var(--petrol-500)">
+    <title>@ViewData["Title"] - Salvelle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: var(--petrol-500);
+            --primary-dark: var(--petrol-700);
+            --primary-light: var(--petrol-200);
+            --secondary: var(--ok);
+            --accent: var(--amber-500);
+            --danger: var(--danger);
+            --gray-900: var(--ink);
+            --gray-700: var(--ink-2);
+            --gray-500: var(--ink-3);
+            --gray-400: var(--ink-4);
+            --gray-300: var(--ink-5);
+            --gray-200: var(--rule);
+            --gray-100: var(--bg-subtle);
+            --gray-50: var(--bg);
+            --white: #ffffff;
+            --gradient-primary: var(--petrol-500);
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.1);
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-900);
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .app-header {
+            background: var(--white);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--gray-100);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 12px;
+        }
+
+        .search-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-400);
+            font-size: 20px;
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 24px;
+            border-radius: var(--radius-full);
+            background: var(--gray-200);
+            border: none;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--gray-500);
+        }
+
+        .search-clear.visible { display: flex; }
+
+        .cancel-btn {
+            padding: 14px 16px;
+            background: transparent;
+            border: none;
+            color: var(--primary);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .main-content {
+            padding: 20px;
+        }
+
+        /* Recent Searches */
+        .section-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-title .clear-all {
+            font-size: 13px;
+            color: var(--primary);
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .recent-searches {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .recent-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-full);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .recent-chip:hover {
+            border-color: var(--primary);
+            background: rgba(99,102,241,0.05);
+        }
+
+        .recent-chip i { color: var(--gray-400); }
+
+        /* Popular Searches */
+        .popular-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .popular-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--white);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .popular-item:hover {
+            background: var(--gray-50);
+        }
+
+        .popular-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius);
+            background: var(--warn-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .popular-text {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .popular-badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            background: var(--secondary);
+            color: var(--white);
+            border-radius: var(--radius-full);
+            font-weight: 600;
+        }
+
+        /* Search Results */
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .results-count {
+            font-size: 14px;
+            color: var(--gray-500);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .product-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid var(--gray-100);
+        }
+
+        .product-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .product-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius);
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--white);
+            margin-bottom: 12px;
+        }
+
+        .product-name {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .product-category {
+            font-size: 12px;
+            color: var(--gray-500);
+            margin-bottom: 8px;
+        }
+
+        .product-stock {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: var(--radius-full);
+        }
+
+        .product-stock.in-stock {
+            background: var(--ok-soft);
+            color: var(--ok);
+        }
+
+        .product-stock.out-stock {
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-full);
+            background: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: var(--gray-400);
+            margin: 0 auto 16px;
+        }
+
+        .empty-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            color: var(--gray-500);
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border-top: 1px solid var(--gray-100);
+            padding: 8px 16px;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom));
+            display: flex;
+            justify-content: space-around;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 16px;
+            text-decoration: none;
+            color: var(--gray-500);
+            position: relative;
+        }
+
+        .nav-item.active { color: var(--primary); }
+        .nav-item i { font-size: 22px; }
+        .nav-item span { font-size: 11px; font-weight: 600; }
+
+        @@media (min-width: 768px) {
+            body {
+                max-width: 480px;
+                margin: 0 auto;
+                box-shadow: 0 0 40px rgba(0,0,0,0.1);
+            }
+            .bottom-nav {
+                max-width: 480px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <form class="search-form" onsubmit="performSearch(event)">
+            <div class="search-input-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" class="search-input" id="searchInput" 
+                       placeholder="Buscar fórmulas, produtos..." 
+                       value="@searchQuery"
+                       oninput="toggleClearBtn()">
+                <button type="button" class="search-clear @(string.IsNullOrEmpty(searchQuery) ? "" : "visible")" 
+                        id="clearBtn" onclick="clearSearch()">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+            <button type="button" class="cancel-btn" onclick="history.back()">Cancelar</button>
+        </form>
+    </header>
+
+    <main class="main-content">
+        @if(string.IsNullOrEmpty(searchQuery))
+        {
+            <!-- Recent Searches -->
+            <section id="recentSection">
+                <h2 class="section-title">
+                    Buscas recentes
+                    <button class="clear-all" onclick="clearRecent()">Limpar</button>
+                </h2>
+                <div class="recent-searches" id="recentSearches">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- Popular -->
+            <section>
+                <h2 class="section-title">Populares</h2>
+                <div class="popular-list">
+                    <div class="popular-item" onclick="searchFor('Minoxidil')">
+                        <div class="popular-icon">💇</div>
+                        <span class="popular-text">Minoxidil 5%</span>
+                        <span class="popular-badge">Popular</span>
+                    </div>
+                    <div class="popular-item" onclick="searchFor('Vitamina D')">
+                        <div class="popular-icon">🍊</div>
+                        <span class="popular-text">Vitamina D 10.000UI</span>
+                        <span class="popular-badge">Popular</span>
+                    </div>
+                    <div class="popular-item" onclick="searchFor('Melatonina')">
+                        <div class="popular-icon">😴</div>
+                        <span class="popular-text">Melatonina 3mg</span>
+                        <span class="popular-badge">Popular</span>
+                    </div>
+                    <div class="popular-item" onclick="searchFor('Ácido Hialurônico')">
+                        <div class="popular-icon">✨</div>
+                        <span class="popular-text">Ácido Hialurônico</span>
+                    </div>
+                    <div class="popular-item" onclick="searchFor('Colágeno')">
+                        <div class="popular-icon">💪</div>
+                        <span class="popular-text">Colágeno Hidrolisado</span>
+                    </div>
+                </div>
+            </section>
+        }
+        else
+        {
+            <!-- Search Results -->
+            <div class="results-header">
+                <h2 class="section-title">Resultados</h2>
+                <span class="results-count">@searchResults.Count encontrado(s)</span>
+            </div>
+
+            @if(searchResults.Any())
+            {
+                <div class="results-grid">
+                    @foreach(var item in searchResults)
+                    {
+                        <div class="product-card" onclick="viewProduct('@item.Id')">
+                            <div class="product-icon">
+                                <i class="bi bi-capsule"></i>
+                            </div>
+                            <h3 class="product-name">@item.Name</h3>
+                            <p class="product-category">@(item.Category ?? "Manipulado")</p>
+                            <span class="product-stock @(item.InStock ? "in-stock" : "out-stock")">
+                                <i class="bi bi-@(item.InStock ? "check-circle" : "x-circle")"></i>
+                                @(item.InStock ? "Em estoque" : "Sob encomenda")
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-search"></i>
+                    </div>
+                    <h3 class="empty-title">Nenhum resultado</h3>
+                    <p class="empty-text">Tente buscar por outro termo ou envie sua receita para orçamento</p>
+                </div>
+            }
+        }
+    </main>
+
+    <nav class="bottom-nav">
+        <a href="/Cliente/Inicio" class="nav-item">
+            <i class="bi bi-house"></i>
+            <span>Início</span>
+        </a>
+        <a href="/Cliente/Buscar" class="nav-item active">
+            <i class="bi bi-search"></i>
+            <span>Buscar</span>
+        </a>
+        <a href="/Cliente/MeusPedidos" class="nav-item">
+            <i class="bi bi-bag"></i>
+            <span>Pedidos</span>
+        </a>
+        <a href="/Cliente/Carrinho" class="nav-item">
+            <i class="bi bi-cart3"></i>
+            <span>Carrinho</span>
+        </a>
+        <a href="/Cliente/Perfil" class="nav-item">
+            <i class="bi bi-person"></i>
+            <span>Perfil</span>
+        </a>
+    </nav>
+
+    <script>
+        const STORAGE_KEY = 'salvelle_recent_searches';
+
+        // Load recent searches
+        function loadRecentSearches() {
+            const recent = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const container = document.getElementById('recentSearches');
+            
+            if (container && recent.length > 0) {
+                container.innerHTML = recent.slice(0, 5).map(term => `
+                    <div class="recent-chip" onclick="searchFor('${term}')">
+                        <i class="bi bi-clock-history"></i>
+                        ${term}
+                    </div>
+                `).join('');
+            } else if (container) {
+                document.getElementById('recentSection').style.display = 'none';
+            }
+        }
+
+        function saveSearch(term) {
+            if (!term) return;
+            let recent = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            recent = [term, ...recent.filter(t => t !== term)].slice(0, 10);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(recent));
+        }
+
+        function clearRecent() {
+            localStorage.removeItem(STORAGE_KEY);
+            document.getElementById('recentSection').style.display = 'none';
+        }
+
+        function searchFor(term) {
+            saveSearch(term);
+            window.location.href = `/Cliente/Buscar?q=${encodeURIComponent(term)}`;
+        }
+
+        function performSearch(event) {
+            event.preventDefault();
+            const term = document.getElementById('searchInput').value.trim();
+            if (term) {
+                searchFor(term);
+            }
+        }
+
+        function toggleClearBtn() {
+            const input = document.getElementById('searchInput');
+            const btn = document.getElementById('clearBtn');
+            btn.classList.toggle('visible', input.value.length > 0);
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            toggleClearBtn();
+            document.getElementById('searchInput').focus();
+        }
+
+        function viewProduct(id) {
+            // TODO: Implementar página de detalhes
+            alert('Produto selecionado: ' + id);
+        }
+
+        // Auto-focus search on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRecentSearches();
+            document.getElementById('searchInput').focus();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,511 @@
+﻿@{
+    Layout = null;
+    var expired = ViewBag.Expired ?? false;
+    var token = ViewBag.Token;
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orçamento @Model.Code - @Model.EstablishmentName</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c7be5;
+            --success-color: #00d97e;
+            --warning-color: #f6c343;
+            --danger-color: #e63757;
+        }
+        body {
+            background: var(--bg-subtle);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .quote-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .quote-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .quote-header {
+            background: linear-gradient(135deg, var(--primary-color), #1a5fc9);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .quote-header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        .quote-header .code {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .quote-body {
+            padding: 30px;
+        }
+        .info-section {
+            background: var(--bg-subtle);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .info-section h5 {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed var(--rule);
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: var(--ink-3);
+        }
+        .info-value {
+            font-weight: 500;
+        }
+        .price-section {
+            background: var(--ok-soft);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+        }
+        .price-label {
+            font-size: 0.9rem;
+            color: #388e3c;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .price-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--ok);
+        }
+        .price-details {
+            font-size: 0.85rem;
+            color: var(--ink-3);
+            margin-top: 10px;
+        }
+        .action-buttons {
+            display: grid;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        .btn-approve {
+            background: linear-gradient(135deg, var(--success-color), #00b369);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-approve:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,217,126,0.4);
+            color: white;
+        }
+        .btn-reject {
+            background: transparent;
+            border: 2px solid var(--danger-color);
+            color: var(--danger-color);
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .btn-reject:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+        .validity-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .validity-valid {
+            background: var(--ok-soft);
+            color: var(--ok);
+        }
+        .validity-expired {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .status-PENDENTE {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        .status-APROVADO {
+            background: var(--ok-soft);
+            color: var(--ok);
+        }
+        .status-RECUSADO {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .status-EXPIRADO {
+            background: #eceff1;
+            color: #546e7a;
+        }
+        .footer-info {
+            text-align: center;
+            padding: 20px;
+            color: var(--ink-3);
+            font-size: 0.9rem;
+        }
+        .component-list {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .component-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--rule);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .component-item:last-child {
+            border-bottom: none;
+        }
+        .component-name {
+            font-weight: 500;
+        }
+        .component-qty {
+            color: var(--ink-3);
+            font-size: 0.9rem;
+        }
+        .whatsapp-btn {
+            background: var(--ok);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .whatsapp-btn:hover {
+            background: #128C7E;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="quote-container py-4">
+        <div class="quote-card">
+            <!-- Header -->
+            <div class="quote-header">
+                <h1><i class="fas fa-file-invoice-dollar me-2"></i>@Model.EstablishmentName</h1>
+                <div class="code">Orçamento #@Model.Code</div>
+            </div>
+
+            <div class="quote-body">
+                <!-- Status -->
+                <div class="text-center mb-4">
+                    <span class="status-badge status-@Model.Status">
+                        @switch (Model.Status)
+                        {
+                            case "PENDENTE":
+                                <i class="fas fa-clock me-2"></i>
+                                @:Aguardando sua aprovação
+                                break;
+                            case "APROVADO":
+                                <i class="fas fa-check-circle me-2"></i>
+                                @:Orçamento Aprovado
+                                break;
+                            case "RECUSADO":
+                                <i class="fas fa-times-circle me-2"></i>
+                                @:Orçamento Recusado
+                                break;
+                            case "EXPIRADO":
+                                <i class="fas fa-calendar-times me-2"></i>
+                                @:Orçamento Expirado
+                                break;
+                            default:
+                                @Model.Status
+                                break;
+                        }
+                    </span>
+                </div>
+
+                @if (expired && Model.Status == "PENDENTE")
+                {
+                    <div class="alert alert-warning text-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Este orçamento expirou. Entre em contato com a farmácia para solicitar um novo.
+                    </div>
+                }
+
+                <!-- Cliente -->
+                <div class="info-section">
+                    <h5><i class="fas fa-user me-2"></i>Dados do Cliente</h5>
+                    <div class="info-row">
+                        <span class="info-label">Nome:</span>
+                        <span class="info-value">@Model.CustomerName</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.CustomerPhone))
+                    {
+                        <div class="info-row">
+                            <span class="info-label">Telefone:</span>
+                            <span class="info-value">@Model.CustomerPhone</span>
+                        </div>
+                    }
+                </div>
+
+                <!-- Prescritor -->
+                @if (!string.IsNullOrEmpty(Model.DoctorName))
+                {
+                    <div class="info-section">
+                        <h5><i class="fas fa-user-md me-2"></i>Prescritor</h5>
+                        <div class="info-row">
+                            <span class="info-label">Médico:</span>
+                            <span class="info-value">@Model.DoctorName</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.DoctorCrm))
+                        {
+                            <div class="info-row">
+                                <span class="info-label">CRM:</span>
+                                <span class="info-value">@Model.DoctorCrm/@Model.DoctorCrmState</span>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <!-- Fórmula -->
+                <div class="info-section">
+                    <h5><i class="fas fa-flask me-2"></i>Fórmula</h5>
+                    <div class="info-row">
+                        <span class="info-label">Forma Farmacêutica:</span>
+                        <span class="info-value">@Model.PharmaceuticalForm</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Quantidade:</span>
+                        <span class="info-value">@Model.TotalQuantity @Model.TotalQuantityUnit</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.UsageType))
+                    {
+                        <div class="info-row">
+                            <span class="info-label">Uso:</span>
+                            <span class="info-value">@Model.UsageType</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Instructions))
+                    {
+                        <div class="info-row">
+                            <span class="info-label">Posologia:</span>
+                            <span class="info-value">@Model.Instructions</span>
+                        </div>
+                    }
+                </div>
+
+                <!-- Preço -->
+                <div class="price-section">
+                    <div class="price-label">Valor Total</div>
+                    <div class="price-value">R$ @Model.FinalPrice.ToString("N2")</div>
+                    <div class="price-details">
+                        Prazo de produção: @Model.EstimatedDays dias úteis
+                    </div>
+                </div>
+
+                <!-- Validade -->
+                <div class="text-center mt-3">
+                    @if (Model.ValidUntil >= DateTime.UtcNow)
+                    {
+                        <span class="validity-badge validity-valid">
+                            <i class="fas fa-calendar-check me-1"></i>
+                            Válido até @Model.ValidUntil.ToString("dd/MM/yyyy")
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="validity-badge validity-expired">
+                            <i class="fas fa-calendar-times me-1"></i>
+                            Expirou em @Model.ValidUntil.ToString("dd/MM/yyyy")
+                        </span>
+                    }
+                </div>
+
+                <!-- Ações -->
+                @if (Model.Status == "PENDENTE" && !expired)
+                {
+                    <div class="action-buttons">
+                        <button class="btn-approve" onclick="approveQuote()">
+                            <i class="fas fa-check-circle me-2"></i>Aprovar Orçamento
+                        </button>
+                        <button class="btn-reject" onclick="showRejectModal()">
+                            <i class="fas fa-times me-2"></i>Recusar
+                        </button>
+                    </div>
+                }
+
+                <!-- Contato -->
+                <div class="footer-info mt-4">
+                    <p class="mb-2">Dúvidas? Entre em contato:</p>
+                    @if (!string.IsNullOrEmpty(Model.EstablishmentPhone))
+                    {
+                        <a href="https://wa.me/55@Model.EstablishmentPhone.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "")" 
+                           class="whatsapp-btn" target="_blank">
+                            <i class="fab fa-whatsapp"></i>
+                            @Model.EstablishmentPhone
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-3 text-muted small">
+            Powered by D&W Consultoria em Ltda
+        </div>
+    </div>
+
+    <!-- Modal Recusar -->
+    <div class="modal fade" id="rejectModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="fas fa-times-circle me-2"></i>Recusar Orçamento</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja recusar este orçamento?</p>
+                    <div class="mb-3">
+                        <label class="form-label">Motivo (opcional):</label>
+                        <textarea id="rejectReason" class="form-control" rows="3" 
+                                  placeholder="Ex: Preço acima do esperado, prazo muito longo..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observações adicionais:</label>
+                        <textarea id="rejectObservations" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" onclick="rejectQuote()">
+                        <i class="fas fa-times me-2"></i>Confirmar Recusa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Aprovar -->
+    <div class="modal fade" id="approveModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-check-circle me-2"></i>Aprovar Orçamento</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Deseja aprovar este orçamento no valor de <strong>R$ @Model.FinalPrice.ToString("N2")</strong>?</p>
+                    <div class="mb-3">
+                        <label class="form-label">Observações (opcional):</label>
+                        <textarea id="approveObservations" class="form-control" rows="3" 
+                                  placeholder="Ex: Prefiro retirar no período da tarde..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" onclick="confirmApprove()">
+                        <i class="fas fa-check me-2"></i>Confirmar Aprovação
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const token = '@token';
+        
+        function approveQuote() {
+            const modal = new bootstrap.Modal(document.getElementById('approveModal'));
+            modal.show();
+        }
+        
+        function showRejectModal() {
+            const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+            modal.show();
+        }
+
+        async function confirmApprove() {
+            const observations = document.getElementById('approveObservations').value;
+
+            try {
+                const response = await fetch(`/api/PrescriptionQuotes/public/${token}/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customerObservations: observations })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Mensagem personalizada com número da OM se disponível
+                    let successMessage = result.message || 'Orçamento aprovado com sucesso!';
+                    successMessage += '\n\nA farmácia já recebeu seu pedido e entrará em contato em breve.';
+
+                    alert(successMessage);
+                    location.reload();
+                } else {
+                    alert(result.message || 'Erro ao aprovar orçamento');
+                }
+            } catch (error) {
+                alert('Erro ao processar: ' + error.message);
+            }
+        }
+        
+        async function rejectQuote() {
+            const reason = document.getElementById('rejectReason').value;
+            const observations = document.getElementById('rejectObservations').value;
+            
+            try {
+                const response = await fetch(`/api/PrescriptionQuotes/public/${token}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason, customerObservations: observations })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('Orçamento recusado.');
+                    location.reload();
+                } else {
+                    alert(result.message || 'Erro ao recusar orçamento');
+                }
+            } catch (error) {
+                alert('Erro ao processar: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

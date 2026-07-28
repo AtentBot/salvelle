@@ -1,0 +1,268 @@
+@{
+    ViewData["Title"] = "Gerenciamento de Lotes";
+}
+
+<!-- Header -->
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0"><i class="bi bi-box-seam me-2"></i>Gerenciamento de Lotes</h2>
+                <p class="text-muted mb-0">Controle de qualidade e rastreabilidade</p>
+            </div>
+            <div>
+                <a href="/Estoque" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small">Status</label>
+                        <select id="filterStatus" class="form-select form-select-sm">
+                            <option value="">Todos</option>
+                            <option value="QUARENTENA">Quarentena</option>
+                            <option value="APROVADO">Aprovado</option>
+                            <option value="REPROVADO">Reprovado</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small">Vencimento</label>
+                        <select id="filterExpiry" class="form-select form-select-sm">
+                            <option value="">Todos</option>
+                            <option value="30">Vencendo em 30 dias</option>
+                            <option value="60">Vencendo em 60 dias</option>
+                            <option value="90">Vencendo em 90 dias</option>
+                            <option value="expired">Vencidos</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small">Quantidade</label>
+                        <select id="filterQuantity" class="form-select form-select-sm">
+                            <option value="">Todas</option>
+                            <option value="low">Estoque baixo</option>
+                            <option value="zero">Zerado</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small">Buscar</label>
+                        <input type="text" id="filterSearch" class="form-control form-control-sm" placeholder="Lote ou matéria-prima...">
+                    </div>
+                </div>
+
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <button onclick="applyFilters()" class="btn btn-primary btn-sm">
+                            <i class="bi bi-funnel me-1"></i>Filtrar
+                        </button>
+                        <button onclick="clearFilters()" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-x-circle me-1"></i>Limpar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Lotes -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 12%">Lote</th>
+                                <th style="width: 25%">Matéria-Prima</th>
+                                <th style="width: 10%">Status</th>
+                                <th style="width: 10%" class="text-end">Qtd. Atual</th>
+                                <th style="width: 10%">Validade</th>
+                                <th style="width: 12%">Fornecedor</th>
+                                <th style="width: 11%">Recebimento</th>
+                                <th style="width: 10%" class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchesTable">
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Carregando...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadBatches();
+});
+
+async function loadBatches() {
+    const status = document.getElementById('filterStatus').value;
+    const expiry = document.getElementById('filterExpiry').value;
+    const quantity = document.getElementById('filterQuantity').value;
+    const search = document.getElementById('filterSearch').value;
+    
+    try {
+        const response = await fetch('/api/Batches', {
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Erro ao carregar lotes: ' + response.status);
+        }
+        
+        const result = await response.json();
+        
+        // ✅ CORREÇÃO: Pegar o array de dentro de result.data
+        let batches = result.data || [];
+        
+        // Aplicar filtros
+        if (status) {
+            batches = batches.filter(b => b.status === status);
+        }
+        
+        if (expiry) {
+            const today = new Date();
+            batches = batches.filter(b => {
+                const expiryDate = new Date(b.expiryDate);
+                const diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                
+                if (expiry === 'expired') return diffDays < 0;
+                return diffDays > 0 && diffDays <= parseInt(expiry);
+            });
+        }
+        
+        if (quantity === 'low') {
+            batches = batches.filter(b => b.currentQuantity > 0 && b.currentQuantity < (b.receivedQuantity * 0.2));
+        } else if (quantity === 'zero') {
+            batches = batches.filter(b => b.currentQuantity === 0);
+        }
+        
+        if (search) {
+            const searchLower = search.toLowerCase();
+            batches = batches.filter(b => 
+                b.batchNumber.toLowerCase().includes(searchLower) ||
+                (b.rawMaterialName && b.rawMaterialName.toLowerCase().includes(searchLower))
+            );
+        }
+        
+        renderBatches(batches);
+        
+    } catch (error) {
+        console.error('Erro ao carregar lotes:', error);
+        document.getElementById('batchesTable').innerHTML = 
+            '<tr><td colspan="8" class="text-center text-danger py-4">Erro ao carregar lotes: ' + error.message + '</td></tr>';
+    }
+}
+
+function renderBatches(batches) {
+    const tbody = document.getElementById('batchesTable');
+    
+    if (!batches || batches.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Nenhum lote encontrado</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = batches.map(b => {
+        const expiryWarning = getExpiryWarning(b.expiryDate);
+        const supplierName = b.supplierName || '-';
+        const rawMaterialName = b.rawMaterialName || 'N/A';
+        const rawMaterialUnit = b.rawMaterialUnit || '';
+        
+        return `
+            <tr>
+                <td>
+                    <strong>${b.batchNumber}</strong>
+                </td>
+                <td>
+                    ${rawMaterialName}
+                    ${rawMaterialUnit ? '<small class="text-muted">(' + rawMaterialUnit + ')</small>' : ''}
+                </td>
+                <td>
+                    ${getStatusBadge(b.status)}
+                </td>
+                <td class="text-end">
+                    <strong>${b.currentQuantity.toFixed(2)}</strong>
+                    <small class="text-muted">/ ${b.receivedQuantity.toFixed(2)}</small>
+                </td>
+                <td>
+                    <small>${formatDate(b.expiryDate)}</small>
+                    ${expiryWarning}
+                </td>
+                <td>
+                    <small class="text-muted">${supplierName}</small>
+                </td>
+                <td>
+                    <small class="text-muted">${formatDate(b.receivedDate)}</small>
+                </td>
+                <td class="text-center">
+                    <a href="/Estoque/Rastreabilidade/${b.id}" class="btn btn-sm btn-outline-primary" title="Rastreabilidade">
+                        <i class="bi bi-search"></i>
+                    </a>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function getStatusBadge(status) {
+    const badges = {
+        'QUARENTENA': '<span class="badge bg-warning">Quarentena</span>',
+        'APROVADO': '<span class="badge bg-success">Aprovado</span>',
+        'REPROVADO': '<span class="badge bg-danger">Reprovado</span>'
+    };
+    return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
+}
+
+function getExpiryWarning(expiryDateStr) {
+    const today = new Date();
+    const expiryDate = new Date(expiryDateStr);
+    const diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+        return '<br><span class="badge bg-danger small">Vencido</span>';
+    } else if (diffDays <= 30) {
+        return '<br><span class="badge bg-warning small">Vence em ' + diffDays + ' dias</span>';
+    }
+    return '';
+}
+
+function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR');
+}
+
+function applyFilters() {
+    loadBatches();
+}
+
+function clearFilters() {
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterExpiry').value = '';
+    document.getElementById('filterQuantity').value = '';
+    document.getElementById('filterSearch').value = '';
+    loadBatches();
+}
+</script>
+}

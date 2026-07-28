@@ -1,0 +1,249 @@
+@model Models.Prescription
+@{
+    ViewData["Title"] = "Editar Prescrição";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    
+    var estados = new[] { "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO" };
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <i class="fas fa-edit text-primary me-2"></i>Editar Prescrição
+            </h4>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="/PrescriptionsView">Prescrições</a></li>
+                    <li class="breadcrumb-item"><a href="/PrescriptionsView/Details/@Model.Id">@Model.Code</a></li>
+                    <li class="breadcrumb-item active">Editar</li>
+                </ol>
+            </nav>
+        </div>
+        <a href="/PrescriptionsView/Details/@Model.Id" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Voltar
+        </a>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form method="post" asp-action="Edit" asp-route-id="@Model.Id">
+        @Html.AntiForgeryToken()
+        
+        <div class="row">
+            <!-- Dados do Cliente -->
+            <div class="col-lg-6">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="fas fa-user me-2"></i>Dados do Cliente</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Cliente <span class="text-danger">*</span></label>
+                            <select name="CustomerId" class="form-select" required>
+                                <option value="">Selecione o cliente...</option>
+                                @if (ViewBag.Customers != null)
+                                {
+                                    foreach (var customer in ViewBag.Customers)
+                                    {
+                                        if (customer.Id == Model.CustomerId)
+                                        {
+                                            <option value="@customer.Id" selected>
+                                                @customer.FullName @(customer.Cpf != null ? $"- {customer.Cpf}" : "")
+                                            </option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@customer.Id">
+                                                @customer.FullName @(customer.Cpf != null ? $"- {customer.Cpf}" : "")
+                                            </option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dados do Prescritor -->
+            <div class="col-lg-6">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="fas fa-user-md me-2"></i>Dados do Prescritor</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nome do Médico <span class="text-danger">*</span></label>
+                            <input type="text" name="DoctorName" class="form-control" 
+                                   value="@Model.DoctorName" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">CRM</label>
+                                <input type="text" name="DoctorCrm" class="form-control" 
+                                       value="@Model.DoctorCrm" placeholder="00000">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">UF</label>
+                                <select name="DoctorCrmState" class="form-select">
+                                    <option value="">UF</option>
+                                    @foreach (var uf in estados)
+                                    {
+                                        if (Model.DoctorCrmState == uf)
+                                        {
+                                            <option value="@uf" selected>@uf</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@uf">@uf</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Dados da Prescrição -->
+            <div class="col-lg-6">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0"><i class="fas fa-file-prescription me-2"></i>Dados da Prescrição</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Data da Prescrição <span class="text-danger">*</span></label>
+                                <input type="date" name="PrescriptionDate" class="form-control" 
+                                       value="@Model.PrescriptionDate.ToString("yyyy-MM-dd")" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Validade</label>
+
+                                @{
+                                    var expirationValue = Model.ExpirationDate != default(DateTime)
+                                    ? Model.ExpirationDate.ToString("yyyy-MM-dd")
+                                    : "";
+                                }
+                                <input type="date" name="ExpirationDate" class="form-control" value="@expirationValue">
+
+
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tipo</label>
+                                <select name="PrescriptionType" class="form-select">
+                                    @{
+                                        var tipos = new[] { 
+                                            new { Value = "SIMPLES", Text = "Simples" },
+                                            new { Value = "CONTROLADA", Text = "Controlada" },
+                                            new { Value = "ESPECIAL", Text = "Especial" },
+                                            new { Value = "ANTIMICROBIANO", Text = "Antimicrobiano" }
+                                        };
+                                    }
+                                    @foreach (var tipo in tipos)
+                                    {
+                                        if (Model.PrescriptionType == tipo.Value)
+                                        {
+                                            <option value="@tipo.Value" selected>@tipo.Text</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@tipo.Value">@tipo.Text</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Controle</label>
+                                <select name="ControlledType" class="form-select">
+                                    @{
+                                        var controles = new[] { 
+                                            new { Value = "", Text = "Não controlada" },
+                                            new { Value = "A1", Text = "A1 - Entorpecentes" },
+                                            new { Value = "A2", Text = "A2 - Entorpecentes Uso Permitido" },
+                                            new { Value = "A3", Text = "A3 - Psicotrópicos" },
+                                            new { Value = "B1", Text = "B1 - Psicotrópicos" },
+                                            new { Value = "B2", Text = "B2 - Psicotrópicos Anorexígenos" },
+                                            new { Value = "C1", Text = "C1 - Outras Substâncias" },
+                                            new { Value = "C2", Text = "C2 - Retinóides" },
+                                            new { Value = "C3", Text = "C3 - Imunossupressores" },
+                                            new { Value = "C4", Text = "C4 - Antirretrovirais" },
+                                            new { Value = "C5", Text = "C5 - Anabolizantes" }
+                                        };
+                                    }
+                                    @foreach (var ctrl in controles)
+                                    {
+                                        if (Model.ControlledType == ctrl.Value || (string.IsNullOrEmpty(Model.ControlledType) && string.IsNullOrEmpty(ctrl.Value)))
+                                        {
+                                            <option value="@ctrl.Value" selected>@ctrl.Text</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@ctrl.Value">@ctrl.Text</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medicamentos e Posologia -->
+            <div class="col-lg-6">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0"><i class="fas fa-pills me-2"></i>Medicamentos e Posologia</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Medicamentos/Fórmula</label>
+                            <textarea name="Medications" class="form-control" rows="4" 
+                                      placeholder="Descreva os medicamentos ou fórmula...">@Model.Medications</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Posologia</label>
+                            <textarea name="Posology" class="form-control" rows="3" 
+                                      placeholder="Instruções de uso...">@Model.Posology</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Observações -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Observações</h6>
+            </div>
+            <div class="card-body">
+                <textarea name="Observations" class="form-control" rows="3" 
+                          placeholder="Observações adicionais...">@Model.Observations</textarea>
+            </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="d-flex justify-content-end gap-2">
+            <a href="/PrescriptionsView/Details/@Model.Id" class="btn btn-outline-secondary btn-lg">
+                <i class="fas fa-times me-2"></i>Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save me-2"></i>Salvar Alterações
+            </button>
+        </div>
+    </form>
+</div>

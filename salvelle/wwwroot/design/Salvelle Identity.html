@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Salvelle · Identidade visual</title>
+<style>@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=cabinet-grotesk@500,700,800&f[]=excon@500,700&display=swap');</style>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0A1814;
+    --ink-2: #364946;
+    --ink-3: #6B7B78;
+    --rule: #E5E8E5;
+    --bg: #FAF9F5;
+    --surface: #FFFFFF;
+    --petrol: #0F6E78;
+    --petrol-2: #095861;
+    --petrol-soft: #E6F2F1;
+    --amber: #D88B2C;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); font-family: 'General Sans', system-ui, sans-serif; color: var(--ink); padding: 56px 64px; }
+  .container { max-width: 1280px; margin: 0 auto; }
+  .head { margin-bottom: 56px; }
+  .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); margin-bottom: 12px; }
+  h1 { font-family: 'Cabinet Grotesk', sans-serif; font-size: 56px; font-weight: 800; letter-spacing: -0.03em; margin: 0 0 16px; }
+  .lede { font-size: 17px; color: var(--ink-2); max-width: 760px; line-height: 1.6; margin: 0; }
+  .lede b { color: var(--ink); font-weight: 600; }
+
+  h2 { font-family: 'Cabinet Grotesk', sans-serif; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin: 64px 0 4px; }
+  h2 + .sub { font-size: 14px; color: var(--ink-3); margin-bottom: 24px; }
+
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+
+  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; overflow: hidden; }
+  .card-head { padding: 16px 22px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: baseline; }
+  .card-head .id { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-3); letter-spacing: 0.1em; }
+  .card-head h3 { margin: 4px 0 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+  .card-stage { background: var(--bg); padding: 56px 24px; display: grid; place-items: center; min-height: 200px; border-bottom: 1px solid var(--rule); }
+  .card-stage.dark { background: var(--ink); }
+  .card-stage.brand { background: var(--petrol); }
+  .card-mini { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+  .mini-cell { padding: 28px 12px; display: grid; place-items: center; border-right: 1px solid var(--rule); min-height: 120px; position: relative; }
+  .mini-cell:last-child { border-right: none; }
+  .mini-cell.dark { background: var(--ink); }
+  .mini-cell.brand { background: var(--petrol); }
+  .mini-cell .lbl { position: absolute; top: 8px; left: 12px; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(255,255,255,.5); letter-spacing: 0.08em; text-transform: uppercase; }
+  .mini-cell.light .lbl { color: var(--ink-3); }
+  .notes { padding: 16px 22px; font-size: 13px; color: var(--ink-2); line-height: 1.55; }
+  .notes b { color: var(--ink); font-weight: 600; }
+
+  .wm { font-weight: 700; letter-spacing: -0.025em; line-height: 1; }
+  .wm-grotesk { font-family: 'Cabinet Grotesk', sans-serif; font-weight: 800; }
+  .wm-sans { font-family: 'General Sans', sans-serif; font-weight: 600; }
+  .wm-excon { font-family: 'Excon', sans-serif; font-weight: 700; }
+  .lockup { display: inline-flex; align-items: center; gap: 14px; }
+
+  /* Palette */
+  .palette { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 12px; }
+  .swatch { border-radius: 12px; padding: 20px; min-height: 130px; display: flex; flex-direction: column; justify-content: space-between; }
+  .swatch .name { font-size: 13px; font-weight: 600; }
+  .swatch .hex { font-family: 'JetBrains Mono', monospace; font-size: 11px; opacity: 0.8; margin-top: 4px; }
+  .swatch .role { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; }
+
+  /* Type specimens */
+  .type-card { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; padding: 28px 32px; }
+  .type-card .role-tag { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .type-spec-h { font-family: 'Cabinet Grotesk'; font-weight: 800; font-size: 56px; letter-spacing: -0.03em; line-height: 1; margin: 8px 0 4px; }
+  .type-spec-b { font-family: 'General Sans'; font-size: 16px; line-height: 1.55; color: var(--ink-2); margin: 4px 0 0; }
+  .type-spec-mono { font-family: 'JetBrains Mono'; font-size: 13px; color: var(--ink-2); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--rule); }
+  .type-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3); margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rule); }
+
+  /* Mockups */
+  .mockup-card { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; padding: 32px; min-height: 320px; display: flex; flex-direction: column; justify-content: space-between; gap: 20px; }
+  .mockup-card.dark { background: var(--ink); color: #fff; }
+  .mockup-card.brand { background: var(--petrol); color: #fff; }
+  .mockup-card .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; background: var(--petrol-soft); color: var(--petrol); width: fit-content; }
+  .mockup-card.dark .pill { background: rgba(255,255,255,.08); color: #fff; }
+  .mockup-card.brand .pill { background: rgba(255,255,255,.15); color: #fff; }
+
+  .browser-frame { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+  .browser-bar { padding: 10px 14px; background: var(--bg); border-bottom: 1px solid var(--rule); display: flex; gap: 6px; align-items: center; }
+  .browser-bar .dot { width: 10px; height: 10px; border-radius: 50%; background: #E2E2E0; }
+  .browser-bar .url { margin-left: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3); padding: 4px 10px; background: var(--surface); border-radius: 6px; flex: 1; }
+  .browser-body { padding: 24px; min-height: 200px; }
+
+  .app-icon { width: 96px; height: 96px; border-radius: 22px; display: grid; place-items: center; box-shadow: 0 8px 24px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.06); }
+  .biz-card { background: #fff; padding: 20px; aspect-ratio: 1.7; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 12px 32px rgba(0,0,0,.08); border-radius: 6px; }
+
+  .scale-row { display: flex; gap: 32px; align-items: flex-end; padding: 32px; background: var(--bg); border-radius: 12px; border: 1px solid var(--rule); }
+  .scale-row .item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .scale-row .item .px { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-3); letter-spacing: 0.06em; }
+
+  .recommendation { padding: 24px 28px; background: linear-gradient(135deg, var(--petrol-soft), color-mix(in oklch, var(--amber) 18%, var(--petrol-soft))); border-radius: 14px; border: 1px solid color-mix(in oklch, var(--petrol) 20%, var(--rule)); margin-top: 24px; }
+  .recommendation b { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="head">
+  <div class="eyebrow">IDENTIDADE VISUAL · SALVELLE</div>
+  <h1>Salvelle</h1>
+  <p class="lede">Sistema visual completo. Um <b>símbolo F</b> que evoca <b>cápsula + transformação</b>, um <b>wordmark Cabinet Grotesk</b> com ponto-fórmula petrol, e uma paleta clínica calorosa. Apresentado em 4 variantes de marca, paleta, tipografia e aplicações.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2>01 · Símbolo + wordmark</h2>
+<div class="sub">4 variantes do logo a partir do mesmo conceito-base — cápsula que se transforma em F.</div>
+
+<div class="grid-2">
+
+  <!-- Variant A: Capsule-F primary -->
+  <div class="card">
+    <div class="card-head">
+      <div><div class="id">VARIANTE A · PRIMÁRIA</div><h3>Cápsula-F sólida</h3></div>
+    </div>
+    <div class="card-stage">
+      <div class="lockup">
+        <svg width="88" height="88" viewBox="0 0 88 88" fill="none">
+          <!-- Salvelle reduced mark: serif S -->
+          <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+        </svg>
+        <span class="wm wm-grotesk" style="font-size: 44px;">Salvelle</span>
+      </div>
+    </div>
+    <div class="card-mini">
+      <div class="mini-cell light"><span class="lbl">Light</span>
+        <svg width="44" height="44" viewBox="0 0 88 88" fill="none">
+          <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+        </svg>
+      </div>
+      <div class="mini-cell dark"><span class="lbl">Dark</span>
+        <svg width="44" height="44" viewBox="0 0 88 88" fill="none">
+          <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#fff">S</text>
+        </svg>
+      </div>
+      <div class="mini-cell brand"><span class="lbl">Brand</span>
+        <svg width="44" height="44" viewBox="0 0 88 88" fill="none">
+          <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#fff">S</text>
+        </svg>
+      </div>
+    </div>
+    <div class="notes"><b>Símbolo principal.</b> Cápsula gelatinosa cuja metade superior forma a haste vertical do F, com dois braços horizontais. Lê como F mesmo em 16px. Ponto petrol no wordmark = "fórmula completa".</div>
+  </div>
+
+  <!-- Variant B: Outlined -->
+  <div class="card">
+    <div class="card-head">
+      <div><div class="id">VARIANTE B · CONTORNO</div><h3>Cápsula-F linear</h3></div>
+    </div>
+    <div class="card-stage">
+      <div class="lockup">
+        <svg width="88" height="88" viewBox="0 0 88 88" fill="none">
+          <text x="44" y="66" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+        </svg>
+        <span class="wm wm-grotesk" style="font-size: 44px;">Salvelle</span>
+      </div>
+    </div>
+    <div class="card-mini">
+      <div class="mini-cell light"><span class="lbl">Light</span>
+        <svg width="44" height="44" viewBox="0 0 88 88" fill="none">
+          <text x="44" y="66" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+        </svg>
+      </div>
+      <div class="mini-cell dark"><span class="lbl">Dark</span>
+        <svg width="44" height="44" viewBox="0 0 88 88" fill="none">
+          <text x="44" y="66" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-weight="600" font-size="80" fill="#fff">S</text>
+        </svg>
+      </div>
+      <div class="mini-cell brand"><span class="lbl">Brand</span>
+        <svg width="44" height="44" viewBox="0 0 88 88" fill="none">
+          <text x="44" y="66" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-weight="600" font-size="80" fill="#fff">S</text>
+        </svg>
+      </div>
+    </div>
+    <div class="notes"><b>Variante para fundos delicados.</b> Mesma forma, linha de 3px. Ideal para embalagem, papelaria, e quando o sólido pesa demais.</div>
+  </div>
+
+  <!-- Variant C: Monogram badge -->
+  <div class="card">
+    <div class="card-head">
+      <div><div class="id">VARIANTE C · BADGE</div><h3>Monograma circular</h3></div>
+    </div>
+    <div class="card-stage">
+      <div class="lockup">
+        <svg width="88" height="88" viewBox="0 0 88 88" fill="none">
+          <circle cx="44" cy="44" r="40" fill="#0F6E78"/>
+          <text x="44" y="62" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-weight="600" font-size="56" fill="#fff">S</text>
+        </svg>
+        <span class="wm wm-grotesk" style="font-size: 44px;">Salvelle</span>
+      </div>
+    </div>
+    <div class="card-mini">
+      <div class="mini-cell light"><span class="lbl">App icon</span>
+        <div class="app-icon" style="background: #0F6E78;">
+          <svg width="58" height="58" viewBox="0 0 88 88" fill="none">
+          <text x="44" y="66" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-weight="600" font-size="80" fill="#fff">S</text>
+        </svg>
+        </div>
+      </div>
+      <div class="mini-cell dark"><span class="lbl">Favicon</span>
+        <svg width="32" height="32" viewBox="0 0 88 88" fill="none">
+          <circle cx="44" cy="44" r="40" fill="#fff"/>
+          <text x="44" y="62" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-weight="600" font-size="56" fill="#0F6E78">S</text>
+        </svg>
+      </div>
+      <div class="mini-cell brand"><span class="lbl">Avatar</span>
+        <svg width="44" height="44" viewBox="0 0 88 88" fill="none">
+          <circle cx="44" cy="44" r="40" fill="#fff"/>
+          <text x="44" y="62" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-weight="600" font-size="56" fill="#0F6E78">S</text>
+        </svg>
+      </div>
+    </div>
+    <div class="notes"><b>Para app icon, favicon, avatar.</b> Disco petrol com símbolo recortado em branco. Resolve o problema de marcas SaaS sem ícone — aqui a Salvelle tem versão dedicada para superfícies pequenas/quadradas.</div>
+  </div>
+
+  <!-- Variant D: Stacked -->
+  <div class="card">
+    <div class="card-head">
+      <div><div class="id">VARIANTE D · EMPILHADA</div><h3>Lockup vertical</h3></div>
+    </div>
+    <div class="card-stage">
+      <div class="lockup" style="flex-direction: column; gap: 14px; align-items: center;">
+        <svg width="76" height="76" viewBox="0 0 88 88" fill="none">
+          <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+        </svg>
+        <div style="text-align: center;">
+          <div class="wm wm-grotesk" style="font-size: 32px;">Salvelle</div>
+          <div style="font-family: 'JetBrains Mono'; font-size: 10px; color: var(--ink-3); letter-spacing: 0.16em; text-transform: uppercase; margin-top: 6px;">Compounding software · Brasil</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-mini">
+      <div class="mini-cell light"><span class="lbl">Tagline EN</span>
+        <div style="text-align: center;">
+          <div class="wm wm-grotesk" style="font-size: 18px;">Salvelle</div>
+          <div style="font-family: 'JetBrains Mono'; font-size: 8px; color: var(--ink-3); letter-spacing: 0.16em; text-transform: uppercase; margin-top: 4px;">made for compounding</div>
+        </div>
+      </div>
+      <div class="mini-cell dark"><span class="lbl">Tagline PT</span>
+        <div style="text-align: center;">
+          <div class="wm wm-grotesk" style="font-size: 18px; color: #fff;">Salvelle</div>
+          <div style="font-family: 'JetBrains Mono'; font-size: 8px; color: rgba(255,255,255,.5); letter-spacing: 0.16em; text-transform: uppercase; margin-top: 4px;">para farmácias de manipulação</div>
+        </div>
+      </div>
+      <div class="mini-cell brand"><span class="lbl">Tagline curta</span>
+        <div style="text-align: center;">
+          <div class="wm wm-grotesk" style="font-size: 18px; color: #fff;">Salvelle</div>
+          <div style="font-family: 'JetBrains Mono'; font-size: 8px; color: rgba(255,255,255,.6); letter-spacing: 0.16em; text-transform: uppercase; margin-top: 4px;">prescribe · weigh · ship</div>
+        </div>
+      </div>
+    </div>
+    <div class="notes"><b>Lockup com tagline.</b> Para landing hero, embalagens, materiais impressos. Tagline em mono, caixa-alta — funciona como "etiqueta" técnica que reforça o tom científico.</div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<h2>02 · Paleta de cor</h2>
+<div class="sub">Petrol como protagonista, âmbar como acento, neutros caliginosos com leve tom oliva.</div>
+
+<div class="palette">
+  <div class="swatch" style="background: #0F6E78; color: #fff;">
+    <div class="role">PRIMÁRIA</div>
+    <div><div class="name">Petrol</div><div class="hex">#0F6E78</div></div>
+  </div>
+  <div class="swatch" style="background: #095861; color: #fff;">
+    <div class="role">PRIMÁRIA · DEEP</div>
+    <div><div class="name">Petrol Deep</div><div class="hex">#095861</div></div>
+  </div>
+  <div class="swatch" style="background: #E6F2F1; color: #0A1814; border: 1px solid var(--rule);">
+    <div class="role">PRIMÁRIA · SOFT</div>
+    <div><div class="name">Petrol Soft</div><div class="hex">#E6F2F1</div></div>
+  </div>
+  <div class="swatch" style="background: #D88B2C; color: #fff;">
+    <div class="role">ACENTO</div>
+    <div><div class="name">Âmbar</div><div class="hex">#D88B2C</div></div>
+  </div>
+  <div class="swatch" style="background: #FAF9F5; color: #0A1814; border: 1px solid var(--rule);">
+    <div class="role">FUNDO</div>
+    <div><div class="name">Bone</div><div class="hex">#FAF9F5</div></div>
+  </div>
+</div>
+<div class="palette" style="margin-top: 12px;">
+  <div class="swatch" style="background: #0A1814; color: #fff;">
+    <div class="role">TINTA</div>
+    <div><div class="name">Ink</div><div class="hex">#0A1814</div></div>
+  </div>
+  <div class="swatch" style="background: #364946; color: #fff;">
+    <div class="role">TINTA · 70</div>
+    <div><div class="name">Ink-2</div><div class="hex">#364946</div></div>
+  </div>
+  <div class="swatch" style="background: #6B7B78; color: #fff;">
+    <div class="role">TINTA · 50</div>
+    <div><div class="name">Ink-3</div><div class="hex">#6B7B78</div></div>
+  </div>
+  <div class="swatch" style="background: #4F8C5F; color: #fff;">
+    <div class="role">SUCESSO</div>
+    <div><div class="name">Verde clínico</div><div class="hex">#4F8C5F</div></div>
+  </div>
+  <div class="swatch" style="background: #B83C3C; color: #fff;">
+    <div class="role">CRÍTICO</div>
+    <div><div class="name">Vermelho controlado</div><div class="hex">#B83C3C</div></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>03 · Tipografia</h2>
+<div class="sub">Uma família de display geométrica, uma sans humanista, uma mono para dados.</div>
+
+<div class="grid-3">
+  <div class="type-card">
+    <div class="role-tag">DISPLAY · TÍTULOS</div>
+    <div class="type-spec-h">Cabinet Grotesk</div>
+    <div class="type-spec-b">Marca, headlines, números grandes. Geométrica com personalidade — diferencia da sopa de Inter/Roboto.</div>
+    <div class="type-meta">800 EXTRA-BOLD · 700 BOLD · 500 MEDIUM</div>
+  </div>
+  <div class="type-card">
+    <div class="role-tag">SANS · CORPO</div>
+    <div class="type-spec-h" style="font-family: 'General Sans'; font-weight: 600;">General Sans</div>
+    <div class="type-spec-b" style="font-family: 'General Sans';">UI, parágrafos, formulários. Humanista, alta legibilidade em densidade clínica.</div>
+    <div class="type-meta">600 SEMIBOLD · 500 MEDIUM · 400 REGULAR</div>
+  </div>
+  <div class="type-card">
+    <div class="role-tag">MONO · DADOS</div>
+    <div class="type-spec-h" style="font-family: 'JetBrains Mono'; font-weight: 500; font-size: 36px;">JetBrains Mono</div>
+    <div class="type-spec-b" style="font-family: 'JetBrains Mono'; font-size: 14px;">Lotes, códigos, posologia, tabular numbers. Confere precisão a tudo que é dado técnico.</div>
+    <div class="type-meta">500 MEDIUM · 400 REGULAR</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>04 · Aplicações</h2>
+<div class="sub">Como a marca aparece em produto, web, app móvel e papelaria.</div>
+
+<div class="grid-2">
+  <div class="mockup-card">
+    <span class="pill">SaaS dashboard</span>
+    <div class="lockup">
+      <svg width="40" height="40" viewBox="0 0 88 88" fill="none">
+        <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+      </svg>
+      <span class="wm wm-grotesk" style="font-size: 28px;">Salvelle</span>
+    </div>
+    <div>
+      <div style="font-family: 'Cabinet Grotesk'; font-weight: 800; font-size: 32px; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 8px;">Manipulação que vira software.</div>
+      <p style="margin: 0; font-size: 14px; color: var(--ink-2); line-height: 1.55;">Da receita ao rótulo Anvisa, sem planilha pelo meio. <b style="color: var(--petrol);">14 dias grátis →</b></p>
+    </div>
+  </div>
+
+  <div class="mockup-card brand">
+    <span class="pill">Brand-first</span>
+    <div class="lockup">
+      <svg width="40" height="40" viewBox="0 0 88 88" fill="none">
+        <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#fff">S</text>
+      </svg>
+      <span class="wm wm-grotesk" style="font-size: 28px; color: #fff;">Salvelle</span>
+    </div>
+    <div>
+      <div style="font-family: 'Cabinet Grotesk'; font-weight: 800; font-size: 36px; letter-spacing: -0.02em; line-height: 1.1; color: #fff; margin-bottom: 12px;">Prescribe.<br/>Weigh.<br/>Ship.</div>
+      <p style="margin: 0; font-size: 14px; color: rgba(255,255,255,.75); line-height: 1.55;">Compounding pharmacy software, made in Brazil. ISO + Anvisa-ready out of the box.</p>
+    </div>
+  </div>
+
+  <div class="mockup-card dark">
+    <span class="pill">App móvel</span>
+    <div style="display: flex; gap: 20px; align-items: center; justify-content: center; flex: 1;">
+      <div class="app-icon" style="background: linear-gradient(160deg, #1a8a96, #0F6E78);">
+        <svg width="58" height="58" viewBox="0 0 88 88" fill="none">
+          <text x="44" y="66" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-weight="600" font-size="80" fill="#fff">S</text>
+        </svg>
+      </div>
+      <div class="app-icon" style="background: var(--ink); border: 1px solid rgba(255,255,255,.1);">
+        <svg width="58" height="58" viewBox="0 0 88 88" fill="none">
+          <text x="44" y="66" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+        </svg>
+      </div>
+      <div class="app-icon" style="background: #fff;">
+        <svg width="58" height="58" viewBox="0 0 88 88" fill="none">
+          <text x="44" y="66" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+        </svg>
+      </div>
+    </div>
+    <div style="font-size: 12px; color: rgba(255,255,255,.5); font-family: 'JetBrains Mono'; text-transform: uppercase; letter-spacing: 0.08em; text-align: center;">3 variações de app icon · 1024 × 1024</div>
+  </div>
+
+  <div class="mockup-card" style="background: var(--bg); padding: 20px;">
+    <span class="pill">Cartão de visita</span>
+    <div class="biz-card">
+      <div class="lockup">
+        <svg width="36" height="36" viewBox="0 0 88 88" fill="none">
+          <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+        </svg>
+        <span class="wm wm-grotesk" style="font-size: 22px;">Salvelle</span>
+      </div>
+      <div>
+        <div style="font-size: 13px; font-weight: 600; color: var(--ink);">Douglas Braga</div>
+        <div style="font-size: 11px; color: var(--ink-3);">Founder · Farmacêutico RT</div>
+        <div style="font-family: 'JetBrains Mono'; font-size: 10px; color: var(--ink-2); margin-top: 8px; letter-spacing: 0.04em;"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f2969d87959e9381b29493809f9b948b938282dc919d9f">[email&#160;protected]</a> · +55 11 9·9123·4567</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup-card" style="grid-column: span 2; padding: 0; overflow: hidden;">
+    <div class="browser-frame" style="border-radius: 0; border: none;">
+      <div class="browser-bar">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="url">https://salvelle.com</div>
+      </div>
+      <div class="browser-body" style="padding: 0; display: grid; grid-template-columns: 240px 1fr 280px; min-height: 240px;">
+        <div style="background: #FAFAF7; padding: 20px; border-right: 1px solid var(--rule);">
+          <div class="lockup">
+            <svg width="26" height="26" viewBox="0 0 88 88" fill="none">
+              <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+            </svg>
+            <span class="wm wm-grotesk" style="font-size: 16px;">Salvelle</span>
+          </div>
+          <div style="margin-top: 24px; font-family: 'JetBrains Mono'; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3);">Operação</div>
+          <div style="font-size: 13px; padding: 6px 0; color: var(--ink-2);">Pedidos</div>
+          <div style="font-size: 13px; padding: 6px 8px; background: var(--petrol-soft); border-radius: 6px; color: var(--petrol); font-weight: 500; margin: 2px -6px;">Manipulação</div>
+          <div style="font-size: 13px; padding: 6px 0; color: var(--ink-2);">PDV</div>
+          <div style="font-size: 13px; padding: 6px 0; color: var(--ink-2);">OCR receita</div>
+        </div>
+        <div style="padding: 20px;">
+          <div style="font-family: 'JetBrains Mono'; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-3);">ORD-1182 · BANCADA 02</div>
+          <div style="font-family: 'Cabinet Grotesk'; font-weight: 700; font-size: 22px; letter-spacing: -0.015em; margin: 4px 0;">Bupropiona 150mg · 30 cáps</div>
+          <div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;">
+            <span style="padding: 4px 10px; background: var(--petrol-soft); color: var(--petrol); border-radius: 999px; font-size: 11px; font-weight: 500;">Em curso</span>
+            <span style="padding: 4px 10px; background: color-mix(in oklch, #D88B2C 14%, transparent); color: #B47018; border-radius: 999px; font-size: 11px; font-weight: 500;">2ª assinatura</span>
+            <span style="padding: 4px 10px; background: #0A1814; color: #fff; border-radius: 999px; font-size: 11px; font-family: 'JetBrains Mono'; letter-spacing: 0.06em;">LISTA B</span>
+          </div>
+          <div style="margin-top: 20px; font-family: 'JetBrains Mono'; font-size: 13px; color: var(--ink-2); line-height: 1.6;">
+            <div>4,500 g · Bupropiona Cl.</div>
+            <div>0,180 g · Estearato Mg</div>
+            <div>13,320 g · Lactose q.s.p.</div>
+          </div>
+        </div>
+        <div style="background: var(--petrol); padding: 20px; color: #fff;">
+          <div style="font-family: 'JetBrains Mono'; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7;">Pronto p/ envio</div>
+          <div style="font-family: 'Cabinet Grotesk'; font-weight: 800; font-size: 36px; line-height: 1; margin: 6px 0;">R$ 124</div>
+          <div style="font-size: 12px; opacity: 0.8;">Margem 45% · 28 min de bancada</div>
+          <div style="margin-top: 16px; padding: 10px 14px; background: rgba(255,255,255,.12); border-radius: 8px; font-size: 12px;">Aguardando 2ª ass. RT</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>05 · Comportamento de escala</h2>
+<div class="sub">Como o símbolo se adapta de favicon a outdoor.</div>
+
+<div class="scale-row">
+  <div class="item">
+    <svg width="16" height="16" viewBox="0 0 88 88" fill="none">
+      <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+    </svg>
+    <div class="px">16 px · favicon</div>
+  </div>
+  <div class="item">
+    <svg width="32" height="32" viewBox="0 0 88 88" fill="none">
+      <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+    </svg>
+    <div class="px">32 px · sidebar</div>
+  </div>
+  <div class="item">
+    <svg width="64" height="64" viewBox="0 0 88 88" fill="none">
+      <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+    </svg>
+    <div class="px">64 px · cabeçalho</div>
+  </div>
+  <div class="item">
+    <svg width="120" height="120" viewBox="0 0 88 88" fill="none">
+      <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+      <rect x="22" y="22" width="3" height="14" rx="1.5" fill="rgba(255,255,255,.35)"/>
+    </svg>
+    <div class="px">120 px · hero</div>
+  </div>
+  <div class="item">
+    <svg width="180" height="180" viewBox="0 0 88 88" fill="none">
+      <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+      <rect x="22" y="22" width="3" height="14" rx="1.5" fill="rgba(255,255,255,.35)"/>
+      <line x1="35" y1="20" x2="35" y2="50" stroke="#fff" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.4"/>
+    </svg>
+    <div class="px">180+ px · outdoor</div>
+  </div>
+</div>
+
+<div class="recommendation">
+  <b>Recomendação.</b> Adotar a <b>Variante A (cápsula-F sólida)</b> como marca primária e a <b>Variante C (badge circular)</b> para favicon/app icon. Wordmark Cabinet Grotesk em caixa baixa com ponto petrol. Petrol #0F6E78 como cor protagonista, âmbar #D88B2C apenas em CTAs e elementos críticos. Próximo passo: aplicar este sistema em todas as 11 telas já desenhadas.
+</div>
+
+</div>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body>
+</html>

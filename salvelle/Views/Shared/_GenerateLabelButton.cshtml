@@ -1,0 +1,39 @@
+@model Guid
+
+@* Partial View para adicionar botão de Gerar Rótulo em qualquer tela *@
+@* Usage: <partial name="_GenerateLabelButton" model="@manipulationOrderId" /> *@
+
+<div class="d-inline-block">
+    <a href="/Labels/Generate/@Model" class="btn btn-success btn-sm">
+        <i class="bi bi-file-earmark-text me-1"></i>
+        Gerar Rótulo
+    </a>
+</div>
+
+<script>
+    // Verificar se já existe rótulo gerado para esta ordem
+    (async function() {
+        try {
+            const response = await fetch(`/api/Labels/search?manipulationOrderId=@Model&pageSize=1`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.items && data.items.length > 0) {
+                    const label = data.items[0];
+                    const btnContainer = document.currentScript.previousElementSibling;
+                    btnContainer.innerHTML = `
+                        <div class="btn-group btn-group-sm">
+                            <a href="/Labels/View/${label.id}" class="btn btn-info">
+                                <i class="bi bi-eye me-1"></i>Ver Rótulo
+                            </a>
+                            <a href="/Labels/Generate/@Model" class="btn btn-success">
+                                <i class="bi bi-plus-circle me-1"></i>Novo
+                            </a>
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao verificar rótulo:', error);
+        }
+    })();
+</script>

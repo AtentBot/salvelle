@@ -1,0 +1,324 @@
+@model DashboardHomeDto
+@{
+    ViewData["Title"] = "Dashboard";
+    var employee = ViewBag.Employee as Models.Employees.Employee;
+    var establishment = ViewBag.Establishment as Models.Establishment;
+    var firstName = employee?.FullName?.Split(' ').FirstOrDefault() ?? "Usuário";
+    System.TimeZoneInfo brtZone;
+    try { brtZone = System.TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo"); }
+    catch { try { brtZone = System.TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time"); } catch { brtZone = System.TimeZoneInfo.Utc; } }
+    var agoraBrt = System.TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, brtZone);
+    var hora = agoraBrt.Hour;
+    var saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+    var pedidosProntos = (int)(ViewBag.PedidosProntos ?? 0);
+    var pedidosPendentes = (int)(ViewBag.PedidosPendentes ?? 0);
+    var hojeBR = agoraBrt.ToString("dd MMM · dddd", new System.Globalization.CultureInfo("pt-BR")).ToUpper();
+}
+
+@section Styles {
+<style>
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .ds-stat { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; }
+    .ds-stat-label { font-size: 12px; color: var(--ink-3); font-weight: 500; }
+    .ds-stat-value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--ink); }
+    .ds-stat-delta { font-size: 12px; color: var(--ok); display: inline-flex; align-items: center; gap: 4px; }
+    .ds-stat-delta.warn { color: var(--warn); }
+    .ds-stat-delta.danger { color: var(--danger); }
+    .ds-stat-delta.flat { color: var(--ink-3); }
+
+    .dash-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 24px; margin-bottom: 24px; }
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); padding: 20px; }
+    .ds-card-eyebrow { font-family: var(--font-mono); font-size: 11px; color: var(--petrol-500); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ds-card-title { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+
+    .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .quick-action {
+        background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md);
+        padding: 16px; text-decoration: none; color: var(--ink-2);
+        display: flex; gap: 12px; align-items: center;
+        transition: all var(--t-fast); position: relative;
+    }
+    .quick-action:hover { border-color: var(--petrol-500); color: var(--ink); transform: translateY(-1px); box-shadow: var(--shadow-2); }
+    .quick-action-icon {
+        width: 38px; height: 38px; border-radius: var(--r-sm);
+        background: var(--petrol-50); color: var(--petrol-500);
+        display: grid; place-items: center; font-size: 16px; flex-shrink: 0;
+    }
+    .quick-action-text { font-size: 13px; font-weight: 500; }
+    .quick-action small { display: block; font-size: 11px; color: var(--ink-3); font-weight: 400; }
+    .badge-count { background: var(--danger); color: #fff; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: var(--r-pill); position: absolute; top: 8px; right: 8px; min-width: 18px; text-align: center; }
+    .badge-count.bg-warn { background: var(--amber-500); }
+
+    .timeline { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
+    .tl-row { display: flex; gap: 12px; align-items: flex-start; padding-bottom: 14px; border-bottom: 1px dashed var(--rule); }
+    .tl-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .tl-time { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); width: 50px; flex-shrink: 0; padding-top: 2px; }
+    .tl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--petrol-500); flex-shrink: 0; margin-top: 6px; }
+    .tl-dot.warn { background: var(--amber-500); }
+    .tl-dot.ok { background: var(--ok); }
+    .tl-dot.danger { background: var(--danger); }
+    .tl-content { flex: 1; font-size: 13px; }
+    .tl-content strong { font-weight: 500; color: var(--ink); }
+    .tl-content small { display: block; color: var(--ink-3); margin-top: 2px; font-size: 12px; }
+
+    @@media (max-width: 980px) {
+        .stat-grid, .quick-actions { grid-template-columns: repeat(2, 1fr); }
+        .dash-grid { grid-template-columns: 1fr; }
+    }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">@hojeBR</div>
+            <h1 style="font-size: var(--t-h2); font-weight: 600; letter-spacing: -0.025em; margin: 0 0 4px;">@saudacao, @firstName.</h1>
+            <p style="color: var(--ink-3); font-size: 14px; margin: 0;">@(pedidosPendentes + pedidosProntos) pedidos abertos · @Model.PrescriptionsPendentes prescrições pendentes · @(Model.LowStockItems == 0 ? "estoque OK" : Model.LowStockItems + " item(ns) abaixo do mínimo").</p>
+        </div>
+        <div class="row">
+            <button type="button" id="btnExportar" class="btn btn-secondary"><i class="bi bi-download"></i>Exportar</button>
+            <a class="btn btn-primary" href="/Manipulacoes/Create"><i class="bi bi-plus"></i>Nova fórmula</a>
+        </div>
+    </div>
+
+    <div class="stat-grid">
+        <div class="ds-stat">
+            <div class="ds-stat-label">Pedidos pendentes</div>
+            <div class="ds-stat-value">@pedidosPendentes</div>
+            <div class="ds-stat-delta @(pedidosPendentes > 5 ? "warn" : "flat")">
+                <i class="bi bi-@(pedidosPendentes > 5 ? "arrow-up" : "dash")"></i>
+                @(pedidosPendentes == 0 ? "nada na fila" : pedidosPendentes + " na fila")
+            </div>
+        </div>
+        <div class="ds-stat">
+            <div class="ds-stat-label">Prontos p/ retirada</div>
+            <div class="ds-stat-value">@pedidosProntos</div>
+            <div class="ds-stat-delta @(pedidosProntos > 0 ? "" : "flat")">
+                <i class="bi bi-@(pedidosProntos > 0 ? "check-circle" : "dash")"></i>
+                @(pedidosProntos > 0 ? "aguardando cliente" : "nenhum")
+            </div>
+        </div>
+        <div class="ds-stat">
+            <div class="ds-stat-label">Atrasados</div>
+            <div class="ds-stat-value">@Model.TotalAtrasados</div>
+            <div class="ds-stat-delta @(Model.TotalAtrasados > 0 ? "danger" : "flat")">
+                <i class="bi bi-@(Model.TotalAtrasados > 0 ? "exclamation-triangle" : "check2")"></i>
+                @(Model.TotalAtrasados > 0 ? "precisam atenção" : "nada atrasado")
+            </div>
+        </div>
+        <div class="ds-stat">
+            <div class="ds-stat-label">Estoque baixo</div>
+            <div class="ds-stat-value">@Model.LowStockItems</div>
+            <div class="ds-stat-delta @(Model.LowStockItems > 0 ? "warn" : "flat")">
+                <i class="bi bi-@(Model.LowStockItems > 0 ? "boxes" : "check2")"></i>
+                @(Model.LowStockItems > 0 ? "matérias-primas" : "nível normal")
+            </div>
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <a class="quick-action" href="/PrescriptionsView">
+            <div class="quick-action-icon"><i class="bi bi-file-medical"></i></div>
+            <div class="quick-action-text">
+                Prescrições
+                <small>Validar e processar receitas</small>
+            </div>
+            @if (Model.PrescriptionsPendentes > 0) { <span class="badge-count bg-warn">@Model.PrescriptionsPendentes</span> }
+        </a>
+        <a class="quick-action" href="/orcamentos">
+            <div class="quick-action-icon"><i class="bi bi-calculator"></i></div>
+            <div class="quick-action-text">
+                Orçamentos
+                <small>Cotações em aberto</small>
+            </div>
+            @if (Model.OrcamentosPendentes > 0) { <span class="badge-count">@Model.OrcamentosPendentes</span> }
+        </a>
+        <a class="quick-action" href="/Manipulacoes/Kanban">
+            <div class="quick-action-icon"><i class="bi bi-columns-gap"></i></div>
+            <div class="quick-action-text">
+                Manipulação
+                <small>Quadro de produção</small>
+            </div>
+            @if (Model.TotalAtrasados > 0) { <span class="badge-count">@Model.TotalAtrasados</span> }
+        </a>
+        <a class="quick-action" href="/PDV">
+            <div class="quick-action-icon"><i class="bi bi-shop"></i></div>
+            <div class="quick-action-text">
+                PDV
+                <small>Abrir caixa / atender</small>
+            </div>
+        </a>
+    </div>
+
+    <div class="dash-grid">
+        <div class="ds-card">
+            <div class="row" style="justify-content:space-between;">
+                <div>
+                    <div class="ds-card-eyebrow">Pedidos por hora</div>
+                    <h3 class="ds-card-title">Movimento de hoje</h3>
+                </div>
+                <div class="row" style="gap:6px;">
+                    <button type="button" class="btn btn-secondary btn-sm" data-period="today">Hoje</button>
+                    <button type="button" class="btn btn-ghost btn-sm" data-period="week">7 dias</button>
+                    <button type="button" class="btn btn-ghost btn-sm" data-period="month">Mês</button>
+                </div>
+            </div>
+            <canvas id="movimentChart" style="margin-top: 16px; max-height: 240px;"></canvas>
+        </div>
+        <div class="ds-card">
+            <div class="ds-card-eyebrow">Atividade ao vivo</div>
+            <h3 class="ds-card-title">Últimas ações</h3>
+            <div class="timeline" id="liveTimeline">
+                <div class="tl-row">
+                    <span class="tl-time">--:--</span>
+                    <span class="tl-dot"></span>
+                    <div class="tl-content">
+                        <strong>Carregando atividade…</strong>
+                        <small>Conectando ao log do estabelecimento</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="overflow:hidden; padding:0;">
+        <div style="padding:16px 20px; border-bottom:1px solid var(--rule); display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="ds-card-title">Pedidos abertos</h3>
+            <div class="row" style="gap:8px;">
+                <a class="btn btn-secondary btn-sm" href="/Manipulacoes?status=abertos"><i class="bi bi-funnel"></i>Filtros</a>
+                <a class="btn btn-ghost btn-sm" href="/Manipulacoes">Ver todos<i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+        <table class="table mb-0" id="ordersTable">
+            <thead>
+                <tr><th>Pedido</th><th>Cliente</th><th>Fórmula</th><th>Etapa</th><th>Status</th><th class="text-end">Total</th><th></th></tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="7" style="text-align:center;color:var(--ink-3);padding:32px;">Carregando pedidos abertos…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfico de movimento — dados reais por período (hoje / 7 dias / mês)
+    const ctx = document.getElementById('movimentChart');
+    let movimentChart = null;
+    const petrol = getComputedStyle(document.documentElement).getPropertyValue('--petrol-500').trim() || '#14706B';
+
+    function renderMovimento(labels, data) {
+        if (!ctx || !window.Chart) return;
+        if (movimentChart) {
+            movimentChart.data.labels = labels;
+            movimentChart.data.datasets[0].data = data;
+            movimentChart.update();
+            return;
+        }
+        movimentChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    data, fill: true, tension: 0.35,
+                    borderColor: petrol,
+                    backgroundColor: 'rgba(20, 112, 107, 0.08)',
+                    borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#fff', pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { family: 'JetBrains Mono', size: 10 }, color: '#5C6878' } },
+                    y: { grid: { color: '#E5E9EF', drawBorder: false }, beginAtZero: true, ticks: { precision: 0, font: { family: 'JetBrains Mono', size: 10 }, color: '#5C6878' } }
+                }
+            }
+        });
+    }
+
+    function loadMovimento(period) {
+        fetch('/api/dashboardapi/movimento?period=' + encodeURIComponent(period))
+            .then(r => r.ok ? r.json() : { labels: [], data: [] })
+            .then(d => renderMovimento(d.labels || [], d.data || []))
+            .catch(() => renderMovimento([], []));
+    }
+
+    // Alternância dos botões de período
+    document.querySelectorAll('[data-period]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('[data-period]').forEach(b => {
+                b.classList.remove('btn-secondary'); b.classList.add('btn-ghost');
+            });
+            btn.classList.remove('btn-ghost'); btn.classList.add('btn-secondary');
+            loadMovimento(btn.getAttribute('data-period'));
+        });
+    });
+
+    loadMovimento('today');
+
+    // Carregar atividade ao vivo via API
+    fetch('/api/dashboardapi/atividade?limit=5').then(r => r.ok ? r.json() : []).then(items => {
+        const tl = document.getElementById('liveTimeline');
+        if (!Array.isArray(items) || items.length === 0) {
+            tl.innerHTML = '<div class="tl-row"><span class="tl-time">--:--</span><span class="tl-dot"></span><div class="tl-content"><strong>Nenhuma atividade recente</strong><small>Tudo tranquilo por aqui.</small></div></div>';
+            return;
+        }
+        tl.innerHTML = items.map(it => `
+            <div class="tl-row">
+                <span class="tl-time">${it.time || '--:--'}</span>
+                <span class="tl-dot ${it.kind || ''}"></span>
+                <div class="tl-content"><strong>${it.title || ''}</strong><small>${it.subtitle || ''}</small></div>
+            </div>
+        `).join('');
+    }).catch(() => {});
+
+    // Carregar pedidos abertos
+    let ordersData = [];
+    fetch('/api/dashboardapi/pedidos-abertos?limit=8').then(r => r.ok ? r.json() : { items: [] }).then(d => {
+        const items = d.items || d || [];
+        ordersData = items;
+        const tbody = document.querySelector('#ordersTable tbody');
+        if (!items.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--ink-3);padding:32px;">Nenhum pedido aberto.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = items.map(o => {
+            const statusMap = { 'PENDENTE': 'warn', 'EM_PRODUCAO': 'primary', 'PRONTO_RETIRADA': 'success' };
+            const cls = statusMap[o.status] || 'secondary';
+            return `<tr>
+                <td class="mono">${o.code || ''}</td>
+                <td>${o.customerName || '—'}</td>
+                <td>${o.formulaName || '—'}</td>
+                <td class="text-muted">${o.stepLabel || o.status || ''}</td>
+                <td><span class="badge bg-${cls}-subtle">${o.statusLabel || o.status || ''}</span></td>
+                <td class="text-end mono">R$ ${(o.total || 0).toFixed(2).replace('.', ',')}</td>
+                <td><a href="/Manipulacoes/${o.id}" class="text-muted"><i class="bi bi-chevron-right"></i></a></td>
+            </tr>`;
+        }).join('');
+    }).catch(() => {
+        document.querySelector('#ordersTable tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--ink-3);padding:32px;">Não foi possível carregar os pedidos.</td></tr>';
+    });
+
+    // Exportar pedidos abertos em CSV
+    document.getElementById('btnExportar')?.addEventListener('click', () => {
+        if (!ordersData.length) { alert('Nenhum pedido aberto para exportar.'); return; }
+        const esc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+        const header = ['Pedido', 'Cliente', 'Fórmula', 'Status', 'Total'];
+        const rows = ordersData.map(o => [
+            o.code || '', o.customerName || '', o.formulaName || '',
+            o.statusLabel || o.status || '',
+            (o.total || 0).toFixed(2).replace('.', ',')
+        ].map(esc).join(';'));
+        const csv = '﻿' + [header.map(esc).join(';'), ...rows].join('\r\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'pedidos-abertos.csv';
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+    });
+</script>
+}

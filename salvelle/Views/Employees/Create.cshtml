@@ -1,0 +1,1051 @@
+﻿@{
+    ViewData["Title"] = "Novo Funcionário";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0">
+                    <i class="bi bi-person-plus-fill me-2 text-primary"></i>
+                    Novo Funcionário
+                </h2>
+                <p class="text-muted mb-0">Preencha os dados do novo colaborador</p>
+            </div>
+            <div>
+                <button class="btn btn-outline-secondary" onclick="window.location.href='/Employees/List'">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    Voltar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Steps -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="steps-progress">
+                    <div class="step active" data-step="1">
+                        <div class="step-icon">
+                            <i class="bi bi-person"></i>
+                        </div>
+                        <div class="step-label">Dados Pessoais</div>
+                    </div>
+                    <div class="step" data-step="2">
+                        <div class="step-icon">
+                            <i class="bi bi-file-text"></i>
+                        </div>
+                        <div class="step-label">Documentos</div>
+                    </div>
+                    <div class="step" data-step="3">
+                        <div class="step-icon">
+                            <i class="bi bi-geo-alt"></i>
+                        </div>
+                        <div class="step-label">Endereço</div>
+                    </div>
+                    <div class="step" data-step="4">
+                        <div class="step-icon">
+                            <i class="bi bi-briefcase"></i>
+                        </div>
+                        <div class="step-label">Trabalho</div>
+                    </div>
+                    <div class="step" data-step="5">
+                        <div class="step-icon">
+                            <i class="bi bi-bank"></i>
+                        </div>
+                        <div class="step-label">Dados Bancários</div>
+                    </div>
+                    <div class="step" data-step="6">
+                        <div class="step-icon">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <div class="step-label">Revisão</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form -->
+<form id="employeeForm">
+    <!-- Step 1: Dados Pessoais -->
+    <div class="form-step active" data-step="1">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person me-2"></i>
+                            Dados Pessoais
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label required">Nome Completo</label>
+                                <input type="text" class="form-control" name="fullName" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Nome Social</label>
+                                <input type="text" class="form-control" name="socialName">
+                                <small class="text-muted">Opcional</small>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label required">CPF</label>
+                                <input type="text" class="form-control cpf-mask" name="cpf" required 
+                                       placeholder="000.000.000-00">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">RG</label>
+                                <input type="text" class="form-control" name="rg">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Órgão Emissor</label>
+                                <input type="text" class="form-control" name="rgIssuer" placeholder="Ex: SSP/SP">
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <label class="form-label required">Data de Nascimento</label>
+                                <input type="date" class="form-control" name="dateOfBirth" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Sexo</label>
+                                <select class="form-select" name="gender">
+                                    <option value="">Selecione</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Feminino">Feminino</option>
+                                    <option value="Outro">Outro</option>
+                                    <option value="Prefiro não informar">Prefiro não informar</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Naturalidade</label>
+                                <input type="text" class="form-control" name="placeOfBirth" 
+                                       placeholder="Ex: São Paulo/SP">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Estado Civil</label>
+                                <select class="form-select" name="maritalStatus">
+                                    <option value="">Selecione</option>
+                                    <option value="Solteiro">Solteiro(a)</option>
+                                    <option value="Casado">Casado(a)</option>
+                                    <option value="Divorciado">Divorciado(a)</option>
+                                    <option value="Viúvo">Viúvo(a)</option>
+                                    <option value="União Estável">União Estável</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label required">Email</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-envelope"></i>
+                                    </span>
+                                    <input type="email" class="form-control" name="email" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Telefone</label>
+                                <input type="text" class="form-control phone-mask" name="phone" 
+                                       placeholder="(00) 00000-0000">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">WhatsApp</label>
+                                <input type="text" class="form-control phone-mask" name="whatsApp" 
+                                       placeholder="(00) 00000-0000">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Documentos -->
+    <div class="form-step" data-step="2">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-file-text me-2"></i>
+                            Documentos Trabalhistas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">CTPS (Carteira de Trabalho)</label>
+                                <input type="text" class="form-control" name="ctps">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Série</label>
+                                <input type="text" class="form-control" name="ctpsSeries">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">UF</label>
+                                <select class="form-select" name="ctpsUf">
+                                    <option value="">Selecione</option>
+                                    <option value="AC">AC</option>
+                                    <option value="AL">AL</option>
+                                    <option value="AP">AP</option>
+                                    <option value="AM">AM</option>
+                                    <option value="BA">BA</option>
+                                    <option value="CE">CE</option>
+                                    <option value="DF">DF</option>
+                                    <option value="ES">ES</option>
+                                    <option value="GO">GO</option>
+                                    <option value="MA">MA</option>
+                                    <option value="MT">MT</option>
+                                    <option value="MS">MS</option>
+                                    <option value="MG">MG</option>
+                                    <option value="PA">PA</option>
+                                    <option value="PB">PB</option>
+                                    <option value="PR">PR</option>
+                                    <option value="PE">PE</option>
+                                    <option value="PI">PI</option>
+                                    <option value="RJ">RJ</option>
+                                    <option value="RN">RN</option>
+                                    <option value="RS">RS</option>
+                                    <option value="RO">RO</option>
+                                    <option value="RR">RR</option>
+                                    <option value="SC">SC</option>
+                                    <option value="SP">SP</option>
+                                    <option value="SE">SE</option>
+                                    <option value="TO">TO</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">PIS/PASEP</label>
+                                <input type="text" class="form-control pis-mask" name="pisPasep" 
+                                       placeholder="000.00000.00-0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Título de Eleitor</label>
+                                <input type="text" class="form-control" name="voterRegistration">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Certificado Militar</label>
+                                <input type="text" class="form-control" name="militaryService">
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">CNH (Carteira de Motorista)</label>
+                                <input type="text" class="form-control" name="driverLicense">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Categoria CNH</label>
+                                <select class="form-select" name="driverLicenseCategory">
+                                    <option value="">Selecione</option>
+                                    <option value="A">A</option>
+                                    <option value="B">B</option>
+                                    <option value="AB">AB</option>
+                                    <option value="C">C</option>
+                                    <option value="D">D</option>
+                                    <option value="E">E</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Validade CNH</label>
+                                <input type="date" class="form-control" name="driverLicenseExpiry">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 3: Endereço -->
+    <div class="form-step" data-step="3">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-geo-alt me-2"></i>
+                            Endereço Residencial
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label required">CEP</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control cep-mask" name="postalCode" 
+                                           placeholder="00000-000" required>
+                                    <button class="btn btn-outline-secondary" type="button" 
+                                            onclick="searchCep()" id="btnSearchCep">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <label class="form-label required">Logradouro</label>
+                                <input type="text" class="form-control" name="street" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label required">Número</label>
+                                <input type="text" class="form-control" name="number" required>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">Complemento</label>
+                                <input type="text" class="form-control" name="complement" 
+                                       placeholder="Apto, Bloco, etc.">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label required">Bairro</label>
+                                <input type="text" class="form-control" name="neighborhood" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label required">Cidade</label>
+                                <input type="text" class="form-control" name="city" required>
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label required">UF</label>
+                                <input type="text" class="form-control" name="state" maxlength="2" required>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <h6 class="mb-3">
+                            <i class="bi bi-telephone me-2"></i>
+                            Contato de Emergência
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Nome</label>
+                                <input type="text" class="form-control" name="emergencyContactName">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Parentesco</label>
+                                <input type="text" class="form-control" name="emergencyContactRelationship" 
+                                       placeholder="Ex: Pai, Mãe, Cônjuge">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Telefone</label>
+                                <input type="text" class="form-control phone-mask" name="emergencyContactPhone">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 4: Trabalho -->
+    <div class="form-step" data-step="4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-briefcase me-2"></i>
+                            Dados do Trabalho
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label required">Cargo</label>
+                                <select class="form-select" name="jobPositionId" required id="jobPositionSelect">
+                                    <option value="">Carregando cargos...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label required">Data de Admissão</label>
+                                <input type="date" class="form-control" name="hireDate" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label required">Salário</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="text" class="form-control money-mask" name="salary" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label required">Tipo de Contrato</label>
+                                <select class="form-select" name="contractType" required>
+                                    <option value="CLT">CLT</option>
+                                    <option value="PJ">PJ</option>
+                                    <option value="Estagiário">Estagiário</option>
+                                    <option value="Temporário">Temporário</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Turno</label>
+                                <select class="form-select" name="workShift">
+                                    <option value="">Selecione</option>
+                                    <option value="Diurno">Diurno</option>
+                                    <option value="Noturno">Noturno</option>
+                                    <option value="Misto">Misto</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Departamento</label>
+                                <input type="text" class="form-control" name="department">
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">Período de Experiência</label>
+                                <select class="form-select" name="probationDays">
+                                    <option value="">Sem período de experiência</option>
+                                    <option value="45">45 dias</option>
+                                    <option value="90" selected>90 dias</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Número de Dependentes</label>
+                                <input type="number" class="form-control" name="dependentsCount" min="0" value="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label required">Senha Inicial</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" name="password" required 
+                                           minlength="8" id="passwordInput">
+                                    <button class="btn btn-outline-secondary" type="button" 
+                                            onclick="togglePassword('passwordInput')">
+                                        <i class="bi bi-eye" id="passwordInputIcon"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">Mínimo 8 caracteres</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 5: Dados Bancários -->
+    <div class="form-step" data-step="5">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-bank me-2"></i>
+                            Dados Bancários
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Opcional:</strong> Os dados bancários podem ser preenchidos posteriormente.
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-2">
+                                <label class="form-label">Código do Banco</label>
+                                <input type="text" class="form-control" name="bankCode" 
+                                       placeholder="000" maxlength="3">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Nome do Banco</label>
+                                <input type="text" class="form-control" name="bankName">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Agência</label>
+                                <input type="text" class="form-control" name="bankBranch" 
+                                       placeholder="0000">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Tipo de Conta</label>
+                                <select class="form-select" name="bankAccountType">
+                                    <option value="">Selecione</option>
+                                    <option value="Corrente">Corrente</option>
+                                    <option value="Poupança">Poupança</option>
+                                    <option value="Salário">Salário</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-10">
+                                <label class="form-label">Número da Conta</label>
+                                <input type="text" class="form-control" name="bankAccount">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Dígito</label>
+                                <input type="text" class="form-control" name="bankAccountDigit" 
+                                       placeholder="0" maxlength="2">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 6: Revisão -->
+    <div class="form-step" data-step="6">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-check-circle me-2"></i>
+                            Revisão dos Dados
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-success">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Revise todos os dados antes de finalizar o cadastro.
+                        </div>
+                        
+                        <div id="reviewContent">
+                            <!-- Conteúdo será preenchido via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary" id="btnPrevious" onclick="previousStep()">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    Anterior
+                </button>
+                <button type="button" class="btn btn-primary" id="btnNext" onclick="nextStep()">
+                    Próximo
+                    <i class="bi bi-arrow-right ms-2"></i>
+                </button>
+                <button type="submit" class="btn btn-success d-none" id="btnSubmit">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Cadastrar Funcionário
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<style>
+.steps-progress {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    padding: 0 20px;
+}
+
+.steps-progress::before {
+    content: '';
+    position: absolute;
+    top: 30px;
+    left: 50px;
+    right: 50px;
+    height: 2px;
+    background: var(--rule);
+    z-index: 0;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.step-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--ink-4);
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.step-label {
+    font-size: 0.85rem;
+    color: var(--ink-3);
+    text-align: center;
+    font-weight: 500;
+}
+
+.step.active .step-icon {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.step.active .step-label {
+    color: var(--petrol-700);
+    font-weight: 600;
+}
+
+.step.completed .step-icon {
+    background: var(--ok);
+    border-color: var(--ok);
+    color: white;
+}
+
+.step.completed .step-label {
+    color: var(--ok);
+}
+
+.form-step {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.form-step.active {
+    display: block;
+}
+
+@@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.required::after {
+    content: ' *';
+    color: var(--danger);
+}
+
+.card-header {
+    padding: 1rem 1.5rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--petrol-700);
+    box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.15);
+}
+
+.review-section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--rule);
+}
+
+.review-section:last-child {
+    border-bottom: none;
+}
+
+.review-section h6 {
+    color: var(--petrol-700);
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.review-item {
+    display: flex;
+    padding: 8px 0;
+}
+
+.review-label {
+    font-weight: 600;
+    color: var(--ink-2);
+    min-width: 200px;
+}
+
+.review-value {
+    color: var(--ink);
+}
+</style>
+
+<script>
+let currentStep = 1;
+const totalSteps = 6;
+let formData = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadJobPositions();
+    initializeMasks();
+    updateButtons();
+    
+    // Set default establishment ID (should come from session)
+    const establishmentId = '@ViewBag.EstablishmentId' || getEstablishmentId();
+    if (establishmentId) {
+        formData.establishmentId = establishmentId;
+    }
+});
+
+async function loadJobPositions() {
+    try {
+        const response = await fetch('/api/JobPositions', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                window.location.href = '/Account/Login';
+                return;
+            }
+            throw new Error('Erro ao carregar cargos');
+        }
+        
+        const data = await response.json();
+        const positions = data.items || data; // Suporta {items: [...]} ou array direto
+        const select = document.getElementById('jobPositionSelect');
+        
+        select.innerHTML = '<option value="">Selecione o cargo</option>' +
+            positions.map(pos => `<option value="${pos.id}">${pos.name}</option>`).join('');
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao carregar cargos. Tente recarregar a página.');
+    }
+}
+
+function initializeMasks() {
+    // CPF
+    document.querySelectorAll('.cpf-mask').forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                e.target.value = value;
+            }
+        });
+    });
+    
+    // Phone
+    document.querySelectorAll('.phone-mask').forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/(\d{2})(\d)/, '($1) $2');
+                value = value.replace(/(\d{5})(\d)/, '$1-$2');
+                e.target.value = value;
+            }
+        });
+    });
+    
+    // CEP
+    document.querySelectorAll('.cep-mask').forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 8) {
+                value = value.replace(/(\d{5})(\d)/, '$1-$2');
+                e.target.value = value;
+            }
+        });
+    });
+    
+    // PIS
+    document.querySelectorAll('.pis-mask').forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{5})(\d)/, '$1.$2');
+                value = value.replace(/(\d{2})(\d{1})$/, '$1-$2');
+                e.target.value = value;
+            }
+        });
+    });
+    
+    // Money
+    document.querySelectorAll('.money-mask').forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = (parseInt(value) / 100).toFixed(2);
+            e.target.value = value.replace('.', ',');
+        });
+    });
+}
+
+function nextStep() {
+    if (!validateStep(currentStep)) {
+        return;
+    }
+    
+    saveStepData(currentStep);
+    
+    if (currentStep < totalSteps) {
+        document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
+        document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('completed');
+        
+        currentStep++;
+        
+        document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+        document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
+        
+        if (currentStep === totalSteps) {
+            buildReview();
+        }
+        
+        updateButtons();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function previousStep() {
+    if (currentStep > 1) {
+        document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
+        document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('active');
+        
+        currentStep--;
+        
+        document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+        document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('completed');
+        
+        updateButtons();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function updateButtons() {
+    const btnPrevious = document.getElementById('btnPrevious');
+    const btnNext = document.getElementById('btnNext');
+    const btnSubmit = document.getElementById('btnSubmit');
+    
+    btnPrevious.style.display = currentStep === 1 ? 'none' : 'block';
+    
+    if (currentStep === totalSteps) {
+        btnNext.classList.add('d-none');
+        btnSubmit.classList.remove('d-none');
+    } else {
+        btnNext.classList.remove('d-none');
+        btnSubmit.classList.add('d-none');
+    }
+}
+
+function validateStep(step) {
+    const stepElement = document.querySelector(`.form-step[data-step="${step}"]`);
+    const requiredInputs = stepElement.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredInputs.forEach(input => {
+        if (!input.value.trim()) {
+            input.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+    
+    if (!isValid) {
+        alert('Por favor, preencha todos os campos obrigatórios.');
+    }
+    
+    return isValid;
+}
+
+function saveStepData(step) {
+    const stepElement = document.querySelector(`.form-step[data-step="${step}"]`);
+    const inputs = stepElement.querySelectorAll('input, select');
+    
+    inputs.forEach(input => {
+        if (input.name && input.value) {
+            formData[input.name] = input.value;
+        }
+    });
+}
+
+function buildReview() {
+    const reviewContent = document.getElementById('reviewContent');
+    
+    reviewContent.innerHTML = `
+        <div class="review-section">
+            <h6><i class="bi bi-person me-2"></i>Dados Pessoais</h6>
+            ${createReviewItem('Nome Completo', formData.fullName)}
+            ${formData.socialName ? createReviewItem('Nome Social', formData.socialName) : ''}
+            ${createReviewItem('CPF', formData.cpf)}
+            ${formData.rg ? createReviewItem('RG', formData.rg) : ''}
+            ${createReviewItem('Data de Nascimento', formatDate(formData.dateOfBirth))}
+            ${createReviewItem('Email', formData.email)}
+            ${formData.phone ? createReviewItem('Telefone', formData.phone) : ''}
+            ${formData.whatsApp ? createReviewItem('WhatsApp', formData.whatsApp) : ''}
+        </div>
+        
+        <div class="review-section">
+            <h6><i class="bi bi-geo-alt me-2"></i>Endereço</h6>
+            ${createReviewItem('CEP', formData.postalCode)}
+            ${createReviewItem('Endereço', `${formData.street}, ${formData.number}`)}
+            ${formData.complement ? createReviewItem('Complemento', formData.complement) : ''}
+            ${createReviewItem('Bairro', formData.neighborhood)}
+            ${createReviewItem('Cidade', `${formData.city}/${formData.state}`)}
+        </div>
+        
+        <div class="review-section">
+            <h6><i class="bi bi-briefcase me-2"></i>Dados do Trabalho</h6>
+            ${createReviewItem('Cargo', getJobPositionName(formData.jobPositionId))}
+            ${createReviewItem('Data de Admissão', formatDate(formData.hireDate))}
+            ${createReviewItem('Salário', `R$ ${formData.salary}`)}
+            ${createReviewItem('Tipo de Contrato', formData.contractType)}
+        </div>
+        
+        ${formData.bankCode ? `
+        <div class="review-section">
+            <h6><i class="bi bi-bank me-2"></i>Dados Bancários</h6>
+            ${createReviewItem('Banco', `${formData.bankCode} - ${formData.bankName}`)}
+            ${createReviewItem('Agência', formData.bankBranch)}
+            ${createReviewItem('Conta', `${formData.bankAccount}-${formData.bankAccountDigit}`)}
+            ${createReviewItem('Tipo', formData.bankAccountType)}
+        </div>
+        ` : ''}
+    `;
+}
+
+function createReviewItem(label, value) {
+    if (!value) return '';
+    return `
+        <div class="review-item">
+            <div class="review-label">${label}:</div>
+            <div class="review-value">${value}</div>
+        </div>
+    `;
+}
+
+function getJobPositionName(id) {
+    const select = document.getElementById('jobPositionSelect');
+    const option = select.querySelector(`option[value="${id}"]`);
+    return option ? option.textContent : id;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toLocaleDateString('pt-BR');
+}
+
+document.getElementById('employeeForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    saveStepData(currentStep);
+    
+    // Preparar dados
+    const submitData = {
+        ...formData,
+        // Remover formatação
+        cpf: formData.cpf.replace(/\D/g, ''),
+        postalCode: formData.postalCode.replace(/\D/g, ''),
+        pisPasep: formData.pisPasep ? formData.pisPasep.replace(/\D/g, '') : null,
+        // Converter valores
+        salary: parseFloat(formData.salary.replace(',', '.')),
+        dependentsCount: parseInt(formData.dependentsCount || 0),
+        probationDays: formData.probationDays ? parseInt(formData.probationDays) : null,
+        dateOfBirth: formData.dateOfBirth,
+        hireDate: formData.hireDate
+    };
+    
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Cadastrando...';
+    
+    try {
+        const response = await fetch('/api/Employees', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(submitData)
+        });
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                window.location.href = '/Account/Login';
+                return;
+            }
+        }
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('Funcionário cadastrado com sucesso!');
+            window.location.href = '/Employees/List';
+        } else {
+            alert('Erro: ' + (result.error || 'Erro ao cadastrar funcionário'));
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = '<i class="bi bi-check-circle me-2"></i>Cadastrar Funcionário';
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao cadastrar funcionário. Tente novamente.');
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="bi bi-check-circle me-2"></i>Cadastrar Funcionário';
+    }
+});
+
+async function searchCep() {
+    const cepInput = document.querySelector('[name="postalCode"]');
+    const cep = cepInput.value.replace(/\D/g, '');
+    
+    if (cep.length !== 8) {
+        alert('CEP inválido');
+        return;
+    }
+    
+    const btnSearch = document.getElementById('btnSearchCep');
+    btnSearch.disabled = true;
+    btnSearch.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    
+    try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await response.json();
+        
+        if (data.erro) {
+            alert('CEP não encontrado');
+        } else {
+            document.querySelector('[name="street"]').value = data.logradouro;
+            document.querySelector('[name="neighborhood"]').value = data.bairro;
+            document.querySelector('[name="city"]').value = data.localidade;
+            document.querySelector('[name="state"]').value = data.uf;
+            document.querySelector('[name="number"]').focus();
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao buscar CEP');
+    } finally {
+        btnSearch.disabled = false;
+        btnSearch.innerHTML = '<i class="bi bi-search"></i>';
+    }
+}
+
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(inputId + 'Icon');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+function getEstablishmentId() {
+    const employeeData = localStorage.getItem('employeeData');
+    if (employeeData) {
+        const data = JSON.parse(employeeData);
+        return data.establishment?.id;
+    }
+    return null;
+}
+</script>

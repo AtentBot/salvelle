@@ -1,0 +1,1085 @@
+﻿@{
+    ViewData["Title"] = "Relatórios de Produção";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <i class="bi bi-graph-up text-primary me-2"></i>
+                Relatórios de Produção
+            </h4>
+            <p class="text-muted mb-0">Análises e indicadores de performance</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" onclick="loadDashboard()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Atualizar
+            </button>
+            <div class="dropdown">
+                <button class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-download me-1"></i> Exportar
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="exportReport('orders')">
+                        <i class="bi bi-file-earmark-spreadsheet me-2"></i>Ordens (CSV)
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="exportReport('losses')">
+                        <i class="bi bi-file-earmark-spreadsheet me-2"></i>Perdas (CSV)
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtro de Período Global -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Data Início</label>
+                    <input type="date" class="form-control" id="startDate">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Data Fim</label>
+                    <input type="date" class="form-control" id="endDate">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Período Rápido</label>
+                    <select class="form-select" id="quickPeriod" onchange="setQuickPeriod()">
+                        <option value="">Personalizado</option>
+                        <option value="7">Últimos 7 dias</option>
+                        <option value="30" selected>Últimos 30 dias</option>
+                        <option value="90">Últimos 90 dias</option>
+                        <option value="365">Último ano</option>
+                        <option value="thisMonth">Este mês</option>
+                        <option value="lastMonth">Mês anterior</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" onclick="loadAllReports()">
+                        <i class="bi bi-search me-1"></i> Aplicar
+                    </button>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="text-muted small" id="periodLabel">Período: --</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu de Relatórios -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabDashboard">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabOrders">
+                <i class="bi bi-file-medical me-1"></i> Ordens
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabYield">
+                <i class="bi bi-percent me-1"></i> Rendimento
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabLosses">
+                <i class="bi bi-exclamation-triangle me-1"></i> Perdas
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabCosts">
+                <i class="bi bi-currency-dollar me-1"></i> Custos
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabProductivity">
+                <i class="bi bi-people me-1"></i> Produtividade
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- TAB: DASHBOARD -->
+        <div class="tab-pane fade show active" id="tabDashboard">
+            <!-- Alertas -->
+            <div class="row g-3 mb-4" id="alertsRow">
+                <div class="col-md-3">
+                    <div class="card border-danger border-start border-4 h-100">
+                        <div class="card-body py-3">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <p class="text-muted small mb-1">Ordens Atrasadas</p>
+                                    <h3 class="text-danger mb-0" id="alertOverdue">0</h3>
+                                </div>
+                                <i class="bi bi-clock-history text-danger fs-2 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-warning border-start border-4 h-100">
+                        <div class="card-body py-3">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <p class="text-muted small mb-1">Estoque Baixo</p>
+                                    <h3 class="text-warning mb-0" id="alertLowStock">0</h3>
+                                </div>
+                                <i class="bi bi-box-seam text-warning fs-2 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-info border-start border-4 h-100">
+                        <div class="card-body py-3">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <p class="text-muted small mb-1">Lotes Vencendo</p>
+                                    <h3 class="text-info mb-0" id="alertExpiring">0</h3>
+                                </div>
+                                <i class="bi bi-calendar-x text-info fs-2 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-secondary border-start border-4 h-100">
+                        <div class="card-body py-3">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <p class="text-muted small mb-1">Aguardando Aprovação</p>
+                                    <h3 class="text-secondary mb-0" id="alertPending">0</h3>
+                                </div>
+                                <i class="bi bi-clipboard-check text-secondary fs-2 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIs Principais -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <p class="text-muted small mb-1">Total de Ordens (Mês)</p>
+                            <h2 class="mb-1" id="kpiTotalOrders">0</h2>
+                            <small class="text-muted" id="kpiOrdersGrowth">--</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <p class="text-muted small mb-1">Ordens Concluídas</p>
+                            <h2 class="mb-1 text-success" id="kpiCompleted">0</h2>
+                            <small class="text-muted">Taxa: <span id="kpiCompletionRate">0%</span></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <p class="text-muted small mb-1">Rendimento Médio</p>
+                            <h2 class="mb-1" id="kpiAvgYield">0%</h2>
+                            <small class="text-muted">Meta: 95-105%</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <p class="text-muted small mb-1">Perdas (Mês)</p>
+                            <h2 class="mb-1 text-danger" id="kpiLossValue">R$ 0</h2>
+                            <small class="text-muted" id="kpiLossCount">0 registros</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-8">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0">
+                            <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Ordens por Dia (Últimos 30 dias)</h6>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="chartOrders" height="250"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0">
+                            <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Status das Ordens</h6>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="chartStatus" height="250"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top 5 -->
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0">
+                            <h6 class="mb-0"><i class="bi bi-trophy text-warning me-2"></i>Top 5 Fórmulas</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0">
+                                <tbody id="topFormulas">
+                                    <tr><td colspan="2" class="text-center text-muted py-3">Carregando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0">
+                            <h6 class="mb-0"><i class="bi bi-person-check text-success me-2"></i>Top 5 Funcionários</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0">
+                                <tbody id="topEmployees">
+                                    <tr><td colspan="3" class="text-center text-muted py-3">Carregando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0">
+                            <h6 class="mb-0"><i class="bi bi-people text-primary me-2"></i>Top 5 Clientes</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0">
+                                <tbody id="topCustomers">
+                                    <tr><td colspan="2" class="text-center text-muted py-3">Carregando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: ORDENS -->
+        <div class="tab-pane fade" id="tabOrders">
+            <div class="row g-3 mb-4">
+                <div class="col-md-2">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body py-3 text-center">
+                            <h3 class="mb-0" id="ordTotal">0</h3>
+                            <small>Total</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-success text-white">
+                        <div class="card-body py-3 text-center">
+                            <h3 class="mb-0" id="ordCompleted">0</h3>
+                            <small>Concluídas</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body py-3 text-center">
+                            <h3 class="mb-0" id="ordPending">0</h3>
+                            <small>Pendentes</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-info text-white">
+                        <div class="card-body py-3 text-center">
+                            <h3 class="mb-0" id="ordInProgress">0</h3>
+                            <small>Em Produção</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body py-3 text-center">
+                            <h3 class="mb-0" id="ordOverdue">0</h3>
+                            <small>Atrasadas</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-secondary text-white">
+                        <div class="card-body py-3 text-center">
+                            <h3 class="mb-0" id="ordCanceled">0</h3>
+                            <small>Canceladas</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white"><h6 class="mb-0">Ordens por Fórmula</h6></div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Fórmula</th><th>Categoria</th><th class="text-end">Qtd</th></tr>
+                                </thead>
+                                <tbody id="ordersByFormula"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white"><h6 class="mb-0">Ordens por Dia</h6></div>
+                        <div class="card-body">
+                            <canvas id="chartOrdersByDay" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Detalhes das Ordens</h6>
+                    <span class="badge bg-primary" id="ordersCount">0</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ordem</th>
+                                    <th>Fórmula</th>
+                                    <th>Cliente</th>
+                                    <th>Qtd</th>
+                                    <th>Status</th>
+                                    <th>Data Pedido</th>
+                                    <th>Prevista</th>
+                                    <th>Tempo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: RENDIMENTO -->
+        <div class="tab-pane fade" id="tabYield">
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <p class="text-muted small mb-1">Rendimento Médio</p>
+                            <h2 class="mb-0" id="yieldAvg">0%</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <p class="text-muted small mb-1">Dentro do Aceitável</p>
+                            <h2 class="mb-0 text-success" id="yieldOk">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <p class="text-muted small mb-1">Abaixo de 95%</p>
+                            <h2 class="mb-0 text-danger" id="yieldLow">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <p class="text-muted small mb-1">Acima de 105%</p>
+                            <h2 class="mb-0 text-warning" id="yieldHigh">0</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white"><h6 class="mb-0">Rendimento por Fórmula</h6></div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Fórmula</th><th class="text-end">Produções</th><th class="text-end">Média</th><th class="text-end">Desvio</th></tr>
+                                </thead>
+                                <tbody id="yieldByFormula"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white"><h6 class="mb-0">Rendimento por Funcionário</h6></div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Funcionário</th><th class="text-end">Produções</th><th class="text-end">Média</th><th class="text-end">Tempo Médio</th></tr>
+                                </thead>
+                                <tbody id="yieldByEmployee"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: PERDAS -->
+        <div class="tab-pane fade" id="tabLosses">
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <p class="text-muted small mb-1">Total de Registros</p>
+                            <h2 class="mb-0" id="lossTotal">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <p class="text-muted small mb-1">Quantidade Perdida</p>
+                            <h2 class="mb-0 text-warning" id="lossQty">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <p class="text-muted small mb-1">Valor Total Perdido</p>
+                            <h2 class="mb-0 text-danger" id="lossValue">R$ 0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <canvas id="chartLossTypes" height="100"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white"><h6 class="mb-0">Perdas por Matéria-Prima</h6></div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Matéria-Prima</th><th class="text-end">Qtd</th><th class="text-end">Valor</th></tr>
+                                </thead>
+                                <tbody id="lossByMaterial"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white"><h6 class="mb-0">Perdas por Mês</h6></div>
+                        <div class="card-body">
+                            <canvas id="chartLossByMonth" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white"><h6 class="mb-0">Detalhes das Perdas</h6></div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr><th>Ordem</th><th>Matéria-Prima</th><th>Tipo</th><th>Motivo</th><th class="text-end">Qtd</th><th class="text-end">Valor</th><th>Data</th></tr>
+                            </thead>
+                            <tbody id="lossesTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CUSTOS -->
+        <div class="tab-pane fade" id="tabCosts">
+            <div class="row g-3 mb-4">
+                <div class="col-md-2">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body py-3 text-center">
+                            <h4 class="mb-0" id="costMaterial">R$ 0</h4>
+                            <small>Materiais</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-info text-white">
+                        <div class="card-body py-3 text-center">
+                            <h4 class="mb-0" id="costLabor">R$ 0</h4>
+                            <small>Mão de Obra</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-secondary text-white">
+                        <div class="card-body py-3 text-center">
+                            <h4 class="mb-0" id="costOverhead">R$ 0</h4>
+                            <small>Overhead</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body py-3 text-center">
+                            <h4 class="mb-0" id="costLoss">R$ 0</h4>
+                            <small>Perdas</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-dark text-white">
+                        <div class="card-body py-3 text-center">
+                            <h4 class="mb-0" id="costTotal">R$ 0</h4>
+                            <small>Total</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-success text-white">
+                        <div class="card-body py-3 text-center">
+                            <h4 class="mb-0" id="costAvgUnit">R$ 0</h4>
+                            <small>Custo Médio/Un</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white"><h6 class="mb-0">Custos por Fórmula</h6></div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Fórmula</th><th class="text-end">Produções</th><th class="text-end">Custo Total</th><th class="text-end">%</th></tr>
+                                </thead>
+                                <tbody id="costByFormula"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white"><h6 class="mb-0">Custos por Mês</h6></div>
+                        <div class="card-body">
+                            <canvas id="chartCostByMonth" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: PRODUTIVIDADE -->
+        <div class="tab-pane fade" id="tabProductivity">
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <p class="text-muted small mb-1">Dias Trabalhados</p>
+                            <h2 class="mb-0" id="prodDays">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <p class="text-muted small mb-1">Ordens Concluídas</p>
+                            <h2 class="mb-0 text-success" id="prodCompleted">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <p class="text-muted small mb-1">Média por Dia</p>
+                            <h2 class="mb-0 text-primary" id="prodAvgDay">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <p class="text-muted small mb-1">Tempo Médio (min)</p>
+                            <h2 class="mb-0" id="prodAvgTime">0</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-8">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white"><h6 class="mb-0">Produtividade por Funcionário</h6></div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Funcionário</th>
+                                        <th class="text-end">Ordens</th>
+                                        <th class="text-end">Qtd Produzida</th>
+                                        <th class="text-end">Tempo Médio</th>
+                                        <th class="text-end">Rendimento</th>
+                                        <th class="text-end">Perdas</th>
+                                        <th class="text-end">Eficiência</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="prodByEmployee"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white"><h6 class="mb-0">Por Dia da Semana</h6></div>
+                        <div class="card-body">
+                            <canvas id="chartProdByDay" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Charts
+    let chartOrders, chartStatus, chartOrdersByDay, chartLossTypes, chartLossByMonth, chartCostByMonth, chartProdByDay;
+
+    // Data
+    let dashboardData = null;
+    let ordersData = null;
+    let yieldData = null;
+    let lossesData = null;
+    let costsData = null;
+    let productivityData = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setQuickPeriod();
+        initCharts();
+        loadAllReports();
+    });
+
+    function initCharts() {
+        // Chart Ordens 30 dias
+        chartOrders = new Chart(document.getElementById('chartOrders'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Ordens', data: [], borderColor: 'var(--info)', backgroundColor: 'rgba(13,110,253,0.1)', fill: true, tension: 0.4 }] },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        });
+
+        // Chart Status
+        chartStatus = new Chart(document.getElementById('chartStatus'), {
+            type: 'doughnut',
+            data: { labels: [], datasets: [{ data: [], backgroundColor: ['var(--amber-500)', 'var(--info)', 'var(--ok)', 'var(--ink-3)', 'var(--danger)'] }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+
+        // Chart Orders by Day
+        chartOrdersByDay = new Chart(document.getElementById('chartOrdersByDay'), {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Criadas', data: [], backgroundColor: 'var(--info)' }, { label: 'Concluídas', data: [], backgroundColor: 'var(--ok)' }] },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+
+        // Chart Loss Types
+        chartLossTypes = new Chart(document.getElementById('chartLossTypes'), {
+            type: 'doughnut',
+            data: { labels: [], datasets: [{ data: [], backgroundColor: ['var(--danger)', 'var(--amber-500)', 'var(--info)', 'var(--ink-3)', 'var(--ok)'] }] },
+            options: { responsive: true, plugins: { legend: { position: 'right' } } }
+        });
+
+        // Chart Loss by Month
+        chartLossByMonth = new Chart(document.getElementById('chartLossByMonth'), {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Valor Perdido', data: [], backgroundColor: 'var(--danger)' }] },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+
+        // Chart Cost by Month
+        chartCostByMonth = new Chart(document.getElementById('chartCostByMonth'), {
+            type: 'bar',
+            data: { labels: [], datasets: [
+                { label: 'Material', data: [], backgroundColor: 'var(--info)' },
+                { label: 'Mão de Obra', data: [], backgroundColor: 'var(--info)' },
+                { label: 'Overhead', data: [], backgroundColor: 'var(--ink-3)' }
+            ]},
+            options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+        });
+
+        // Chart Productivity by Day
+        chartProdByDay = new Chart(document.getElementById('chartProdByDay'), {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: 'Ordens', data: [], backgroundColor: 'var(--ok)' }] },
+            options: { responsive: true, indexAxis: 'y', scales: { x: { beginAtZero: true } } }
+        });
+    }
+
+    function setQuickPeriod() {
+        const val = document.getElementById('quickPeriod').value;
+        const end = new Date();
+        let start = new Date();
+
+        if (val === 'thisMonth') {
+            start = new Date(end.getFullYear(), end.getMonth(), 1);
+        } else if (val === 'lastMonth') {
+            start = new Date(end.getFullYear(), end.getMonth() - 1, 1);
+            end.setDate(0);
+        } else if (val) {
+            start.setDate(end.getDate() - parseInt(val));
+        }
+
+        document.getElementById('startDate').value = start.toISOString().split('T')[0];
+        document.getElementById('endDate').value = end.toISOString().split('T')[0];
+        updatePeriodLabel();
+    }
+
+    function updatePeriodLabel() {
+        const start = document.getElementById('startDate').value;
+        const end = document.getElementById('endDate').value;
+        document.getElementById('periodLabel').textContent = `Período: ${formatDate(start)} a ${formatDate(end)}`;
+    }
+
+    function getDateParams() {
+        return `startDate=${document.getElementById('startDate').value}&endDate=${document.getElementById('endDate').value}`;
+    }
+
+    async function loadAllReports() {
+        updatePeriodLabel();
+        await Promise.all([
+            loadDashboard(),
+            loadOrdersReport(),
+            loadYieldReport(),
+            loadLossesReport(),
+            loadCostsReport(),
+            loadProductivityReport()
+        ]);
+    }
+
+    async function loadDashboard() {
+        try {
+            const response = await fetch('/api/Reports/dashboard');
+            const result = await response.json();
+            dashboardData = result.data;
+
+            // Alertas
+            document.getElementById('alertOverdue').textContent = dashboardData.overdueOrders;
+            document.getElementById('alertLowStock').textContent = dashboardData.lowStockItems;
+            document.getElementById('alertExpiring').textContent = dashboardData.expiringBatches;
+            document.getElementById('alertPending').textContent = dashboardData.pendingApprovals;
+
+            // KPIs
+            document.getElementById('kpiTotalOrders').textContent = dashboardData.totalOrdersMonth;
+            document.getElementById('kpiCompleted').textContent = dashboardData.completedOrdersMonth;
+            document.getElementById('kpiCompletionRate').textContent = dashboardData.completionRateMonth.toFixed(1) + '%';
+            document.getElementById('kpiOrdersGrowth').innerHTML = formatGrowth(dashboardData.ordersGrowth);
+
+            // Chart Ordens
+            chartOrders.data.labels = dashboardData.ordersLast30Days.map(d => d.label);
+            chartOrders.data.datasets[0].data = dashboardData.ordersLast30Days.map(d => d.value);
+            chartOrders.update();
+
+            // Top 5
+            renderTopFormulas(dashboardData.topFormulas);
+            renderTopEmployees(dashboardData.topEmployees);
+            renderTopCustomers(dashboardData.topCustomers);
+
+        } catch (error) {
+            console.error('Erro ao carregar dashboard:', error);
+        }
+    }
+
+    async function loadOrdersReport() {
+        try {
+            const response = await fetch(`/api/Reports/orders?${getDateParams()}&includeCanceled=true`);
+            const result = await response.json();
+            ordersData = result.data;
+
+            document.getElementById('ordTotal').textContent = ordersData.totalOrders;
+            document.getElementById('ordCompleted').textContent = ordersData.completedOrders;
+            document.getElementById('ordPending').textContent = ordersData.pendingOrders;
+            document.getElementById('ordInProgress').textContent = ordersData.inProductionOrders;
+            document.getElementById('ordOverdue').textContent = ordersData.overdueOrders;
+            document.getElementById('ordCanceled').textContent = ordersData.canceledOrders;
+
+            // Chart Status
+            chartStatus.data.labels = ordersData.byStatus.map(s => s.statusDisplay);
+            chartStatus.data.datasets[0].data = ordersData.byStatus.map(s => s.count);
+            chartStatus.update();
+
+            // Chart by Day
+            chartOrdersByDay.data.labels = ordersData.byDay.slice(-14).map(d => formatDate(d.date));
+            chartOrdersByDay.data.datasets[0].data = ordersData.byDay.slice(-14).map(d => d.created);
+            chartOrdersByDay.data.datasets[1].data = ordersData.byDay.slice(-14).map(d => d.completed);
+            chartOrdersByDay.update();
+
+            // Table by Formula
+            document.getElementById('ordersByFormula').innerHTML = ordersData.byFormula.map(f => `
+                <tr>
+                    <td><strong>${f.formulaCode}</strong> - ${f.formulaName}</td>
+                    <td><span class="badge bg-secondary">${f.category}</span></td>
+                    <td class="text-end">${f.orderCount}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="3" class="text-center text-muted">Sem dados</td></tr>';
+
+            // Table Details
+            document.getElementById('ordersCount').textContent = ordersData.orders.length;
+            document.getElementById('ordersTable').innerHTML = ordersData.orders.map(o => `
+                <tr class="${o.isOverdue ? 'table-danger' : ''}">
+                    <td><strong>${o.orderNumber}</strong></td>
+                    <td>${o.formulaName || '-'}</td>
+                    <td>${o.customerName}</td>
+                    <td>${o.quantity} ${o.unit}</td>
+                    <td>${getStatusBadge(o.status)}</td>
+                    <td>${formatDate(o.orderDate)}</td>
+                    <td>${formatDate(o.expectedDate)}</td>
+                    <td>${o.productionTimeMinutes ? o.productionTimeMinutes + ' min' : '-'}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="8" class="text-center text-muted">Sem dados</td></tr>';
+
+        } catch (error) {
+            console.error('Erro ao carregar relatório de ordens:', error);
+        }
+    }
+
+    async function loadYieldReport() {
+        try {
+            const response = await fetch(`/api/Reports/yield?${getDateParams()}`);
+            const result = await response.json();
+            yieldData = result.data;
+
+            document.getElementById('yieldAvg').textContent = yieldData.averageYield.toFixed(1) + '%';
+            document.getElementById('kpiAvgYield').textContent = yieldData.averageYield.toFixed(1) + '%';
+            document.getElementById('yieldOk').textContent = yieldData.withinAcceptableRange;
+            document.getElementById('yieldLow').textContent = yieldData.belowAcceptable;
+            document.getElementById('yieldHigh').textContent = yieldData.aboveAcceptable;
+
+            document.getElementById('yieldByFormula').innerHTML = yieldData.byFormula.map(f => `
+                <tr>
+                    <td>${f.formulaName}</td>
+                    <td class="text-end">${f.productionCount}</td>
+                    <td class="text-end ${getYieldColor(f.averageYield)}">${f.averageYield.toFixed(1)}%</td>
+                    <td class="text-end">${f.standardDeviation.toFixed(2)}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" class="text-center text-muted">Sem dados</td></tr>';
+
+            document.getElementById('yieldByEmployee').innerHTML = yieldData.byEmployee.map(e => `
+                <tr>
+                    <td>${e.employeeName}</td>
+                    <td class="text-end">${e.productionCount}</td>
+                    <td class="text-end ${getYieldColor(e.averageYield)}">${e.averageYield.toFixed(1)}%</td>
+                    <td class="text-end">${e.averageTimeMinutes.toFixed(0)} min</td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" class="text-center text-muted">Sem dados</td></tr>';
+
+        } catch (error) {
+            console.error('Erro ao carregar relatório de rendimento:', error);
+        }
+    }
+
+    async function loadLossesReport() {
+        try {
+            const response = await fetch(`/api/Reports/losses?${getDateParams()}`);
+            const result = await response.json();
+            lossesData = result.data;
+
+            document.getElementById('lossTotal').textContent = lossesData.totalLossRecords;
+            document.getElementById('lossQty').textContent = lossesData.totalQuantityLost.toFixed(2);
+            document.getElementById('lossValue').textContent = formatCurrency(lossesData.totalValueLost);
+            document.getElementById('kpiLossValue').textContent = formatCurrency(lossesData.totalValueLost);
+            document.getElementById('kpiLossCount').textContent = lossesData.totalLossRecords + ' registros';
+
+            // Chart Types
+            chartLossTypes.data.labels = lossesData.byType.map(t => t.lossTypeDisplay);
+            chartLossTypes.data.datasets[0].data = lossesData.byType.map(t => t.count);
+            chartLossTypes.update();
+
+            // Chart by Month
+            chartLossByMonth.data.labels = lossesData.byMonth.map(m => m.monthName);
+            chartLossByMonth.data.datasets[0].data = lossesData.byMonth.map(m => m.totalValue);
+            chartLossByMonth.update();
+
+            document.getElementById('lossByMaterial').innerHTML = lossesData.byRawMaterial.map(m => `
+                <tr>
+                    <td>${m.rawMaterialName}</td>
+                    <td class="text-end">${m.totalQuantity.toFixed(2)} ${m.unit}</td>
+                    <td class="text-end text-danger">${formatCurrency(m.totalValue)}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="3" class="text-center text-muted">Sem dados</td></tr>';
+
+            document.getElementById('lossesTable').innerHTML = lossesData.details.map(l => `
+                <tr>
+                    <td>${l.orderNumber}</td>
+                    <td>${l.rawMaterialName || '-'}</td>
+                    <td><span class="badge bg-secondary">${l.lossType}</span></td>
+                    <td>${l.reason}</td>
+                    <td class="text-end">${l.quantity.toFixed(2)} ${l.unit}</td>
+                    <td class="text-end text-danger">${l.valueLost ? formatCurrency(l.valueLost) : '-'}</td>
+                    <td>${formatDateTime(l.registeredAt)}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="7" class="text-center text-muted">Sem dados</td></tr>';
+
+        } catch (error) {
+            console.error('Erro ao carregar relatório de perdas:', error);
+        }
+    }
+
+    async function loadCostsReport() {
+        try {
+            const response = await fetch(`/api/Reports/costs?${getDateParams()}`);
+            const result = await response.json();
+            costsData = result.data;
+
+            document.getElementById('costMaterial').textContent = formatCurrency(costsData.totalMaterialCost);
+            document.getElementById('costLabor').textContent = formatCurrency(costsData.totalLaborCost);
+            document.getElementById('costOverhead').textContent = formatCurrency(costsData.totalOverheadCost);
+            document.getElementById('costLoss').textContent = formatCurrency(costsData.totalLossValue);
+            document.getElementById('costTotal').textContent = formatCurrency(costsData.totalCost);
+            document.getElementById('costAvgUnit').textContent = formatCurrency(costsData.averageUnitCost);
+
+            // Chart by Month
+            chartCostByMonth.data.labels = costsData.byMonth.map(m => m.monthName);
+            chartCostByMonth.data.datasets[0].data = costsData.byMonth.map(m => m.materialCost);
+            chartCostByMonth.data.datasets[1].data = costsData.byMonth.map(m => m.laborCost);
+            chartCostByMonth.data.datasets[2].data = costsData.byMonth.map(m => m.overheadCost);
+            chartCostByMonth.update();
+
+            document.getElementById('costByFormula').innerHTML = costsData.byFormula.map(f => `
+                <tr>
+                    <td>${f.formulaName}</td>
+                    <td class="text-end">${f.productionCount}</td>
+                    <td class="text-end">${formatCurrency(f.totalCost)}</td>
+                    <td class="text-end">${f.percentageOfTotal.toFixed(1)}%</td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" class="text-center text-muted">Sem dados</td></tr>';
+
+        } catch (error) {
+            console.error('Erro ao carregar relatório de custos:', error);
+        }
+    }
+
+    async function loadProductivityReport() {
+        try {
+            const response = await fetch(`/api/Reports/productivity?${getDateParams()}`);
+            const result = await response.json();
+            productivityData = result.data;
+
+            document.getElementById('prodDays').textContent = productivityData.totalWorkDays;
+            document.getElementById('prodCompleted').textContent = productivityData.totalOrdersCompleted;
+            document.getElementById('prodAvgDay').textContent = productivityData.averageOrdersPerDay.toFixed(1);
+            document.getElementById('prodAvgTime').textContent = productivityData.averageProductionTimeMinutes.toFixed(0);
+
+            // Chart by Day of Week
+            chartProdByDay.data.labels = productivityData.byDayOfWeek.map(d => d.dayName);
+            chartProdByDay.data.datasets[0].data = productivityData.byDayOfWeek.map(d => d.ordersCompleted);
+            chartProdByDay.update();
+
+            document.getElementById('prodByEmployee').innerHTML = productivityData.byEmployee.map(e => `
+                <tr>
+                    <td>${e.employeeName}</td>
+                    <td class="text-end">${e.ordersCompleted}</td>
+                    <td class="text-end">${e.totalQuantityProduced.toFixed(0)}</td>
+                    <td class="text-end">${e.averageProductionTimeMinutes.toFixed(0)} min</td>
+                    <td class="text-end ${getYieldColor(e.averageYield)}">${e.averageYield.toFixed(1)}%</td>
+                    <td class="text-end ${e.lossCount > 0 ? 'text-danger' : ''}">${e.lossCount}</td>
+                    <td class="text-end">
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar ${e.efficiency >= 90 ? 'bg-success' : e.efficiency >= 70 ? 'bg-warning' : 'bg-danger'}" 
+                                 style="width: ${e.efficiency}%">${e.efficiency.toFixed(0)}%</div>
+                        </div>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="7" class="text-center text-muted">Sem dados</td></tr>';
+
+        } catch (error) {
+            console.error('Erro ao carregar relatório de produtividade:', error);
+        }
+    }
+
+    function exportReport(type) {
+        const params = getDateParams();
+        window.open(`/api/Reports/export/${type}?${params}`, '_blank');
+    }
+
+    // Helpers
+    function renderTopFormulas(data) {
+        document.getElementById('topFormulas').innerHTML = data.map((f, i) => `
+            <tr><td><span class="badge bg-primary me-2">${i + 1}</span>${f.formulaName}</td><td class="text-end"><strong>${f.orderCount}</strong></td></tr>
+        `).join('') || '<tr><td colspan="2" class="text-center text-muted py-3">Sem dados</td></tr>';
+    }
+
+    function renderTopEmployees(data) {
+        document.getElementById('topEmployees').innerHTML = data.map((e, i) => `
+            <tr><td><span class="badge bg-success me-2">${i + 1}</span>${e.employeeName}</td><td class="text-end">${e.ordersCompleted}</td><td class="text-end">${e.averageYield.toFixed(1)}%</td></tr>
+        `).join('') || '<tr><td colspan="3" class="text-center text-muted py-3">Sem dados</td></tr>';
+    }
+
+    function renderTopCustomers(data) {
+        document.getElementById('topCustomers').innerHTML = data.map((c, i) => `
+            <tr><td><span class="badge bg-info me-2">${i + 1}</span>${c.customerName}</td><td class="text-end"><strong>${c.orderCount}</strong></td></tr>
+        `).join('') || '<tr><td colspan="2" class="text-center text-muted py-3">Sem dados</td></tr>';
+    }
+
+    function getStatusBadge(status) {
+        const colors = { 'PENDENTE': 'warning', 'EM_PRODUCAO': 'primary', 'FINALIZADO': 'success', 'ENTREGUE': 'info', 'CANCELADO': 'secondary' };
+        return `<span class="badge bg-${colors[status] || 'secondary'}">${status}</span>`;
+    }
+
+    function getYieldColor(yield_) {
+        if (yield_ >= 95 && yield_ <= 105) return 'text-success';
+        if (yield_ < 95) return 'text-danger';
+        return 'text-warning';
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('pt-BR');
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatCurrency(value) {
+        return 'R$ ' + (value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatGrowth(value) {
+        if (value > 0) return `<span class="text-success"><i class="bi bi-arrow-up"></i> ${value.toFixed(1)}%</span>`;
+        if (value < 0) return `<span class="text-danger"><i class="bi bi-arrow-down"></i> ${Math.abs(value).toFixed(1)}%</span>`;
+        return '<span class="text-muted">0%</span>';
+    }
+</script>
+}

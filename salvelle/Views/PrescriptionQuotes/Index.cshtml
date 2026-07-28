@@ -1,0 +1,213 @@
+@using Models.Pharmacy
+@{
+    ViewData["Title"] = "Orçamentos de Receitas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var quotes = ViewBag.Quotes as List<PrescriptionQuote>;
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-receipt me-2"></i>Orçamentos de Receitas</h2>
+        <a href="/Prescriptions/Upload" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Nova Receita
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-3">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0">Lista de Orçamentos</h5>
+                </div>
+                <div class="col-auto">
+                    <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Buscar...">
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="quotesTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Cliente</th>
+                            <th>Médico</th>
+                            <th>Forma Farm.</th>
+                            <th>Qtd</th>
+                            <th class="text-end">Valor</th>
+                            <th>Status</th>
+                            <th>Criado em</th>
+                            <th>Validade</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (quotes != null && quotes.Any())
+                        {
+                            foreach (var quote in quotes)
+                            {
+                                var statusClass = quote.Status switch
+                                {
+                                    "PENDENTE" => "bg-warning text-dark",
+                                    "APROVADO" => "bg-success",
+                                    "REJEITADO" => "bg-danger",
+                                    "CONVERTIDO" => "bg-info",
+                                    "EXPIRADO" => "bg-secondary",
+                                    "CANCELADO" => "bg-dark",
+                                    _ => "bg-secondary"
+                                };
+                                var isExpired = quote.ValidUntil < DateTime.UtcNow && quote.Status == "PENDENTE";
+                                var hasOM = quote.ManipulationOrderId.HasValue;
+                                <tr>
+                                    <td><code>@quote.Code</code></td>
+                                    <td>
+                                        @quote.CustomerName
+                                        @if (!string.IsNullOrEmpty(quote.CustomerPhone))
+                                        {
+                                            <br><small class="text-muted">@quote.CustomerPhone</small>
+                                        }
+                                    </td>
+                                    <td>@quote.DoctorName</td>
+                                    <td>@quote.PharmaceuticalForm</td>
+                                    <td>@quote.TotalQuantity</td>
+                                    <td class="text-end fw-bold">R$ @quote.FinalPrice.ToString("N2")</td>
+                                    <td>
+                                        @if (isExpired)
+                                        {
+                                            <span class="badge bg-secondary">EXPIRADO</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge @statusClass">@quote.Status</span>
+                                        }
+                                        @if (hasOM)
+                                        {
+                                            <br><small class="text-success"><i class="bi bi-check-circle"></i> OM</small>
+                                        }
+                                    </td>
+                                    <td>@quote.CreatedAt.ToString("dd/MM/yy HH:mm")</td>
+                                    <td>
+                                        @quote.ValidUntil.ToString("dd/MM/yy")
+                                        @if (isExpired)
+                                        {
+                                            <br><small class="text-danger"><i class="bi bi-exclamation-triangle"></i></small>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="/PrescriptionQuotes/Details/@quote.Id" class="btn btn-outline-primary" title="Detalhes">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            @if (quote.Status == "PENDENTE" && !isExpired)
+                                            {
+                                                <button type="button" class="btn btn-outline-success"
+                                                        onclick="approveQuote('@quote.Id')" title="Aprovar">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger"
+                                                        onclick="rejectQuote('@quote.Id')" title="Rejeitar">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            }
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                    onclick="copyPublicLink('@quote.PublicToken')" title="Copiar Link">
+                                                <i class="bi bi-link-45deg"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="10" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    Nenhum orçamento encontrado
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Rejeição -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="rejectForm" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rejeitar Orçamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Motivo da Rejeição</label>
+                        <textarea class="form-control" name="reason" rows="3" required 
+                                  placeholder="Informe o motivo da rejeição..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-lg me-1"></i>Rejeitar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#quotesTable tbody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(filter) ? '' : 'none';
+        });
+    });
+
+    function approveQuote(id) {
+        if (confirm('Confirma a aprovação deste orçamento?\n\nUma Ordem de Manipulação será criada automaticamente.')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/PrescriptionQuotes/Approve/' + id;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function rejectQuote(id) {
+        const form = document.getElementById('rejectForm');
+        form.action = '/PrescriptionQuotes/Reject/' + id;
+        new bootstrap.Modal(document.getElementById('rejectModal')).show();
+    }
+
+    function copyPublicLink(token) {
+        const url = window.location.origin + '/p/quote/' + token;
+        navigator.clipboard.writeText(url).then(() => {
+            alert('Link copiado!');
+        });
+    }
+</script>
+}

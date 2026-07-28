@@ -1,0 +1,595 @@
+﻿@{
+    ViewData["Title"] = "Formas Farmacêuticas";
+    Layout = "_Layout";
+}
+
+<style>
+    .ff-header {
+        background: linear-gradient(135deg, var(--controlled-black) 0%, var(--danger) 100%);
+        color: white;
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.25rem;
+        text-align: center;
+        border: 1px solid var(--bg-subtle);
+        transition: transform 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .stat-card .value { font-size: 2rem; font-weight: 700; }
+    .stat-card .label { font-size: 0.8rem; color: var(--ink-3); }
+
+    .form-card {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid var(--bg-subtle);
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .form-card:hover { 
+        border-color: var(--controlled-black); 
+        box-shadow: 0 4px 12px rgba(111, 66, 193, 0.15);
+    }
+    .form-card.inactive { opacity: 0.6; }
+
+    .form-icon {
+        font-size: 2rem;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-subtle);
+        border-radius: 10px;
+        color: var(--controlled-black);
+    }
+    .form-icon i {
+        font-size: 1.75rem;
+    }
+
+    .form-name { font-weight: 600; font-size: 1.1rem; }
+    .form-code { 
+        font-size: 0.75rem; 
+        background: var(--bg-subtle); 
+        padding: 0.2rem 0.5rem; 
+        border-radius: 4px;
+        font-family: monospace;
+    }
+
+    .badge-usage {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+    .badge-usage.oral { background: var(--ok-soft); color: var(--ok); }
+    .badge-usage.topical { background: var(--petrol-50); color: #084298; }
+    .badge-usage.both { background: var(--warn-soft); color: var(--warn); }
+
+    .subtypes-count {
+        background: var(--controlled-black);
+        color: white;
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 10px;
+    }
+
+    .filters-bar {
+        background: white;
+        border: 1px solid var(--bg-subtle);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--ink-3);
+    }
+    .empty-state i { font-size: 4rem; opacity: 0.3; }
+</style>
+
+<!-- Header -->
+<div class="ff-header">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <h2><i class="bi bi-capsule me-2"></i>Formas Farmacêuticas</h2>
+            <p class="mb-0 opacity-75">Gerencie cápsulas, soluções, cremes e outras formas de manipulação</p>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <a href="/FormasFarmaceuticas/Precificacao" class="btn btn-light me-2">
+                <i class="bi bi-percent me-1"></i>Precificação
+            </a>
+            <a href="/FormasFarmaceuticas/Capsulas/Calculadora" class="btn btn-light me-2">
+                <i class="bi bi-calculator me-1"></i>Calculadora
+            </a>
+            <button class="btn btn-warning" onclick="openCreateModal()">
+                <i class="bi bi-plus-lg me-1"></i>Nova Forma
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-2 col-6">
+        <div class="stat-card">
+            <div class="value text-primary" id="statTotal">-</div>
+            <div class="label">Total</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="stat-card">
+            <div class="value text-success" id="statActive">-</div>
+            <div class="label">Ativas</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="stat-card">
+            <div class="value text-info" id="statOral">-</div>
+            <div class="label">Uso Oral</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="stat-card">
+            <div class="value text-warning" id="statTopical">-</div>
+            <div class="label">Uso Tópico</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="stat-card">
+            <div class="value text-secondary" id="statSystem">-</div>
+            <div class="label">Padrão</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="stat-card">
+            <div class="value text-purple" id="statCustom">-</div>
+            <div class="label">Personalizadas</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+    <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+            <input type="text" class="form-control" id="searchInput" placeholder="Buscar por nome ou código..." oninput="filterForms()">
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" id="filterUsage" onchange="filterForms()">
+                <option value="">Todos os usos</option>
+                <option value="ORAL">Uso Oral</option>
+                <option value="TOPICAL">Uso Tópico</option>
+                <option value="BOTH">Ambos</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" id="filterType" onchange="filterForms()">
+                <option value="">Todos os tipos</option>
+                <option value="system">Padrão do Sistema</option>
+                <option value="custom">Personalizadas</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" id="filterActive" onchange="filterForms()">
+                <option value="true">Apenas Ativas</option>
+                <option value="">Todas</option>
+                <option value="false">Inativas</option>
+            </select>
+        </div>
+        <div class="col-md-2 text-end">
+            <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                <i class="bi bi-x-lg me-1"></i>Limpar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Forms Grid -->
+<div class="row g-3" id="formsGrid">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary"></div>
+        <p class="mt-2 text-muted">Carregando formas farmacêuticas...</p>
+    </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div class="modal fade" id="formModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="formModalTitle">Nova Forma Farmacêutica</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="formId">
+                
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Código *</label>
+                        <input type="text" class="form-control" id="formCode" maxlength="20" style="text-transform: uppercase;">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Nome *</label>
+                        <input type="text" class="form-control" id="formName">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Ícone</label>
+                        <input type="text" class="form-control" id="formIcon" placeholder="💊">
+                    </div>
+                    
+                    <div class="col-12">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-control" id="formDescription" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label class="form-label">Tipo de Uso *</label>
+                        <select class="form-select" id="formUsageType">
+                            <option value="ORAL">Uso Oral</option>
+                            <option value="TOPICAL">Uso Tópico</option>
+                            <option value="BOTH">Ambos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Unidade Padrão</label>
+                        <input type="text" class="form-control" id="formDefaultUnit" value="unidade">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Validade (dias)</label>
+                        <input type="number" class="form-control" id="formValidityDays" value="180">
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label class="form-label">Preço Mínimo (R$)</label>
+                        <input type="number" class="form-control" id="formMinPrice" step="0.01">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Qtd. Máxima</label>
+                        <input type="number" class="form-control" id="formMaxQty">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Tempo Preparo (h)</label>
+                        <input type="number" class="form-control" id="formPrepTime" step="0.5">
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label class="form-label">Ordem de Exibição</label>
+                        <input type="number" class="form-control" id="formSortOrder" value="99">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="formIsActive" checked>
+                            <label class="form-check-label" for="formIsActive">Ativa</label>
+                        </div>
+                    </div>
+                    
+                    <div class="col-12">
+                        <label class="form-label">Instruções de Uso</label>
+                        <textarea class="form-control" id="formUsageInstructions" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveForm()">
+                    <i class="bi bi-check-lg me-1"></i>Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let allForms = [];
+    let filteredForms = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadForms();
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CARREGAR DADOS
+    // ═══════════════════════════════════════════════════════════════════════
+    async function loadForms() {
+        try {
+            const response = await fetch('/api/PharmaceuticalForms');
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            allForms = await response.json();
+            
+            // A API retorna array direto
+            if (!Array.isArray(allForms)) {
+                console.error('Resposta inesperada:', allForms);
+                allForms = [];
+            }
+            
+            updateStats();
+            filterForms();
+        } catch (e) {
+            console.error('Erro ao carregar:', e);
+            document.getElementById('formsGrid').innerHTML = `
+                <div class="col-12 empty-state">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <h5 class="mt-3">Erro ao carregar dados</h5>
+                    <p>${e.message}</p>
+                    <button class="btn btn-primary" onclick="loadForms()">Tentar novamente</button>
+                </div>
+            `;
+        }
+    }
+
+    function updateStats() {
+        document.getElementById('statTotal').textContent = allForms.length;
+        document.getElementById('statActive').textContent = allForms.filter(f => f.isActive).length;
+        document.getElementById('statOral').textContent = allForms.filter(f => f.usageType === 'ORAL' || f.usageType === 'BOTH').length;
+        document.getElementById('statTopical').textContent = allForms.filter(f => f.usageType === 'TOPICAL' || f.usageType === 'BOTH').length;
+        document.getElementById('statSystem').textContent = allForms.filter(f => f.isSystemDefault).length;
+        document.getElementById('statCustom').textContent = allForms.filter(f => f.isCustom).length;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FILTROS
+    // ═══════════════════════════════════════════════════════════════════════
+    function filterForms() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const usage = document.getElementById('filterUsage').value;
+        const type = document.getElementById('filterType').value;
+        const active = document.getElementById('filterActive').value;
+
+        filteredForms = allForms.filter(f => {
+            // Busca por nome ou código
+            if (search && !f.name.toLowerCase().includes(search) && !f.code.toLowerCase().includes(search)) {
+                return false;
+            }
+            
+            // Filtro por uso
+            if (usage && f.usageType !== usage && f.usageType !== 'BOTH') {
+                return false;
+            }
+            
+            // Filtro por tipo
+            if (type === 'system' && !f.isSystemDefault) return false;
+            if (type === 'custom' && !f.isCustom) return false;
+            
+            // Filtro por ativo
+            if (active === 'true' && !f.isActive) return false;
+            if (active === 'false' && f.isActive) return false;
+            
+            return true;
+        });
+
+        renderForms();
+    }
+
+    function clearFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterUsage').value = '';
+        document.getElementById('filterType').value = '';
+        document.getElementById('filterActive').value = 'true';
+        filterForms();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // UTILITÁRIO - RENDERIZAR ÍCONE
+    // ═══════════════════════════════════════════════════════════════════════
+    function renderIcon(icon, size = '2rem') {
+        if (!icon) {
+            return '<i class="bi bi-capsule" style="font-size: ' + size + ';"></i>';
+        }
+        
+        // Se começa com "bi-", é uma classe Bootstrap Icons
+        if (icon.startsWith('bi-') || icon.startsWith('bi ')) {
+            const iconClass = icon.startsWith('bi ') ? icon : 'bi ' + icon;
+            return '<i class="' + iconClass + '" style="font-size: ' + size + ';"></i>';
+        }
+        
+        // Senão, é um emoji ou texto
+        return '<span style="font-size: ' + size + ';">' + icon + '</span>';
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // RENDERIZAÇÃO
+    // ═══════════════════════════════════════════════════════════════════════
+    function renderForms() {
+        const grid = document.getElementById('formsGrid');
+
+        if (filteredForms.length === 0) {
+            grid.innerHTML = `
+                <div class="col-12 empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <h5 class="mt-3">Nenhuma forma farmacêutica encontrada</h5>
+                    <p>Tente ajustar os filtros ou criar uma nova forma.</p>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = filteredForms.map(form => `
+            <div class="col-md-4 col-lg-3">
+                <div class="form-card ${form.isActive ? '' : 'inactive'}" onclick="viewDetails('${form.id}')">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="form-icon">${renderIcon(form.icon)}</div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="form-name">${form.name}</div>
+                                    <span class="form-code">${form.code}</span>
+                                </div>
+                                ${form.subtypesCount > 0 ? `<span class="subtypes-count">${form.subtypesCount} subtipos</span>` : ''}
+                            </div>
+                            
+                            <div class="mt-2 d-flex gap-2 flex-wrap">
+                                <span class="badge-usage ${form.usageType?.toLowerCase() || 'oral'}">
+                                    ${formatUsage(form.usageType)}
+                                </span>
+                                ${form.isSystemDefault ? '<span class="badge bg-secondary">Padrão</span>' : ''}
+                                ${form.isCustom ? '<span class="badge bg-info">Personalizada</span>' : ''}
+                                ${!form.isActive ? '<span class="badge bg-danger">Inativa</span>' : ''}
+                            </div>
+                            
+                            ${form.minimumPrice ? `<div class="mt-2 text-muted small">Mín: R$ ${form.minimumPrice.toFixed(2)}</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function formatUsage(usage) {
+        const map = {
+            'ORAL': '💊 Oral',
+            'TOPICAL': '🧴 Tópico',
+            'BOTH': '💊🧴 Ambos'
+        };
+        return map[usage] || usage || 'Oral';
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // NAVEGAÇÃO
+    // ═══════════════════════════════════════════════════════════════════════
+    function viewDetails(id) {
+        window.location.href = `/FormasFarmaceuticas/Details/${id}`;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CRIAR/EDITAR
+    // ═══════════════════════════════════════════════════════════════════════
+    function openCreateModal() {
+        document.getElementById('formId').value = '';
+        document.getElementById('formModalTitle').textContent = 'Nova Forma Farmacêutica';
+        document.getElementById('formCode').value = '';
+        document.getElementById('formName').value = '';
+        document.getElementById('formIcon').value = '💊';
+        document.getElementById('formDescription').value = '';
+        document.getElementById('formUsageType').value = 'ORAL';
+        document.getElementById('formDefaultUnit').value = 'unidade';
+        document.getElementById('formValidityDays').value = '180';
+        document.getElementById('formMinPrice').value = '';
+        document.getElementById('formMaxQty').value = '';
+        document.getElementById('formPrepTime').value = '';
+        document.getElementById('formSortOrder').value = '99';
+        document.getElementById('formIsActive').checked = true;
+        document.getElementById('formUsageInstructions').value = '';
+        
+        // Habilitar código (apenas para criação)
+        document.getElementById('formCode').disabled = false;
+
+        new bootstrap.Modal(document.getElementById('formModal')).show();
+    }
+
+    async function editForm(id) {
+        try {
+            const response = await fetch(`/api/PharmaceuticalForms/${id}`);
+            const form = await response.json();
+            
+            document.getElementById('formId').value = form.id;
+            document.getElementById('formModalTitle').textContent = 'Editar Forma Farmacêutica';
+            document.getElementById('formCode').value = form.code;
+            document.getElementById('formCode').disabled = true; // Código não pode ser alterado
+            document.getElementById('formName').value = form.name;
+            document.getElementById('formIcon').value = form.icon || '';
+            document.getElementById('formDescription').value = form.description || '';
+            document.getElementById('formUsageType').value = form.usageType || 'ORAL';
+            document.getElementById('formDefaultUnit').value = form.defaultUnit || 'unidade';
+            document.getElementById('formValidityDays').value = form.defaultValidityDays || '';
+            document.getElementById('formMinPrice').value = form.minimumPrice || '';
+            document.getElementById('formMaxQty').value = form.maxQuantityLimit || '';
+            document.getElementById('formPrepTime').value = form.preparationTimeHours || '';
+            document.getElementById('formSortOrder').value = form.sortOrder || 99;
+            document.getElementById('formIsActive').checked = form.isActive;
+            document.getElementById('formUsageInstructions').value = form.usageInstructions || '';
+
+            new bootstrap.Modal(document.getElementById('formModal')).show();
+        } catch (e) {
+            showToast('Erro ao carregar dados', 'danger');
+        }
+    }
+
+    async function saveForm() {
+        const id = document.getElementById('formId').value;
+        const code = document.getElementById('formCode').value.trim().toUpperCase();
+        const name = document.getElementById('formName').value.trim();
+
+        if (!code || !name) {
+            showToast('Código e Nome são obrigatórios', 'warning');
+            return;
+        }
+
+        const data = {
+            code: code,
+            name: name,
+            description: document.getElementById('formDescription').value || null,
+            icon: document.getElementById('formIcon').value || '💊',
+            usageType: document.getElementById('formUsageType').value,
+            defaultUnit: document.getElementById('formDefaultUnit').value || 'unidade',
+            defaultValidityDays: parseInt(document.getElementById('formValidityDays').value) || 180,
+            minimumPrice: parseFloat(document.getElementById('formMinPrice').value) || null,
+            maxQuantityLimit: parseInt(document.getElementById('formMaxQty').value) || null,
+            preparationTimeHours: parseFloat(document.getElementById('formPrepTime').value) || null,
+            sortOrder: parseInt(document.getElementById('formSortOrder').value) || 99,
+            isActive: document.getElementById('formIsActive').checked,
+            usageInstructions: document.getElementById('formUsageInstructions').value || null
+        };
+
+        const url = id ? `/api/PharmaceuticalForms/${id}` : '/api/PharmaceuticalForms';
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                showToast(id ? 'Forma atualizada!' : 'Forma criada!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('formModal')).hide();
+                loadForms();
+            } else {
+                const err = await response.json();
+                showToast(err.message || 'Erro ao salvar', 'danger');
+            }
+        } catch (e) {
+            showToast('Erro ao salvar', 'danger');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // UTILITÁRIOS
+    // ═══════════════════════════════════════════════════════════════════════
+    function showToast(message, type = 'info') {
+        let container = document.querySelector('.toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1100';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type} border-0`;
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        container.appendChild(toast);
+        new bootstrap.Toast(toast).show();
+        toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    }
+</script>
+}

@@ -1,0 +1,1380 @@
+﻿@{
+    ViewData["Title"] = "Calculadora de Formulações";
+    Layout = "_Layout";
+}
+
+<style>
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* HEADER */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .calc-header {
+        background: linear-gradient(135deg, var(--controlled-black) 0%, var(--danger) 100%);
+        color: white;
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* TABS DE FORMAS */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .form-type-tabs {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+    .form-type-tab {
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        border: 2px solid var(--bg-subtle);
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+        min-width: 140px;
+    }
+    .form-type-tab:hover { 
+        border-color: var(--controlled-black); 
+        transform: translateY(-2px); 
+        box-shadow: 0 4px 12px rgba(102, 16, 242, 0.15);
+    }
+    .form-type-tab.active {
+        background: linear-gradient(135deg, var(--controlled-black), var(--danger));
+        color: white;
+        border-color: transparent;
+    }
+    .form-type-tab .icon { 
+        font-size: 2rem; 
+        display: block; 
+        margin-bottom: 0.5rem; 
+    }
+    .form-type-tab .name { 
+        font-weight: 600; 
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* CARDS */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .form-card {
+        background: white;
+        border: 1px solid var(--bg-subtle);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .form-card-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--ink-3);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--bg-subtle);
+        display: flex;
+        align-items: center;
+    }
+    .form-card-title i {
+        margin-right: 0.5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* TABELA DE COMPONENTES */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .components-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 0.5rem;
+    }
+    .components-table th {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        padding: 0.5rem;
+        font-weight: 600;
+    }
+    .components-table td {
+        background: var(--bg-subtle);
+        padding: 0.75rem;
+        vertical-align: middle;
+    }
+    .components-table tr td:first-child { 
+        border-radius: 8px 0 0 8px; 
+    }
+    .components-table tr td:last-child { 
+        border-radius: 0 8px 8px 0; 
+    }
+    .components-table .component-name {
+        font-weight: 600;
+        color: var(--ink);
+    }
+    .components-table .component-dcb {
+        font-size: 0.75rem;
+        color: var(--ink-3);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* AUTOCOMPLETE */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .autocomplete-wrapper { 
+        position: relative; 
+    }
+    .autocomplete-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid var(--rule);
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 1050;
+        display: none;
+    }
+    .autocomplete-results.show { 
+        display: block; 
+    }
+    .autocomplete-item {
+        padding: 10px 14px;
+        cursor: pointer;
+        border-bottom: 1px solid var(--bg-subtle);
+        transition: background 0.15s;
+    }
+    .autocomplete-item:hover { 
+        background: var(--bg-subtle); 
+    }
+    .autocomplete-item:last-child {
+        border-bottom: none;
+    }
+    .autocomplete-item .item-name {
+        font-weight: 600;
+    }
+    .autocomplete-item .item-info {
+        font-size: 0.8rem;
+        color: var(--ink-3);
+    }
+    .autocomplete-item .badge-controlled {
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        background: var(--danger);
+        color: white;
+        border-radius: 4px;
+        margin-left: 0.5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* RESULTADO */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .result-box {
+        background: linear-gradient(135deg, var(--controlled-black), var(--danger));
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+    .result-box h5 {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        opacity: 0.8;
+    }
+    .result-section-title {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.7;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.25rem;
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    .result-line {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.4rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .result-line:last-child { 
+        border-bottom: none; 
+    }
+    .result-line.qsp { 
+        color: #a5d6ff; 
+        font-style: italic; 
+    }
+    .result-line .material-name {
+        flex: 1;
+    }
+    .result-line .material-qty {
+        font-weight: 600;
+        text-align: right;
+    }
+    .result-total {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 2px solid rgba(255,255,255,0.3);
+        display: flex;
+        justify-content: space-between;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* CUSTO CARD */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .cost-card {
+        background: white;
+        border: 1px solid var(--bg-subtle);
+        border-radius: 12px;
+        padding: 1rem;
+    }
+    .cost-line {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.3rem 0;
+    }
+    .cost-line.total {
+        font-weight: 700;
+        font-size: 1.1rem;
+        border-top: 2px solid var(--bg-subtle);
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* ALERTAS */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .alert-formula {
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* EMPTY STATE */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--ink-3);
+    }
+    .empty-state i {
+        font-size: 3rem;
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* RESPONSIVE */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    @@media (max-width: 768px) {
+        .form-type-tabs {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+        .form-type-tab {
+            min-width: 120px;
+            flex-shrink: 0;
+        }
+    }
+</style>
+
+<!-- Header -->
+<div class="calc-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h2 class="mb-1">
+                <i class="bi bi-calculator me-2"></i>Calculadora de Formulações
+            </h2>
+            <p class="mb-0 opacity-75">Soluções, Xaropes, Sachês e outras formas farmacêuticas</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="/FormasFarmaceuticas/Capsulas/Calculadora" class="btn btn-outline-light me-2">
+                <i class="bi bi-capsule me-1"></i>Cápsulas
+            </a>
+            <a href="/Topicos/Calculadora" class="btn btn-outline-light">
+                <i class="bi bi-droplet me-1"></i>Tópicos
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs de Tipo de Forma -->
+<div class="form-type-tabs" id="formTypeTabs">
+    <div class="form-type-tab active" data-type="liquid" onclick="selectFormType(this)">
+        <span class="icon">🧪</span>
+        <span class="name">Soluções</span>
+    </div>
+    <div class="form-type-tab" data-type="syrup" onclick="selectFormType(this)">
+        <span class="icon">🍯</span>
+        <span class="name">Xaropes</span>
+    </div>
+    <div class="form-type-tab" data-type="drops" onclick="selectFormType(this)">
+        <span class="icon">💧</span>
+        <span class="name">Gotas</span>
+    </div>
+    <div class="form-type-tab" data-type="powder" onclick="selectFormType(this)">
+        <span class="icon">📦</span>
+        <span class="name">Sachês/Pós</span>
+    </div>
+    <div class="form-type-tab" data-type="suspension" onclick="selectFormType(this)">
+        <span class="icon">🧫</span>
+        <span class="name">Suspensões</span>
+    </div>
+</div>
+
+<div class="row">
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+    <!-- COLUNA ESQUERDA: CONFIGURAÇÃO -->
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+    <div class="col-lg-7">
+        
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SEÇÃO LÍQUIDOS (Soluções, Xaropes, Gotas, Suspensões) -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div id="liquidSection">
+            <!-- Quantidade/Volume -->
+            <div class="form-card">
+                <div class="form-card-title">
+                    <i class="bi bi-rulers"></i>Volume Total
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Quantidade</label>
+                        <input type="number" class="form-control form-control-lg" id="liquidVolume" 
+                               value="100" min="1" step="1" onchange="recalculateLiquid()">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Unidade</label>
+                        <select class="form-select form-select-lg" id="liquidUnit" onchange="recalculateLiquid()">
+                            <option value="mL" selected>Mililitros (mL)</option>
+                            <option value="L">Litros (L)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Opção Pediátrico (aparece só para xaropes) -->
+                <div class="form-check mt-3" id="pediatricCheck" style="display: none;">
+                    <input type="checkbox" class="form-check-input" id="isPediatric">
+                    <label class="form-check-label" for="isPediatric">
+                        <i class="bi bi-heart-pulse me-1"></i>Formulação Pediátrica (sem álcool)
+                    </label>
+                </div>
+            </div>
+
+            <!-- Componentes Líquidos -->
+            <div class="form-card">
+                <div class="form-card-title d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-list-check"></i>Componentes Ativos</span>
+                    <button class="btn btn-sm btn-primary" onclick="openAddLiquidModal()">
+                        <i class="bi bi-plus-lg me-1"></i>Adicionar
+                    </button>
+                </div>
+                <table class="components-table" id="liquidComponentsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 35%;">Matéria-Prima</th>
+                            <th style="width: 18%;">Concentração</th>
+                            <th style="width: 15%;">Tipo</th>
+                            <th style="width: 20%;">Quantidade</th>
+                            <th style="width: 12%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="liquidComponentsBody">
+                        <tr id="noLiquidComponents">
+                            <td colspan="5">
+                                <div class="empty-state">
+                                    <i class="bi bi-inbox d-block"></i>
+                                    Clique em "Adicionar" para incluir componentes
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <!-- SEÇÃO SACHÊS/PÓS -->
+        <!-- ═══════════════════════════════════════════════════════════════════════ -->
+        <div id="powderSection" style="display: none;">
+            <!-- Quantidade e Peso -->
+            <div class="form-card">
+                <div class="form-card-title">
+                    <i class="bi bi-boxes"></i>Unidades e Peso
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Nº de Sachês</label>
+                        <input type="number" class="form-control form-control-lg" id="powderCount" 
+                               value="30" min="1" onchange="recalculatePowder()">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Peso por Sachê</label>
+                        <input type="number" class="form-control form-control-lg" id="powderWeight" 
+                               value="3" min="0.1" step="0.1" onchange="recalculatePowder()">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Unidade</label>
+                        <select class="form-select form-select-lg" id="powderUnit" onchange="recalculatePowder()">
+                            <option value="g" selected>Gramas (g)</option>
+                            <option value="mg">Miligramas (mg)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Excipiente -->
+            <div class="form-card">
+                <div class="form-card-title">
+                    <i class="bi bi-box"></i>Excipiente (QSP)
+                </div>
+                <div class="autocomplete-wrapper">
+                    <input type="text" class="form-control" id="excipientSearch" 
+                           placeholder="Buscar excipiente (Lactose, Amido, etc.)..." 
+                           oninput="searchExcipient(this.value)">
+                    <div class="autocomplete-results" id="excipientResults"></div>
+                </div>
+                <input type="hidden" id="selectedExcipientId">
+                <div id="selectedExcipientDisplay" class="mt-2 text-muted small">
+                    <i class="bi bi-info-circle me-1"></i>Padrão: Lactose ou Amido
+                </div>
+            </div>
+
+            <!-- Componentes Pó -->
+            <div class="form-card">
+                <div class="form-card-title d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-list-check"></i>Ativos</span>
+                    <button class="btn btn-sm btn-primary" onclick="openAddPowderModal()">
+                        <i class="bi bi-plus-lg me-1"></i>Adicionar
+                    </button>
+                </div>
+                <table class="components-table" id="powderComponentsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">Matéria-Prima</th>
+                            <th style="width: 18%;">Dose/Sachê</th>
+                            <th style="width: 12%;">Unidade</th>
+                            <th style="width: 18%;">Total</th>
+                            <th style="width: 12%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="powderComponentsBody">
+                        <tr id="noPowderComponents">
+                            <td colspan="5">
+                                <div class="empty-state">
+                                    <i class="bi bi-inbox d-block"></i>
+                                    Adicione os ativos da fórmula
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Botão Calcular -->
+        <div class="d-grid gap-2">
+            <button class="btn btn-lg btn-success" onclick="calculate()">
+                <i class="bi bi-calculator me-2"></i>Calcular Formulação
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+    <!-- COLUNA DIREITA: RESULTADO -->
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+    <div class="col-lg-5 mt-4 mt-lg-0">
+        <div class="sticky-top" style="top: 1rem;">
+            
+            <!-- Resultado Principal -->
+            <div class="result-box" id="resultBox">
+                <h5><i class="bi bi-clipboard-data me-2"></i>Resultado</h5>
+                <div id="resultContent">
+                    <div class="empty-state" style="color: rgba(255,255,255,0.6);">
+                        <i class="bi bi-arrow-left-circle d-block" style="font-size: 2.5rem;"></i>
+                        <p class="mt-2 mb-0">Configure a fórmula e clique em "Calcular"</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custos -->
+            <div class="cost-card mt-3" id="costSection" style="display: none;">
+                <div class="form-card-title">
+                    <i class="bi bi-currency-dollar"></i>Custos Estimados
+                </div>
+                <div id="costContent"></div>
+            </div>
+
+            <!-- Alertas -->
+            <div id="alertsContainer" class="mt-3"></div>
+
+            <!-- Ações -->
+            <div class="d-grid gap-2 mt-3" id="actionsSection" style="display: none;">
+                <button class="btn btn-outline-primary" onclick="copyResult()">
+                    <i class="bi bi-clipboard me-1"></i>Copiar Fórmula
+                </button>
+                <button class="btn btn-outline-success" onclick="createQuote()">
+                    <i class="bi bi-receipt me-1"></i>Gerar Orçamento
+                </button>
+                <button class="btn btn-outline-secondary" onclick="printResult()">
+                    <i class="bi bi-printer me-1"></i>Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+<!-- MODAL ADICIONAR COMPONENTE -->
+<!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="addComponentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle me-2"></i>Adicionar Componente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Busca Matéria-Prima -->
+                <div class="mb-3">
+                    <label class="form-label">Matéria-Prima *</label>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" class="form-control" id="componentSearch" 
+                               placeholder="Digite para buscar..." 
+                               oninput="searchComponent(this.value)" autocomplete="off">
+                        <div class="autocomplete-results" id="componentResults"></div>
+                    </div>
+                    <input type="hidden" id="selectedComponentId">
+                    <input type="hidden" id="selectedComponentName">
+                    <div id="selectedComponentDisplay" class="mt-2" style="display: none;">
+                        <span class="badge bg-primary" id="selectedComponentBadge"></span>
+                    </div>
+                </div>
+                
+                <!-- Campos para Líquidos -->
+                <div id="liquidFields">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">Concentração *</label>
+                            <input type="number" class="form-control" id="componentConcentration" 
+                                   step="0.01" value="10" min="0.01">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" id="componentConcType">
+                                <option value="mg/mL">mg/mL</option>
+                                <option value="%">% (p/v)</option>
+                                <option value="g/L">g/L</option>
+                                <option value="GOTAS/ML">gotas/mL</option>
+                                <option value="ABSOLUTE">mg (total)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-text mt-2">
+                        <strong>mg/mL:</strong> miligramas por mililitro<br>
+                        <strong>%:</strong> gramas por 100mL<br>
+                        <strong>g/L:</strong> gramas por litro<br>
+                        <strong>mg (total):</strong> quantidade fixa total
+                    </div>
+                </div>
+
+                <!-- Campos para Sachês/Pós -->
+                <div id="powderFields" style="display: none;">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">Dose por Sachê *</label>
+                            <input type="number" class="form-control" id="componentDose" 
+                                   step="0.01" value="500" min="0.01">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Unidade</label>
+                            <select class="form-select" id="componentDoseUnit">
+                                <option value="mg" selected>mg</option>
+                                <option value="g">g</option>
+                                <option value="mcg">mcg</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="confirmAddComponent()">
+                    <i class="bi bi-plus-lg me-1"></i>Adicionar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // ═══════════════════════════════════════════════════════════════════════════
+    // VARIÁVEIS GLOBAIS
+    // ═══════════════════════════════════════════════════════════════════════════
+    let currentFormType = 'liquid';
+    let liquidComponents = [];
+    let powderComponents = [];
+    let lastResult = null;
+    let searchTimeout = null;
+    let addComponentModal = null;
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // INICIALIZAÇÃO
+    // ═══════════════════════════════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', () => {
+        addComponentModal = new bootstrap.Modal(document.getElementById('addComponentModal'));
+        
+        // Fechar autocomplete ao clicar fora
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.autocomplete-wrapper')) {
+                document.querySelectorAll('.autocomplete-results').forEach(r => r.classList.remove('show'));
+            }
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SELEÇÃO DE TIPO DE FORMA
+    // ═══════════════════════════════════════════════════════════════════════════
+    function selectFormType(el) {
+        // Atualizar tabs
+        document.querySelectorAll('.form-type-tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        currentFormType = el.dataset.type;
+
+        // Mostrar/ocultar seções
+        const isLiquid = ['liquid', 'syrup', 'drops', 'suspension'].includes(currentFormType);
+        document.getElementById('liquidSection').style.display = isLiquid ? 'block' : 'none';
+        document.getElementById('powderSection').style.display = isLiquid ? 'none' : 'block';
+
+        // Mostrar checkbox pediátrico apenas para xaropes
+        document.getElementById('pediatricCheck').style.display = currentFormType === 'syrup' ? 'block' : 'none';
+
+        // Limpar resultado
+        resetResult();
+    }
+
+    function resetResult() {
+        document.getElementById('resultContent').innerHTML = `
+            <div class="empty-state" style="color: rgba(255,255,255,0.6);">
+                <i class="bi bi-arrow-left-circle d-block" style="font-size: 2.5rem;"></i>
+                <p class="mt-2 mb-0">Configure a fórmula e clique em "Calcular"</p>
+            </div>
+        `;
+        document.getElementById('costSection').style.display = 'none';
+        document.getElementById('actionsSection').style.display = 'none';
+        document.getElementById('alertsContainer').innerHTML = '';
+        lastResult = null;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // COMPONENTES LÍQUIDOS
+    // ═══════════════════════════════════════════════════════════════════════════
+    function openAddLiquidModal() {
+        document.getElementById('liquidFields').style.display = 'block';
+        document.getElementById('powderFields').style.display = 'none';
+        clearComponentForm();
+        addComponentModal.show();
+    }
+
+    function renderLiquidComponents() {
+        const tbody = document.getElementById('liquidComponentsBody');
+        const volume = parseFloat(document.getElementById('liquidVolume').value) || 100;
+        const unit = document.getElementById('liquidUnit').value;
+        const volumeMl = unit === 'L' ? volume * 1000 : volume;
+
+        if (liquidComponents.length === 0) {
+            tbody.innerHTML = `
+                <tr id="noLiquidComponents">
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <i class="bi bi-inbox d-block"></i>
+                            Clique em "Adicionar" para incluir componentes
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = liquidComponents.map((c, i) => {
+            const qty = calculateLiquidQty(c, volumeMl);
+            return `
+                <tr>
+                    <td>
+                        <div class="component-name">${c.name}</div>
+                        ${c.dcbCode ? `<div class="component-dcb">DCB: ${c.dcbCode}</div>` : ''}
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm" 
+                               value="${c.concentration}" step="0.01" min="0.01"
+                               onchange="updateLiquidComponent(${i}, 'concentration', this.value)">
+                    </td>
+                    <td>
+                        <select class="form-select form-select-sm" onchange="updateLiquidComponent(${i}, 'type', this.value)">
+                            <option value="mg/mL" ${c.type === 'mg/mL' ? 'selected' : ''}>mg/mL</option>
+                            <option value="%" ${c.type === '%' ? 'selected' : ''}>%</option>
+                            <option value="g/L" ${c.type === 'g/L' ? 'selected' : ''}>g/L</option>
+                            <option value="GOTAS/ML" ${c.type === 'GOTAS/ML' ? 'selected' : ''}>gts/mL</option>
+                        </select>
+                    </td>
+                    <td><strong class="text-success">${qty}</strong></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeLiquidComponent(${i})" title="Remover">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function calculateLiquidQty(comp, volumeMl) {
+        let qtyMg = 0;
+        switch (comp.type) {
+            case 'mg/mL':
+                qtyMg = comp.concentration * volumeMl;
+                break;
+            case '%':
+                qtyMg = (comp.concentration / 100) * volumeMl * 1000;
+                break;
+            case 'g/L':
+                qtyMg = comp.concentration * volumeMl;
+                break;
+            case 'GOTAS/ML':
+                qtyMg = comp.concentration * volumeMl; // Simplificado
+                break;
+            case 'ABSOLUTE':
+                qtyMg = comp.concentration;
+                break;
+            default:
+                qtyMg = comp.concentration;
+        }
+        return formatWeight(qtyMg);
+    }
+
+    function formatWeight(mg) {
+        if (mg >= 1000) return (mg / 1000).toFixed(2) + ' g';
+        if (mg >= 1) return mg.toFixed(2) + ' mg';
+        return (mg * 1000).toFixed(2) + ' mcg';
+    }
+
+    function updateLiquidComponent(idx, field, value) {
+        if (field === 'concentration') {
+            liquidComponents[idx].concentration = parseFloat(value) || 0;
+        }
+        if (field === 'type') {
+            liquidComponents[idx].type = value;
+        }
+        renderLiquidComponents();
+    }
+
+    function removeLiquidComponent(idx) {
+        liquidComponents.splice(idx, 1);
+        renderLiquidComponents();
+        resetResult();
+    }
+
+    function recalculateLiquid() {
+        renderLiquidComponents();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // COMPONENTES PÓ/SACHÊ
+    // ═══════════════════════════════════════════════════════════════════════════
+    function openAddPowderModal() {
+        document.getElementById('liquidFields').style.display = 'none';
+        document.getElementById('powderFields').style.display = 'block';
+        clearComponentForm();
+        addComponentModal.show();
+    }
+
+    function renderPowderComponents() {
+        const tbody = document.getElementById('powderComponentsBody');
+        const count = parseInt(document.getElementById('powderCount').value) || 30;
+
+        if (powderComponents.length === 0) {
+            tbody.innerHTML = `
+                <tr id="noPowderComponents">
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <i class="bi bi-inbox d-block"></i>
+                            Adicione os ativos da fórmula
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = powderComponents.map((c, i) => {
+            // Converter dose para mg
+            let doseMg = c.dose;
+            if (c.unit === 'g') doseMg = c.dose * 1000;
+            if (c.unit === 'mcg') doseMg = c.dose / 1000;
+            
+            const totalMg = doseMg * count;
+            const totalDisplay = formatWeight(totalMg);
+            
+            return `
+                <tr>
+                    <td>
+                        <div class="component-name">${c.name}</div>
+                        ${c.dcbCode ? `<div class="component-dcb">DCB: ${c.dcbCode}</div>` : ''}
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm" 
+                               value="${c.dose}" step="0.01" min="0.01"
+                               onchange="updatePowderComponent(${i}, 'dose', this.value)">
+                    </td>
+                    <td>
+                        <select class="form-select form-select-sm" onchange="updatePowderComponent(${i}, 'unit', this.value)">
+                            <option value="mg" ${c.unit === 'mg' ? 'selected' : ''}>mg</option>
+                            <option value="g" ${c.unit === 'g' ? 'selected' : ''}>g</option>
+                            <option value="mcg" ${c.unit === 'mcg' ? 'selected' : ''}>mcg</option>
+                        </select>
+                    </td>
+                    <td><strong class="text-success">${totalDisplay}</strong></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-danger" onclick="removePowderComponent(${i})" title="Remover">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function updatePowderComponent(idx, field, value) {
+        if (field === 'dose') {
+            powderComponents[idx].dose = parseFloat(value) || 0;
+        }
+        if (field === 'unit') {
+            powderComponents[idx].unit = value;
+        }
+        renderPowderComponents();
+    }
+
+    function removePowderComponent(idx) {
+        powderComponents.splice(idx, 1);
+        renderPowderComponents();
+        resetResult();
+    }
+
+    function recalculatePowder() {
+        renderPowderComponents();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BUSCA DE MATÉRIAS-PRIMAS
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function searchComponent(term) {
+        clearTimeout(searchTimeout);
+        const resultsDiv = document.getElementById('componentResults');
+        
+        if (term.length < 2) { 
+            resultsDiv.classList.remove('show'); 
+            return; 
+        }
+
+        searchTimeout = setTimeout(async () => {
+            try {
+                const usage = currentFormType === 'powder' ? 'ORAL' : 'ORAL';
+                const response = await fetch(`/api/RawMaterials/search?q=${encodeURIComponent(term)}&usage=${usage}&limit=15`);
+                const result = await response.json();
+                const results = result.data || result;
+                
+                if (results && results.length > 0) {
+                    resultsDiv.innerHTML = results.map(r => `
+                        <div class="autocomplete-item" onclick="selectComponent('${r.id}', '${escapeHtml(r.name)}', '${r.dcbCode || ''}')">
+                            <div class="item-name">
+                                ${r.name}
+                                ${r.isControlled ? `<span class="badge-controlled">${r.controlType}</span>` : ''}
+                            </div>
+                            <div class="item-info">
+                                ${r.dcbCode ? `DCB: ${r.dcbCode}` : ''} 
+                                ${r.category ? `| ${r.category}` : ''}
+                                ${r.basePrice ? `| R$ ${r.basePrice.toFixed(4)}/${r.unit || 'g'}` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                    resultsDiv.classList.add('show');
+                } else {
+                    resultsDiv.innerHTML = '<div class="autocomplete-item text-muted">Nenhum resultado encontrado</div>';
+                    resultsDiv.classList.add('show');
+                }
+            } catch (e) { 
+                console.error('Erro na busca:', e);
+                resultsDiv.innerHTML = '<div class="autocomplete-item text-danger">Erro ao buscar</div>';
+                resultsDiv.classList.add('show');
+            }
+        }, 300);
+    }
+
+    function selectComponent(id, name, dcbCode) {
+        document.getElementById('selectedComponentId').value = id;
+        document.getElementById('selectedComponentName').value = name;
+        document.getElementById('componentSearch').value = name;
+        document.getElementById('componentResults').classList.remove('show');
+        
+        // Mostrar badge
+        document.getElementById('selectedComponentBadge').textContent = name;
+        document.getElementById('selectedComponentDisplay').style.display = 'block';
+    }
+
+    function clearComponentForm() {
+        document.getElementById('componentSearch').value = '';
+        document.getElementById('selectedComponentId').value = '';
+        document.getElementById('selectedComponentName').value = '';
+        document.getElementById('selectedComponentDisplay').style.display = 'none';
+        document.getElementById('componentConcentration').value = '10';
+        document.getElementById('componentConcType').value = 'mg/mL';
+        document.getElementById('componentDose').value = '500';
+        document.getElementById('componentDoseUnit').value = 'mg';
+    }
+
+    function confirmAddComponent() {
+        const id = document.getElementById('selectedComponentId').value;
+        const name = document.getElementById('selectedComponentName').value;
+        
+        if (!name) { 
+            showToast('Selecione uma matéria-prima', 'warning'); 
+            return; 
+        }
+
+        const isLiquidForm = ['liquid', 'syrup', 'drops', 'suspension'].includes(currentFormType);
+
+        if (isLiquidForm) {
+            const concentration = parseFloat(document.getElementById('componentConcentration').value) || 0;
+            const type = document.getElementById('componentConcType').value;
+            
+            if (concentration <= 0) {
+                showToast('Informe a concentração', 'warning');
+                return;
+            }
+            
+            liquidComponents.push({ 
+                rawMaterialId: id, 
+                name, 
+                concentration, 
+                type 
+            });
+            renderLiquidComponents();
+        } else {
+            const dose = parseFloat(document.getElementById('componentDose').value) || 0;
+            const unit = document.getElementById('componentDoseUnit').value;
+            
+            if (dose <= 0) {
+                showToast('Informe a dose', 'warning');
+                return;
+            }
+            
+            powderComponents.push({ 
+                rawMaterialId: id, 
+                name, 
+                dose, 
+                unit 
+            });
+            renderPowderComponents();
+        }
+
+        addComponentModal.hide();
+        resetResult();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BUSCA DE EXCIPIENTE
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function searchExcipient(term) {
+        clearTimeout(searchTimeout);
+        const resultsDiv = document.getElementById('excipientResults');
+        
+        if (term.length < 2) { 
+            resultsDiv.classList.remove('show'); 
+            return; 
+        }
+
+        searchTimeout = setTimeout(async () => {
+            try {
+                const response = await fetch(`/api/RawMaterials/search?q=${encodeURIComponent(term)}&usage=ORAL&limit=10`);
+                const result = await response.json();
+                const results = result.data || result;
+                
+                if (results && results.length > 0) {
+                    resultsDiv.innerHTML = results.map(r => `
+                        <div class="autocomplete-item" onclick="selectExcipient('${r.id}', '${escapeHtml(r.name)}')">
+                            <div class="item-name">${r.name}</div>
+                            ${r.basePrice ? `<div class="item-info">R$ ${r.basePrice.toFixed(4)}/${r.unit || 'g'}</div>` : ''}
+                        </div>
+                    `).join('');
+                    resultsDiv.classList.add('show');
+                }
+            } catch (e) { 
+                console.error(e); 
+            }
+        }, 300);
+    }
+
+    function selectExcipient(id, name) {
+        document.getElementById('selectedExcipientId').value = id;
+        document.getElementById('excipientSearch').value = name;
+        document.getElementById('selectedExcipientDisplay').innerHTML = `
+            <i class="bi bi-check-circle text-success me-1"></i>Selecionado: <strong>${name}</strong>
+        `;
+        document.getElementById('excipientResults').classList.remove('show');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CÁLCULO
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function calculate() {
+        const isLiquidForm = ['liquid', 'syrup', 'drops', 'suspension'].includes(currentFormType);
+        
+        if (isLiquidForm) {
+            await calculateLiquid();
+        } else {
+            await calculatePowder();
+        }
+    }
+
+    async function calculateLiquid() {
+        if (liquidComponents.length === 0) { 
+            showToast('Adicione pelo menos um componente', 'warning'); 
+            return; 
+        }
+
+        const volume = parseFloat(document.getElementById('liquidVolume').value) || 100;
+        const unit = document.getElementById('liquidUnit').value;
+
+        const request = {
+            formType: currentFormType.toUpperCase(),
+            totalVolume: volume,
+            volumeUnit: unit,
+            isPediatric: document.getElementById('isPediatric')?.checked || false,
+            components: liquidComponents.map(c => ({
+                rawMaterialId: c.rawMaterialId,
+                rawMaterialName: c.name,
+                concentration: c.concentration,
+                concentrationType: c.type
+            }))
+        };
+
+        try {
+            showToast('Calculando...', 'info');
+            const response = await fetch('/api/OtherFormulations/liquid/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(request)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                lastResult = result;
+                renderLiquidResult(result);
+                showToast('Cálculo concluído!', 'success');
+            } else {
+                showToast(result.message || 'Erro no cálculo', 'danger');
+            }
+        } catch (e) { 
+            console.error(e);
+            showToast('Erro ao calcular formulação', 'danger'); 
+        }
+    }
+
+    async function calculatePowder() {
+        if (powderComponents.length === 0) { 
+            showToast('Adicione pelo menos um ativo', 'warning'); 
+            return; 
+        }
+
+        const count = parseInt(document.getElementById('powderCount').value) || 30;
+        const weight = parseFloat(document.getElementById('powderWeight').value) || 3;
+        const weightUnit = document.getElementById('powderUnit').value;
+        const excipientId = document.getElementById('selectedExcipientId').value;
+
+        const request = {
+            unitCount: count,
+            weightPerUnit: weight,
+            weightUnit: weightUnit,
+            excipientId: excipientId || null,
+            components: powderComponents.map(c => ({
+                rawMaterialId: c.rawMaterialId,
+                rawMaterialName: c.name,
+                dosePerUnit: c.dose,
+                doseUnit: c.unit
+            }))
+        };
+
+        try {
+            showToast('Calculando...', 'info');
+            const response = await fetch('/api/OtherFormulations/powder/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(request)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                lastResult = result;
+                renderPowderResult(result);
+                showToast('Cálculo concluído!', 'success');
+            } else {
+                showToast(result.message || 'Erro no cálculo', 'danger');
+            }
+        } catch (e) { 
+            console.error(e);
+            showToast('Erro ao calcular formulação', 'danger'); 
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // RENDERIZAÇÃO DE RESULTADOS
+    // ═══════════════════════════════════════════════════════════════════════════
+    function renderLiquidResult(result) {
+        let html = '<div class="result-section-title">COMPONENTES ATIVOS</div>';
+        
+        result.components.forEach(c => {
+            html += `
+                <div class="result-line">
+                    <span class="material-name">${c.rawMaterialName}</span>
+                    <span class="material-qty">${c.quantityDisplay}</span>
+                </div>
+            `;
+        });
+
+        if (result.vehicleComponents && result.vehicleComponents.length > 0) {
+            html += '<div class="result-section-title">VEÍCULO</div>';
+            result.vehicleComponents.forEach(v => {
+                html += `
+                    <div class="result-line ${v.isQsp ? 'qsp' : ''}">
+                        <span class="material-name">${v.rawMaterialName}${v.isQsp ? ' (QSP)' : ''}</span>
+                        <span class="material-qty">${v.quantityDisplay}</span>
+                    </div>
+                `;
+            });
+        }
+
+        html += `
+            <div class="result-total">
+                <span>VOLUME TOTAL</span>
+                <span>${result.totalVolume} ${result.volumeUnit}</span>
+            </div>
+        `;
+        
+        document.getElementById('resultContent').innerHTML = html;
+
+        renderCosts(result);
+        renderAlerts(result.warnings);
+        document.getElementById('actionsSection').style.display = 'grid';
+    }
+
+    function renderPowderResult(result) {
+        let html = '<div class="result-section-title">ATIVOS (POR SACHÊ)</div>';
+        
+        result.components.forEach(c => {
+            html += `
+                <div class="result-line">
+                    <span class="material-name">${c.rawMaterialName}</span>
+                    <span class="material-qty">${c.dosePerUnit} ${c.doseUnit}</span>
+                </div>
+            `;
+        });
+
+        if (result.excipient) {
+            html += `
+                <div class="result-line qsp">
+                    <span class="material-name">${result.excipient.rawMaterialName} (QSP)</span>
+                    <span class="material-qty">${formatWeight(result.excipient.dosePerUnit)}</span>
+                </div>
+            `;
+        }
+
+        html += '<div class="result-section-title">TOTAIS PARA PESAGEM</div>';
+        
+        result.components.forEach(c => {
+            html += `
+                <div class="result-line">
+                    <span class="material-name">${c.rawMaterialName}</span>
+                    <span class="material-qty">${c.totalQuantityDisplay}</span>
+                </div>
+            `;
+        });
+        
+        if (result.excipient) {
+            html += `
+                <div class="result-line qsp">
+                    <span class="material-name">${result.excipient.rawMaterialName}</span>
+                    <span class="material-qty">${result.excipient.totalQuantityDisplay}</span>
+                </div>
+            `;
+        }
+
+        html += `
+            <div class="result-total">
+                <span>${result.unitCount} SACHÊS</span>
+                <span>${result.totalWeightDisplay}</span>
+            </div>
+        `;
+        
+        document.getElementById('resultContent').innerHTML = html;
+
+        renderCosts(result);
+        renderAlerts(result.warnings);
+        document.getElementById('actionsSection').style.display = 'grid';
+    }
+
+    function renderCosts(result) {
+        const total = result.totalMaterialsCost || 0;
+        
+        if (total > 0) {
+            document.getElementById('costSection').style.display = 'block';
+            document.getElementById('costContent').innerHTML = `
+                <div class="cost-line">
+                    <span>Ativos:</span>
+                    <span>R$ ${(result.totalActiveCost || 0).toFixed(2)}</span>
+                </div>
+                ${result.totalVehicleCost > 0 ? `
+                <div class="cost-line">
+                    <span>Veículo/Excipiente:</span>
+                    <span>R$ ${result.totalVehicleCost.toFixed(2)}</span>
+                </div>
+                ` : ''}
+                ${result.totalExcipientCost > 0 ? `
+                <div class="cost-line">
+                    <span>Excipiente:</span>
+                    <span>R$ ${result.totalExcipientCost.toFixed(2)}</span>
+                </div>
+                ` : ''}
+                <div class="cost-line total">
+                    <span>Total Materiais:</span>
+                    <span class="text-success">R$ ${total.toFixed(2)}</span>
+                </div>
+            `;
+        } else {
+            document.getElementById('costSection').style.display = 'none';
+        }
+    }
+
+    function renderAlerts(warnings) {
+        const container = document.getElementById('alertsContainer');
+        if (warnings && warnings.length > 0) {
+            container.innerHTML = warnings.map(w => 
+                `<div class="alert alert-formula alert-warning mb-2">${w}</div>`
+            ).join('');
+        } else {
+            container.innerHTML = '';
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // AÇÕES
+    // ═══════════════════════════════════════════════════════════════════════════
+    function copyResult() {
+        if (!lastResult) return;
+        
+        let text = '';
+        const isLiquid = ['liquid', 'syrup', 'drops', 'suspension'].includes(currentFormType);
+        
+        if (isLiquid) {
+            text = `FORMULAÇÃO LÍQUIDA - ${lastResult.totalVolume} ${lastResult.volumeUnit}\n\n`;
+            text += 'COMPONENTES:\n';
+            lastResult.components.forEach(c => {
+                text += `${c.rawMaterialName}: ${c.quantityDisplay}\n`;
+            });
+            if (lastResult.vehicleComponents) {
+                text += '\nVEÍCULO:\n';
+                lastResult.vehicleComponents.forEach(v => {
+                    text += `${v.rawMaterialName}: ${v.quantityDisplay}\n`;
+                });
+            }
+        } else {
+            text = `SACHÊS - ${lastResult.unitCount} unidades de ${lastResult.totalWeightDisplay}\n\n`;
+            text += 'POR SACHÊ:\n';
+            lastResult.components.forEach(c => {
+                text += `${c.rawMaterialName}: ${c.dosePerUnit} ${c.doseUnit}\n`;
+            });
+            if (lastResult.excipient) {
+                text += `${lastResult.excipient.rawMaterialName} QSP: ${formatWeight(lastResult.excipient.dosePerUnit)}\n`;
+            }
+            text += '\nTOTAIS:\n';
+            lastResult.components.forEach(c => {
+                text += `${c.rawMaterialName}: ${c.totalQuantityDisplay}\n`;
+            });
+        }
+        
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Fórmula copiada!', 'success');
+        });
+    }
+
+    function createQuote() {
+        if (!lastResult) return;
+        
+        // Salvar resultado no sessionStorage para recuperar na página de orçamento
+        sessionStorage.setItem('formulationResult', JSON.stringify(lastResult));
+        sessionStorage.setItem('formulationType', currentFormType);
+        
+        showToast('Redirecionando para orçamentos...', 'info');
+        setTimeout(() => {
+            window.location.href = '/Orcamentos/Novo';
+        }, 500);
+    }
+
+    function printResult() {
+        if (!lastResult) return;
+        window.print();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // UTILITÁRIOS
+    // ═══════════════════════════════════════════════════════════════════════════
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/['"]/g, '');
+    }
+
+    function showToast(message, type = 'info') {
+        // Remover toasts anteriores
+        document.querySelectorAll('.toast').forEach(t => t.remove());
+        
+        let container = document.querySelector('.toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1100';
+            document.body.appendChild(container);
+        }
+        
+        const bgClass = {
+            'success': 'bg-success',
+            'danger': 'bg-danger',
+            'warning': 'bg-warning text-dark',
+            'info': 'bg-primary'
+        }[type] || 'bg-primary';
+        
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white ${bgClass} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        container.appendChild(toast);
+        
+        const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+        bsToast.show();
+        
+        toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    }
+</script>
+}

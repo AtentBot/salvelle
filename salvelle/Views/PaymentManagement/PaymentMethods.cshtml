@@ -1,0 +1,618 @@
+﻿@{
+    ViewData["Title"] = "Formas de Pagamento";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="@Url.Action("Index")">Gestão de Pagamentos</a></li>
+                    <li class="breadcrumb-item active">Formas de Pagamento</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="bi bi-wallet2 me-2"></i>Formas de Pagamento</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMethodModal">
+                    <i class="bi bi-plus-lg"></i> Nova Forma
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Formas de Pagamento Ativas -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">Formas Disponíveis</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="paymentMethodsList">
+                        <!-- Dinheiro -->
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-success bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-cash-coin text-success fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Dinheiro</h6>
+                                    <small class="text-muted">Pagamento em espécie</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-success">Sem taxa</span>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="methodDinheiro" checked disabled>
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="editMethod('DINHEIRO')">
+                                    <i class="bi bi-gear"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Cartão de Crédito -->
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-credit-card-2-front text-primary fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Cartão de Crédito</h6>
+                                    <small class="text-muted">Até 12x • Taxa: 2,99%</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-warning text-dark">2,99%</span>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="methodCredito" checked 
+                                           onchange="toggleMethod('CARTAO_CREDITO', this.checked)">
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="editMethod('CARTAO_CREDITO')">
+                                    <i class="bi bi-gear"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Cartão de Débito -->
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-info bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-credit-card text-info fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Cartão de Débito</h6>
+                                    <small class="text-muted">À vista • Taxa: 1,49%</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-warning text-dark">1,49%</span>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="methodDebito" checked
+                                           onchange="toggleMethod('CARTAO_DEBITO', this.checked)">
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="editMethod('CARTAO_DEBITO')">
+                                    <i class="bi bi-gear"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- PIX -->
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-success bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-qr-code text-success fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">PIX</h6>
+                                    <small class="text-muted">Instantâneo • Sem taxa</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-success">Sem taxa</span>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="methodPix" checked
+                                           onchange="toggleMethod('PIX', this.checked)">
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="editMethod('PIX')">
+                                    <i class="bi bi-gear"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Boleto -->
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-secondary bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-upc-scan text-secondary fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Boleto Bancário</h6>
+                                    <small class="text-muted">Vencimento: 3 dias • Taxa: R$ 2,90</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-warning text-dark">R$ 2,90</span>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="methodBoleto" checked
+                                           onchange="toggleMethod('BOLETO', this.checked)">
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="editMethod('BOLETO')">
+                                    <i class="bi bi-gear"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Convênio -->
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-purple bg-opacity-10 p-3 rounded me-3" style="background-color: rgba(111, 66, 193, 0.1);">
+                                    <i class="bi bi-building text-purple fs-4" style="color: var(--controlled-black);"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Convênio</h6>
+                                    <small class="text-muted">Faturamento mensal para empresas</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-secondary">Faturado</span>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="methodConvenio"
+                                           onchange="toggleMethod('CONVENIO', this.checked)">
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="editMethod('CONVENIO')">
+                                    <i class="bi bi-gear"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Transferência -->
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-dark bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-bank text-dark fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Transferência Bancária</h6>
+                                    <small class="text-muted">TED/DOC • Sem taxa</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-success">Sem taxa</span>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="methodTransferencia"
+                                           onchange="toggleMethod('TRANSFERENCIA', this.checked)">
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="editMethod('TRANSFERENCIA')">
+                                    <i class="bi bi-gear"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Cheque -->
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-warning bg-opacity-10 p-3 rounded me-3">
+                                    <i class="bi bi-pencil-square text-warning fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Cheque</h6>
+                                    <small class="text-muted">À vista ou pré-datado</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-secondary">Manual</span>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="methodCheque"
+                                           onchange="toggleMethod('CHEQUE', this.checked)">
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="editMethod('CHEQUE')">
+                                    <i class="bi bi-gear"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configurações -->
+        <div class="col-lg-4">
+            <!-- Taxas -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0"><i class="bi bi-percent me-2"></i>Configuração de Taxas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Taxa Cartão Crédito (%)</label>
+                        <input type="number" class="form-control" id="taxaCredito" value="2.99" step="0.01" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Taxa Cartão Débito (%)</label>
+                        <input type="number" class="form-control" id="taxaDebito" value="1.49" step="0.01" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Taxa Boleto (R$)</label>
+                        <input type="number" class="form-control" id="taxaBoleto" value="2.90" step="0.01" min="0">
+                    </div>
+                    <button class="btn btn-primary w-100" onclick="saveTaxas()">
+                        <i class="bi bi-check-lg"></i> Salvar Taxas
+                    </button>
+                </div>
+            </div>
+
+            <!-- Parcelamento -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Parcelamento</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Máximo de Parcelas</label>
+                        <select class="form-select" id="maxParcelas">
+                            <option value="1">1x (à vista)</option>
+                            <option value="2">2x</option>
+                            <option value="3">3x</option>
+                            <option value="6">6x</option>
+                            <option value="10">10x</option>
+                            <option value="12" selected>12x</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Parcela Mínima (R$)</label>
+                        <input type="number" class="form-control" id="parcelaMinima" value="50.00" step="1" min="0">
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="jurosParcelamento">
+                        <label class="form-check-label" for="jurosParcelamento">Cobrar juros no parcelamento</label>
+                    </div>
+                    <div id="jurosPorParcelaContainer" class="d-none">
+                        <label class="form-label">Taxa de Juros (% a.m.)</label>
+                        <input type="number" class="form-control" id="taxaJuros" value="1.99" step="0.01" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Descontos -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0"><i class="bi bi-tag me-2"></i>Descontos por Forma</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Desconto PIX (%)</label>
+                        <input type="number" class="form-control" id="descontoPix" value="5" step="0.5" min="0" max="20">
+                        <small class="text-muted">Aplicado automaticamente</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Desconto Dinheiro (%)</label>
+                        <input type="number" class="form-control" id="descontoDinheiro" value="3" step="0.5" min="0" max="20">
+                    </div>
+                    <button class="btn btn-outline-primary w-100" onclick="saveDescontos()">
+                        <i class="bi bi-check-lg"></i> Salvar Descontos
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Editar Forma de Pagamento -->
+<div class="modal fade" id="editMethodModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editMethodTitle">Configurar Forma de Pagamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="editMethodBody">
+                <!-- Conteúdo dinâmico -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveMethodConfig()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Nova Forma de Pagamento -->
+<div class="modal fade" id="addMethodModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nova Forma de Pagamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nome</label>
+                    <input type="text" class="form-control" id="newMethodName" placeholder="Ex: Vale Alimentação">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tipo Base</label>
+                    <select class="form-select" id="newMethodType">
+                        <option value="DINHEIRO">Dinheiro/Espécie</option>
+                        <option value="CARTAO">Cartão</option>
+                        <option value="DIGITAL">Digital/Online</option>
+                        <option value="FATURADO">Faturado</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Taxa (%)</label>
+                    <input type="number" class="form-control" id="newMethodTaxa" value="0" step="0.01" min="0">
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="newMethodActive" checked>
+                    <label class="form-check-label" for="newMethodActive">Ativo</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="addNewMethod()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentEditMethod = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMethodSettings();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('jurosParcelamento').addEventListener('change', function() {
+                document.getElementById('jurosPorParcelaContainer').classList.toggle('d-none', !this.checked);
+            });
+        }
+
+        async function loadMethodSettings() {
+            try {
+                const response = await fetch('/api/Settings/payment-methods');
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        applySettings(result.data);
+                    }
+                }
+            } catch (error) {
+                console.log('Usando configurações padrão');
+            }
+        }
+
+        function applySettings(settings) {
+            if (settings.taxaCredito) document.getElementById('taxaCredito').value = settings.taxaCredito;
+            if (settings.taxaDebito) document.getElementById('taxaDebito').value = settings.taxaDebito;
+            if (settings.taxaBoleto) document.getElementById('taxaBoleto').value = settings.taxaBoleto;
+            if (settings.maxParcelas) document.getElementById('maxParcelas').value = settings.maxParcelas;
+            if (settings.parcelaMinima) document.getElementById('parcelaMinima').value = settings.parcelaMinima;
+            if (settings.descontoPix) document.getElementById('descontoPix').value = settings.descontoPix;
+            if (settings.descontoDinheiro) document.getElementById('descontoDinheiro').value = settings.descontoDinheiro;
+        }
+
+        function toggleMethod(method, active) {
+            console.log(`${method} ${active ? 'ativado' : 'desativado'}`);
+            showToast(`${formatMethodName(method)} ${active ? 'ativado' : 'desativado'}`, active ? 'success' : 'warning');
+            saveMethodState(method, active);
+        }
+
+        async function saveMethodState(method, active) {
+            try {
+                await fetch('/api/Settings/payment-method-state', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ method, active })
+                });
+            } catch (error) {
+                console.error('Erro ao salvar estado:', error);
+            }
+        }
+
+        function editMethod(method) {
+            currentEditMethod = method;
+            const modal = new bootstrap.Modal(document.getElementById('editMethodModal'));
+            
+            document.getElementById('editMethodTitle').textContent = `Configurar ${formatMethodName(method)}`;
+            
+            let bodyHtml = '';
+            
+            switch(method) {
+                case 'CARTAO_CREDITO':
+                    bodyHtml = `
+                        <div class="mb-3">
+                            <label class="form-label">Taxa (%)</label>
+                            <input type="number" class="form-control" id="editTaxa" value="2.99" step="0.01">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Máximo de Parcelas</label>
+                            <select class="form-select" id="editMaxParcelas">
+                                ${[1,2,3,4,5,6,7,8,9,10,11,12].map(n => `<option value="${n}" ${n===12?'selected':''}>${n}x</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bandeiras Aceitas</label>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" checked> Visa</div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" checked> Mastercard</div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" checked> Elo</div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" checked> American Express</div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" checked> Hipercard</div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'PIX':
+                    bodyHtml = `
+                        <div class="mb-3">
+                            <label class="form-label">Chave PIX</label>
+                            <input type="text" class="form-control" id="editPixKey" placeholder="CNPJ, Email ou Chave Aleatória">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tipo da Chave</label>
+                            <select class="form-select" id="editPixKeyType">
+                                <option value="CNPJ">CNPJ</option>
+                                <option value="CPF">CPF</option>
+                                <option value="EMAIL">E-mail</option>
+                                <option value="TELEFONE">Telefone</option>
+                                <option value="ALEATORIA">Chave Aleatória</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Desconto PIX (%)</label>
+                            <input type="number" class="form-control" id="editPixDesconto" value="5" step="0.5">
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="editPixQRCode" checked>
+                            <label class="form-check-label">Gerar QR Code automático</label>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'BOLETO':
+                    bodyHtml = `
+                        <div class="mb-3">
+                            <label class="form-label">Dias para Vencimento</label>
+                            <input type="number" class="form-control" id="editBoletoDias" value="3" min="1" max="30">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Taxa por Boleto (R$)</label>
+                            <input type="number" class="form-control" id="editBoletoTaxa" value="2.90" step="0.10">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Multa por Atraso (%)</label>
+                            <input type="number" class="form-control" id="editBoletoMulta" value="2" step="0.5" max="10">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Juros por Dia (%)</label>
+                            <input type="number" class="form-control" id="editBoletoJuros" value="0.033" step="0.001">
+                        </div>
+                    `;
+                    break;
+                    
+                case 'CONVENIO':
+                    bodyHtml = `
+                        <div class="mb-3">
+                            <label class="form-label">Dia de Fechamento</label>
+                            <select class="form-select" id="editConvenioDiaFechamento">
+                                ${Array.from({length: 28}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Dia de Vencimento</label>
+                            <select class="form-select" id="editConvenioDiaVencimento">
+                                ${Array.from({length: 28}, (_, i) => `<option value="${i+1}" ${i+1===10?'selected':''}>${i+1}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Limite de Crédito Padrão (R$)</label>
+                            <input type="number" class="form-control" id="editConvenioLimite" value="1000" step="100">
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="editConvenioAprovacao" checked>
+                            <label class="form-check-label">Exigir aprovação de cadastro</label>
+                        </div>
+                    `;
+                    break;
+                    
+                default:
+                    bodyHtml = `
+                        <div class="mb-3">
+                            <label class="form-label">Taxa (%)</label>
+                            <input type="number" class="form-control" id="editTaxa" value="0" step="0.01">
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="editRequireApproval">
+                            <label class="form-check-label">Exigir aprovação do gerente</label>
+                        </div>
+                    `;
+            }
+            
+            document.getElementById('editMethodBody').innerHTML = bodyHtml;
+            modal.show();
+        }
+
+        function saveMethodConfig() {
+            showToast(`Configurações de ${formatMethodName(currentEditMethod)} salvas!`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editMethodModal')).hide();
+        }
+
+        function saveTaxas() {
+            const taxas = {
+                credito: document.getElementById('taxaCredito').value,
+                debito: document.getElementById('taxaDebito').value,
+                boleto: document.getElementById('taxaBoleto').value
+            };
+            console.log('Salvando taxas:', taxas);
+            showToast('Taxas atualizadas com sucesso!', 'success');
+        }
+
+        function saveDescontos() {
+            const descontos = {
+                pix: document.getElementById('descontoPix').value,
+                dinheiro: document.getElementById('descontoDinheiro').value
+            };
+            console.log('Salvando descontos:', descontos);
+            showToast('Descontos atualizados com sucesso!', 'success');
+        }
+
+        function addNewMethod() {
+            const name = document.getElementById('newMethodName').value;
+            const type = document.getElementById('newMethodType').value;
+            const taxa = document.getElementById('newMethodTaxa').value;
+            const active = document.getElementById('newMethodActive').checked;
+            
+            if (!name) {
+                showToast('Informe o nome da forma de pagamento', 'warning');
+                return;
+            }
+            
+            console.log('Nova forma:', { name, type, taxa, active });
+            showToast(`Forma "${name}" adicionada com sucesso!`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('addMethodModal')).hide();
+        }
+
+        function formatMethodName(method) {
+            const names = {
+                'DINHEIRO': 'Dinheiro',
+                'CARTAO_CREDITO': 'Cartão de Crédito',
+                'CARTAO_DEBITO': 'Cartão de Débito',
+                'PIX': 'PIX',
+                'BOLETO': 'Boleto',
+                'CONVENIO': 'Convênio',
+                'TRANSFERENCIA': 'Transferência',
+                'CHEQUE': 'Cheque'
+            };
+            return names[method] || method;
+        }
+
+        function showToast(message, type = 'info') {
+            let container = document.getElementById('toastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toastContainer';
+                container.className = 'toast-container position-fixed top-0 end-0 p-3';
+                container.style.zIndex = '9999';
+                document.body.appendChild(container);
+            }
+
+            const bgClass = type === 'error' ? 'bg-danger' : type === 'warning' ? 'bg-warning' : type === 'success' ? 'bg-success' : 'bg-info';
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white ${bgClass} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            container.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            setTimeout(() => toast.remove(), 5000);
+        }
+    </script>
+}

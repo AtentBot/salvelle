@@ -1,0 +1,248 @@
+@{
+    ViewData["Title"] = "Gerar Rótulo";
+    var orderId = ViewBag.ManipulationOrderId as Guid?;
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-0">
+                <i class="bi bi-file-earmark-text me-2"></i>Gerar Rótulo
+            </h2>
+        </div>
+        <div class="col-auto">
+            <button onclick="history.back()" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Dados da Ordem de Manipulação</h5>
+                </div>
+                <div class="card-body">
+                    <div id="orderInfo" class="mb-3">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Carregando dados da ordem...</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Selecionar Template *</label>
+                        <select id="templateId" class="form-select" required>
+                            <option value="">Selecione um template...</option>
+                        </select>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="generateQrCode" checked>
+                                <label class="form-check-label" for="generateQrCode">
+                                    Gerar QR Code
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="generateBarcode" checked>
+                                <label class="form-check-label" for="generateBarcode">
+                                    Gerar Código de Barras
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Personalizações (Opcional)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Advertências Customizadas</label>
+                        <textarea id="customWarnings" class="form-control" rows="3" 
+                                  placeholder="Adicionar advertências específicas para este rótulo..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Instruções de Armazenamento</label>
+                        <textarea id="customStorage" class="form-control" rows="2" 
+                                  placeholder="Ex: Manter em temperatura ambiente..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Preview</h5>
+                </div>
+                <div class="card-body">
+                    <div id="labelPreview" class="border rounded p-3 text-center text-muted">
+                        <i class="bi bi-eye-slash display-4"></i>
+                        <p class="mt-2">Selecione um template para visualizar</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <button id="btnGenerate" class="btn btn-success w-100 mb-2" disabled>
+                        <i class="bi bi-check-circle me-2"></i>Gerar Rótulo
+                    </button>
+                    <button onclick="history.back()" class="btn btn-outline-secondary w-100">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="successModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-check-circle me-2"></i>Rótulo Gerado!
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Rótulo gerado com sucesso!</p>
+                    <p class="mb-0">O que deseja fazer?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="button" class="btn btn-primary" id="btnViewLabel">
+                        <i class="bi bi-eye me-2"></i>Ver Rótulo
+                    </button>
+                    <button type="button" class="btn btn-success" id="btnPrintLabel">
+                        <i class="bi bi-printer me-2"></i>Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const orderId = '@orderId';
+        let generatedLabelId = null;
+        
+        async function loadOrder() {
+            try {
+                const response = await fetch(`/api/ManipulationOrders/${orderId}`);
+                if (!response.ok) throw new Error('Ordem não encontrada');
+                
+                const order = await response.json();
+                document.getElementById('orderInfo').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <strong>Código:</strong> ${order.orderCode}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Paciente:</strong> ${order.customerName || '-'}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Fórmula:</strong> ${order.formulaName || '-'}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Lote:</strong> ${order.batchNumber || '-'}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('orderInfo').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Erro ao carregar dados da ordem: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function loadTemplates() {
+            try {
+                const response = await fetch('/api/Labels/templates?activeOnly=true');
+                const templates = await response.json();
+                
+                const select = document.getElementById('templateId');
+                templates.forEach(t => {
+                    const option = document.createElement('option');
+                    option.value = t.id;
+                    option.textContent = `${t.name}${t.isDefault ? ' (Padrão)' : ''}`;
+                    if (t.isDefault) option.selected = true;
+                    select.appendChild(option);
+                });
+                
+                if (templates.length > 0) {
+                    document.getElementById('btnGenerate').disabled = false;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar templates:', error);
+            }
+        }
+        
+        document.getElementById('btnGenerate').addEventListener('click', async function() {
+            const templateId = document.getElementById('templateId').value;
+            if (!templateId) {
+                alert('Selecione um template');
+                return;
+            }
+            
+            const data = {
+                manipulationOrderId: orderId,
+                templateId: templateId || null,
+                generateQrCode: document.getElementById('generateQrCode').checked,
+                generateBarcode: document.getElementById('generateBarcode').checked,
+                customWarnings: document.getElementById('customWarnings').value || null,
+                customStorageInstructions: document.getElementById('customStorage').value || null
+            };
+            
+            try {
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Gerando...';
+                
+                const response = await fetch('/api/Labels/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) throw new Error(await response.text());
+                
+                const result = await response.json();
+                generatedLabelId = result.id;
+                
+                const modal = new bootstrap.Modal(document.getElementById('successModal'));
+                modal.show();
+            } catch (error) {
+                alert('Erro ao gerar rótulo: ' + error.message);
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-check-circle me-2"></i>Gerar Rótulo';
+            }
+        });
+        
+        document.getElementById('btnViewLabel').addEventListener('click', function() {
+            window.location.href = `/Labels/View/${generatedLabelId}`;
+        });
+        
+        document.getElementById('btnPrintLabel').addEventListener('click', function() {
+            window.location.href = `/Labels/Print/${generatedLabelId}`;
+        });
+        
+        loadOrder();
+        loadTemplates();
+    </script>
+}

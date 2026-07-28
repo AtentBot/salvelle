@@ -1,0 +1,468 @@
+﻿@{
+    ViewData["Title"] = "Dashboard de Preços";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <i class="bi bi-currency-dollar me-2"></i>
+                Dashboard de Preços
+            </h4>
+            <p class="text-muted mb-0">Visão geral da precificação de matérias-primas</p>
+        </div>
+        <div>
+            <a href="/materias-primas" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo Principal -->
+    <div class="row g-4 mb-4">
+        <!-- Total de Ingredientes -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-muted small mb-1">Total de Ingredientes</div>
+                            <div class="fs-2 fw-bold" id="totalMaterials">-</div>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 rounded-3 p-3 align-self-center">
+                            <i class="bi bi-box-seam text-primary fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Em Estoque -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-success border-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-muted small mb-1">
+                                🟢 Preço de Estoque
+                            </div>
+                            <div class="fs-2 fw-bold text-success" id="priceFromStock">-</div>
+                            <div class="small text-muted">lotes ativos</div>
+                        </div>
+                        <div class="bg-success bg-opacity-10 rounded-3 p-3 align-self-center">
+                            <i class="bi bi-check-circle text-success fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Histórico -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-warning border-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-muted small mb-1">
+                                🟡 Preço Histórico
+                            </div>
+                            <div class="fs-2 fw-bold text-warning" id="priceFromHistory">-</div>
+                            <div class="small text-muted">sem estoque atual</div>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 rounded-3 p-3 align-self-center">
+                            <i class="bi bi-clock-history text-warning fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preço Base -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-danger border-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-muted small mb-1">
+                                🔴 Apenas Preço Base
+                            </div>
+                            <div class="fs-2 fw-bold text-danger" id="priceFromBase">-</div>
+                            <div class="small text-muted">nunca adquiridos</div>
+                        </div>
+                        <div class="bg-danger bg-opacity-10 rounded-3 p-3 align-self-center">
+                            <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Indicadores Secundários -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                    <div class="fs-1 fw-bold text-info" id="withBasePrice">-</div>
+                    <div class="text-muted">Com Preço Base Definido</div>
+                    <div class="progress mt-3" style="height: 8px;">
+                        <div class="progress-bar bg-info" id="basePriceProgress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                    <div class="fs-1 fw-bold text-secondary" id="virtualOnly">-</div>
+                    <div class="text-muted">Ingredientes Virtuais</div>
+                    <div class="progress mt-3" style="height: 8px;">
+                        <div class="progress-bar bg-secondary" id="virtualProgress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                    <div class="fs-1 fw-bold text-warning" id="outdatedPrice">-</div>
+                    <div class="text-muted">Preços Desatualizados (&gt;6 meses)</div>
+                    <div class="progress mt-3" style="height: 8px;">
+                        <div class="progress-bar bg-warning" id="outdatedProgress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Categorias -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                    <h6 class="mb-0">
+                        <i class="bi bi-tags me-2"></i>
+                        Por Categoria
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="categoryList">
+                        <div class="list-group-item text-center text-muted py-4">
+                            Carregando...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mais Usados Sem Estoque -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-star text-warning me-2"></i>
+                        Populares Sem Estoque
+                    </h6>
+                    <a href="/materias-primas?filterStock=virtual" class="btn btn-sm btn-link">Ver todos</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="popularWithoutStock">
+                        <div class="list-group-item text-center text-muted py-4">
+                            Carregando...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preços Desatualizados -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-clock text-danger me-2"></i>
+                        Preços Desatualizados
+                    </h6>
+                    <a href="/materias-primas?filterStock=outdated" class="btn btn-sm btn-link">Ver todos</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="outdatedPriceList">
+                        <div class="list-group-item text-center text-muted py-4">
+                            Carregando...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Distribuição -->
+    <div class="row g-4 mt-2">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h6 class="mb-0">
+                        <i class="bi bi-pie-chart me-2"></i>
+                        Distribuição por Origem do Preço
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="priceSourceChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h6 class="mb-0">
+                        <i class="bi bi-bar-chart me-2"></i>
+                        Qualidade dos Preços
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="priceQualityChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h6 class="mb-1">Ações Recomendadas</h6>
+                            <p class="text-muted mb-0 small">
+                                Para melhorar a qualidade dos seus orçamentos
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                            <a href="/materias-primas?filterStock=outdated" class="btn btn-outline-warning me-2">
+                                <i class="bi bi-clock me-1"></i>
+                                Atualizar Preços Antigos
+                            </a>
+                            <a href="/materias-primas?priceSource=BASE" class="btn btn-outline-danger">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                Revisar Sem Histórico
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let priceSourceChart, priceQualityChart;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadStatistics();
+    });
+
+    async function loadStatistics() {
+        try {
+            const response = await fetch('/api/RawMaterials/pricing-statistics');
+            const result = await response.json();
+
+            if (!result.success) {
+                console.error('Erro ao carregar estatísticas');
+                return;
+            }
+
+            const s = result.data;
+
+            // Cards principais
+            document.getElementById('totalMaterials').textContent = s.totalMaterials;
+            document.getElementById('priceFromStock').textContent = s.priceFromStock;
+            document.getElementById('priceFromHistory').textContent = s.priceFromHistory;
+            document.getElementById('priceFromBase').textContent = s.priceFromBase;
+
+            // Cards secundários
+            document.getElementById('withBasePrice').textContent = s.withBasePrice;
+            document.getElementById('virtualOnly').textContent = s.virtualOnly;
+            document.getElementById('outdatedPrice').textContent = s.outdatedPrice;
+
+            // Progress bars
+            if (s.totalMaterials > 0) {
+                document.getElementById('basePriceProgress').style.width = 
+                    `${(s.withBasePrice / s.totalMaterials * 100).toFixed(0)}%`;
+                document.getElementById('virtualProgress').style.width = 
+                    `${(s.virtualOnly / s.totalMaterials * 100).toFixed(0)}%`;
+                document.getElementById('outdatedProgress').style.width = 
+                    `${(s.outdatedPrice / s.totalMaterials * 100).toFixed(0)}%`;
+            }
+
+            // Categorias
+            renderCategories(s.byCategory);
+
+            // Populares sem estoque
+            renderPopularWithoutStock(s.popularWithoutStock);
+
+            // Preços desatualizados
+            renderOutdatedPrices(s.outdatedPriceList);
+
+            // Gráficos
+            renderCharts(s);
+
+        } catch (e) {
+            console.error('Erro:', e);
+        }
+    }
+
+    function renderCategories(categories) {
+        const list = document.getElementById('categoryList');
+        
+        if (!categories || categories.length === 0) {
+            list.innerHTML = `<div class="list-group-item text-muted text-center">Nenhuma categoria</div>`;
+            return;
+        }
+
+        const items = Array.isArray(categories) ? categories : [];
+        list.innerHTML = items.slice(0, 8).map(c => `
+            <a href="/materias-primas?category=${encodeURIComponent(c.category)}" 
+               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <span>${c.category}</span>
+                <span class="badge bg-primary rounded-pill">${c.count}</span>
+            </a>
+        `).join('');
+    }
+
+    function renderPopularWithoutStock(items) {
+        const list = document.getElementById('popularWithoutStock');
+        
+        if (!items || items.length === 0) {
+            list.innerHTML = `<div class="list-group-item text-muted text-center py-3">
+                <i class="bi bi-check-circle text-success d-block mb-1"></i>
+                Todos os populares em estoque!
+            </div>`;
+            return;
+        }
+
+        list.innerHTML = items.slice(0, 5).map(m => `
+            <a href="/materias-primas/${m.id}" class="list-group-item list-group-item-action">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-medium">${m.name}</div>
+                        <small class="text-muted">Popularidade: ${m.popularity}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge ${m.lastKnownPrice ? 'bg-warning' : 'bg-danger'}">
+                            ${m.lastKnownPrice ? 'R$ ' + formatNumber(m.lastKnownPrice, 2) : 'Sem preço'}
+                        </span>
+                    </div>
+                </div>
+            </a>
+        `).join('');
+    }
+
+    function renderOutdatedPrices(items) {
+        const list = document.getElementById('outdatedPriceList');
+        
+        if (!items || items.length === 0) {
+            list.innerHTML = `<div class="list-group-item text-muted text-center py-3">
+                <i class="bi bi-check-circle text-success d-block mb-1"></i>
+                Todos os preços atualizados!
+            </div>`;
+            return;
+        }
+
+        list.innerHTML = items.slice(0, 5).map(m => `
+            <a href="/materias-primas/${m.id}/editar" class="list-group-item list-group-item-action">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-medium">${m.name}</div>
+                        <small class="text-danger">
+                            ${m.daysSinceUpdate ? m.daysSinceUpdate + ' dias sem atualização' : 'Nunca atualizado'}
+                        </small>
+                    </div>
+                    <div>
+                        <i class="bi bi-pencil text-muted"></i>
+                    </div>
+                </div>
+            </a>
+        `).join('');
+    }
+
+    function renderCharts(stats) {
+        // Gráfico de pizza - Origem do preço
+        const ctx1 = document.getElementById('priceSourceChart').getContext('2d');
+        priceSourceChart = new Chart(ctx1, {
+            type: 'doughnut',
+            data: {
+                labels: ['Estoque Real', 'Histórico', 'Preço Base'],
+                datasets: [{
+                    data: [stats.priceFromStock, stats.priceFromHistory, stats.priceFromBase],
+                    backgroundColor: ['var(--ok)', 'var(--amber-500)', 'var(--danger)'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Gráfico de barras - Qualidade
+        const ctx2 = document.getElementById('priceQualityChart').getContext('2d');
+        priceQualityChart = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: ['Com Estoque', 'Sem Estoque', 'Virtuais', 'Com Preço Base', 'Sem Preço Base', 'Desatualizados'],
+                datasets: [{
+                    label: 'Ingredientes',
+                    data: [
+                        stats.withStock, 
+                        stats.withoutStock,
+                        stats.virtualOnly,
+                        stats.withBasePrice,
+                        stats.withoutBasePrice,
+                        stats.outdatedPrice
+                    ],
+                    backgroundColor: [
+                        'var(--ok)',
+                        'var(--ink-3)',
+                        'var(--info)',
+                        'var(--info)',
+                        'var(--danger)',
+                        'var(--amber-500)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function formatNumber(value, decimals = 2) {
+        return (value || 0).toLocaleString('pt-BR', { 
+            minimumFractionDigits: decimals, 
+            maximumFractionDigits: decimals 
+        });
+    }
+</script>
+}

@@ -1,0 +1,439 @@
+@{
+    var employee = Context.Items["Employee"] as Models.Employees.Employee;
+    var isAuthenticated = employee != null;
+    var jobCode = employee?.JobPosition?.Code?.ToUpper() ?? "";
+
+    var reportCodes = new[] { "OWNER", "MANAGER", "PHARMACIST_RT", "PHARMACIST", "ACCOUNTANT", "ADMIN", "GENERAL_MANAGER" };
+    var employeeCodes = new[] { "OWNER", "MANAGER", "HR", "ADMIN", "GENERAL_MANAGER" };
+    var inventoryCodes = new[] { "OWNER", "MANAGER", "PHARMACIST_RT", "PHARMACIST", "STOCK_ASSISTANT", "TECHNICIAN", "ADMIN", "GENERAL_MANAGER" };
+    var formulaCodes = new[] { "OWNER", "MANAGER", "PHARMACIST_RT", "PHARMACIST", "TECHNICIAN", "ADMIN", "GENERAL_MANAGER" };
+    var purchaseCodes = new[] { "OWNER", "MANAGER", "SUPERVISOR", "BUYER", "PURCHASER", "ADMIN", "GENERAL_MANAGER" };
+    var controlledCodes = new[] { "OWNER", "MANAGER", "PHARMACIST_RT", "PHARMACIST", "ADMIN", "GENERAL_MANAGER" };
+    var qualityCodes = new[] { "OWNER", "MANAGER", "PHARMACIST_RT", "PHARMACIST", "ADMIN", "GENERAL_MANAGER", "QUALITY" };
+    var configCodes = new[] { "OWNER", "ADMIN", "GENERAL_MANAGER", "MANAGER" };
+
+    var canViewReports = reportCodes.Contains(jobCode);
+    var canManageEmployees = employeeCodes.Contains(jobCode);
+    var canManageInventory = inventoryCodes.Contains(jobCode);
+    var canManageFormulas = formulaCodes.Contains(jobCode);
+    var canManagePurchases = purchaseCodes.Contains(jobCode);
+    var canManageControlled = controlledCodes.Contains(jobCode);
+    var canManageQuality = qualityCodes.Contains(jobCode);
+    var canManageConfig = configCodes.Contains(jobCode);
+
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentPath = Context.Request.Path.Value?.ToLower() ?? "";
+    var initials = string.IsNullOrEmpty(employee?.FullName) ? "?" : employee.FullName.Substring(0, 1).ToUpper();
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · Salvelle</title>
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>@@import url('https://api.fontshare.com/v2/css?f[]=general-sans@@400,500,600&display=swap');</style>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@@1.11.2/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link rel="stylesheet" href="~/css/design-system/tokens.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/design-system/components.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/salvelle-theme.css" asp-append-version="true">
+
+    <style>
+        /* Shell layout específico do _Layout (staff) */
+        .ds-app-shell { display: grid; grid-template-columns: 244px 1fr; min-height: 100vh; }
+        .ds-sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--rule);
+            padding: 12px 10px;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .ds-sidebar::-webkit-scrollbar { width: 4px; }
+        .ds-sidebar::-webkit-scrollbar-thumb { background: var(--ink-5); border-radius: 2px; }
+
+        .ds-sidebar .brand { padding: 8px 8px 18px; gap: 10px; }
+        .ds-sidebar-section {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--ink-4);
+            padding: 14px 12px 4px;
+            font-weight: 500;
+        }
+        .ds-nav-item, .ds-nav-sub {
+            padding: 8px 12px;
+            font-size: 13px;
+            border-radius: var(--r-sm);
+            color: var(--ink-2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background var(--t-fast), color var(--t-fast);
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            position: relative;
+        }
+        .ds-nav-item i, .ds-nav-sub i { font-size: 15px; opacity: .7; flex-shrink: 0; width: 16px; text-align: center; }
+        .ds-nav-item:hover, .ds-nav-sub:hover { background: var(--bg-subtle); color: var(--ink); }
+        .ds-nav-item.active { background: var(--petrol-50); color: var(--petrol-700); font-weight: 500; }
+        .ds-nav-item.active i { opacity: 1; color: var(--petrol-500); }
+        .ds-nav-item.has-submenu::after {
+            content: "\f282";
+            font-family: 'bootstrap-icons';
+            margin-left: auto;
+            font-size: 11px;
+            opacity: .5;
+            transition: transform var(--t-fast);
+        }
+        .ds-nav-item.open::after { transform: rotate(90deg); }
+        .ds-submenu { display: none; flex-direction: column; padding: 2px 0 4px 28px; gap: 1px; }
+        .ds-submenu.show { display: flex; animation: dsSlideDown .18s ease; }
+        @@keyframes dsSlideDown { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
+        .ds-nav-sub { padding: 6px 10px; font-size: 12.5px; color: var(--ink-3); }
+        .ds-nav-sub.active { color: var(--petrol-700); background: var(--petrol-50); font-weight: 500; }
+        .ds-nav-sub.active i { color: var(--petrol-500); opacity: 1; }
+
+        .ds-sidebar-footer { margin-top: auto; padding: 12px 4px 4px; }
+        .ds-logout {
+            width: 100%; justify-content: center;
+            background: transparent; color: var(--ink-3);
+            border: 1px solid var(--rule);
+            font-size: 13px; padding: 8px 12px;
+            border-radius: var(--r-sm); cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px;
+            transition: all var(--t-fast);
+        }
+        .ds-logout:hover { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-border); }
+
+        .ds-app-main { display: flex; flex-direction: column; min-width: 0; }
+        .ds-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 28px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--rule);
+            position: sticky; top: 0; z-index: 50;
+        }
+        .ds-topbar-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+        .ds-topbar-toggle {
+            display: none; background: transparent; border: 1px solid var(--rule);
+            padding: 6px 9px; border-radius: var(--r-sm); cursor: pointer; color: var(--ink-2);
+        }
+        .ds-topbar h1 {
+            font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; color: var(--ink);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .ds-topbar-search {
+            position: relative; width: 320px;
+        }
+        .ds-topbar-search input {
+            width: 100%; padding: 8px 12px 8px 34px;
+            background: var(--bg-subtle); border: 1px solid transparent;
+            border-radius: var(--r-sm); font-size: 13px; color: var(--ink); font-family: inherit;
+            outline: none; transition: all var(--t-fast);
+        }
+        .ds-topbar-search input:focus { background: var(--surface); border-color: var(--petrol-500); box-shadow: var(--ring-focus); }
+        .ds-topbar-search .bi { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--ink-3); font-size: 14px; }
+        .ds-topbar-right { display: flex; align-items: center; gap: 14px; }
+        .ds-user { display: flex; align-items: center; gap: 10px; padding: 4px 8px 4px 4px; border-radius: var(--r-sm); }
+        .ds-user-avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: var(--petrol-500); color: #fff;
+            display: grid; place-items: center;
+            font-size: 12px; font-weight: 600;
+        }
+        .ds-user-meta { line-height: 1.25; font-size: 12px; }
+        .ds-user-meta strong { display: block; color: var(--ink); font-weight: 500; font-size: 12.5px; }
+        .ds-user-meta span { color: var(--ink-3); font-size: 11px; }
+
+        .ds-content { padding: 24px 32px; flex: 1; animation: dsFadeIn .22s ease; }
+        @@keyframes dsFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        .ds-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(11,18,32,.45); z-index: 90;
+        }
+        .ds-overlay.show { display: block; }
+
+        @@media (max-width: 991px) {
+            .ds-app-shell { grid-template-columns: 1fr; }
+            .ds-sidebar {
+                position: fixed; inset: 0 auto 0 0; width: 244px; z-index: 100;
+                transform: translateX(-100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+            }
+            .ds-sidebar.show { transform: translateX(0); }
+            .ds-topbar-toggle { display: inline-flex; align-items: center; }
+            .ds-topbar-search { width: 200px; }
+            .ds-content { padding: 16px; }
+        }
+        @@media (max-width: 640px) {
+            .ds-topbar-search { display: none; }
+            .ds-user-meta { display: none; }
+        }
+    </style>
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+
+@if (isAuthenticated)
+{
+    <div class="ds-overlay" id="dsOverlay" onclick="toggleSidebarMobile()"></div>
+    <div class="ds-app-shell">
+        <aside class="ds-sidebar" id="dsSidebar">
+            <a href="/Dashboard" class="brand">
+                <span class="brand-glyph" style="width:32px;height:32px;">
+                    <svg width="32" height="32" viewBox="0 0 88 88" fill="none" aria-hidden="true">
+                        <text x="44" y="66" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-weight="600" font-size="80" fill="var(--petrol-500)">S</text>
+                    </svg>
+                </span>
+                <span class="brand-name">Salvelle</span>
+            </a>
+
+            <div class="ds-sidebar-section">Operação</div>
+            <a class="ds-nav-item @(currentController == "Dashboard" ? "active" : "")" href="/Dashboard">
+                <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+            </a>
+
+            @if (canManageInventory)
+            {
+                var estoqueOpen = currentController == "Stock" || currentPath.StartsWith("/materias-primas") || currentPath.StartsWith("/precificacao") || currentPath.StartsWith("/lotes");
+                <button type="button" class="ds-nav-item has-submenu @(estoqueOpen ? "open" : "")" onclick="toggleSubmenu(event,'estoqueSubmenu')">
+                    <i class="bi bi-boxes"></i><span>Estoque</span>
+                </button>
+                <div class="ds-submenu @(estoqueOpen ? "show" : "")" id="estoqueSubmenu">
+                    <a class="ds-nav-sub @(currentPath == "/stock" ? "active" : "")" href="/Stock"><i class="bi bi-grid"></i>Visão Geral</a>
+                    <a class="ds-nav-sub @(currentPath == "/materias-primas" ? "active" : "")" href="/materias-primas"><i class="bi bi-box-seam"></i>Matérias-Primas</a>
+                    <a class="ds-nav-sub @(currentPath == "/materias-primas/criar" ? "active" : "")" href="/materias-primas/criar"><i class="bi bi-plus-circle"></i>Nova Matéria-Prima</a>
+                    <a class="ds-nav-sub @(currentPath == "/materias-primas/precos" ? "active" : "")" href="/materias-primas/precos"><i class="bi bi-currency-dollar"></i>Dashboard de Preços</a>
+                    <a class="ds-nav-sub @(currentPath == "/stock/movements" ? "active" : "")" href="/Stock/Movements"><i class="bi bi-arrow-left-right"></i>Movimentações</a>
+                    <a class="ds-nav-sub @(currentPath == "/stock/lowstock" ? "active" : "")" href="/Stock/LowStock"><i class="bi bi-exclamation-triangle"></i>Estoque Baixo</a>
+                </div>
+            }
+
+            @if (canManageControlled)
+            {
+                var contrOpen = currentController == "Controlled" || currentController == "Sngpc" || currentController == "SupplierCertification" || currentController == "Audit";
+                <button type="button" class="ds-nav-item has-submenu @(contrOpen ? "open" : "")" onclick="toggleSubmenu(event,'controladosSubmenu')">
+                    <i class="bi bi-shield-exclamation"></i><span>Controlados</span>
+                </button>
+                <div class="ds-submenu @(contrOpen ? "show" : "")" id="controladosSubmenu">
+                    <a class="ds-nav-sub" href="/Controlled"><i class="bi bi-speedometer2"></i>Dashboard SNGPC</a>
+                    <a class="ds-nav-sub" href="/Controlled/PendingApprovals"><i class="bi bi-clipboard-check"></i>Aprovações</a>
+                    <a class="ds-nav-sub" href="/Controlled/Movements"><i class="bi bi-arrow-left-right"></i>Movimentações</a>
+                    <a class="ds-nav-sub" href="/Controlled/Inventory"><i class="bi bi-clipboard-data"></i>Inventário Mensal</a>
+                    <a class="ds-nav-sub" href="/Controlled/Prescriptions"><i class="bi bi-file-medical"></i>Receituários</a>
+                    <a class="ds-nav-sub" href="/SupplierCertification"><i class="bi bi-award"></i>Certificações AFE</a>
+                    <a class="ds-nav-sub" href="/Audit"><i class="bi bi-shield-check"></i>Portal Auditoria</a>
+                </div>
+            }
+
+            @if (canManagePurchases)
+            {
+                <a class="ds-nav-item @(currentController == "PurchaseOrdersView" ? "active" : "")" href="/compras">
+                    <i class="bi bi-cart3"></i><span>Compras</span>
+                </a>
+            }
+
+            @if (canManageFormulas)
+            {
+                var prodOpen = currentController == "Formulas" || currentController == "Manipulacoes";
+                <button type="button" class="ds-nav-item has-submenu @(prodOpen ? "open" : "")" onclick="toggleSubmenu(event,'producaoSubmenu')">
+                    <i class="bi bi-clipboard2-pulse"></i><span>Produção</span>
+                </button>
+                <div class="ds-submenu @(prodOpen ? "show" : "")" id="producaoSubmenu">
+                    <a class="ds-nav-sub" href="/Formulas"><i class="bi bi-journal-medical"></i>Fórmulas</a>
+                    <a class="ds-nav-sub" href="/Manipulacoes"><i class="bi bi-list-task"></i>Ordens de Manipulação</a>
+                    <a class="ds-nav-sub" href="/Manipulacoes/Kanban"><i class="bi bi-columns-gap"></i>Kanban</a>
+                    <a class="ds-nav-sub" href="/Manipulacoes/Dashboard"><i class="bi bi-graph-up"></i>Dashboard Produção</a>
+                    <a class="ds-nav-sub @(currentPath.Contains("capsulas/calculadora") ? "active" : "")" href="/FormasFarmaceuticas/Capsulas/Calculadora"><i class="bi bi-calculator"></i>Calculadora Cápsulas</a>
+                    <a class="ds-nav-sub @(currentPath.StartsWith("/formasfarmaceuticas") ? "active" : "")" href="/FormasFarmaceuticas"><i class="bi bi-capsule"></i>Formas Farmacêuticas</a>
+                </div>
+
+                var presOpen = currentController == "PrescriptionsView" || currentPath.StartsWith("/orcamentos");
+                <button type="button" class="ds-nav-item has-submenu @(presOpen ? "open" : "")" onclick="toggleSubmenu(event,'prescricoesSubmenu')">
+                    <i class="bi bi-file-medical"></i><span>Prescrições</span>
+                </button>
+                <div class="ds-submenu @(presOpen ? "show" : "")" id="prescricoesSubmenu">
+                    <a class="ds-nav-sub" href="/PrescriptionsView"><i class="bi bi-list-ul"></i>Lista</a>
+                    <a class="ds-nav-sub" href="/PrescriptionsView/Create"><i class="bi bi-plus-circle"></i>Nova Prescrição</a>
+                    <a class="ds-nav-sub @(currentPath == "/orcamentos" ? "active" : "")" href="/orcamentos"><i class="bi bi-calculator"></i>Orçamentos</a>
+                    <a class="ds-nav-sub" href="/PrescriptionsView?status=PENDENTE"><i class="bi bi-hourglass-split"></i>Pendentes</a>
+                    <a class="ds-nav-sub" href="/PrescriptionsView?status=VALIDADA"><i class="bi bi-check-circle"></i>Validadas</a>
+                </div>
+
+                <a class="ds-nav-item @(currentController == "LabelsView" ? "active" : "")" href="/Labels">
+                    <i class="bi bi-tag"></i><span>Rótulos</span>
+                </a>
+            }
+
+            <div class="ds-sidebar-section">Atendimento</div>
+            <a class="ds-nav-item @(currentController == "Customers" ? "active" : "")" href="/Customers">
+                <i class="bi bi-people"></i><span>Clientes</span>
+            </a>
+
+            @{
+                var pedOpen = currentController == "OnlineOrders" || currentController == "QRCodes";
+            }
+            <button type="button" class="ds-nav-item has-submenu @(pedOpen ? "open" : "")" onclick="toggleSubmenu(event,'pedidosOnlineSubmenu')">
+                <i class="bi bi-bag-check"></i><span>Pedidos Online</span>
+            </button>
+            <div class="ds-submenu @(pedOpen ? "show" : "")" id="pedidosOnlineSubmenu">
+                <a class="ds-nav-sub" href="/OnlineOrders/Dashboard"><i class="bi bi-graph-up"></i>Dashboard</a>
+                <a class="ds-nav-sub" href="/OnlineOrders"><i class="bi bi-list-ul"></i>Todos</a>
+                <a class="ds-nav-sub" href="/OnlineOrders?status=PENDING"><i class="bi bi-clock"></i>Pendentes</a>
+                <a class="ds-nav-sub" href="/OnlineOrders?status=READY"><i class="bi bi-check-circle"></i>Prontos</a>
+                <a class="ds-nav-sub" href="/QRCodes"><i class="bi bi-qr-code"></i>QR Codes</a>
+            </div>
+
+            <a class="ds-nav-item @(currentController == "SuppliersView" ? "active" : "")" href="/suppliers">
+                <i class="bi bi-building"></i><span>Fornecedores</span>
+            </a>
+
+            <div class="ds-sidebar-section">Financeiro</div>
+            @{
+                var finOpen = currentController == "PDV" || currentController == "PDVView" || currentController == "PaymentManagement" || currentController == "Fiscal" || currentController == "Caixa";
+            }
+            <button type="button" class="ds-nav-item has-submenu @(finOpen ? "open" : "")" onclick="toggleSubmenu(event,'financeiroSubmenu')">
+                <i class="bi bi-credit-card"></i><span>Caixa &amp; Vendas</span>
+            </button>
+            <div class="ds-submenu @(finOpen ? "show" : "")" id="financeiroSubmenu">
+                <a class="ds-nav-sub" href="/PDV"><i class="bi bi-shop"></i>PDV</a>
+                <a class="ds-nav-sub" href="/Caixa"><i class="bi bi-cash-stack"></i>Caixa</a>
+                <a class="ds-nav-sub" href="/pdv/orcamentos"><i class="bi bi-file-earmark-check"></i>Orçamentos PDV</a>
+                <a class="ds-nav-sub" href="/Fiscal"><i class="bi bi-receipt"></i>Notas Fiscais</a>
+                <a class="ds-nav-sub" href="/PaymentManagement"><i class="bi bi-graph-up"></i>Dashboard Financeiro</a>
+                <a class="ds-nav-sub" href="/PaymentManagement/DailyReport"><i class="bi bi-file-earmark-bar-graph"></i>Relatório Diário</a>
+                <a class="ds-nav-sub" href="/PaymentManagement/PendingPayments"><i class="bi bi-hourglass-split"></i>Pendências</a>
+                <a class="ds-nav-sub" href="/PaymentManagement/Configuration"><i class="bi bi-gear"></i>Configurações</a>
+            </div>
+
+            @if (canViewReports)
+            {
+                var repOpen = currentPath.StartsWith("/reports");
+                <button type="button" class="ds-nav-item has-submenu @(repOpen ? "open" : "")" onclick="toggleSubmenu(event,'relatoriosSubmenu')">
+                    <i class="bi bi-bar-chart-line"></i><span>Relatórios</span>
+                </button>
+                <div class="ds-submenu @(repOpen ? "show" : "")" id="relatoriosSubmenu">
+                    <a class="ds-nav-sub @(currentPath == "/reports" ? "active" : "")" href="/Reports"><i class="bi bi-speedometer2"></i>Executivo</a>
+                    <a class="ds-nav-sub @(currentPath == "/reports/vendas" ? "active" : "")" href="/Reports/Vendas"><i class="bi bi-graph-up"></i>Vendas</a>
+                    <a class="ds-nav-sub @(currentPath == "/reports/producao" ? "active" : "")" href="/Reports/Producao"><i class="bi bi-gear"></i>Produção</a>
+                    <a class="ds-nav-sub @(currentPath == "/reports/estoque" ? "active" : "")" href="/Reports/Estoque"><i class="bi bi-boxes"></i>Estoque</a>
+                    <a class="ds-nav-sub @(currentPath == "/reports/financeiro" ? "active" : "")" href="/Reports/Financeiro"><i class="bi bi-currency-dollar"></i>Financeiro</a>
+                    <a class="ds-nav-sub @(currentPath == "/reports/sngpc" ? "active" : "")" href="/Reports/SNGPC"><i class="bi bi-shield-exclamation"></i>SNGPC / ANVISA</a>
+                </div>
+            }
+
+            <div class="ds-sidebar-section">Sistema</div>
+            @if (canManageEmployees)
+            {
+                <a class="ds-nav-item @(currentController == "Employees" ? "active" : "")" href="/Employees/List">
+                    <i class="bi bi-person-badge"></i><span>Funcionários</span>
+                </a>
+            }
+
+            @if (canManageQuality)
+            {
+                var qOpen = currentPath.StartsWith("/qualidade");
+                <button type="button" class="ds-nav-item has-submenu @(qOpen ? "open" : "")" onclick="toggleSubmenu(event,'qualidadeSubmenu')">
+                    <i class="bi bi-patch-check"></i><span>Qualidade</span>
+                </button>
+                <div class="ds-submenu @(qOpen ? "show" : "")" id="qualidadeSubmenu">
+                    <a class="ds-nav-sub @(currentPath == "/qualidade" ? "active" : "")" href="/Qualidade"><i class="bi bi-speedometer2"></i>Dashboard</a>
+                    <a class="ds-nav-sub @(currentPath == "/qualidade/pops" ? "active" : "")" href="/Qualidade/POPs"><i class="bi bi-file-text"></i>POPs</a>
+                    <a class="ds-nav-sub @(currentPath == "/qualidade/capas" ? "active" : "")" href="/Qualidade/CAPAs"><i class="bi bi-exclamation-diamond"></i>CAPAs</a>
+                </div>
+            }
+
+            @if (canManageConfig)
+            {
+                var cfgOpen = currentPath.StartsWith("/integracoes") || currentPath.StartsWith("/sistema");
+                <button type="button" class="ds-nav-item has-submenu @(cfgOpen ? "open" : "")" onclick="toggleSubmenu(event,'configSubmenu')">
+                    <i class="bi bi-gear"></i><span>Configurações</span>
+                </button>
+                <div class="ds-submenu @(cfgOpen ? "show" : "")" id="configSubmenu">
+                    <a class="ds-nav-sub @(currentPath == "/integracoes" ? "active" : "")" href="/Integracoes"><i class="bi bi-plug"></i>Integrações</a>
+                    <a class="ds-nav-sub" href="/api/health/detailed" target="_blank"><i class="bi bi-heart-pulse"></i>Status</a>
+                    <a class="ds-nav-sub" href="/api/health/diagnostics" target="_blank"><i class="bi bi-activity"></i>Diagnóstico</a>
+                </div>
+            }
+
+            <div class="ds-sidebar-footer">
+                <a href="/Account/Profile" class="ds-nav-item @(currentPath.StartsWith("/account/profile") ? "active" : "")" style="margin-bottom:4px;">
+                    <i class="bi bi-person-circle"></i><span>Meu perfil</span>
+                </a>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    <button type="submit" class="ds-logout"><i class="bi bi-box-arrow-right"></i>Sair</button>
+                </form>
+            </div>
+        </aside>
+
+        <div class="ds-app-main">
+            <header class="ds-topbar">
+                <div class="ds-topbar-left">
+                    <button class="ds-topbar-toggle" onclick="toggleSidebarMobile()"><i class="bi bi-list"></i></button>
+                    <h1>@ViewData["Title"]</h1>
+                </div>
+                <div class="ds-topbar-search">
+                    <i class="bi bi-search"></i>
+                    <input type="search" placeholder="Buscar pedidos, clientes, fórmulas…" />
+                </div>
+                <div class="ds-topbar-right">
+                    <div class="ds-user">
+                        <div class="ds-user-avatar">@initials</div>
+                        <div class="ds-user-meta">
+                            <strong>@employee?.FullName</strong>
+                            <span>@employee?.JobPosition?.Name</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="ds-content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+}
+else
+{
+    @RenderBody()
+}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function toggleSubmenu(event, id) {
+        event.preventDefault();
+        var sub = document.getElementById(id);
+        var btn = event.currentTarget;
+        if (sub) sub.classList.toggle('show');
+        btn.classList.toggle('open');
+    }
+    function toggleSidebarMobile() {
+        document.getElementById('dsSidebar')?.classList.toggle('show');
+        document.getElementById('dsOverlay')?.classList.toggle('show');
+    }
+</script>
+
+@await RenderSectionAsync("Scripts", required: false)
+@await Html.PartialAsync("_SupportChat")
+</body>
+</html>

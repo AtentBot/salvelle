@@ -1,0 +1,1476 @@
+@{
+    ViewData["Title"] = "Produção - Manipulação";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-gear-wide-connected me-2"></i>Produção de Manipulados</h4>
+            <p class="text-muted mb-0">Workflow de produção conforme RDC 67/2007</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/Manipulacoes/Create" class="btn btn-success">
+                <i class="bi bi-plus-lg me-1"></i> Nova Ordem
+            </a>
+            <button class="btn btn-outline-primary" onclick="loadOrders()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Atualizar
+            </button>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-1">Aguardando Início</p>
+                            <h3 class="mb-0 text-warning" id="kpiPendentes">0</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-hourglass-split text-warning fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-1">Em Produção</p>
+                            <h3 class="mb-0 text-primary" id="kpiEmProducao">0</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-gear text-primary fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-1">Finalizadas Hoje</p>
+                            <h3 class="mb-0 text-success" id="kpiFinalizadas">0</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-check-circle text-success fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-1">Atrasadas</p>
+                            <h3 class="mb-0 text-danger" id="kpiAtrasadas">0</h3>
+                        </div>
+                        <div class="bg-danger bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-2">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" id="searchInput" 
+                               placeholder="Buscar por número, cliente..." onkeyup="filterOrders()">
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="btn-group" role="group" id="statusFilter">
+                        <input type="radio" class="btn-check" name="statusFilter" id="filterAll" value="" checked>
+                        <label class="btn btn-outline-secondary btn-sm" for="filterAll">Todos</label>
+                        
+                        <input type="radio" class="btn-check" name="statusFilter" id="filterPendente" value="PENDENTE">
+                        <label class="btn btn-outline-warning btn-sm" for="filterPendente">Pendentes</label>
+                        
+                        <input type="radio" class="btn-check" name="statusFilter" id="filterProducao" value="EM_PRODUCAO">
+                        <label class="btn btn-outline-primary btn-sm" for="filterProducao">Em Produção</label>
+                        
+                        <input type="radio" class="btn-check" name="statusFilter" id="filterPesagem" value="PESAGEM">
+                        <label class="btn btn-outline-info btn-sm" for="filterPesagem">Pesagem</label>
+                        
+                        <input type="radio" class="btn-check" name="statusFilter" id="filterConferencia" value="CONFERENCIA">
+                        <label class="btn btn-outline-purple btn-sm" for="filterConferencia">Conferência</label>
+                        
+                        <input type="radio" class="btn-check" name="statusFilter" id="filterFinalizado" value="FINALIZADO">
+                        <label class="btn btn-outline-success btn-sm" for="filterFinalizado">Finalizados</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Ordens -->
+    <div class="row" id="ordersContainer">
+        <!-- Cards serão inseridos aqui via JavaScript -->
+    </div>
+
+    <!-- Loading -->
+    <div class="text-center py-5 d-none" id="loadingOrders">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
+        <p class="text-muted mt-2">Carregando ordens...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div class="text-center py-5 d-none" id="emptyOrders">
+        <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+        <h5 class="text-muted mt-3">Nenhuma ordem encontrada</h5>
+        <p class="text-muted">Não há ordens de manipulação com os filtros selecionados.</p>
+    </div>
+</div>
+
+<!-- Modal: Detalhes da Ordem e Workflow -->
+<div class="modal fade" id="orderModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <div>
+                    <h5 class="modal-title mb-0">
+                        <i class="bi bi-clipboard-check me-2"></i>
+                        Ordem <span id="modalOrderNumber" class="text-primary"></span>
+                    </h5>
+                    <small class="text-muted" id="modalCustomerName"></small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <!-- Tabs -->
+                <ul class="nav nav-tabs px-3 pt-3" id="orderTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-workflow" data-bs-toggle="tab" data-bs-target="#content-workflow">
+                            <i class="bi bi-diagram-3 me-1"></i> Workflow
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-pesagem" data-bs-toggle="tab" data-bs-target="#content-pesagem">
+                            <i class="bi bi-speedometer me-1"></i> Pesagem
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-perdas" data-bs-toggle="tab" data-bs-target="#content-perdas">
+                            <i class="bi bi-trash me-1"></i> Perdas/Sobras
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-conferencia" data-bs-toggle="tab" data-bs-target="#content-conferencia">
+                            <i class="bi bi-check2-square me-1"></i> Conferência
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-producao" data-bs-toggle="tab" data-bs-target="#content-producao">
+                            <i class="bi bi-box-seam me-1"></i> Produção
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content p-4">
+                    <!-- Tab: Workflow -->
+                    <div class="tab-pane fade show active" id="content-workflow">
+                        <!-- Timeline do Workflow -->
+                        <div class="workflow-timeline mb-4">
+                            <div class="d-flex justify-content-between position-relative">
+                                <div class="workflow-line"></div>
+                                <div class="workflow-step" id="step-separacao" data-step="SEPARACAO">
+                                    <div class="step-icon"><i class="bi bi-box-seam"></i></div>
+                                    <small>Separação</small>
+                                </div>
+                                <div class="workflow-step" id="step-pesagem" data-step="PESAGEM">
+                                    <div class="step-icon"><i class="bi bi-speedometer"></i></div>
+                                    <small>Pesagem</small>
+                                </div>
+                                <div class="workflow-step" id="step-mistura" data-step="MISTURA">
+                                    <div class="step-icon"><i class="bi bi-arrow-repeat"></i></div>
+                                    <small>Mistura</small>
+                                </div>
+                                <div class="workflow-step" id="step-envase" data-step="ENVASE">
+                                    <div class="step-icon"><i class="bi bi-droplet"></i></div>
+                                    <small>Envase</small>
+                                </div>
+                                <div class="workflow-step" id="step-rotulagem" data-step="ROTULAGEM">
+                                    <div class="step-icon"><i class="bi bi-tag"></i></div>
+                                    <small>Rotulagem</small>
+                                </div>
+                                <div class="workflow-step" id="step-conferencia" data-step="CONFERENCIA">
+                                    <div class="step-icon"><i class="bi bi-check2-square"></i></div>
+                                    <small>Conferência</small>
+                                </div>
+                                <div class="workflow-step" id="step-aprovacao" data-step="APROVACAO">
+                                    <div class="step-icon"><i class="bi bi-shield-check"></i></div>
+                                    <small>Aprovação</small>
+                                </div>
+                                <div class="workflow-step" id="step-expedicao" data-step="EXPEDICAO">
+                                    <div class="step-icon"><i class="bi bi-truck"></i></div>
+                                    <small>Expedição</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Info da Ordem -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <h6 class="card-title"><i class="bi bi-info-circle me-2"></i>Informações</h6>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Fórmula</small>
+                                                <span id="infoFormula">-</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Quantidade</small>
+                                                <span id="infoQuantidade">-</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Prescritor</small>
+                                                <span id="infoPrescritor">-</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Previsão</small>
+                                                <span id="infoPrevisao">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body">
+                                        <h6 class="card-title"><i class="bi bi-clipboard-data me-2"></i>Ações Rápidas</h6>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="printWeighingSheet()">
+                                                <i class="bi bi-printer me-1"></i> Ficha de Pesagem
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info" onclick="checkStock()">
+                                                <i class="bi bi-boxes me-1"></i> Verificar Estoque
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success" onclick="calculateCost()">
+                                                <i class="bi bi-calculator me-1"></i> Calcular Custo
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Histórico de Steps -->
+                        <h6><i class="bi bi-clock-history me-2"></i>Histórico de Etapas</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Etapa</th>
+                                        <th>Status</th>
+                                        <th>Executado Por</th>
+                                        <th>Início</th>
+                                        <th>Conclusão</th>
+                                        <th>Conferido</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stepsHistory">
+                                    <tr><td colspan="6" class="text-center text-muted">Carregando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Pesagem -->
+                    <div class="tab-pane fade" id="content-pesagem">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Registre a pesagem de cada componente da fórmula. A conferência dupla é obrigatória (RDC 67/2007).
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Balança Utilizada</label>
+                                <input type="text" class="form-control" id="pesagemBalanca" placeholder="Ex: Mettler Toledo XS205">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Temperatura Ambiente (°C)</label>
+                                <input type="number" class="form-control" id="pesagemTemperatura" step="0.1" placeholder="22.5">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Umidade Relativa (%)</label>
+                                <input type="number" class="form-control" id="pesagemUmidade" step="0.1" placeholder="55">
+                            </div>
+                        </div>
+
+                        <h6 class="mb-3"><i class="bi bi-list-check me-2"></i>Componentes para Pesagem</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="pesagemTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Matéria-Prima</th>
+                                        <th>Lote</th>
+                                        <th>Qtd Esperada</th>
+                                        <th>Qtd Pesada</th>
+                                        <th>Desvio %</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pesagemComponents">
+                                    <tr><td colspan="6" class="text-center text-muted">Carregando componentes...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <label class="form-label">Observações da Pesagem</label>
+                                <textarea class="form-control" id="pesagemObservacoes" rows="2"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button class="btn btn-outline-secondary" onclick="cancelPesagem()">Cancelar</button>
+                            <button class="btn btn-primary" onclick="savePesagem()">
+                                <i class="bi bi-check-lg me-1"></i> Salvar Pesagem
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Perdas/Sobras -->
+                    <div class="tab-pane fade" id="content-perdas">
+                        <div class="row">
+                            <!-- Perdas -->
+                            <div class="col-md-6">
+                                <div class="card border-danger mb-3">
+                                    <div class="card-header bg-danger text-white">
+                                        <i class="bi bi-trash me-2"></i>Registrar Perda
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Matéria-Prima</label>
+                                            <select class="form-select" id="perdaRawMaterial">
+                                                <option value="">Selecione...</option>
+                                            </select>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label">Quantidade</label>
+                                                <input type="number" class="form-control" id="perdaQuantidade" step="0.001">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label">Unidade</label>
+                                                <input type="text" class="form-control" id="perdaUnidade" value="g">
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Tipo de Perda</label>
+                                            <select class="form-select" id="perdaTipo">
+                                                <option value="PROCESSO">Processo</option>
+                                                <option value="QUEBRA">Quebra</option>
+                                                <option value="CONTAMINACAO">Contaminação</option>
+                                                <option value="VENCIMENTO">Vencimento</option>
+                                                <option value="OUTRO">Outro</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Motivo</label>
+                                            <textarea class="form-control" id="perdaMotivo" rows="2"></textarea>
+                                        </div>
+                                        <button class="btn btn-danger w-100" onclick="registerLoss()">
+                                            <i class="bi bi-plus-lg me-1"></i> Registrar Perda
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Lista de Perdas -->
+                                <div class="card">
+                                    <div class="card-header">
+                                        <i class="bi bi-list-ul me-2"></i>Perdas Registradas
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="list-group list-group-flush" id="lossessList">
+                                            <div class="list-group-item text-center text-muted">Nenhuma perda registrada</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sobras -->
+                            <div class="col-md-6">
+                                <div class="card border-warning mb-3">
+                                    <div class="card-header bg-warning">
+                                        <i class="bi bi-box-arrow-in-down me-2"></i>Registrar Sobra
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Matéria-Prima</label>
+                                            <select class="form-select" id="sobraRawMaterial">
+                                                <option value="">Selecione...</option>
+                                            </select>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label">Quantidade</label>
+                                                <input type="number" class="form-control" id="sobraQuantidade" step="0.001">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label">Unidade</label>
+                                                <input type="text" class="form-control" id="sobraUnidade" value="g">
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Destino</label>
+                                            <select class="form-select" id="sobraDestino">
+                                                <option value="REINTEGRAR_ESTOQUE">Reintegrar ao Estoque</option>
+                                                <option value="DESCARTE">Descarte</option>
+                                                <option value="OUTRA_MANIPULACAO">Outra Manipulação</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Detalhes</label>
+                                            <textarea class="form-control" id="sobraDetalhes" rows="2"></textarea>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="sobraReintegrar" checked>
+                                            <label class="form-check-label" for="sobraReintegrar">
+                                                Reintegrar automaticamente ao estoque
+                                            </label>
+                                        </div>
+                                        <button class="btn btn-warning w-100" onclick="registerLeftover()">
+                                            <i class="bi bi-plus-lg me-1"></i> Registrar Sobra
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Lista de Sobras -->
+                                <div class="card">
+                                    <div class="card-header">
+                                        <i class="bi bi-list-ul me-2"></i>Sobras Registradas
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="list-group list-group-flush" id="leftoversList">
+                                            <div class="list-group-item text-center text-muted">Nenhuma sobra registrada</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Conferência Dupla -->
+                    <div class="tab-pane fade" id="content-conferencia">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-shield-exclamation me-2"></i>
+                            <strong>Conferência Dupla Obrigatória (RDC 67/2007):</strong> 
+                            A conferência deve ser realizada por dois funcionários diferentes.
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-primary text-white">
+                                        <i class="bi bi-1-circle me-2"></i>Primeira Verificação
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Tipo de Verificação</label>
+                                            <select class="form-select" id="verificationType">
+                                                <option value="PESAGEM">Pesagem</option>
+                                                <option value="ROTULAGEM">Rotulagem</option>
+                                                <option value="CONFERENCIA_FINAL">Conferência Final</option>
+                                            </select>
+                                        </div>
+
+                                        <h6 class="mb-3">Checklist</h6>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="check1">
+                                            <label class="form-check-label" for="check1">Identificação correta do produto</label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="check2">
+                                            <label class="form-check-label" for="check2">Quantidade confere com a fórmula</label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="check3">
+                                            <label class="form-check-label" for="check3">Lotes utilizados registrados</label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="check4">
+                                            <label class="form-check-label" for="check4">Aspecto visual adequado</label>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="check5">
+                                            <label class="form-check-label" for="check5">Embalagem íntegra</label>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Observações</label>
+                                            <textarea class="form-control" id="verificacaoNotes1" rows="2"></textarea>
+                                        </div>
+
+                                        <button class="btn btn-primary w-100" onclick="startDualVerification()" id="btnStartVerification">
+                                            <i class="bi bi-play-fill me-1"></i> Iniciar Primeira Verificação
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-success text-white">
+                                        <i class="bi bi-2-circle me-2"></i>Segunda Verificação
+                                    </div>
+                                    <div class="card-body" id="secondVerificationPanel">
+                                        <div class="text-center py-4 text-muted" id="waitingSecondVerification">
+                                            <i class="bi bi-hourglass-split fs-1 mb-3"></i>
+                                            <p>Aguardando primeira verificação ser concluída...</p>
+                                        </div>
+                                        
+                                        <div class="d-none" id="secondVerificationForm">
+                                            <div class="alert alert-info mb-3">
+                                                <small>Verificação iniciada por: <strong id="firstVerifierName">-</strong></small>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Observações</label>
+                                                <textarea class="form-control" id="verificacaoNotes2" rows="2"></textarea>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Decisão</label>
+                                                <div class="d-flex gap-2">
+                                                    <button class="btn btn-success flex-fill" onclick="completeDualVerification(true)">
+                                                        <i class="bi bi-check-lg me-1"></i> Aprovar
+                                                    </button>
+                                                    <button class="btn btn-danger flex-fill" onclick="completeDualVerification(false)">
+                                                        <i class="bi bi-x-lg me-1"></i> Rejeitar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Histórico de Verificações -->
+                                <div class="card">
+                                    <div class="card-header">
+                                        <i class="bi bi-clock-history me-2"></i>Verificações Anteriores
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="list-group list-group-flush" id="verificationHistory">
+                                            <div class="list-group-item text-center text-muted">Nenhuma verificação</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Produção Final -->
+                    <div class="tab-pane fade" id="content-producao">
+                        <div class="alert alert-success">
+                            <i class="bi bi-box-seam me-2"></i>
+                            Registro final da produção com cálculo de rendimento.
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Quantidade Esperada</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="prodExpectedQty" readonly>
+                                    <span class="input-group-text" id="prodUnit">g</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Quantidade Produzida</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="prodActualQty" step="0.01" oninput="calculateYield()">
+                                    <span class="input-group-text">g</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Rendimento</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="prodYield" readonly>
+                                    <span class="input-group-text">%</span>
+                                    <span class="input-group-text" id="yieldStatus">
+                                        <i class="bi bi-dash-circle"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-4">
+                                <label class="form-label">Número do Lote</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="prodBatchNumber" readonly>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="generateBatchNumber()">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Data/Hora Início</label>
+                                <input type="datetime-local" class="form-control" id="prodStartTime">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Data/Hora Fim</label>
+                                <input type="datetime-local" class="form-control" id="prodEndTime">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Validade Calculada</label>
+                                <input type="date" class="form-control" id="prodExpiryDate">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Motivo Desvio de Rendimento</label>
+                                <input type="text" class="form-control" id="prodYieldReason" placeholder="Se fora de 95-105%">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-2">
+                            <div class="col-12">
+                                <label class="form-label">Notas de Qualidade</label>
+                                <textarea class="form-control" id="prodQualityNotes" rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button class="btn btn-success btn-lg" onclick="registerProduction()">
+                                <i class="bi bi-check-circle me-1"></i> Finalizar Produção
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Verificar Estoque -->
+<div class="modal fade" id="stockModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-boxes me-2"></i>Verificação de Estoque</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="stockCheckResult"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Custo de Manipulação -->
+<div class="modal fade" id="costModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-calculator me-2"></i>Custo de Manipulação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="costResult"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .workflow-timeline { padding: 20px 0; }
+    .workflow-line {
+        position: absolute; top: 20px;
+        left: 5%; right: 5%;
+        height: 2px;
+        background: var(--rule);
+        z-index: 0;
+    }
+    .workflow-step { text-align: center; z-index: 1; cursor: pointer; }
+    .workflow-step .step-icon {
+        width: 40px; height: 40px;
+        border-radius: 50%;
+        background: var(--bg-subtle);
+        display: grid; place-items: center;
+        margin: 0 auto 6px;
+        transition: all var(--t-base);
+        border: 1px solid var(--rule);
+    }
+    .workflow-step .step-icon i { color: var(--ink-3); }
+    .workflow-step small { font-size: 11px; color: var(--ink-3); font-weight: 500; }
+    .workflow-step.completed .step-icon { background: var(--ok); border-color: var(--ok); }
+    .workflow-step.completed .step-icon i { color: #fff; }
+    .workflow-step.active .step-icon {
+        background: var(--petrol-500); border-color: var(--petrol-500);
+        animation: pulse 1.6s infinite;
+    }
+    .workflow-step.active .step-icon i { color: #fff; }
+    .workflow-step.pending .step-icon { background: var(--bg-subtle); }
+    @@keyframes pulse {
+        0%   { box-shadow: 0 0 0 0   color-mix(in srgb, var(--petrol-500) 35%, transparent); }
+        70%  { box-shadow: 0 0 0 12px color-mix(in srgb, var(--petrol-500) 0%,  transparent); }
+        100% { box-shadow: 0 0 0 0   color-mix(in srgb, var(--petrol-500) 0%,  transparent); }
+    }
+    .order-card { transition: transform var(--t-fast), box-shadow var(--t-fast); cursor: pointer; }
+    .order-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2) !important; }
+    .btn-outline-purple {
+        color: var(--controlled-black);
+        border-color: var(--controlled-black);
+    }
+    .btn-check:checked + .btn-outline-purple {
+        background-color: var(--controlled-black);
+        color: #fff;
+    }
+</style>
+
+@section Scripts {
+<script>
+    let currentOrderId = null;
+    let currentOrder = null;
+    let allOrders = [];
+    let currentVerificationId = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadOrders();
+        loadKPIs();
+
+        // Filtro por status
+        document.querySelectorAll('input[name="statusFilter"]').forEach(radio => {
+            radio.addEventListener('change', filterOrders);
+        });
+
+        // Verificar se deve abrir uma ordem específica (vindo do dashboard)
+        const savedOrderId = localStorage.getItem('openOrderId');
+        if (savedOrderId) {
+            localStorage.removeItem('openOrderId');
+            setTimeout(() => openOrder(savedOrderId), 500);
+        }
+    });
+
+    async function loadKPIs() {
+        try {
+            const response = await fetch('/api/ManipulationOrders/workflow-dashboard');
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('kpiPendentes').textContent = data.data.totalPendentes;
+                document.getElementById('kpiEmProducao').textContent = data.data.totalEmProducao;
+                document.getElementById('kpiFinalizadas').textContent = data.data.totalFinalizadosHoje;
+                document.getElementById('kpiAtrasadas').textContent = data.data.totalAtrasados;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar KPIs:', error);
+        }
+    }
+
+    async function loadOrders() {
+        const container = document.getElementById('ordersContainer');
+        const loading = document.getElementById('loadingOrders');
+        const empty = document.getElementById('emptyOrders');
+
+        container.innerHTML = '';
+        loading.classList.remove('d-none');
+        empty.classList.add('d-none');
+
+        try {
+            const response = await fetch('/api/ManipulationOrders?pageNumber=1&pageSize=100');
+            const data = await response.json();
+            
+            loading.classList.add('d-none');
+            
+            if (data.items && data.items.length > 0) {
+                allOrders = data.items;
+                renderOrders(allOrders);
+            } else {
+                empty.classList.remove('d-none');
+            }
+        } catch (error) {
+            console.error('Erro ao carregar ordens:', error);
+            loading.classList.add('d-none');
+            container.innerHTML = `<div class="col-12"><div class="alert alert-danger">Erro ao carregar ordens</div></div>`;
+        }
+    }
+
+    function filterOrders() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const statusFilter = document.querySelector('input[name="statusFilter"]:checked').value;
+
+        let filtered = allOrders;
+
+        if (search) {
+            filtered = filtered.filter(o => 
+                o.orderNumber.toLowerCase().includes(search) ||
+                o.customerName.toLowerCase().includes(search) ||
+                (o.formulaName && o.formulaName.toLowerCase().includes(search))
+            );
+        }
+
+        if (statusFilter) {
+            filtered = filtered.filter(o => o.status === statusFilter);
+        }
+
+        renderOrders(filtered);
+    }
+
+    function renderOrders(orders) {
+        const container = document.getElementById('ordersContainer');
+        const empty = document.getElementById('emptyOrders');
+
+        if (orders.length === 0) {
+            container.innerHTML = '';
+            empty.classList.remove('d-none');
+            return;
+        }
+
+        empty.classList.add('d-none');
+        container.innerHTML = orders.map(order => `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card order-card border-0 shadow-sm h-100" onclick="openOrder('${order.id}')">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="card-title mb-0">${order.orderNumber}</h6>
+                            ${getStatusBadge(order.status)}
+                        </div>
+                        <p class="text-muted small mb-2">
+                            <i class="bi bi-person me-1"></i>${order.customerName}
+                        </p>
+                        ${order.formulaName ? `<p class="small mb-2"><i class="bi bi-prescription2 me-1"></i>${order.formulaName}</p>` : ''}
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <small class="text-muted">
+                                <i class="bi bi-box me-1"></i>${order.quantityToProduce} ${order.unit}
+                            </small>
+                            <small class="${isOverdue(order) ? 'text-danger' : 'text-muted'}">
+                                <i class="bi bi-calendar me-1"></i>${formatDate(order.expectedDate)}
+                            </small>
+                        </div>
+                    </div>
+                    ${order.status !== 'FINALIZADO' && order.status !== 'CANCELADO' ? `
+                    <div class="card-footer bg-transparent border-top-0 pt-0">
+                        <button class="btn btn-sm btn-primary w-100" onclick="event.stopPropagation(); openOrder('${order.id}')">
+                            <i class="bi bi-play-fill me-1"></i> Produzir
+                        </button>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function getStatusBadge(status) {
+        const badges = {
+            'PENDENTE': '<span class="badge bg-warning">Pendente</span>',
+            'EM_PRODUCAO': '<span class="badge bg-primary">Em Produção</span>',
+            'SEPARACAO': '<span class="badge bg-info">Separação</span>',
+            'PESAGEM': '<span class="badge bg-info">Pesagem</span>',
+            'MISTURA': '<span class="badge bg-info">Mistura</span>',
+            'ENVASE': '<span class="badge bg-info">Envase</span>',
+            'ROTULAGEM': '<span class="badge bg-info">Rotulagem</span>',
+            'CONFERENCIA': '<span class="badge bg-purple text-white">Conferência</span>',
+            'APROVADO': '<span class="badge bg-success">Aprovado</span>',
+            'FINALIZADO': '<span class="badge bg-success">Finalizado</span>',
+            'ENTREGUE': '<span class="badge bg-dark">Entregue</span>',
+            'CANCELADO': '<span class="badge bg-secondary">Cancelado</span>'
+        };
+        return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
+    }
+
+    function isOverdue(order) {
+        return new Date(order.expectedDate) < new Date() && 
+               order.status !== 'FINALIZADO' && 
+               order.status !== 'ENTREGUE' &&
+               order.status !== 'CANCELADO';
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleDateString('pt-BR');
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleString('pt-BR');
+    }
+
+    async function openOrder(orderId) {
+        currentOrderId = orderId;
+        
+        // Buscar detalhes da ordem
+        try {
+            const response = await fetch(`/api/ManipulationOrders/${orderId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                currentOrder = data.data;
+                populateOrderModal(currentOrder);
+                loadOrderSteps(orderId);
+                loadLossesAndLeftovers(orderId);
+                loadVerifications(orderId);
+                setupProductionTab(currentOrder);
+                
+                const modal = new bootstrap.Modal(document.getElementById('orderModal'));
+                modal.show();
+            }
+        } catch (error) {
+            console.error('Erro ao carregar ordem:', error);
+            alert('Erro ao carregar detalhes da ordem');
+        }
+    }
+
+    function populateOrderModal(order) {
+        document.getElementById('modalOrderNumber').textContent = order.orderNumber;
+        document.getElementById('modalCustomerName').textContent = order.customerName;
+        document.getElementById('infoFormula').textContent = order.formulaName || 'Fórmula Magistral';
+        document.getElementById('infoQuantidade').textContent = `${order.quantityToProduce} ${order.unit}`;
+        document.getElementById('infoPrescritor').textContent = order.prescriberName || '-';
+        document.getElementById('infoPrevisao').textContent = formatDate(order.expectedDate);
+    }
+
+    async function loadOrderSteps(orderId) {
+        try {
+            const response = await fetch(`/api/ManipulationOrders/${orderId}/steps`);
+            const data = await response.json();
+            
+            if (data.success) {
+                renderStepsHistory(data.data);
+                updateWorkflowTimeline(data.data);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar etapas:', error);
+        }
+    }
+
+    function renderStepsHistory(steps) {
+        const tbody = document.getElementById('stepsHistory');
+        
+        if (!steps || steps.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Nenhuma etapa registrada</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = steps.map(step => `
+            <tr>
+                <td><span class="badge bg-light text-dark">${step.stepType}</span></td>
+                <td>${getStatusBadge(step.status)}</td>
+                <td>${step.performedByEmployeeName || '-'}</td>
+                <td>${formatDateTime(step.startedAt)}</td>
+                <td>${formatDateTime(step.completedAt)}</td>
+                <td>
+                    ${step.passedIntermediateCheck === true ? '<i class="bi bi-check-circle text-success"></i>' : 
+                      step.passedIntermediateCheck === false ? '<i class="bi bi-x-circle text-danger"></i>' : '-'}
+                    ${step.checkedByEmployeeName ? `<small class="text-muted ms-1">${step.checkedByEmployeeName}</small>` : ''}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function updateWorkflowTimeline(steps) {
+        const stepTypes = ['SEPARACAO', 'PESAGEM', 'MISTURA', 'ENVASE', 'ROTULAGEM', 'CONFERENCIA', 'APROVACAO', 'EXPEDICAO'];
+        const completedSteps = steps.filter(s => s.status === 'CONCLUIDA').map(s => s.stepType);
+        const activeStep = steps.find(s => s.status === 'EM_ANDAMENTO');
+
+        stepTypes.forEach(type => {
+            const stepEl = document.getElementById(`step-${type.toLowerCase()}`);
+            if (stepEl) {
+                stepEl.classList.remove('completed', 'active', 'pending');
+                
+                if (completedSteps.includes(type)) {
+                    stepEl.classList.add('completed');
+                } else if (activeStep && activeStep.stepType === type) {
+                    stepEl.classList.add('active');
+                } else {
+                    stepEl.classList.add('pending');
+                }
+            }
+        });
+    }
+
+    // ===== Ficha de Pesagem =====
+    function printWeighingSheet() {
+        window.open(`/api/ManipulationOrders/${currentOrderId}/weighing-sheet`, '_blank');
+    }
+
+    // ===== Verificar Estoque =====
+    async function checkStock() {
+        try {
+            const response = await fetch(`/api/ManipulationOrders/${currentOrderId}/check-stock`);
+            const data = await response.json();
+            
+            if (data.success) {
+                renderStockCheck(data.data);
+                new bootstrap.Modal(document.getElementById('stockModal')).show();
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao verificar estoque');
+        }
+    }
+
+    function renderStockCheck(stockData) {
+        const container = document.getElementById('stockCheckResult');
+        
+        const statusClass = stockData.allAvailable ? 'alert-success' : 'alert-danger';
+        const statusIcon = stockData.allAvailable ? 'check-circle' : 'exclamation-triangle';
+        const statusText = stockData.allAvailable ? 'Todos os componentes disponíveis' : 'Alguns componentes indisponíveis';
+
+        container.innerHTML = `
+            <div class="alert ${statusClass}">
+                <i class="bi bi-${statusIcon} me-2"></i>${statusText}
+            </div>
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Matéria-Prima</th>
+                        <th>Necessário</th>
+                        <th>Disponível</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${stockData.items.map(item => `
+                        <tr class="${item.isAvailable ? '' : 'table-danger'}">
+                            <td>${item.name}</td>
+                            <td>${item.quantityNeeded} ${item.unit}</td>
+                            <td>${item.quantityAvailable} ${item.unit}</td>
+                            <td>
+                                ${item.isAvailable ? 
+                                    '<i class="bi bi-check-circle text-success"></i>' : 
+                                    `<span class="text-danger">Falta: ${item.shortage}</span>`}
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    // ===== Calcular Custo =====
+    async function calculateCost() {
+        try {
+            const response = await fetch(`/api/ManipulationOrders/${currentOrderId}/cost`);
+            const data = await response.json();
+            
+            if (data.success) {
+                renderCost(data.data);
+                new bootstrap.Modal(document.getElementById('costModal')).show();
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao calcular custo');
+        }
+    }
+
+    function renderCost(costData) {
+        const container = document.getElementById('costResult');
+        container.innerHTML = `
+            <table class="table table-sm">
+                <tbody>
+                    <tr>
+                        <td>Custo Materiais</td>
+                        <td class="text-end">R$ ${costData.totalMaterialCost.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td>Mão de Obra (30%)</td>
+                        <td class="text-end">R$ ${costData.laborCost.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td>Overhead (20%)</td>
+                        <td class="text-end">R$ ${costData.overheadCost.toFixed(2)}</td>
+                    </tr>
+                    <tr class="table-primary">
+                        <th>Custo Total</th>
+                        <th class="text-end">R$ ${costData.totalCost.toFixed(2)}</th>
+                    </tr>
+                    <tr>
+                        <td>Custo Unitário</td>
+                        <td class="text-end">R$ ${costData.unitCost.toFixed(2)}</td>
+                    </tr>
+                    <tr class="table-success">
+                        <th>Preço Sugerido (Margem ${costData.profitMargin}%)</th>
+                        <th class="text-end">R$ ${costData.suggestedPrice.toFixed(2)}</th>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+    }
+
+    // ===== Perdas e Sobras =====
+    async function loadLossesAndLeftovers(orderId) {
+        // Carregar perdas
+        try {
+            const lossResponse = await fetch(`/api/ManipulationOrders/${orderId}/losses`);
+            const lossData = await lossResponse.json();
+            if (lossData.success) {
+                renderLosses(lossData.data);
+            }
+        } catch (e) { console.error(e); }
+
+        // Carregar sobras
+        try {
+            const leftoverResponse = await fetch(`/api/ManipulationOrders/${orderId}/leftovers`);
+            const leftoverData = await leftoverResponse.json();
+            if (leftoverData.success) {
+                renderLeftovers(leftoverData.data);
+            }
+        } catch (e) { console.error(e); }
+
+        // Popular selects de matérias-primas
+        loadRawMaterialsForSelects();
+    }
+
+    async function loadRawMaterialsForSelects() {
+        try {
+            const response = await fetch('/api/RawMaterials?pageSize=100');
+            const data = await response.json();
+            
+            if (data.items) {
+                const options = data.items.map(rm => 
+                    `<option value="${rm.id}">${rm.name}</option>`
+                ).join('');
+                
+                document.getElementById('perdaRawMaterial').innerHTML = '<option value="">Selecione...</option>' + options;
+                document.getElementById('sobraRawMaterial').innerHTML = '<option value="">Selecione...</option>' + options;
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function renderLosses(losses) {
+        const container = document.getElementById('lossessList');
+        if (!losses || losses.length === 0) {
+            container.innerHTML = '<div class="list-group-item text-center text-muted">Nenhuma perda registrada</div>';
+            return;
+        }
+        container.innerHTML = losses.map(loss => `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>${loss.rawMaterialName || 'Geral'}</strong>
+                    <br><small class="text-muted">${loss.quantity} ${loss.unit} - ${loss.lossType}</small>
+                    <br><small>${loss.reason}</small>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteLoss('${loss.id}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    function renderLeftovers(leftovers) {
+        const container = document.getElementById('leftoversList');
+        if (!leftovers || leftovers.length === 0) {
+            container.innerHTML = '<div class="list-group-item text-center text-muted">Nenhuma sobra registrada</div>';
+            return;
+        }
+        container.innerHTML = leftovers.map(leftover => `
+            <div class="list-group-item">
+                <strong>${leftover.rawMaterialName || 'Geral'}</strong>
+                <br><small class="text-muted">${leftover.quantity} ${leftover.unit} - ${leftover.destination}</small>
+                ${leftover.reintegratedToStock ? '<br><span class="badge bg-success">Reintegrado</span>' : ''}
+            </div>
+        `).join('');
+    }
+
+    async function registerLoss() {
+        const data = {
+            rawMaterialId: document.getElementById('perdaRawMaterial').value || null,
+            quantity: parseFloat(document.getElementById('perdaQuantidade').value),
+            unit: document.getElementById('perdaUnidade').value,
+            lossType: document.getElementById('perdaTipo').value,
+            reason: document.getElementById('perdaMotivo').value
+        };
+
+        try {
+            const response = await fetch(`/api/ManipulationOrders/${currentOrderId}/losses`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                alert('Perda registrada!');
+                loadLossesAndLeftovers(currentOrderId);
+                // Limpar form
+                document.getElementById('perdaQuantidade').value = '';
+                document.getElementById('perdaMotivo').value = '';
+            } else {
+                const err = await response.json();
+                alert(err.message || 'Erro ao registrar perda');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Erro ao registrar perda');
+        }
+    }
+
+    async function deleteLoss(lossId) {
+        if (!confirm('Remover esta perda?')) return;
+        
+        try {
+            const response = await fetch(`/api/ManipulationOrders/losses/${lossId}`, { method: 'DELETE' });
+            if (response.ok) {
+                loadLossesAndLeftovers(currentOrderId);
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function registerLeftover() {
+        const data = {
+            rawMaterialId: document.getElementById('sobraRawMaterial').value || null,
+            quantity: parseFloat(document.getElementById('sobraQuantidade').value),
+            unit: document.getElementById('sobraUnidade').value,
+            destination: document.getElementById('sobraDestino').value,
+            destinationDetails: document.getElementById('sobraDetalhes').value,
+            reintegrateToStock: document.getElementById('sobraReintegrar').checked
+        };
+
+        try {
+            const response = await fetch(`/api/ManipulationOrders/${currentOrderId}/leftovers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                alert('Sobra registrada!');
+                loadLossesAndLeftovers(currentOrderId);
+                // Limpar form
+                document.getElementById('sobraQuantidade').value = '';
+                document.getElementById('sobraDetalhes').value = '';
+            } else {
+                const err = await response.json();
+                alert(err.message || 'Erro ao registrar sobra');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Erro ao registrar sobra');
+        }
+    }
+
+    // ===== Conferência Dupla =====
+    async function loadVerifications(orderId) {
+        try {
+            const response = await fetch(`/api/ManipulationOrders/${orderId}/dual-verifications`);
+            const data = await response.json();
+            
+            if (data.success) {
+                renderVerifications(data.data);
+                
+                // Verificar se há verificação pendente
+                const pending = data.data.find(v => v.secondVerifierId === null);
+                if (pending) {
+                    currentVerificationId = pending.id;
+                    document.getElementById('waitingSecondVerification').classList.add('d-none');
+                    document.getElementById('secondVerificationForm').classList.remove('d-none');
+                    document.getElementById('firstVerifierName').textContent = pending.firstVerifierName;
+                    document.getElementById('btnStartVerification').disabled = true;
+                }
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function renderVerifications(verifications) {
+        const container = document.getElementById('verificationHistory');
+        if (!verifications || verifications.length === 0) {
+            container.innerHTML = '<div class="list-group-item text-center text-muted">Nenhuma verificação</div>';
+            return;
+        }
+        container.innerHTML = verifications.map(v => `
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between">
+                    <strong>${v.verificationType}</strong>
+                    ${v.approved === true ? '<span class="badge bg-success">Aprovado</span>' : 
+                      v.approved === false ? '<span class="badge bg-danger">Rejeitado</span>' : 
+                      '<span class="badge bg-warning">Pendente</span>'}
+                </div>
+                <small class="text-muted">
+                    1ª: ${v.firstVerifierName} | 2ª: ${v.secondVerifierName || 'Aguardando'}
+                </small>
+            </div>
+        `).join('');
+    }
+
+    async function startDualVerification() {
+        const checklist = [];
+        for (let i = 1; i <= 5; i++) {
+            const check = document.getElementById(`check${i}`);
+            if (check) {
+                checklist.push({
+                    itemName: check.nextElementSibling.textContent,
+                    checked: check.checked
+                });
+            }
+        }
+
+        const data = {
+            verificationType: document.getElementById('verificationType').value,
+            notes: document.getElementById('verificacaoNotes1').value,
+            checklistItems: checklist
+        };
+
+        try {
+            const response = await fetch(`/api/ManipulationOrders/${currentOrderId}/dual-verification/start`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                alert('Primeira verificação registrada! Aguarde segundo verificador.');
+                loadVerifications(currentOrderId);
+            } else {
+                alert(result.message || 'Erro');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Erro ao iniciar verificação');
+        }
+    }
+
+    async function completeDualVerification(approved) {
+        const data = {
+            verificationId: currentVerificationId,
+            notes: document.getElementById('verificacaoNotes2').value,
+            approved: approved,
+            rejectionReason: approved ? null : prompt('Motivo da rejeição:')
+        };
+
+        try {
+            const response = await fetch(`/api/ManipulationOrders/${currentOrderId}/dual-verification/complete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                alert(approved ? 'Verificação aprovada!' : 'Verificação rejeitada!');
+                loadVerifications(currentOrderId);
+                // Reset form
+                document.getElementById('waitingSecondVerification').classList.remove('d-none');
+                document.getElementById('secondVerificationForm').classList.add('d-none');
+                document.getElementById('btnStartVerification').disabled = false;
+                currentVerificationId = null;
+            } else {
+                alert(result.message || 'Erro');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Erro ao completar verificação');
+        }
+    }
+
+    // ===== Produção Final =====
+    function setupProductionTab(order) {
+        document.getElementById('prodExpectedQty').value = order.quantityToProduce;
+        document.getElementById('prodUnit').textContent = order.unit;
+        generateBatchNumber();
+        calculateExpiryDate();
+        
+        // Datas
+        const now = new Date().toISOString().slice(0, 16);
+        document.getElementById('prodStartTime').value = now;
+        document.getElementById('prodEndTime').value = now;
+    }
+
+    async function generateBatchNumber() {
+        try {
+            const response = await fetch(`/api/ManipulationOrders/${currentOrderId}/generate-batch-number`);
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('prodBatchNumber').value = data.data;
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function calculateExpiryDate() {
+        try {
+            const response = await fetch(`/api/ManipulationOrders/${currentOrderId}/calculate-expiry`);
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('prodExpiryDate').value = data.data.split('T')[0];
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function calculateYield() {
+        const expected = parseFloat(document.getElementById('prodExpectedQty').value) || 0;
+        const actual = parseFloat(document.getElementById('prodActualQty').value) || 0;
+        
+        if (expected > 0 && actual > 0) {
+            const yield = (actual / expected) * 100;
+            document.getElementById('prodYield').value = yield.toFixed(2);
+            
+            const yieldStatus = document.getElementById('yieldStatus');
+            if (yield >= 95 && yield <= 105) {
+                yieldStatus.innerHTML = '<i class="bi bi-check-circle text-success"></i>';
+                yieldStatus.className = 'input-group-text bg-success-subtle';
+            } else {
+                yieldStatus.innerHTML = '<i class="bi bi-exclamation-triangle text-warning"></i>';
+                yieldStatus.className = 'input-group-text bg-warning-subtle';
+            }
+        }
+    }
+
+    async function registerProduction() {
+        const data = {
+            actualQuantity: parseFloat(document.getElementById('prodActualQty').value),
+            unit: currentOrder.unit,
+            batchNumber: document.getElementById('prodBatchNumber').value,
+            expiryDate: document.getElementById('prodExpiryDate').value,
+            productionStart: document.getElementById('prodStartTime').value,
+            productionEnd: document.getElementById('prodEndTime').value,
+            yieldDeviationReason: document.getElementById('prodYieldReason').value,
+            qualityNotes: document.getElementById('prodQualityNotes').value
+        };
+
+        try {
+            const response = await fetch(`/api/ManipulationOrders/${currentOrderId}/production`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                alert('Produção registrada com sucesso!');
+                bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide();
+                loadOrders();
+                loadKPIs();
+            } else {
+                alert(result.message || 'Erro ao registrar produção');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Erro ao registrar produção');
+        }
+    }
+
+    // ===== Pesagem (Tab simplificada) =====
+    async function savePesagem() {
+        alert('Funcionalidade de pesagem detalhada em desenvolvimento. Use a Ficha de Pesagem para registro manual.');
+    }
+
+    function cancelPesagem() {
+        document.querySelector('[data-bs-target="#content-workflow"]').click();
+    }
+</script>
+}

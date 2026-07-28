@@ -1,0 +1,320 @@
+﻿@using Models
+@{
+    ViewData["Title"] = "Detalhe do Pedido";
+    ViewData["ActiveNav"] = "pedidos";
+    Layout = "_LayoutCliente";
+    
+    var order = ViewBag.Order as OnlineOrder;
+}
+
+<style>
+    .status-timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .status-timeline::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--bg-subtle);
+    }
+    .status-step {
+        position: relative;
+        padding-bottom: 20px;
+    }
+    .status-step:last-child {
+        padding-bottom: 0;
+    }
+    .status-step::before {
+        content: '';
+        position: absolute;
+        left: -26px;
+        top: 4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--bg-subtle);
+        border: 2px solid #fff;
+    }
+    .status-step.completed::before {
+        background: var(--ok);
+    }
+    .status-step.active::before {
+        background: var(--info);
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.25);
+    }
+    .status-step.cancelled::before {
+        background: var(--danger);
+    }
+    .order-item {
+        background: var(--bg-subtle);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 8px;
+    }
+</style>
+
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex align-items-center mb-4">
+        <a href="/Cliente/MeusPedidos" class="btn btn-link text-dark p-0 me-3">
+            <i class="bi bi-arrow-left fs-4"></i>
+        </a>
+        <div class="flex-grow-1">
+            <h5 class="mb-0">Pedido #@order?.OrderNumber</h5>
+            <small class="text-muted">@order?.CreatedAt.ToString("dd/MM/yyyy 'às' HH:mm")</small>
+        </div>
+    </div>
+
+    @if (order != null)
+    {
+        // Determinar status
+        var statusClass = order.Status switch
+        {
+            "PENDING" => "warning",
+            "CONFIRMED" => "info",
+            "PREPARING" => "primary",
+            "READY" => "success",
+            "DELIVERED" => "secondary",
+            "CANCELLED" => "danger",
+            _ => "secondary"
+        };
+        
+        var statusText = order.Status switch
+        {
+            "PENDING" => "Aguardando Confirmação",
+            "CONFIRMED" => "Confirmado",
+            "PREPARING" => "Em Produção",
+            "READY" => "Pronto para Retirada",
+            "DELIVERED" => "Entregue",
+            "CANCELLED" => "Cancelado",
+            _ => order.Status
+        };
+
+        <!-- Status Badge -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body text-center py-4">
+                @if (order.Status == "READY")
+                {
+                    <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                        <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                    </div>
+                    <h5 class="text-success mb-2">Pronto para Retirada!</h5>
+                    <p class="text-muted mb-0">Seu pedido está disponível na farmácia</p>
+                }
+                else if (order.Status == "CANCELLED")
+                {
+                    <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                        <i class="bi bi-x-circle-fill text-danger fs-1"></i>
+                    </div>
+                    <h5 class="text-danger mb-2">Pedido Cancelado</h5>
+                    <p class="text-muted mb-0">Este pedido foi cancelado</p>
+                }
+                else if (order.Status == "DELIVERED")
+                {
+                    <div class="bg-secondary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                        <i class="bi bi-bag-check-fill text-secondary fs-1"></i>
+                    </div>
+                    <h5 class="text-secondary mb-2">Pedido Entregue</h5>
+                    <p class="text-muted mb-0">@order.DeliveredAt?.ToString("dd/MM/yyyy 'às' HH:mm")</p>
+                }
+                else
+                {
+                    <span class="badge bg-@statusClass fs-6 px-3 py-2 mb-3">@statusText</span>
+                    <p class="text-muted mb-0">
+                        @if (order.EstimatedReadyAt.HasValue)
+                        {
+                            <text>Previsão: @order.EstimatedReadyAt.Value.ToString("dd/MM 'às' HH:mm")</text>
+                        }
+                        else
+                        {
+                            <text>Aguarde atualizações</text>
+                        }
+                    </p>
+                }
+            </div>
+        </div>
+
+        <!-- Timeline do Status -->
+        @if (order.Status != "CANCELLED")
+        {
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Acompanhamento</h6>
+                </div>
+                <div class="card-body">
+                    <div class="status-timeline">
+                        @{
+                            var steps = new[] { "PENDING", "CONFIRMED", "PREPARING", "READY", "DELIVERED" };
+                            var stepNames = new[] { "Pedido Recebido", "Confirmado", "Em Produção", "Pronto", "Entregue" };
+                            var currentIndex = Array.IndexOf(steps, order.Status);
+                        }
+                        @for (int i = 0; i < steps.Length; i++)
+                        {
+                            var stepClass = i < currentIndex ? "completed" : (i == currentIndex ? "active" : "");
+                            <div class="status-step @stepClass">
+                                <strong>@stepNames[i]</strong>
+                                @if (i == currentIndex)
+                                {
+                                    <span class="badge bg-primary ms-2">Atual</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Farmácia -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                        <i class="bi bi-shop text-primary fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0">@order.Establishment?.NomeFantasia</h6>
+                        <small class="text-muted">
+                            @order.Establishment?.Street, @order.Establishment?.Number - @order.Establishment?.Neighborhood
+                        </small>
+                    </div>
+                    @if (!string.IsNullOrEmpty(order.Establishment?.WhatsApp))
+                    {
+                        var whatsapp = order.Establishment.WhatsApp.Replace("-", "").Replace(" ", "").Replace("(", "").Replace(")", "");
+                        <a href="https://wa.me/55@whatsapp" class="btn btn-success btn-sm" target="_blank">
+                            <i class="bi bi-whatsapp"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Itens do Pedido -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0"><i class="bi bi-bag me-2"></i>Itens do Pedido</h6>
+            </div>
+            <div class="card-body">
+                @if (order.Items != null && order.Items.Any())
+                {
+                    foreach (var item in order.Items)
+                    {
+                        <div class="order-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="badge bg-secondary me-2">@item.Quantity×</span>
+                                    <strong>@item.ProductName</strong>
+                                    @if (!string.IsNullOrEmpty(item.Notes))
+                                    {
+                                        <p class="text-muted small mb-0 mt-1">@item.Notes</p>
+                                    }
+                                </div>
+                                <span class="text-nowrap">R$ @item.TotalPrice.ToString("N2")</span>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted text-center mb-0">Nenhum item</p>
+                }
+            </div>
+        </div>
+
+        <!-- Resumo Financeiro -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0"><i class="bi bi-receipt me-2"></i>Resumo</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Subtotal</span>
+                    <span>R$ @order.Subtotal.ToString("N2")</span>
+                </div>
+                @if (order.Discount > 0)
+                {
+                    <div class="d-flex justify-content-between mb-2 text-success">
+                        <span>Desconto</span>
+                        <span>- R$ @order.Discount.ToString("N2")</span>
+                    </div>
+                }
+                @if (order.DeliveryFee > 0)
+                {
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Taxa de Entrega</span>
+                        <span>R$ @order.DeliveryFee.ToString("N2")</span>
+                    </div>
+                }
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <strong>Total</strong>
+                    <strong class="text-success fs-5">R$ @order.Total.ToString("N2")</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Observações -->
+        @if (!string.IsNullOrEmpty(order.CustomerNotes))
+        {
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Observações</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">@order.CustomerNotes</p>
+                </div>
+            </div>
+        }
+
+        <!-- Ações -->
+        <div class="d-grid gap-2 mb-4">
+            @if (order.Status == "PENDING")
+            {
+                <button class="btn btn-outline-danger" onclick="cancelOrder('@order.Id')">
+                    <i class="bi bi-x-circle me-2"></i>Cancelar Pedido
+                </button>
+            }
+            <a href="/Cliente/MeusPedidos" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar aos Pedidos
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-exclamation-circle fs-1 text-muted"></i>
+            <h5 class="mt-3">Pedido não encontrado</h5>
+            <p class="text-muted">O pedido solicitado não existe ou não pertence a você</p>
+            <a href="/Cliente/MeusPedidos" class="btn btn-primary">Ver Meus Pedidos</a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+<script>
+    async function cancelOrder(orderId) {
+        if (!confirm('Tem certeza que deseja cancelar este pedido?')) return;
+        
+        try {
+            const response = await fetch('/api/cliente/orders/' + orderId + '/cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Pedido cancelado com sucesso!');
+                location.reload();
+            } else {
+                alert(data.message || 'Erro ao cancelar pedido');
+            }
+        } catch (error) {
+            alert('Erro de conexão');
+        }
+    }
+</script>
+}

@@ -1,0 +1,373 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "Salvelle — Sistema completo para farmácia de manipulação";
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>@@import url('https://api.fontshare.com/v2/css?f[]=general-sans@@400,500,600&display=swap');</style>
+
+    <link rel="stylesheet" href="~/css/design-system/tokens.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/design-system/components.css" asp-append-version="true">
+
+    <style>
+        body { background: var(--bg); }
+
+        /* === Public navbar === */
+        .pub-nav { position: sticky; top: 0; z-index: 50; background: var(--surface); border-bottom: 1px solid var(--rule); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+        .pub-nav-links { display: flex; gap: 24px; align-items: center; }
+        .pub-nav-link { color: var(--ink-2); text-decoration: none; font-size: 14px; font-weight: 500; }
+        .pub-nav-link:hover, .pub-nav-link.active { color: var(--petrol-500); }
+
+        /* === Hero === */
+        .hero { padding: 80px 64px 96px; background: var(--surface); border-bottom: 1px solid var(--rule); position: relative; overflow: hidden; }
+        .hero-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: center; max-width: 1320px; margin: 0 auto; }
+        .hero-eyebrow { margin-bottom: 16px; }
+        .hero h1 { font-size: var(--t-display); font-weight: 600; letter-spacing: -0.035em; line-height: 1.02; margin: 0 0 20px; color: var(--ink); }
+        .hero h1 em { font-style: normal; color: var(--petrol-500); }
+        .hero-lead { font-size: 18px; line-height: 1.55; color: var(--ink-3); max-width: 52ch; margin: 0 0 32px; }
+        .hero-cta { display: flex; gap: 12px; align-items: center; margin-bottom: 32px; flex-wrap: wrap; }
+        .hero-trust { display: flex; gap: 24px; align-items: center; font-size: 13px; color: var(--ink-3); flex-wrap: wrap; }
+
+        .hero-illust { background: var(--bg-subtle); border: 1px solid var(--rule); border-radius: var(--r-lg); padding: 24px; box-shadow: var(--shadow-2); position: relative; }
+        .hi-window { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); box-shadow: var(--shadow-1); overflow: hidden; }
+        .hi-bar { height: 32px; background: var(--bg-subtle); border-bottom: 1px solid var(--rule); display: flex; align-items: center; padding: 0 12px; gap: 8px; }
+        .hi-bar-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-5); }
+        .hi-bar-title { margin-left: auto; margin-right: auto; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+        .hi-content { padding: 16px; display: grid; grid-template-columns: 80px 1fr; gap: 12px; }
+        .hi-side { display: flex; flex-direction: column; gap: 4px; }
+        .hi-side-item { height: 22px; background: var(--bg-subtle); border-radius: 4px; }
+        .hi-side-item.active { background: var(--petrol-50); }
+        .hi-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+        .hi-stat { background: var(--bg-subtle); border-radius: var(--r-sm); padding: 10px; }
+        .hi-stat-label { font-size: 9px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; }
+        .hi-stat-val { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 4px; }
+        .hi-row { height: 28px; background: var(--bg-subtle); border-radius: var(--r-sm); margin-bottom: 4px; display: flex; align-items: center; padding: 0 8px; gap: 8px; }
+        .hi-tag { width: 36px; height: 8px; border-radius: 2px; background: var(--ok-soft); }
+        .hi-tag.warn { background: var(--warn-soft); }
+        .hi-float { position: absolute; bottom: -16px; right: -20px; background: var(--ink); color: #fff; padding: 14px 18px; border-radius: var(--r-md); box-shadow: var(--shadow-3); display: flex; flex-direction: column; gap: 4px; width: 220px; }
+        .hi-float-eyebrow { font-family: var(--font-mono); font-size: 10px; opacity: .6; text-transform: uppercase; letter-spacing: 0.08em; }
+        .hi-float-val { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+        .hi-float-bar { height: 4px; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; }
+        .hi-float-bar > span { display: block; height: 100%; width: 78%; background: var(--amber-500); }
+
+        /* === Logos === */
+        .logo-strip { padding: 32px 64px; background: var(--bg-subtle); border-bottom: 1px solid var(--rule); text-align: center; }
+        .logo-strip-title { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); margin-bottom: 16px; }
+        .logo-strip-row { display: flex; gap: 64px; justify-content: center; flex-wrap: wrap; align-items: center; color: var(--ink-4); font-weight: 600; font-size: 16px; letter-spacing: -0.02em; }
+        .logo-strip-row span { opacity: .55; }
+
+        /* === Features === */
+        .features { padding: 96px 64px; max-width: 1320px; margin: 0 auto; }
+        .section-title-block { max-width: 56ch; margin-bottom: 48px; }
+        .section-title-block .eyebrow { margin-bottom: 12px; }
+        .section-title-block h2 { font-size: var(--t-h1); font-weight: 600; letter-spacing: -0.025em; margin: 0 0 16px; line-height: 1.05; }
+        .section-title-block p { font-size: 17px; color: var(--ink-3); margin: 0; }
+        .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .feature { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); padding: 28px; display: flex; flex-direction: column; gap: 12px; }
+        .feature-icon { width: 40px; height: 40px; border-radius: var(--r-sm); background: var(--petrol-50); color: var(--petrol-500); display: grid; place-items: center; margin-bottom: 8px; font-size: 20px; }
+        .feature h3 { font-size: 18px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+        .feature p { color: var(--ink-3); font-size: 14px; margin: 0; line-height: 1.55; }
+        .feature .feature-check { color: var(--petrol-500); font-size: 12px; font-family: var(--font-mono); margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+
+        /* === Workflow === */
+        .workflow { padding: 96px 64px; background: var(--surface); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+        .workflow-inner { max-width: 1320px; margin: 0 auto; }
+        .workflow-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 48px; }
+        .step { border-left: 2px solid var(--rule); padding-left: 20px; position: relative; }
+        .step::before { content: ""; position: absolute; left: -7px; top: 0; width: 12px; height: 12px; border-radius: 50%; background: var(--petrol-500); border: 3px solid var(--bg); box-shadow: 0 0 0 1px var(--petrol-500); }
+        .step-num { font-family: var(--font-mono); font-size: 11px; color: var(--petrol-500); margin-bottom: 8px; letter-spacing: 0.06em; }
+        .step h4 { font-size: 16px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 8px; }
+        .step p { font-size: 13px; color: var(--ink-3); margin: 0; line-height: 1.55; }
+
+        /* === Quote === */
+        .quote-section { padding: 96px 64px; max-width: 1320px; margin: 0 auto; }
+        .quote-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 48px; align-items: center; }
+        .quote-text { font-size: 28px; line-height: 1.35; letter-spacing: -0.02em; font-weight: 500; color: var(--ink); margin: 0 0 24px; }
+        .quote-author { display: flex; gap: 14px; align-items: center; }
+        .quote-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--petrol-100); color: var(--petrol-700); display: grid; place-items: center; font-weight: 600; }
+        .quote-meta strong { display: block; font-size: 14px; color: var(--ink); }
+        .quote-meta small { font-size: 12px; color: var(--ink-3); }
+        .quote-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .quote-stat { background: var(--bg-subtle); padding: 20px; border-radius: var(--r-md); border: 1px solid var(--rule); }
+        .quote-stat-val { font-size: 36px; font-weight: 600; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; color: var(--petrol-500); line-height: 1; }
+        .quote-stat-label { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+
+        /* === CTA === */
+        .cta { padding: 96px 64px; background: var(--ink); color: var(--bg); text-align: center; }
+        .cta h2 { font-size: var(--t-h1); font-weight: 600; letter-spacing: -0.025em; margin: 0 0 16px; color: #fff; }
+        .cta p { font-size: 17px; color: rgba(255,255,255,.65); max-width: 50ch; margin: 0 auto 32px; }
+        .cta .btn-primary { background: var(--amber-500); }
+        .cta .btn-primary:hover { background: var(--amber-700); }
+        .cta .btn-secondary { background: transparent; color: #fff; border-color: rgba(255,255,255,.2); }
+        .cta .btn-secondary:hover { background: rgba(255,255,255,.06); }
+
+        /* === Footer === */
+        footer { background: var(--surface); border-top: 1px solid var(--rule); padding: 48px 64px 24px; }
+        .footer-grid { max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: 1.5fr repeat(3, 1fr); gap: 48px; }
+        .footer-col h5 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 16px; font-family: var(--font-mono); font-weight: 500; }
+        .footer-col a { display: block; color: var(--ink-2); text-decoration: none; font-size: 14px; padding: 4px 0; }
+        .footer-col a:hover { color: var(--petrol-500); }
+        .footer-bottom { max-width: 1320px; margin: 32px auto 0; padding-top: 24px; border-top: 1px solid var(--rule); display: flex; justify-content: space-between; color: var(--ink-3); font-size: 12px; font-family: var(--font-mono); }
+
+        @@media (max-width: 980px) {
+            .hero-grid, .quote-grid { grid-template-columns: 1fr; gap: 40px; }
+            .feature-grid { grid-template-columns: 1fr; }
+            .workflow-steps { grid-template-columns: 1fr 1fr; }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+            .hero, .features, .workflow, .quote-section, .cta, footer { padding-left: 24px; padding-right: 24px; }
+            .pub-nav { padding: 14px 24px; }
+            .hero h1 { font-size: 44px; }
+            .pub-nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="pub-nav">
+        <a href="/" class="brand">
+            <span class="brand-glyph" style="width:32px;height:32px;"><svg width="32" height="32" viewBox="0 0 88 88" fill="none" aria-hidden="true"><text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="var(--petrol-500)">S</text></svg></span>
+            <span class="brand-name">Salvelle</span>
+        </a>
+        <div class="pub-nav-links">
+            <a class="pub-nav-link active" href="/">Produto</a>
+            <a class="pub-nav-link" href="/#features">Recursos</a>
+            <a class="pub-nav-link" href="/Pricing">Preços</a>
+            <a class="pub-nav-link" href="#">Documentação</a>
+        </div>
+        <div class="row" style="gap:12px">
+            <a class="btn btn-ghost btn-sm" href="/Account/Login">Entrar</a>
+            <a class="btn btn-primary btn-sm" href="/Signup">Começar grátis</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-grid">
+            <div>
+                <div class="eyebrow hero-eyebrow">salvelle · v2 · 2026</div>
+                <h1>Sistema completo<br/>para farmácia <em>de manipulação</em>.</h1>
+                <p class="hero-lead">
+                    Receita, fórmula, pesagem, rótulo Anvisa, estoque e PDV em um só lugar.
+                    Feito por farmacêuticos, com a calma que falta no balcão.
+                </p>
+                <div class="hero-cta">
+                    <a class="btn btn-primary btn-lg" href="/Signup">Começar grátis <i class="bi bi-arrow-right"></i></a>
+                    <a class="btn btn-secondary btn-lg" href="#demo">Ver demonstração (4min)</a>
+                </div>
+                <div class="hero-trust">
+                    <span><i class="bi bi-check-circle-fill" style="color:var(--ok); margin-right:6px"></i>14 dias grátis</span>
+                    <span><i class="bi bi-check-circle-fill" style="color:var(--ok); margin-right:6px"></i>Sem cartão</span>
+                    <span><i class="bi bi-check-circle-fill" style="color:var(--ok); margin-right:6px"></i>Conforme Anvisa</span>
+                </div>
+            </div>
+            <div class="hero-illust">
+                <div class="hi-window">
+                    <div class="hi-bar">
+                        <span class="hi-bar-dot"></span><span class="hi-bar-dot"></span><span class="hi-bar-dot"></span>
+                        <span class="hi-bar-title">salvelle.com/dashboard</span>
+                    </div>
+                    <div class="hi-content">
+                        <div class="hi-side">
+                            <div class="hi-side-item active"></div>
+                            <div class="hi-side-item"></div>
+                            <div class="hi-side-item"></div>
+                            <div class="hi-side-item"></div>
+                            <div class="hi-side-item"></div>
+                            <div class="hi-side-item"></div>
+                        </div>
+                        <div>
+                            <div class="hi-stats">
+                                <div class="hi-stat"><div class="hi-stat-label">Pedidos</div><div class="hi-stat-val">42</div></div>
+                                <div class="hi-stat"><div class="hi-stat-label">Manipul.</div><div class="hi-stat-val">14</div></div>
+                                <div class="hi-stat"><div class="hi-stat-label">Faturado</div><div class="hi-stat-val">R$ 8,4k</div></div>
+                            </div>
+                            <div class="hi-row"><span class="mono" style="font-size:10px;color:var(--ink-3)">1183</span><div style="flex:1"></div><span class="hi-tag"></span></div>
+                            <div class="hi-row"><span class="mono" style="font-size:10px;color:var(--ink-3)">1182</span><div style="flex:1"></div><span class="hi-tag warn"></span></div>
+                            <div class="hi-row"><span class="mono" style="font-size:10px;color:var(--ink-3)">1181</span><div style="flex:1"></div><span class="hi-tag"></span></div>
+                            <div class="hi-row"><span class="mono" style="font-size:10px;color:var(--ink-3)">1180</span><div style="flex:1"></div><span class="hi-tag"></span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hi-float">
+                    <div class="hi-float-eyebrow">Pesagem · bancada 02</div>
+                    <div class="hi-float-val">62,4 g <span style="font-size:12px;opacity:.6">/ 80,0 g</span></div>
+                    <div class="hi-float-bar"><span></span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="logo-strip">
+        <div class="logo-strip-title">Em uso por mais de 320 farmácias de manipulação no Brasil</div>
+        <div class="logo-strip-row">
+            <span>Vita Manipulação</span>
+            <span>Apothecaria Real</span>
+            <span>FarmaSus</span>
+            <span>Magistral SP</span>
+            <span>Pharmácia Moderna</span>
+            <span>Botica Lima</span>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <div class="section-title-block">
+            <div class="eyebrow">O que está incluso</div>
+            <h2>Tudo que sua farmácia precisa,<br/>sem o que não precisa.</h2>
+            <p>Sem add-ons, sem upgrade só pra ter relatório. Cada plano vem com todos os módulos — você só paga pelo volume.</p>
+        </div>
+        <div class="feature-grid">
+            <div class="feature">
+                <div class="feature-icon"><i class="bi bi-camera"></i></div>
+                <h3>OCR de receita</h3>
+                <p>Fotografe ou faça upload da receita. O sistema extrai princípio ativo, dose e posologia, com revisão do farmacêutico antes de aprovar.</p>
+                <div class="feature-check"><i class="bi bi-check2"></i>Reduz digitação em 80%</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon"><i class="bi bi-droplet-half"></i></div>
+                <h3>Manipulação magistral</h3>
+                <p>Calcula automaticamente quantidades, lote, validade e custo de insumos. Suporta dose única, cápsulas, soluções, géis e cremes.</p>
+                <div class="feature-check"><i class="bi bi-check2"></i>Lote · validade · custo</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon"><i class="bi bi-speedometer2"></i></div>
+                <h3>Pesagem integrada</h3>
+                <p>Conexão direta com balanças via porta serial. Tara automática, alerta de tolerância, registro em log com assinatura do operador.</p>
+                <div class="feature-check"><i class="bi bi-check2"></i>Conexão serial · log</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon"><i class="bi bi-tag"></i></div>
+                <h3>Rotulagem Anvisa</h3>
+                <p>Rótulos padrão e controlados (faixa preta para psicotrópicos, vermelha para entorpecentes), com QR de rastreabilidade.</p>
+                <div class="feature-check"><i class="bi bi-check2"></i>Padrão · controlado · QR</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon"><i class="bi bi-shop"></i></div>
+                <h3>PDV completo</h3>
+                <p>Atendimento de balcão com busca rápida, integração com TEF, NFC-e, fidelidade e desconto por convênio.</p>
+                <div class="feature-check"><i class="bi bi-check2"></i>TEF · NFC-e · convênio</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon"><i class="bi bi-boxes"></i></div>
+                <h3>Estoque inteligente</h3>
+                <p>Controle por lote e validade, alerta de estoque mínimo, sugestão automática de pedido de compra com base em consumo histórico.</p>
+                <div class="feature-check"><i class="bi bi-check2"></i>Lote · alerta · sugestão</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="workflow">
+        <div class="workflow-inner">
+            <div class="section-title-block">
+                <div class="eyebrow">Fluxo do dia</div>
+                <h2>Da receita ao despache,<br/>em quatro passos.</h2>
+            </div>
+            <div class="workflow-steps">
+                <div class="step">
+                    <div class="step-num">01 · 30 SEG</div>
+                    <h4>Cliente entrega receita</h4>
+                    <p>Atendente bipa ou fotografa. OCR identifica princípios ativos e doses, antes do farmacêutico revisar.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">02 · 2 MIN</div>
+                    <h4>Farmacêutico monta a fórmula</h4>
+                    <p>Sistema calcula quantidades e custos. Sugere componentes equivalentes em estoque. Gera ordem de manipulação.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">03 · 8 MIN</div>
+                    <h4>Manipula e pesa</h4>
+                    <p>Balança envia peso direto pro sistema. Operador confirma cada componente. Tudo registrado em log.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">04 · 1 MIN</div>
+                    <h4>Rotula e despacha</h4>
+                    <p>Imprime rótulo conforme Anvisa, gera NFC-e, atualiza estoque e dispara notificação pro cliente.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="quote-section">
+        <div class="quote-grid">
+            <div>
+                <div class="eyebrow" style="margin-bottom: 24px;">Caso · Farmácia Vita Manipulação</div>
+                <p class="quote-text">
+                    "Trocamos quatro planilhas e um software de 2014 pela Salvelle. Em três meses,
+                    o tempo médio de manipulação caiu de 28 para 17 minutos — e nenhum lote precisou
+                    ser refeito por erro de pesagem."
+                </p>
+                <div class="quote-author">
+                    <div class="quote-avatar">CR</div>
+                    <div class="quote-meta">
+                        <strong>Carolina Reis, Farmacêutica RT</strong>
+                        <small>Vita Manipulação · Belo Horizonte/MG</small>
+                    </div>
+                </div>
+            </div>
+            <div class="quote-stats">
+                <div class="quote-stat"><div class="quote-stat-val">−39%</div><div class="quote-stat-label">Tempo médio de manipulação</div></div>
+                <div class="quote-stat"><div class="quote-stat-val">0</div><div class="quote-stat-label">Lotes refeitos por erro</div></div>
+                <div class="quote-stat"><div class="quote-stat-val">+24%</div><div class="quote-stat-label">Pedidos atendidos/dia</div></div>
+                <div class="quote-stat"><div class="quote-stat-val">3 meses</div><div class="quote-stat-label">Para retorno do investimento</div></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <h2>Comece a manipular com calma.</h2>
+        <p>Crie sua conta em 2 minutos. 14 dias grátis, sem cartão. Migração de dados gratuita acima do plano Profissional.</p>
+        <div class="row" style="justify-content: center;">
+            <a class="btn btn-primary btn-lg" href="/Signup">Criar conta grátis <i class="bi bi-arrow-right"></i></a>
+            <a class="btn btn-secondary btn-lg" href="/Pricing">Ver preços</a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-grid">
+            <div>
+                <a href="/" class="brand">
+                    <span class="brand-glyph" style="width:32px;height:32px;"><svg width="32" height="32" viewBox="0 0 88 88" fill="none" aria-hidden="true"><text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="var(--petrol-500)">S</text></svg></span>
+                    <span class="brand-name">Salvelle</span>
+                </a>
+                <p style="color: var(--ink-3); font-size: 14px; margin-top: 16px; max-width: 36ch;">
+                    Sistema de gestão para farmácias de manipulação. Feito no Brasil, hospedado no Brasil, em conformidade com a LGPD e Anvisa.
+                </p>
+            </div>
+            <div class="footer-col">
+                <h5>Produto</h5>
+                <a href="/#features">Manipulação</a>
+                <a href="/#features">PDV</a>
+                <a href="/#features">OCR de receita</a>
+                <a href="/#features">Pesagem</a>
+                <a href="/Pricing">Preços</a>
+            </div>
+            <div class="footer-col">
+                <h5>Empresa</h5>
+                <a href="#">Sobre</a>
+                <a href="#">Clientes</a>
+                <a href="#">Carreiras</a>
+                <a href="#">Contato</a>
+            </div>
+            <div class="footer-col">
+                <h5>Suporte</h5>
+                <a href="#">Documentação</a>
+                <a href="#">Status</a>
+                <a href="#">Comunidade</a>
+                <a href="/Public/Terms">LGPD</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© @DateTime.Now.Year Salvelle</span>
+            <span>v2.0.4</span>
+        </div>
+    </footer>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@@1.11.2/font/bootstrap-icons.min.css">
+</body>
+</html>

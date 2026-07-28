@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Salvelle — Pesagem</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88'><rect width='88' height='88' rx='18' fill='%230F6E78'/><path d='M30 26 H42 a10 10 0 0 1 10 10 V52 H42 a10 10 0 0 1 -10 -10 V26 Z' fill='white'/><rect x='52' y='26' width='14' height='8' rx='4' fill='white'/><rect x='52' y='38' width='10' height='7' rx='3.5' fill='white'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<style>@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=cabinet-grotesk@500,700,800&display=swap');</style>
+<link rel="stylesheet" href="ds/tokens.css">
+<link rel="stylesheet" href="ds/components.css">
+<style>
+  body { background: var(--bg); }
+  .weigh-grid { display: grid; grid-template-columns: 1fr 480px; gap: 20px; }
+  .scale-panel { background: var(--ink); color: #fff; border-radius: var(--r-md); padding: 32px; display: flex; flex-direction: column; gap: 20px; position: relative; overflow: hidden; }
+  .scale-panel::before { content: ''; position: absolute; inset: 0; background: radial-gradient(800px 400px at 80% 0%, color-mix(in oklch, var(--petrol-500) 35%, transparent), transparent 70%); }
+  .scale-content { position: relative; z-index: 1; }
+  .scale-status { display: flex; gap: 14px; font-family: var(--font-mono); font-size: 11px; color: rgba(255,255,255,.55); letter-spacing: 0.06em; text-transform: uppercase; }
+  .scale-status .pill { display: inline-flex; gap: 6px; align-items: center; padding: 4px 10px; background: rgba(255,255,255,.08); border-radius: var(--r-pill); }
+  .scale-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+  .scale-readout { font-family: var(--font-mono); font-size: 92px; font-weight: 500; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; margin: 12px 0; color: #fff; }
+  .scale-readout .unit { font-size: 28px; color: rgba(255,255,255,.5); margin-left: 8px; }
+  .scale-target { display: flex; gap: 24px; margin-top: 8px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.1); font-family: var(--font-mono); }
+  .scale-target .item { display: flex; flex-direction: column; gap: 4px; }
+  .scale-target .l { font-size: 11px; color: rgba(255,255,255,.5); letter-spacing: 0.06em; text-transform: uppercase; }
+  .scale-target .v { font-size: 18px; color: #fff; font-variant-numeric: tabular-nums; }
+  .scale-target .v.delta-good { color: var(--ok); }
+  .scale-target .v.delta-warn { color: var(--amber-500); }
+  .scale-graph { height: 100px; margin-top: 16px; background: rgba(0,0,0,.25); border-radius: var(--r-sm); padding: 12px; }
+  .tolerance-bar { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  .tolerance-track { flex: 1; height: 8px; background: rgba(255,255,255,.1); border-radius: 4px; position: relative; overflow: hidden; }
+  .tolerance-track .zone { position: absolute; top: 0; bottom: 0; background: color-mix(in oklch, var(--ok) 40%, transparent); }
+  .tolerance-track .marker { position: absolute; top: -3px; bottom: -3px; width: 3px; background: #fff; border-radius: 2px; box-shadow: 0 0 0 2px color-mix(in oklch, var(--ok) 50%, transparent); }
+  .tolerance-bar .lbl { font-family: var(--font-mono); font-size: 11px; color: rgba(255,255,255,.55); }
+  .actions-row { display: flex; gap: 8px; margin-top: 16px; }
+  .actions-row button { flex: 1; padding: 14px; border-radius: var(--r-sm); font-family: var(--font-sans); font-size: 13px; font-weight: 500; border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.08); color: #fff; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; justify-content: center; }
+  .actions-row button:hover { background: rgba(255,255,255,.14); }
+  .actions-row button.primary { background: var(--ok); border-color: var(--ok); color: #fff; flex: 2; font-size: 14px; padding: 16px; }
+
+  .ing-list { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); }
+  .ing-list-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); }
+  .ing-list-head h2 { margin: 0 0 4px; font-size: 16px; font-weight: 600; letter-spacing: -0.015em; }
+  .ing-list-head p { margin: 0; font-size: 12px; color: var(--ink-3); }
+  .ing-row { padding: 14px 20px; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 30px 1fr auto; gap: 12px; align-items: center; cursor: pointer; }
+  .ing-row:hover { background: var(--bg-subtle); }
+  .ing-row.active { background: var(--petrol-50); border-left: 3px solid var(--petrol-500); padding-left: 17px; }
+  .ing-row.done { opacity: 0.65; }
+  .ing-num { width: 26px; height: 26px; border-radius: 50%; background: var(--bg-subtle); color: var(--ink-3); display: grid; place-items: center; font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+  .ing-row.done .ing-num { background: var(--ok-soft); color: var(--ok); }
+  .ing-row.active .ing-num { background: var(--petrol-500); color: #fff; }
+  .ing-row .name { font-size: 13px; font-weight: 500; color: var(--ink); }
+  .ing-row .meta { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  .ing-row .qty { font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; text-align: right; }
+  .ing-row .qty .target { color: var(--ink-3); font-size: 11px; }
+  .formula-summary { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); padding: 16px 20px; margin-bottom: 16px; }
+  .formula-summary .eyebrow { margin-bottom: 4px; }
+  .formula-summary h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.015em; }
+  .formula-summary .sub { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+  .progress-num { font-family: var(--font-mono); font-size: 22px; font-weight: 500; letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .progress-num span { font-size: 13px; color: var(--ink-3); }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/shell.jsx"></script>
+<script type="text/babel" data-presets="react">
+function App() {
+  const ingredients = [
+    { n:1, name:'Bupropiona Cloridrato', meta:'BUP-2410-A · DCB 1457', target:'4,500', actual:'4,512', state:'done' },
+    { n:2, name:'Estearato de magnésio', meta:'EMG-2403-B · 1%', target:'0,180', actual:'0,178', state:'active' },
+    { n:3, name:'Lactose monohidratada', meta:'LAC-2405-C · q.s.p.', target:'13,320', actual:'—', state:'pending' },
+  ];
+  return (
+    <div className="app-shell">
+      <Sidebar active="manipulation" />
+      <div className="app-main">
+        <Topbar />
+        <div className="app-content">
+          <PageHead
+            breadcrumb="OPERAÇÃO · MANIPULAÇÃO · ORD-1182 · PESAGEM"
+            title="Pesagem · bancada 02"
+            subtitle="Balança Marte AY220 conectada · Tara automática · Tolerância ±2%."
+            actions={<>
+              <button className="btn btn-secondary"><Icon name="archive"/>Histórico de pesagens</button>
+              <button className="btn btn-primary"><Icon name="check"/>Concluir pesagem</button>
+            </>}
+          />
+
+          <div className="weigh-grid">
+            <div>
+              <div className="formula-summary">
+                <div className="row" style={{justifyContent:'space-between', alignItems:'flex-start'}}>
+                  <div>
+                    <div className="eyebrow">ORD-1182 · BANCADA 02</div>
+                    <h2>Bupropiona 150mg · 30 cáps</h2>
+                    <div className="sub">Henrique Sá · Manipulador: J. Lima · Iniciado às 14:18</div>
+                  </div>
+                  <div style={{textAlign:'right'}}>
+                    <div className="progress-num">1<span>/3</span></div>
+                    <div style={{fontSize:11, color:'var(--ink-3)', fontFamily:'var(--font-mono)'}}>insumos pesados</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="scale-panel">
+                <div className="scale-content">
+                  <div className="scale-status">
+                    <span className="pill"><span className="dot"/>balança conectada</span>
+                    <span className="pill" style={{background:'rgba(255,255,255,.04)'}}>marte AY220 · serial COM3</span>
+                    <span className="pill" style={{background:'rgba(255,255,255,.04)'}}>tara: 12,420 g</span>
+                  </div>
+                  <div className="scale-readout">0,178<span className="unit">g</span></div>
+                  <div className="tolerance-bar">
+                    <span className="lbl">−2%</span>
+                    <div className="tolerance-track">
+                      <div className="zone" style={{left:'40%', right:'40%'}}/>
+                      <div className="marker" style={{left:'48%'}}/>
+                    </div>
+                    <span className="lbl">+2%</span>
+                  </div>
+                  <div className="scale-target">
+                    <div className="item"><span className="l">Alvo</span><span className="v">0,180 g</span></div>
+                    <div className="item"><span className="l">Tolerância</span><span className="v">±0,004 g</span></div>
+                    <div className="item"><span className="l">Diferença</span><span className="v delta-good">−0,002 g</span></div>
+                    <div className="item"><span className="l">Estado</span><span className="v delta-good">DENTRO ✓</span></div>
+                  </div>
+                  <div className="actions-row">
+                    <button><Icon name="x"/>Tarar</button>
+                    <button><Icon name="archive"/>Reenviar</button>
+                    <button className="primary"><Icon name="check"/>Confirmar peso</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="ing-list">
+              <div className="ing-list-head">
+                <h2>Roteiro da fórmula</h2>
+                <p>Pese na ordem indicada. Cada item exige confirmação para avançar.</p>
+              </div>
+              {ingredients.map(i => (
+                <div key={i.n} className={`ing-row ${i.state}`}>
+                  <div className="ing-num">{i.state === 'done' ? <Icon name="check" size={14}/> : i.n}</div>
+                  <div>
+                    <div className="name">{i.name}</div>
+                    <div className="meta">{i.meta}</div>
+                  </div>
+                  <div className="qty">
+                    {i.actual} g
+                    <div className="target">alvo {i.target} g</div>
+                  </div>
+                </div>
+              ))}
+              <div style={{padding:'16px 20px', background:'var(--bg-subtle)', borderTop:'1px solid var(--rule)'}}>
+                <div style={{fontFamily:'var(--font-mono)', fontSize:11, color:'var(--ink-3)', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:8}}>Total da fórmula</div>
+                <div style={{display:'flex', justifyContent:'space-between', fontFamily:'var(--font-mono)', fontSize:14}}>
+                  <span style={{color:'var(--ink-2)'}}>Massa total prevista</span>
+                  <span style={{color:'var(--ink)', fontWeight:500}}>18,000 g</span>
+                </div>
+                <div style={{display:'flex', justifyContent:'space-between', fontFamily:'var(--font-mono)', fontSize:14, marginTop:4}}>
+                  <span style={{color:'var(--ink-2)'}}>Acumulado</span>
+                  <span style={{color:'var(--ink)', fontWeight:500}}>4,690 g</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

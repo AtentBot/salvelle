@@ -1,0 +1,1112 @@
+﻿@{
+    ViewData["Title"] = "Calculadora de Tópicos";
+    Layout = "_Layout";
+}
+
+<style>
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* HEADER */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .calc-header {
+        background: var(--petrol-500);
+        color: white;
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(32, 201, 151, 0.3);
+    }
+    .calc-header h2 { margin: 0; font-weight: 700; }
+    .calc-header p { margin: 0.5rem 0 0; opacity: 0.9; }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* CARDS */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .calc-card {
+        background: white;
+        border: 1px solid var(--bg-subtle);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .calc-card-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--ink-3);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--ok);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* TABS DE FORMA */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .form-type-tabs {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+    .form-type-tab {
+        flex: 1;
+        min-width: 120px;
+        padding: 1rem;
+        border-radius: 12px;
+        border: 2px solid var(--bg-subtle);
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+    .form-type-tab:hover {
+        border-color: var(--ok);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(32, 201, 151, 0.15);
+    }
+    .form-type-tab.active {
+        background: var(--petrol-500);
+        color: white;
+        border-color: transparent;
+    }
+    .form-type-tab .icon {
+        font-size: 1.75rem;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    .form-type-tab .name {
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* SELEÇÃO DE BASE */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .base-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 0.75rem;
+    }
+    .base-option {
+        padding: 1rem;
+        border: 2px solid var(--bg-subtle);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+    }
+    .base-option:hover {
+        border-color: var(--ok);
+        background: #f8fffe;
+    }
+    .base-option.selected {
+        border-color: var(--ok);
+        background: linear-gradient(135deg, rgba(32, 201, 151, 0.1), rgba(13, 110, 253, 0.1));
+    }
+    .base-option .base-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--ink);
+    }
+    .base-option .base-desc {
+        font-size: 0.75rem;
+        color: var(--ink-3);
+        margin-top: 0.25rem;
+    }
+    .base-option.selected .base-name { color: var(--ok); }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* TABELA DE COMPONENTES */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .components-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 0.5rem;
+    }
+    .components-table th {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--ink-3);
+        padding: 0.5rem 0.75rem;
+        text-align: left;
+    }
+    .components-table td {
+        background: var(--bg-subtle);
+        padding: 0.75rem;
+        vertical-align: middle;
+    }
+    .components-table tr td:first-child { border-radius: 8px 0 0 8px; }
+    .components-table tr td:last-child { border-radius: 0 8px 8px 0; }
+    .components-table .controlled {
+        background: var(--danger-soft);
+        border-left: 3px solid var(--danger);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* AUTOCOMPLETE */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .autocomplete-wrapper {
+        position: relative;
+    }
+    .autocomplete-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid var(--rule);
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 1050;
+        display: none;
+    }
+    .autocomplete-results.show { display: block; }
+    .autocomplete-item {
+        padding: 10px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid var(--bg-subtle);
+        transition: background 0.15s;
+    }
+    .autocomplete-item:hover { background: var(--bg-subtle); }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item .name { font-weight: 600; }
+    .autocomplete-item .info { font-size: 0.8rem; color: var(--ink-3); }
+    .autocomplete-item .badge-controlled {
+        background: var(--danger);
+        color: white;
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 0.5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* RESULTADO */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .result-card {
+        background: var(--petrol-500);
+        color: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(32, 201, 151, 0.3);
+    }
+    .result-card h5 {
+        opacity: 0.9;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .result-section {
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    .result-section:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+    .result-section-title {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        opacity: 0.8;
+        margin-bottom: 0.5rem;
+    }
+    .result-line {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.3rem 0;
+        font-size: 0.95rem;
+    }
+    .result-line.qsp {
+        font-style: italic;
+        opacity: 0.85;
+    }
+    .result-total {
+        font-size: 1.5rem;
+        font-weight: 700;
+        padding-top: 1rem;
+        border-top: 2px solid rgba(255,255,255,0.3);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* COMPOSIÇÃO DA BASE */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .base-composition {
+        background: var(--bg-subtle);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    .base-composition h6 {
+        font-size: 0.75rem;
+        color: var(--ink-3);
+        margin-bottom: 0.75rem;
+        text-transform: uppercase;
+    }
+    .base-comp-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.25rem 0;
+        font-size: 0.85rem;
+        border-bottom: 1px dashed var(--rule);
+    }
+    .base-comp-item:last-child { border-bottom: none; }
+    .base-comp-item .qsp-tag {
+        background: var(--ok);
+        color: white;
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* BOTÕES E AÇÕES */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .btn-calculate {
+        background: var(--petrol-500);
+        border: none;
+        color: white;
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-radius: 12px;
+        width: 100%;
+        transition: all 0.2s;
+    }
+    .btn-calculate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(32, 201, 151, 0.4);
+        color: white;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* ALERTAS */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .alert-pharmacy {
+        border-radius: 10px;
+        border-left: 4px solid;
+    }
+    .alert-pharmacy.alert-warning { border-left-color: var(--amber-500); }
+    .alert-pharmacy.alert-info { border-left-color: var(--info); }
+    .alert-pharmacy.alert-danger { border-left-color: var(--danger); }
+
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    /* LOADING */
+    /* ═══════════════════════════════════════════════════════════════════════════ */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255,255,255,0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    .loading-overlay.show { display: flex; }
+</style>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="text-center">
+        <div class="spinner-border text-success" style="width: 3rem; height: 3rem;"></div>
+        <p class="mt-3 text-muted">Calculando formulação...</p>
+    </div>
+</div>
+
+<!-- Header -->
+<div class="calc-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h2><i class="bi bi-droplet-fill me-2"></i>Calculadora de Tópicos</h2>
+            <p>Cremes, Géis, Pomadas, Loções e Pastas</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="/FormasFarmaceuticas/Capsulas/Calculadora" class="btn btn-outline-light me-2">
+                <i class="bi bi-capsule me-1"></i>Cápsulas
+            </a>
+            <a href="/Formulacoes/Calculadora" class="btn btn-outline-light">
+                <i class="bi bi-droplet me-1"></i>Outras Formas
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Seleção do Tipo de Forma -->
+<div class="form-type-tabs" id="formTypeTabs">
+    <div class="form-type-tab active" data-type="CREME" onclick="selectFormType(this)">
+        <span class="icon">🧴</span>
+        <span class="name">Creme</span>
+    </div>
+    <div class="form-type-tab" data-type="GEL" onclick="selectFormType(this)">
+        <span class="icon">💧</span>
+        <span class="name">Gel</span>
+    </div>
+    <div class="form-type-tab" data-type="POMADA" onclick="selectFormType(this)">
+        <span class="icon">🫙</span>
+        <span class="name">Pomada</span>
+    </div>
+    <div class="form-type-tab" data-type="LOCAO" onclick="selectFormType(this)">
+        <span class="icon">🧪</span>
+        <span class="name">Loção</span>
+    </div>
+    <div class="form-type-tab" data-type="PASTA" onclick="selectFormType(this)">
+        <span class="icon">🥫</span>
+        <span class="name">Pasta</span>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Coluna Esquerda: Configuração -->
+    <div class="col-lg-7">
+        <!-- Quantidade -->
+        <div class="calc-card">
+            <div class="calc-card-title">
+                <span><i class="bi bi-rulers me-1"></i>Quantidade Total</span>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Quantidade</label>
+                    <input type="number" class="form-control form-control-lg" id="totalQuantity" 
+                           value="30" min="1" max="10000" step="1" onchange="updatePreview()">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Unidade</label>
+                    <select class="form-select form-select-lg" id="totalUnit" onchange="updatePreview()">
+                        <option value="g" selected>Gramas (g)</option>
+                        <option value="mL">Mililitros (mL)</option>
+                        <option value="kg">Quilogramas (kg)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seleção de Base -->
+        <div class="calc-card">
+            <div class="calc-card-title">
+                <span><i class="bi bi-box me-1"></i>Base / Veículo</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleBaseSearch()">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+            
+            <!-- Busca de base -->
+            <div class="mb-3" id="baseSearchContainer" style="display: none;">
+                <input type="text" class="form-control" id="baseSearch" 
+                       placeholder="Buscar base por nome..." oninput="filterBases()">
+            </div>
+            
+            <!-- Grid de bases -->
+            <div class="base-grid" id="baseGrid">
+                <div class="text-center py-4 text-muted">
+                    <div class="spinner-border spinner-border-sm me-2"></div>
+                    Carregando bases...
+                </div>
+            </div>
+
+            <!-- Composição da base selecionada -->
+            <div class="base-composition" id="baseComposition" style="display: none;">
+                <h6><i class="bi bi-list-check me-1"></i>Composição da Base</h6>
+                <div id="baseCompositionList"></div>
+            </div>
+        </div>
+
+        <!-- Componentes Ativos -->
+        <div class="calc-card">
+            <div class="calc-card-title">
+                <span><i class="bi bi-prescription2 me-1"></i>Ativos da Fórmula</span>
+                <button class="btn btn-sm btn-success" onclick="openAddComponentModal()">
+                    <i class="bi bi-plus-lg me-1"></i>Adicionar Ativo
+                </button>
+            </div>
+            
+            <table class="components-table" id="componentsTable">
+                <thead>
+                    <tr>
+                        <th style="width: 35%;">Matéria-Prima</th>
+                        <th style="width: 18%;">Concentração</th>
+                        <th style="width: 12%;">Unidade</th>
+                        <th style="width: 20%;">Quantidade</th>
+                        <th style="width: 15%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="componentsBody">
+                    <tr id="noComponentsRow">
+                        <td colspan="5" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                            <p class="mb-0 mt-2">Clique em "Adicionar Ativo" para incluir componentes</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Botão Calcular -->
+        <button class="btn-calculate mb-4" onclick="calculate()">
+            <i class="bi bi-calculator me-2"></i>Calcular Formulação
+        </button>
+    </div>
+
+    <!-- Coluna Direita: Resultado -->
+    <div class="col-lg-5">
+        <div class="sticky-top" style="top: 1rem;">
+            <!-- Card de Resultado -->
+            <div class="result-card" id="resultCard">
+                <h5><i class="bi bi-clipboard-data me-2"></i>Resultado do Cálculo</h5>
+                
+                <div id="resultContent">
+                    <div class="text-center py-4" style="opacity: 0.7;">
+                        <i class="bi bi-arrow-left-circle" style="font-size: 2.5rem;"></i>
+                        <p class="mt-3 mb-0">Configure a fórmula e clique em "Calcular"</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alertas -->
+            <div id="alertsContainer" class="mt-3"></div>
+
+            <!-- Ações -->
+            <div class="d-grid gap-2 mt-3" id="actionsContainer" style="display: none;">
+                <button class="btn btn-outline-light" onclick="copyResult()">
+                    <i class="bi bi-clipboard me-1"></i>Copiar Resultado
+                </button>
+                <button class="btn btn-outline-warning" onclick="createQuote()">
+                    <i class="bi bi-receipt me-1"></i>Gerar Orçamento
+                </button>
+                <button class="btn btn-outline-info" onclick="printLabel()">
+                    <i class="bi bi-printer me-1"></i>Imprimir Rótulo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Adicionar Componente -->
+<div class="modal fade" id="addComponentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Adicionar Ativo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Busca de matéria-prima -->
+                <div class="mb-3">
+                    <label class="form-label">Matéria-Prima</label>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" class="form-control" id="componentSearch" 
+                               placeholder="Digite para buscar..." 
+                               oninput="searchRawMaterial(this.value)" autocomplete="off">
+                        <div class="autocomplete-results" id="componentResults"></div>
+                    </div>
+                    <input type="hidden" id="selectedComponentId">
+                    <input type="hidden" id="selectedComponentName">
+                    <input type="hidden" id="selectedComponentControlled">
+                    <input type="hidden" id="selectedComponentControlType">
+                </div>
+
+                <!-- Concentração -->
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label">Concentração</label>
+                        <input type="number" class="form-control" id="componentConcentration" 
+                               step="0.001" min="0.001" value="1">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Unidade</label>
+                        <select class="form-select" id="componentUnit">
+                            <option value="%" selected>% (porcentagem)</option>
+                            <option value="mg/g">mg/g</option>
+                            <option value="mg/mL">mg/mL</option>
+                            <option value="g">g (absoluto)</option>
+                            <option value="mg">mg (absoluto)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Info do componente selecionado -->
+                <div id="selectedComponentInfo" class="alert alert-info mt-3" style="display: none;">
+                    <small id="componentInfoText"></small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="confirmAddComponent()">
+                    <i class="bi bi-plus-lg me-1"></i>Adicionar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // ═══════════════════════════════════════════════════════════════════════════
+    // VARIÁVEIS GLOBAIS
+    // ═══════════════════════════════════════════════════════════════════════════
+    let currentFormType = 'CREME';
+    let selectedBase = null;
+    let bases = [];
+    let components = [];
+    let lastResult = null;
+    let searchTimeout = null;
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // INICIALIZAÇÃO
+    // ═══════════════════════════════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', function() {
+        loadBases();
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SELEÇÃO DE TIPO DE FORMA
+    // ═══════════════════════════════════════════════════════════════════════════
+    function selectFormType(element) {
+        document.querySelectorAll('.form-type-tab').forEach(tab => tab.classList.remove('active'));
+        element.classList.add('active');
+        currentFormType = element.dataset.type;
+        
+        // Recarregar bases do tipo selecionado
+        loadBases();
+        
+        // Limpar seleção de base
+        selectedBase = null;
+        document.getElementById('baseComposition').style.display = 'none';
+        
+        // Atualizar preview
+        updatePreview();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CARREGAR BASES
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function loadBases() {
+        const grid = document.getElementById('baseGrid');
+        grid.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Carregando...</div>';
+
+        try {
+            const response = await fetch(`/api/TopicalFormulations/bases?formType=${currentFormType}`);
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                bases = result.data;
+                renderBases(bases);
+            } else {
+                grid.innerHTML = '<div class="text-center text-muted py-4">Nenhuma base encontrada</div>';
+            }
+        } catch (error) {
+            console.error('Erro ao carregar bases:', error);
+            grid.innerHTML = '<div class="text-center text-danger py-4">Erro ao carregar bases</div>';
+        }
+    }
+
+    function renderBases(basesToRender) {
+        const grid = document.getElementById('baseGrid');
+        
+        if (!basesToRender || basesToRender.length === 0) {
+            grid.innerHTML = '<div class="text-center text-muted py-4">Nenhuma base encontrada</div>';
+            return;
+        }
+
+        grid.innerHTML = basesToRender.map(base => `
+            <div class="base-option ${selectedBase?.id === base.id ? 'selected' : ''}" 
+                 onclick="selectBase('${base.id}')" data-base-id="${base.id}">
+                <div class="base-name">${base.name}</div>
+                <div class="base-desc">${base.description || ''}</div>
+            </div>
+        `).join('');
+    }
+
+    function toggleBaseSearch() {
+        const container = document.getElementById('baseSearchContainer');
+        container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        if (container.style.display === 'block') {
+            document.getElementById('baseSearch').focus();
+        }
+    }
+
+    function filterBases() {
+        const search = document.getElementById('baseSearch').value.toLowerCase();
+        const filtered = bases.filter(b => 
+            b.name.toLowerCase().includes(search) || 
+            (b.description && b.description.toLowerCase().includes(search))
+        );
+        renderBases(filtered);
+    }
+
+    async function selectBase(baseId) {
+        // Atualizar seleção visual
+        document.querySelectorAll('.base-option').forEach(opt => opt.classList.remove('selected'));
+        const selected = document.querySelector(`[data-base-id="${baseId}"]`);
+        if (selected) selected.classList.add('selected');
+
+        selectedBase = bases.find(b => b.id === baseId);
+
+        // Carregar composição da base
+        try {
+            const response = await fetch(`/api/TopicalFormulations/bases/${baseId}`);
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                selectedBase = result.data;
+                showBaseComposition(result.data);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar composição:', error);
+        }
+
+        updatePreview();
+    }
+
+    function showBaseComposition(base) {
+        const container = document.getElementById('baseComposition');
+        const list = document.getElementById('baseCompositionList');
+        
+        if (!base.compositions || base.compositions.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        list.innerHTML = base.compositions.map(comp => `
+            <div class="base-comp-item">
+                <span>${comp.rawMaterialName || comp.name}</span>
+                <span>
+                    ${comp.isQsp ? '<span class="qsp-tag">QSP</span>' : 
+                      (comp.percentage ? comp.percentage + '%' : comp.quantityPerYield + ' ' + (comp.unit || 'g'))}
+                </span>
+            </div>
+        `).join('');
+
+        container.style.display = 'block';
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BUSCA DE MATÉRIA-PRIMA
+    // ═══════════════════════════════════════════════════════════════════════════
+    function searchRawMaterial(term) {
+        clearTimeout(searchTimeout);
+        const resultsDiv = document.getElementById('componentResults');
+        
+        if (term.length < 2) {
+            resultsDiv.classList.remove('show');
+            return;
+        }
+
+        searchTimeout = setTimeout(async () => {
+            try {
+                const response = await fetch(`/api/RawMaterials/search?q=${encodeURIComponent(term)}&usage=TOPICAL&limit=15`);
+                const result = await response.json();
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    resultsDiv.innerHTML = result.data.map(rm => `
+                        <div class="autocomplete-item" onclick="selectRawMaterial('${rm.id}', '${rm.name.replace(/'/g, "\\'")}', ${rm.isControlled}, '${rm.controlType || ''}')">
+                            <div class="name">
+                                ${rm.name}
+                                ${rm.isControlled ? `<span class="badge-controlled">${rm.controlType}</span>` : ''}
+                            </div>
+                            <div class="info">
+                                ${rm.dcbCode ? `DCB: ${rm.dcbCode}` : ''} 
+                                ${rm.category ? `| ${rm.category}` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                    resultsDiv.classList.add('show');
+                } else {
+                    resultsDiv.innerHTML = '<div class="p-3 text-muted">Nenhum resultado encontrado</div>';
+                    resultsDiv.classList.add('show');
+                }
+            } catch (error) {
+                console.error('Erro na busca:', error);
+            }
+        }, 300);
+    }
+
+    function selectRawMaterial(id, name, isControlled, controlType) {
+        document.getElementById('selectedComponentId').value = id;
+        document.getElementById('selectedComponentName').value = name;
+        document.getElementById('selectedComponentControlled').value = isControlled;
+        document.getElementById('selectedComponentControlType').value = controlType;
+        document.getElementById('componentSearch').value = name;
+        document.getElementById('componentResults').classList.remove('show');
+
+        // Mostrar info
+        const infoDiv = document.getElementById('selectedComponentInfo');
+        const infoText = document.getElementById('componentInfoText');
+        
+        if (isControlled) {
+            infoDiv.className = 'alert alert-warning mt-3';
+            infoText.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i><strong>Substância Controlada (${controlType})</strong> - Requer receita especial`;
+        } else {
+            infoDiv.className = 'alert alert-info mt-3';
+            infoText.innerHTML = `<i class="bi bi-check-circle me-1"></i>Matéria-prima selecionada`;
+        }
+        infoDiv.style.display = 'block';
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GERENCIAMENTO DE COMPONENTES
+    // ═══════════════════════════════════════════════════════════════════════════
+    function openAddComponentModal() {
+        // Limpar formulário
+        document.getElementById('componentSearch').value = '';
+        document.getElementById('selectedComponentId').value = '';
+        document.getElementById('selectedComponentName').value = '';
+        document.getElementById('selectedComponentControlled').value = '';
+        document.getElementById('selectedComponentControlType').value = '';
+        document.getElementById('componentConcentration').value = '1';
+        document.getElementById('componentUnit').value = '%';
+        document.getElementById('componentResults').classList.remove('show');
+        document.getElementById('selectedComponentInfo').style.display = 'none';
+        
+        new bootstrap.Modal(document.getElementById('addComponentModal')).show();
+    }
+
+    function confirmAddComponent() {
+        const id = document.getElementById('selectedComponentId').value;
+        const name = document.getElementById('selectedComponentName').value;
+        const concentration = parseFloat(document.getElementById('componentConcentration').value);
+        const unit = document.getElementById('componentUnit').value;
+        const isControlled = document.getElementById('selectedComponentControlled').value === 'true';
+        const controlType = document.getElementById('selectedComponentControlType').value;
+
+        if (!id || !name) {
+            showToast('Selecione uma matéria-prima', 'warning');
+            return;
+        }
+
+        if (!concentration || concentration <= 0) {
+            showToast('Informe uma concentração válida', 'warning');
+            return;
+        }
+
+        // Verificar duplicado
+        if (components.some(c => c.rawMaterialId === id)) {
+            showToast('Esta matéria-prima já foi adicionada', 'warning');
+            return;
+        }
+
+        components.push({
+            rawMaterialId: id,
+            rawMaterialName: name,
+            concentration: concentration,
+            concentrationUnit: unit,
+            isControlled: isControlled,
+            controlType: controlType
+        });
+
+        renderComponents();
+        updatePreview();
+        
+        bootstrap.Modal.getInstance(document.getElementById('addComponentModal')).hide();
+        showToast('Ativo adicionado!', 'success');
+    }
+
+    function removeComponent(index) {
+        components.splice(index, 1);
+        renderComponents();
+        updatePreview();
+    }
+
+    function updateComponent(index, field, value) {
+        if (field === 'concentration') {
+            components[index].concentration = parseFloat(value) || 0;
+        } else if (field === 'unit') {
+            components[index].concentrationUnit = value;
+        }
+        updatePreview();
+    }
+
+    function renderComponents() {
+        const tbody = document.getElementById('componentsBody');
+        const totalQty = parseFloat(document.getElementById('totalQuantity').value) || 0;
+
+        if (components.length === 0) {
+            tbody.innerHTML = `
+                <tr id="noComponentsRow">
+                    <td colspan="5" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p class="mb-0 mt-2">Clique em "Adicionar Ativo" para incluir componentes</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = components.map((comp, index) => {
+            const qty = calculateComponentQuantity(comp, totalQty);
+            return `
+                <tr class="${comp.isControlled ? 'controlled' : ''}">
+                    <td>
+                        <strong>${comp.rawMaterialName}</strong>
+                        ${comp.isControlled ? `<br><small class="text-danger">${comp.controlType}</small>` : ''}
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm" 
+                               value="${comp.concentration}" step="0.001" min="0.001"
+                               onchange="updateComponent(${index}, 'concentration', this.value)">
+                    </td>
+                    <td>
+                        <select class="form-select form-select-sm" onchange="updateComponent(${index}, 'unit', this.value)">
+                            <option value="%" ${comp.concentrationUnit === '%' ? 'selected' : ''}>%</option>
+                            <option value="mg/g" ${comp.concentrationUnit === 'mg/g' ? 'selected' : ''}>mg/g</option>
+                            <option value="mg/mL" ${comp.concentrationUnit === 'mg/mL' ? 'selected' : ''}>mg/mL</option>
+                            <option value="g" ${comp.concentrationUnit === 'g' ? 'selected' : ''}>g</option>
+                            <option value="mg" ${comp.concentrationUnit === 'mg' ? 'selected' : ''}>mg</option>
+                        </select>
+                    </td>
+                    <td>
+                        <strong class="text-success">${qty}</strong>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeComponent(${index})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function calculateComponentQuantity(comp, totalQty) {
+        let qty = 0;
+        switch (comp.concentrationUnit) {
+            case '%':
+                qty = (comp.concentration / 100) * totalQty;
+                return qty >= 1 ? qty.toFixed(2) + ' g' : (qty * 1000).toFixed(2) + ' mg';
+            case 'mg/g':
+            case 'mg/mL':
+                qty = comp.concentration * totalQty / 1000;
+                return qty >= 1 ? qty.toFixed(2) + ' g' : (qty * 1000).toFixed(2) + ' mg';
+            case 'g':
+                return comp.concentration.toFixed(2) + ' g';
+            case 'mg':
+                return comp.concentration.toFixed(2) + ' mg';
+            default:
+                return '-';
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PREVIEW E CÁLCULO
+    // ═══════════════════════════════════════════════════════════════════════════
+    function updatePreview() {
+        renderComponents();
+    }
+
+    async function calculate() {
+        if (!selectedBase) {
+            showToast('Selecione uma base', 'warning');
+            return;
+        }
+
+        if (components.length === 0) {
+            showToast('Adicione pelo menos um ativo', 'warning');
+            return;
+        }
+
+        const totalQuantity = parseFloat(document.getElementById('totalQuantity').value);
+        if (!totalQuantity || totalQuantity <= 0) {
+            showToast('Informe uma quantidade válida', 'warning');
+            return;
+        }
+
+        // Mostrar loading
+        document.getElementById('loadingOverlay').classList.add('show');
+
+        const request = {
+            baseSubtypeId: selectedBase.id,
+            totalQuantity: totalQuantity,
+            quantityUnit: document.getElementById('totalUnit').value,
+            components: components.map(c => ({
+                rawMaterialId: c.rawMaterialId,
+                rawMaterialName: c.rawMaterialName,
+                concentration: c.concentration,
+                concentrationUnit: c.concentrationUnit
+            }))
+        };
+
+        try {
+            const response = await fetch('/api/TopicalFormulations/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(request)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                lastResult = result.data;
+                renderResult(result.data);
+                document.getElementById('actionsContainer').style.display = 'grid';
+            } else {
+                showToast(result.message || 'Erro no cálculo', 'danger');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showToast('Erro ao calcular formulação', 'danger');
+        } finally {
+            document.getElementById('loadingOverlay').classList.remove('show');
+        }
+    }
+
+    function renderResult(data) {
+        let html = '';
+
+        // Ativos
+        if (data.components && data.components.length > 0) {
+            html += `
+                <div class="result-section">
+                    <div class="result-section-title">Ativos</div>
+                    ${data.components.map(c => `
+                        <div class="result-line">
+                            <span>${c.rawMaterialName}</span>
+                            <span>${c.quantityDisplay || (c.calculatedQuantity?.toFixed(4) + ' g')}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Base
+        if (data.baseComponents && data.baseComponents.length > 0) {
+            html += `
+                <div class="result-section">
+                    <div class="result-section-title">Base: ${data.baseName || selectedBase.name}</div>
+                    ${data.baseComponents.map(b => `
+                        <div class="result-line ${b.isQsp ? 'qsp' : ''}">
+                            <span>${b.rawMaterialName || b.name}</span>
+                            <span>${b.quantityDisplay || (b.calculatedQuantity?.toFixed(2) + ' ' + (b.unit || 'g'))}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Total
+        html += `
+            <div class="result-total">
+                <span>TOTAL</span>
+                <span>${data.totalQuantity} ${data.quantityUnit || 'g'}</span>
+            </div>
+        `;
+
+        document.getElementById('resultContent').innerHTML = html;
+
+        // Alertas
+        renderAlerts(data.warnings || []);
+    }
+
+    function renderAlerts(warnings) {
+        const container = document.getElementById('alertsContainer');
+        
+        if (!warnings || warnings.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        container.innerHTML = warnings.map(w => `
+            <div class="alert alert-pharmacy alert-warning">
+                <i class="bi bi-exclamation-triangle me-2"></i>${w}
+            </div>
+        `).join('');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // AÇÕES
+    // ═══════════════════════════════════════════════════════════════════════════
+    function copyResult() {
+        if (!lastResult) return;
+
+        let text = `FORMULAÇÃO TÓPICA - ${currentFormType}\n`;
+        text += `Quantidade: ${lastResult.totalQuantity} ${lastResult.quantityUnit}\n`;
+        text += `Base: ${lastResult.baseName || selectedBase.name}\n\n`;
+        text += `ATIVOS:\n`;
+        
+        lastResult.components?.forEach(c => {
+            text += `- ${c.rawMaterialName}: ${c.quantityDisplay || c.calculatedQuantity + ' g'}\n`;
+        });
+
+        text += `\nBASE:\n`;
+        lastResult.baseComponents?.forEach(b => {
+            text += `- ${b.rawMaterialName || b.name}: ${b.quantityDisplay || b.calculatedQuantity + ' g'}\n`;
+        });
+
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Resultado copiado!', 'success');
+        });
+    }
+
+    function createQuote() {
+        if (!lastResult) return;
+        
+        // Salvar dados para a próxima página
+        sessionStorage.setItem('topicalCalculation', JSON.stringify({
+            formType: currentFormType,
+            base: selectedBase,
+            components: components,
+            result: lastResult
+        }));
+
+        window.location.href = '/Orcamentos/Novo?source=topical';
+    }
+
+    function printLabel() {
+        showToast('Funcionalidade em desenvolvimento', 'info');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // UTILITÁRIOS
+    // ═══════════════════════════════════════════════════════════════════════════
+    function showToast(message, type = 'info') {
+        let container = document.querySelector('.toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1100';
+            document.body.appendChild(container);
+        }
+
+        const bgClass = {
+            'success': 'bg-success',
+            'danger': 'bg-danger',
+            'warning': 'bg-warning text-dark',
+            'info': 'bg-info'
+        }[type] || 'bg-info';
+
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white ${bgClass} border-0`;
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        container.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    }
+
+    // Fechar autocomplete ao clicar fora
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.autocomplete-wrapper')) {
+            document.querySelectorAll('.autocomplete-results').forEach(r => r.classList.remove('show'));
+        }
+    });
+</script>
+}

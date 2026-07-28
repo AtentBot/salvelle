@@ -1,0 +1,172 @@
+@{
+    ViewData["Title"] = "Procedimentos Operacionais Padrão";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-file-earmark-text me-2"></i>POPs</h4>
+            <p class="text-muted mb-0">Procedimentos Operacionais Padrão</p>
+        </div>
+        <div>
+            <a href="/Qualidade" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+            <a href="/Qualidade/POPs/Editar" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Novo POP
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Categoria</label>
+                    <select class="form-select" id="filtroCategoria" onchange="carregarPOPs()">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="filtroStatus" onchange="carregarPOPs()">
+                        <option value="">Todos</option>
+                        <option value="RASCUNHO">Rascunho</option>
+                        <option value="REVISAO">Em Revisão</option>
+                        <option value="VIGENTE">Vigente</option>
+                        <option value="OBSOLETO">Obsoleto</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Buscar</label>
+                    <input type="text" class="form-control" id="filtroBusca" placeholder="Código ou título..." onkeyup="debounce(carregarPOPs, 300)()">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Título</th>
+                            <th>Categoria</th>
+                            <th class="text-center">Versão</th>
+                            <th class="text-center">Status</th>
+                            <th>Revisão</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaPOPs">
+                        <tr><td colspan="7" class="text-center py-4">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let timeoutId;
+    const debounce = (fn, delay) => () => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(fn, delay);
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        carregarCategorias();
+        carregarPOPs();
+    });
+
+    async function carregarCategorias() {
+        try {
+            const response = await fetch('/api/qualidade/pops/categorias');
+            const categorias = await response.json();
+            const select = document.getElementById('filtroCategoria');
+            
+            categorias.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.codigo;
+                option.textContent = cat.nome;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Erro ao carregar categorias:', error);
+        }
+    }
+
+    async function carregarPOPs() {
+        const categoria = document.getElementById('filtroCategoria').value;
+        const status = document.getElementById('filtroStatus').value;
+        
+        let url = '/api/qualidade/pops?pageSize=50';
+        if (categoria) url += `&categoria=${categoria}`;
+        if (status) url += `&status=${status}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            const tbody = document.getElementById('tabelaPOPs');
+
+            if (!data.items || data.items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Nenhum POP encontrado</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.items.map(pop => {
+                const hoje = new Date();
+                const revisao = new Date(pop.reviewDate);
+                const vencido = pop.status === 'VIGENTE' && revisao < hoje;
+
+                return `
+                    <tr>
+                        <td><code>${pop.code}</code></td>
+                        <td>${pop.title}</td>
+                        <td><span class="badge bg-light text-dark">${pop.category}</span></td>
+                        <td class="text-center">v${pop.version}</td>
+                        <td class="text-center">
+                            <span class="badge bg-${getStatusCor(pop.status)}">${pop.status}</span>
+                        </td>
+                        <td>
+                            ${pop.reviewDate ? formatarData(pop.reviewDate) : '-'}
+                            ${vencido ? '<i class="bi bi-exclamation-circle text-warning ms-1" title="Revisão pendente"></i>' : ''}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="/Qualidade/POPs/Editar/${pop.id}" class="btn btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button class="btn btn-outline-secondary" onclick="visualizarPOP('${pop.id}')" title="Visualizar">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join('');
+        } catch (error) {
+            console.error('Erro ao carregar POPs:', error);
+            document.getElementById('tabelaPOPs').innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Erro ao carregar dados</td></tr>`;
+        }
+    }
+
+    function getStatusCor(status) {
+        return { 'RASCUNHO': 'secondary', 'REVISAO': 'warning', 'VIGENTE': 'success', 'OBSOLETO': 'dark' }[status] || 'secondary';
+    }
+
+    function formatarData(dateString) {
+        return new Date(dateString).toLocaleDateString('pt-BR');
+    }
+
+    function visualizarPOP(id) {
+        // TODO: Implementar modal de visualização
+        window.location.href = `/Qualidade/POPs/Editar/${id}`;
+    }
+</script>
+}

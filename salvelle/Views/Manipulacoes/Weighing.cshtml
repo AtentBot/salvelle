@@ -1,0 +1,415 @@
+@model ViewModels.Manipulation.WeighingViewModel
+@{
+    ViewData["Title"] = $"Pesagem - {Model.OrderNumber}";
+    Layout = "_Layout";
+}
+
+<style>
+    .weighing-header {
+        background: var(--ink); color: #fff;
+        padding: 20px 24px;
+        border-radius: var(--r-md);
+        margin-bottom: 20px;
+        position: relative; overflow: hidden;
+    }
+    .weighing-header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(700px 300px at 90% 100%, color-mix(in srgb, var(--petrol-500) 35%, transparent), transparent 70%); pointer-events: none; }
+    .weighing-header > * { position: relative; z-index: 1; }
+    .component-card {
+        border: 1px solid var(--rule); background: var(--surface);
+        border-radius: var(--r-md);
+        margin-bottom: 12px; transition: all var(--t-base);
+    }
+    .component-card.weighed { border-color: var(--ok); background: var(--ok-soft); }
+    .component-card.controlled { border-left: 3px solid var(--controlled-black); }
+    .component-header {
+        padding: 14px 18px; border-bottom: 1px solid var(--rule);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .component-body { padding: 14px 18px; }
+    .batch-option {
+        padding: 12px; border: 1px solid var(--rule);
+        border-radius: var(--r-sm); margin-bottom: 6px;
+        cursor: pointer; transition: all var(--t-fast);
+    }
+    .batch-option:hover { border-color: var(--petrol-500); background: var(--bg-subtle); }
+    .batch-option.selected { border-color: var(--petrol-500); background: var(--petrol-50); }
+    .batch-option.expiring { border-color: var(--amber-500); background: var(--warn-soft); }
+    .weight-input {
+        font-size: 24px; text-align: center; font-weight: 600;
+        font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+    }
+    .deviation-indicator {
+        padding: 6px 14px; border-radius: var(--r-sm); font-weight: 500; font-size: 13px;
+    }
+    .deviation-ok { background: var(--ok-soft); color: var(--ok); }
+    .deviation-warning { background: var(--warn-soft); color: var(--warn); }
+    .deviation-error { background: var(--danger-soft); color: var(--danger); }
+    .scale-simulation {
+        background: var(--ink); color: var(--ok);
+        font-family: var(--font-mono);
+        padding: 16px; border-radius: var(--r-md);
+        text-align: center;
+    }
+    .scale-display { font-size: 36px; letter-spacing: 2px; font-variant-numeric: tabular-nums; }
+    .touch-btn { min-height: 50px; font-size: 16px; }
+</style>
+
+<div class="container-fluid py-3">
+    <!-- Header -->
+    <div class="weighing-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4 class="mb-1">
+                    <i class="bi bi-speedometer me-2"></i>Pesagem de Componentes
+                </h4>
+                <p class="mb-0 opacity-75">
+                    <strong>@Model.OrderNumber</strong> • @Model.FormulaName • @Model.QuantityToProduce @Model.Unit
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <span class="badge bg-light text-dark fs-6">
+                    <i class="bi bi-person me-1"></i>@Model.CustomerName
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Lista de Componentes -->
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Componentes (@Model.Components.Count)</h5>
+                <div>
+                    <span class="badge bg-success me-2" id="weighedCount">0</span> de @Model.Components.Count pesados
+                </div>
+            </div>
+
+            @for (int i = 0; i < Model.Components.Count; i++)
+            {
+                var comp = Model.Components[i];
+                <div class="component-card @(comp.IsControlled ? "controlled" : "")" id="comp-@i" data-index="@i">
+                    <div class="component-header">
+                        <div>
+                            <h6 class="mb-0">
+                                <span class="badge bg-secondary me-2">@(i + 1)</span>
+                                @comp.RawMaterialName
+                                @if (comp.IsControlled)
+                                {
+                                    <span class="badge bg-danger ms-2">Controlado</span>
+                                }
+                            </h6>
+                            @if (!string.IsNullOrEmpty(comp.DcbCode))
+                            {
+                                <small class="text-muted">DCB: @comp.DcbCode</small>
+                            }
+                        </div>
+                        <div class="text-end">
+                            <div class="fs-4 fw-bold text-primary">@comp.TotalQuantity.ToString("N4") @comp.Unit</div>
+                            <small class="text-muted">Quantidade necessária</small>
+                        </div>
+                    </div>
+                    <div class="component-body">
+                        <div class="row g-3">
+                            <!-- Seleção de Lote -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Lote (FEFO)</label>
+                                <div class="batch-options" id="batches-@i">
+                                    @if (comp.AvailableBatches.Any())
+                                    {
+                                        @foreach (var batch in comp.AvailableBatches)
+                                        {
+                                            <div class="batch-option @(batch.IsExpiringSoon ? "expiring" : "")" 
+                                                 data-batch-id="@batch.BatchId" 
+                                                 data-batch-number="@batch.BatchNumber"
+                                                 onclick="selectBatch(@i, '@batch.BatchId', '@batch.BatchNumber')">
+                                                <div class="d-flex justify-content-between">
+                                                    <strong>@batch.BatchNumber</strong>
+                                                    <span class="badge @(batch.IsExpiringSoon ? "bg-warning" : "bg-success")">
+                                                        @batch.ExpiryDateFormatted
+                                                    </span>
+                                                </div>
+                                                <small class="text-muted">Disponível: @batch.AvailableQuantity.ToString("N2") @comp.Unit</small>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-warning mb-0">
+                                            <i class="bi bi-exclamation-triangle me-2"></i>
+                                            Nenhum lote disponível!
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            
+                            <!-- Entrada de Peso -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Peso Realizado</label>
+                                <div class="input-group mb-2">
+                                    <input type="number" class="form-control weight-input" 
+                                           id="weight-@i" 
+                                           step="0.0001" 
+                                           placeholder="0.0000"
+                                           oninput="calculateDeviation(@i)">
+                                    <span class="input-group-text">@comp.Unit</span>
+                                </div>
+                                <div id="deviation-@i" class="deviation-indicator deviation-ok text-center" style="display: none;">
+                                    --
+                                </div>
+                                
+                                <!-- Botões de ajuste rápido -->
+                                <div class="btn-group w-100 mt-2">
+                                    <button class="btn btn-outline-secondary" onclick="adjustWeight(@i, -0.01)">-0.01</button>
+                                    <button class="btn btn-outline-secondary" onclick="adjustWeight(@i, -0.001)">-0.001</button>
+                                    <button class="btn btn-outline-primary" onclick="copyExpected(@i)">Exato</button>
+                                    <button class="btn btn-outline-secondary" onclick="adjustWeight(@i, 0.001)">+0.001</button>
+                                    <button class="btn btn-outline-secondary" onclick="adjustWeight(@i, 0.01)">+0.01</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Observações -->
+                        <div class="mt-3">
+                            <input type="text" class="form-control" id="notes-@i" placeholder="Observações deste componente (opcional)">
+                        </div>
+                        
+                        <!-- Botão de Confirmar -->
+                        <div class="text-end mt-3">
+                            <button class="btn btn-success touch-btn" onclick="confirmWeighing(@i)" id="btn-confirm-@i" disabled>
+                                <i class="bi bi-check-lg me-2"></i>Confirmar Pesagem
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Simulador de Balança -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-dark text-white">
+                    <i class="bi bi-speedometer me-2"></i>Balança
+                </div>
+                <div class="card-body p-0">
+                    <div class="scale-simulation">
+                        <div class="scale-display" id="scaleDisplay">0.0000</div>
+                        <small>gramas</small>
+                    </div>
+                    <div class="p-3">
+                        <select class="form-select mb-2" id="selectedScale">
+                            <option value="BAL001">Balança Analítica #1</option>
+                            <option value="BAL002">Balança Semi-Analítica #2</option>
+                            <option value="BAL003">Balança de Precisão #3</option>
+                        </select>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small">Temp. (°C)</label>
+                                <input type="number" class="form-control form-control-sm" id="envTemp" value="22">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Umidade (%)</label>
+                                <input type="number" class="form-control form-control-sm" id="envHumidity" value="55">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumo -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white">
+                    <i class="bi bi-list-check me-2"></i>Resumo
+                </div>
+                <div class="card-body">
+                    <div id="weighingSummary">
+                        <p class="text-muted text-center">Nenhum componente pesado</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ações -->
+            <div class="card shadow-sm">
+                <div class="card-body d-grid gap-2">
+                    <a href="/Manipulacoes/FichaPesagem/@Model.ManipulationOrderId" target="_blank" class="btn btn-outline-secondary touch-btn">
+                        <i class="bi bi-printer me-2"></i>Imprimir Ficha
+                    </a>
+                    <button class="btn btn-primary touch-btn" onclick="finishWeighing()" id="btnFinish" disabled>
+                        <i class="bi bi-check-all me-2"></i>Finalizar Pesagem
+                    </button>
+                    <a href="/Manipulacoes/Producao/@Model.ManipulationOrderId" class="btn btn-outline-danger touch-btn">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+const orderId = '@Model.ManipulationOrderId';
+const totalComponents = @Model.Components.Count;
+const expectedWeights = [@string.Join(",", Model.Components.Select(c => c.TotalQuantity.ToString(System.Globalization.CultureInfo.InvariantCulture)))];
+
+const weighingData = [];
+for (let i = 0; i < totalComponents; i++) {
+    weighingData.push({
+        componentId: '@Model.Components.FirstOrDefault()?.ComponentId',
+        batchId: null,
+        batchNumber: null,
+        expectedWeight: expectedWeights[i],
+        actualWeight: null,
+        notes: null,
+        confirmed: false
+    });
+}
+
+function selectBatch(index, batchId, batchNumber) {
+    // Remover seleção anterior
+    document.querySelectorAll(`#batches-${index} .batch-option`).forEach(el => {
+        el.classList.remove('selected');
+    });
+    
+    // Selecionar novo
+    const selected = document.querySelector(`#batches-${index} [data-batch-id="${batchId}"]`);
+    if (selected) {
+        selected.classList.add('selected');
+    }
+    
+    weighingData[index].batchId = batchId;
+    weighingData[index].batchNumber = batchNumber;
+    
+    checkConfirmButton(index);
+}
+
+function calculateDeviation(index) {
+    const weightInput = document.getElementById(`weight-${index}`);
+    const deviationEl = document.getElementById(`deviation-${index}`);
+    const expected = expectedWeights[index];
+    const actual = parseFloat(weightInput.value) || 0;
+    
+    if (actual === 0) {
+        deviationEl.style.display = 'none';
+        return;
+    }
+    
+    const deviation = ((actual - expected) / expected) * 100;
+    deviationEl.style.display = 'block';
+    
+    if (Math.abs(deviation) <= 2) {
+        deviationEl.className = 'deviation-indicator deviation-ok text-center';
+        deviationEl.innerHTML = `<i class="bi bi-check-circle me-1"></i> ${deviation.toFixed(2)}%`;
+    } else if (Math.abs(deviation) <= 5) {
+        deviationEl.className = 'deviation-indicator deviation-warning text-center';
+        deviationEl.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i> ${deviation.toFixed(2)}%`;
+    } else {
+        deviationEl.className = 'deviation-indicator deviation-error text-center';
+        deviationEl.innerHTML = `<i class="bi bi-x-circle me-1"></i> ${deviation.toFixed(2)}% FORA DO LIMITE`;
+    }
+    
+    weighingData[index].actualWeight = actual;
+    updateScaleDisplay(actual);
+    checkConfirmButton(index);
+}
+
+function adjustWeight(index, delta) {
+    const input = document.getElementById(`weight-${index}`);
+    const current = parseFloat(input.value) || 0;
+    input.value = (current + delta).toFixed(4);
+    calculateDeviation(index);
+}
+
+function copyExpected(index) {
+    const input = document.getElementById(`weight-${index}`);
+    input.value = expectedWeights[index].toFixed(4);
+    calculateDeviation(index);
+}
+
+function updateScaleDisplay(value) {
+    document.getElementById('scaleDisplay').textContent = value.toFixed(4);
+}
+
+function checkConfirmButton(index) {
+    const btn = document.getElementById(`btn-confirm-${index}`);
+    const hasBatch = weighingData[index].batchId !== null;
+    const hasWeight = weighingData[index].actualWeight > 0;
+    btn.disabled = !(hasBatch && hasWeight);
+}
+
+function confirmWeighing(index) {
+    const notes = document.getElementById(`notes-${index}`).value;
+    weighingData[index].notes = notes;
+    weighingData[index].confirmed = true;
+    
+    // Marcar card como pesado
+    document.getElementById(`comp-${index}`).classList.add('weighed');
+    document.getElementById(`btn-confirm-${index}`).disabled = true;
+    document.getElementById(`btn-confirm-${index}`).innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirmado';
+    document.getElementById(`btn-confirm-${index}`).classList.remove('btn-success');
+    document.getElementById(`btn-confirm-${index}`).classList.add('btn-outline-success');
+    
+    // Atualizar contadores
+    updateSummary();
+}
+
+function updateSummary() {
+    const confirmed = weighingData.filter(w => w.confirmed).length;
+    document.getElementById('weighedCount').textContent = confirmed;
+    
+    // Habilitar botão de finalizar se todos pesados
+    document.getElementById('btnFinish').disabled = (confirmed < totalComponents);
+    
+    // Atualizar resumo
+    const summaryHtml = weighingData
+        .filter(w => w.confirmed)
+        .map((w, i) => `
+            <div class="d-flex justify-content-between small border-bottom pb-1 mb-1">
+                <span>Comp. ${i + 1}</span>
+                <span class="fw-bold">${w.actualWeight?.toFixed(4) || '?'}</span>
+            </div>
+        `).join('');
+    
+    document.getElementById('weighingSummary').innerHTML = summaryHtml || '<p class="text-muted text-center">Nenhum componente pesado</p>';
+}
+
+async function finishWeighing() {
+    if (!confirm('Confirma a finalização da pesagem de todos os componentes?')) return;
+    
+    const components = weighingData.map((w, i) => ({
+        rawMaterialId: '@Model.Components.FirstOrDefault()?.ComponentId', // Simplificado
+        batchId: w.batchId,
+        batchNumber: w.batchNumber,
+        expectedWeight: w.expectedWeight,
+        actualWeight: w.actualWeight,
+        unit: '@Model.Components.FirstOrDefault()?.Unit'
+    }));
+    
+    try {
+        const response = await fetch(`/api/ManipulationOrders/${orderId}/steps/pesagem/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                components,
+                scaleId: document.getElementById('selectedScale').value,
+                scaleName: document.getElementById('selectedScale').selectedOptions[0].text,
+                environmentTemperature: parseFloat(document.getElementById('envTemp').value),
+                environmentHumidity: parseFloat(document.getElementById('envHumidity').value),
+                observations: 'Pesagem realizada via interface detalhada'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success || response.ok) {
+            alert('✅ Pesagem finalizada com sucesso!');
+            location.href = `/Manipulacoes/Producao/${orderId}`;
+        } else {
+            alert('❌ Erro: ' + (result.message || 'Falha ao salvar'));
+        }
+    } catch (error) {
+        alert('Erro: ' + error.message);
+    }
+}
+</script>
+}

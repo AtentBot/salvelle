@@ -1,0 +1,284 @@
+@using Models.Pharmacy
+@{
+    ViewData["Title"] = "Detalhes do Orçamento";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var quote = ViewBag.Quote as PrescriptionQuote;
+    var manipulationOrder = ViewBag.ManipulationOrder as ManipulationOrder;
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="/PrescriptionQuotes" class="btn btn-outline-secondary btn-sm mb-2">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+            <h2><i class="bi bi-receipt me-2"></i>Orçamento @quote?.Code</h2>
+        </div>
+        <div class="btn-group">
+            @if (quote?.Status == "PENDENTE")
+            {
+                <button type="button" class="btn btn-success" onclick="approveQuote('@quote?.Id')">
+                    <i class="bi bi-check-lg me-1"></i>Aprovar
+                </button>
+                <button type="button" class="btn btn-danger" onclick="rejectQuote('@quote?.Id')">
+                    <i class="bi bi-x-lg me-1"></i>Rejeitar
+                </button>
+            }
+            <button type="button" class="btn btn-outline-primary" onclick="copyPublicLink('@quote?.PublicToken')">
+                <i class="bi bi-link-45deg me-1"></i>Link Público
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Coluna Principal -->
+        <div class="col-lg-8">
+            <!-- Status -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">Status do Orçamento</h5>
+                            @{
+                                var statusClass = quote?.Status switch
+                                {
+                                    "PENDENTE" => "bg-warning text-dark",
+                                    "APROVADO" => "bg-success",
+                                    "REJEITADO" => "bg-danger",
+                                    "CONVERTIDO" => "bg-info",
+                                    "CANCELADO" => "bg-dark",
+                                    _ => "bg-secondary"
+                                };
+                            }
+                            <span class="badge @statusClass fs-6">@quote?.Status</span>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">Criado em</small><br>
+                            <strong>@quote?.CreatedAt.ToString("dd/MM/yyyy HH:mm")</strong>
+                        </div>
+                    </div>
+                    @if (manipulationOrder != null)
+                    {
+                        <hr>
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-box-seam text-success fs-4 me-3"></i>
+                            <div>
+                                <small class="text-muted">Ordem de Manipulação</small><br>
+                                <a href="/ManipulationOrders/Details/@manipulationOrder.Id" class="fw-bold">
+                                    @manipulationOrder.Code
+                                </a>
+                                <span class="badge bg-info ms-2">@manipulationOrder.Status</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Dados do Cliente -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-person me-2"></i>Cliente</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Nome</label>
+                            <p class="fw-bold">@quote?.CustomerName</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small">Telefone</label>
+                            <p>@(quote?.CustomerPhone ?? "-")</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small">E-mail</label>
+                            <p>@(quote?.CustomerEmail ?? "-")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dados do Médico -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-heart-pulse me-2"></i>Prescritor</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Nome</label>
+                            <p class="fw-bold">@quote?.DoctorName</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small">CRM</label>
+                            <p>@quote?.DoctorCrm @quote?.DoctorCrmState</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small">Especialidade</label>
+                            <p>@(quote?.DoctorSpecialty ?? "-")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fórmula -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-capsule me-2"></i>Fórmula</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">Forma Farmacêutica</label>
+                            <p class="fw-bold">@quote?.PharmaceuticalForm</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">Quantidade</label>
+                            <p class="fw-bold">@quote?.TotalQuantity</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">Via de Uso</label>
+                            <p>@(quote?.UsageType ?? "Não informado")</p>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(quote?.Instructions))
+                    {
+                        <div>
+                            <label class="form-label text-muted small">Posologia/Instruções</label>
+                            <p class="bg-light p-2 rounded">@quote?.Instructions</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna Lateral - Valores -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-currency-dollar me-2"></i>Valores</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Materiais:</span>
+                        <span>R$ @(quote?.MaterialsCost.ToString("N2") ?? "0,00")</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Mão de Obra:</span>
+                        <span>R$ @(quote?.LaborCost.ToString("N2") ?? "0,00")</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Embalagem:</span>
+                        <span>R$ @(quote?.PackagingCost.ToString("N2") ?? "0,00")</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Markup (@(quote?.MarkupPercentage.ToString("N0") ?? "0")%):</span>
+                        <span>R$ @(quote?.MarkupValue.ToString("N2") ?? "0,00")</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span>R$ @(quote?.Subtotal.ToString("N2") ?? "0,00")</span>
+                    </div>
+                    @if (quote?.DiscountValue > 0)
+                    {
+                        <div class="d-flex justify-content-between mb-2 text-danger">
+                            <span>Desconto (@(quote?.DiscountPercentage.ToString("N0") ?? "0")%):</span>
+                            <span>- R$ @(quote?.DiscountValue.ToString("N2") ?? "0,00")</span>
+                        </div>
+                    }
+                    <hr>
+                    <div class="d-flex justify-content-between fs-5 fw-bold">
+                        <span>Total:</span>
+                        <span class="text-success">R$ @(quote?.FinalPrice.ToString("N2") ?? "0,00")</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar me-2"></i>Prazos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Prazo de Produção:</span>
+                        <span class="fw-bold">@quote?.EstimatedDays dias</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Validade:</span>
+                        <span class="fw-bold">@quote?.ValidUntil.ToString("dd/MM/yyyy")</span>
+                    </div>
+                    @if (quote?.ValidUntil < DateTime.UtcNow && quote?.Status == "PENDENTE")
+                    {
+                        <div class="alert alert-warning mt-3 mb-0 py-2">
+                            <i class="bi bi-exclamation-triangle me-1"></i>Orçamento expirado
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Rejeição -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="rejectForm" method="post" action="/PrescriptionQuotes/Reject/@quote?.Id">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rejeitar Orçamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Motivo da Rejeição</label>
+                        <textarea class="form-control" name="reason" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Rejeitar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function approveQuote(id) {
+        if (confirm('Confirma a aprovação deste orçamento?\n\nUma Ordem de Manipulação será criada automaticamente.')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/PrescriptionQuotes/Approve/' + id;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function rejectQuote(id) {
+        new bootstrap.Modal(document.getElementById('rejectModal')).show();
+    }
+
+    function copyPublicLink(token) {
+        const url = window.location.origin + '/p/quote/' + token;
+        navigator.clipboard.writeText(url).then(() => {
+            alert('Link copiado!');
+        });
+    }
+</script>
+}

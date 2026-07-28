@@ -1,0 +1,185 @@
+@using Models.Pharmacy
+@{
+    ViewData["Title"] = ViewBag.Coupon != null ? "Editar Cupom" : "Novo Cupom";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var coupon = ViewBag.Coupon as Coupon;
+    var isEdit = coupon != null;
+}
+
+<div class="container py-4" style="max-width: 800px;">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/Cupons">Cupons</a></li>
+            <li class="breadcrumb-item active">@ViewData["Title"]</li>
+        </ol>
+    </nav>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0">
+                <i class="bi bi-ticket-perforated me-2"></i>
+                @ViewData["Title"]
+            </h5>
+        </div>
+        <div class="card-body">
+            @if(TempData["Error"] != null)
+            {
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-circle me-2"></i>
+                    @TempData["Error"]
+                </div>
+            }
+
+            <form method="post" action="@(isEdit ? $"/CuponsDesconto/Editar/{coupon!.Id}" : "/CuponsDesconto/Criar")">
+                <!-- Código do Cupom -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Código do Cupom *</label>
+                    <input type="text" name="Code" class="form-control form-control-lg text-uppercase" 
+                           placeholder="Ex: PRIMEIRA15" maxlength="50" required
+                           value="@(coupon?.Code ?? "")" @(isEdit ? "readonly" : "")>
+                    <div class="form-text">O código que os clientes digitarão. Apenas letras e números, sem espaços.</div>
+                </div>
+
+                <!-- Descrição -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Descrição</label>
+                    <input type="text" name="Description" class="form-control" 
+                           placeholder="Ex: Desconto para primeira compra" maxlength="200"
+                           value="@(coupon?.Description ?? "")">
+                </div>
+
+                <!-- Tipo e Valor do Desconto -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Tipo de Desconto *</label>
+                        <select name="DiscountType" class="form-select" id="discountType" onchange="updateDiscountUI()" required>
+                            @if(coupon?.DiscountType == "FIXED_VALUE")
+                            {
+                                <option value="PERCENTAGE">Porcentagem (%)</option>
+                                <option value="FIXED_VALUE" selected>Valor Fixo (R$)</option>
+                            }
+                            else
+                            {
+                                <option value="PERCENTAGE" selected>Porcentagem (%)</option>
+                                <option value="FIXED_VALUE">Valor Fixo (R$)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Valor do Desconto *</label>
+                        <div class="input-group">
+                            <span class="input-group-text" id="discountPrefix">%</span>
+                            <input type="number" name="DiscountValue" class="form-control" 
+                                   step="0.01" min="0" required id="discountValue"
+                                   value="@(coupon?.DiscountPercentage ?? coupon?.DiscountValue ?? 0)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Restrições -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Valor Mínimo do Pedido</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="number" name="MinOrderValue" class="form-control" 
+                                   step="0.01" min="0" placeholder="Opcional"
+                                   value="@(coupon?.MinOrderValue?.ToString("F2") ?? "")">
+                        </div>
+                        <div class="form-text">Deixe em branco para não ter mínimo</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Desconto Máximo</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="number" name="MaxDiscountValue" class="form-control" 
+                                   step="0.01" min="0" placeholder="Opcional"
+                                   value="@(coupon?.MaxDiscountValue?.ToString("F2") ?? "")">
+                        </div>
+                        <div class="form-text">Limite máximo do desconto em reais</div>
+                    </div>
+                </div>
+
+                <!-- Validade -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Válido a partir de *</label>
+                        <input type="date" name="ValidFrom" class="form-control" required
+                               value="@(coupon?.ValidFrom.ToString("yyyy-MM-dd") ?? BrazilTime.Now.ToString("yyyy-MM-dd"))">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Válido até *</label>
+                        <input type="date" name="ValidUntil" class="form-control" required
+                               value="@(coupon?.ValidUntil.ToString("yyyy-MM-dd") ?? BrazilTime.Now.AddDays(30).ToString("yyyy-MM-dd"))">
+                    </div>
+                </div>
+
+                <!-- Limites de Uso -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Máximo de Usos Total</label>
+                        <input type="number" name="MaxUses" class="form-control" 
+                               min="1" placeholder="Ilimitado"
+                               value="@(coupon?.MaxUses?.ToString() ?? "")">
+                        <div class="form-text">Deixe em branco para uso ilimitado</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Máximo por Cliente</label>
+                        <input type="number" name="MaxUsesPerCustomer" class="form-control" 
+                               min="1" placeholder="Ilimitado"
+                               value="@(coupon?.MaxUsesPerCustomer?.ToString() ?? "")">
+                        <div class="form-text">Quantas vezes cada cliente pode usar</div>
+                    </div>
+                </div>
+
+                <!-- Restrições Especiais -->
+                <div class="mb-4">
+                    <div class="form-check">
+                        <input type="checkbox" name="FirstPurchaseOnly" class="form-check-input" 
+                               id="firstPurchase" value="true"
+                               @(coupon?.FirstPurchaseOnly == true ? "checked" : "")>
+                        <label class="form-check-label" for="firstPurchase">
+                            <strong>Apenas primeira compra</strong>
+                            <br><small class="text-muted">Válido somente para clientes que nunca compraram</small>
+                        </label>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="d-flex justify-content-between">
+                    <a href="/Cupons" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>
+                        @(isEdit ? "Salvar Alterações" : "Criar Cupom")
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function updateDiscountUI() {
+    const type = document.getElementById('discountType').value;
+    const prefix = document.getElementById('discountPrefix');
+    const input = document.getElementById('discountValue');
+    
+    if (type === 'PERCENTAGE') {
+        prefix.textContent = '%';
+        input.max = 100;
+        input.placeholder = 'Ex: 15';
+    } else {
+        prefix.textContent = 'R$';
+        input.max = '';
+        input.placeholder = 'Ex: 50.00';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', updateDiscountUI);
+</script>
+}

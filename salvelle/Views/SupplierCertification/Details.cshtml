@@ -1,0 +1,213 @@
+@model Models.Pharmacy.SupplierCertificate
+@{
+    ViewData["Title"] = "Detalhes do Certificado";
+    var isExpired = Model.ExpiryDate.HasValue && Model.ExpiryDate.Value < DateTime.UtcNow;
+    var isExpiring = Model.ExpiryDate.HasValue && Model.ExpiryDate.Value <= DateTime.UtcNow.AddDays(30) && !isExpired;
+}
+
+@section Styles {
+<style>
+    .detail-wrap { max-width: 900px; }
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card + .ds-card { margin-top: 24px; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; gap: 10px; }
+    .ds-card-head i { color: var(--petrol-500); font-size: 16px; }
+    .ds-card-title { font-size: 16px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+    .ds-card-body { padding: 20px; }
+
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 24px; }
+    .field label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; margin-bottom: 3px; }
+    .field p { margin: 0; font-size: 14px; color: var(--ink); }
+    .field p.strong { font-weight: 600; }
+    .field p.mono { font-family: var(--font-mono); }
+
+    .ds-banner { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border-radius: var(--r-md); margin-bottom: 20px; border: 1px solid var(--rule); background: var(--surface); font-size: 14px; color: var(--ink-2); }
+    .ds-banner i { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .ds-banner strong { color: var(--ink); }
+    .ds-banner.is-ok { border-color: var(--ok-border); background: var(--ok-soft); }
+    .ds-banner.is-ok i { color: var(--ok); }
+    .ds-banner.is-warn { border-color: var(--warn-border); background: var(--warn-soft); }
+    .ds-banner.is-warn i { color: var(--warn); }
+    .ds-banner.is-danger { border-color: var(--danger-border); background: var(--danger-soft); }
+    .ds-banner.is-danger i { color: var(--danger); }
+
+    .notes-body { white-space: pre-wrap; margin: 0; font-size: 14px; color: var(--ink-2); line-height: 1.55; }
+    .danger-zone { display: flex; justify-content: flex-end; margin-top: 24px; }
+
+    @@media (max-width: 640px) {
+        .field-grid { grid-template-columns: 1fr; }
+        .page-head .row { width: 100%; }
+        .page-head .row .btn { flex: 1; justify-content: center; }
+    }
+</style>
+}
+
+<div class="detail-wrap">
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">FORNECEDORES · ANVISA</div>
+            <h1>Detalhes do Certificado</h1>
+            <p>@Model.CertificateType — @Model.Number</p>
+        </div>
+        <div class="row">
+            <a href="/SupplierCertification" class="btn btn-secondary"><i class="bi bi-arrow-left"></i>Voltar</a>
+            <a href="/SupplierCertification/Edit/@Model.Id" class="btn btn-secondary"><i class="bi bi-pencil"></i>Editar</a>
+            @if (isExpired || isExpiring)
+            {
+                <a href="/SupplierCertification/Renew/@Model.Id" class="btn btn-amber"><i class="bi bi-arrow-repeat"></i>Renovar</a>
+            }
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="ds-banner is-ok"><i class="bi bi-check-circle-fill"></i><div>@TempData["Success"]</div></div>
+    }
+
+    @if (isExpired)
+    {
+        <div class="ds-banner is-danger">
+            <i class="bi bi-exclamation-octagon-fill"></i>
+            <div><strong>Certificado vencido!</strong> Venceu em @Model.ExpiryDate?.ToString("dd/MM/yyyy"). É necessário renovar para continuar operando com este fornecedor.</div>
+        </div>
+    }
+    else if (isExpiring)
+    {
+        <div class="ds-banner is-warn">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div><strong>Atenção!</strong> Este certificado vence em @Model.DaysUntilExpiry dias (@Model.ExpiryDate?.ToString("dd/MM/yyyy")). Providencie a renovação.</div>
+        </div>
+    }
+
+    <div class="ds-card">
+        <div class="ds-card-head">
+            <i class="bi bi-building"></i>
+            <h3 class="ds-card-title">Fornecedor</h3>
+        </div>
+        <div class="ds-card-body">
+            <div class="field-grid">
+                <div class="field"><label>Razão social</label><p class="strong">@Model.Supplier?.CompanyName</p></div>
+                <div class="field"><label>Nome fantasia</label><p>@(Model.Supplier?.TradeName ?? "—")</p></div>
+                <div class="field"><label>CNPJ</label><p class="mono">@Model.Supplier?.Cnpj</p></div>
+                <div class="field">
+                    <label>Status do fornecedor</label>
+                    <p>
+                        @if (Model.Supplier?.IsActive == true)
+                        {
+                            <span class="badge badge-ok badge-no-dot">Ativo</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-neutral badge-no-dot">Inativo</span>
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ds-card">
+        <div class="ds-card-head">
+            <i class="bi bi-file-earmark-text"></i>
+            <h3 class="ds-card-title">Dados do certificado</h3>
+        </div>
+        <div class="ds-card-body">
+            <div class="field-grid">
+                <div class="field"><label>Tipo</label><p><span class="badge badge-petrol badge-no-dot">@Model.CertificateType</span></p></div>
+                <div class="field"><label>Nome</label><p>@Model.Name</p></div>
+                <div class="field"><label>Número</label><p class="strong mono">@Model.Number</p></div>
+                <div class="field"><label>Órgão emissor</label><p>@(Model.IssuingAuthority ?? "ANVISA")</p></div>
+                <div class="field"><label>Data de emissão</label><p class="mono">@(Model.IssueDate?.ToString("dd/MM/yyyy") ?? "—")</p></div>
+                <div class="field">
+                    <label>Data de validade</label>
+                    <p class="mono" style="color:@(isExpired ? "var(--danger)" : isExpiring ? "var(--warn)" : "var(--ink)");font-weight:@(isExpired || isExpiring ? "600" : "400");">
+                        @(Model.ExpiryDate?.ToString("dd/MM/yyyy") ?? "Sem validade definida")
+                    </p>
+                </div>
+                <div class="field">
+                    <label>Status</label>
+                    <p>
+                        @if (Model.Status == "Válido" && !isExpired)
+                        {
+                            <span class="badge badge-ok badge-no-dot">Válido</span>
+                        }
+                        else if (isExpired)
+                        {
+                            <span class="badge badge-danger badge-no-dot">Vencido</span>
+                        }
+                        else if (Model.Status == "Revogado")
+                        {
+                            <span class="badge badge-neutral badge-no-dot">Revogado</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-warn badge-no-dot">@Model.Status</span>
+                        }
+                    </p>
+                </div>
+                <div class="field"><label>Ativo</label><p>@(Model.IsActive ? "Sim" : "Não")</p></div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Notes))
+    {
+        <div class="ds-card">
+            <div class="ds-card-head">
+                <i class="bi bi-sticky"></i>
+                <h3 class="ds-card-title">Observações</h3>
+            </div>
+            <div class="ds-card-body">
+                <p class="notes-body">@Model.Notes</p>
+            </div>
+        </div>
+    }
+
+    <div class="ds-card">
+        <div class="ds-card-head">
+            <i class="bi bi-clock-history"></i>
+            <h3 class="ds-card-title">Auditoria</h3>
+        </div>
+        <div class="ds-card-body">
+            <div class="field-grid">
+                <div class="field"><label>Cadastrado em</label><p class="mono">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p></div>
+                <div class="field"><label>Última atualização</label><p class="mono">@Model.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</p></div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Status != "Revogado" && Model.IsActive)
+    {
+        <div class="danger-zone">
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#revokeModal">
+                <i class="bi bi-x-octagon"></i>Revogar certificado
+            </button>
+        </div>
+    }
+</div>
+
+<div class="modal fade" id="revokeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="Revoke" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-x-octagon me-2"></i>Revogar Certificado</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="ds-banner is-warn" style="margin-bottom:16px;">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <div>Esta ação irá revogar o certificado. O fornecedor não poderá mais ser utilizado para compras de controlados até que um novo certificado seja cadastrado.</div>
+                    </div>
+                    <label class="input-label">Motivo da revogação <span style="color:var(--danger);font-weight:600;">*</span></label>
+                    <textarea name="reason" class="textarea" rows="3" required placeholder="Informe o motivo da revogação…"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-x-octagon"></i>Confirmar revogação</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

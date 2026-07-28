@@ -1,0 +1,131 @@
+@model List<Models.SpecialPrescriptionControl>
+@{
+    ViewData["Title"] = "Relatório de Receituários";
+}
+
+@section Styles {
+<style>
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card.pad { padding: 20px; }
+    .ds-card + .ds-card { margin-top: 24px; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .ds-card-eyebrow { font-family: var(--font-mono); font-size: 11px; color: var(--petrol-500); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ds-card-title { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+
+    .filter-grid { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 14px; align-items: end; }
+
+    .empty-row { text-align: center; color: var(--ink-3); padding: 40px 24px; }
+    .empty-row i { font-size: 30px; display: block; margin-bottom: 8px; color: var(--ink-5); }
+
+    .summary-foot { padding: 14px 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-2); }
+    .summary-foot strong { color: var(--ink); }
+
+    @@media (max-width: 780px) {
+        .filter-grid { grid-template-columns: 1fr 1fr; }
+        table.responsive-stack thead { display: none; }
+        table.responsive-stack tbody tr { display: block; border-bottom: 1px solid var(--rule); padding: 12px 16px; }
+        table.responsive-stack tbody tr:hover td { background: transparent; }
+        table.responsive-stack tbody td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 5px 0; border: none; text-align: right; }
+        table.responsive-stack tbody td::before { content: attr(data-label); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; text-align: left; }
+    }
+    @@media print {
+        .page-head .row, form { display: none !important; }
+        .ds-card { border: 1px solid #000 !important; box-shadow: none !important; }
+    }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">AUDITORIA · RECEITUÁRIOS</div>
+            <h1>Receituários</h1>
+            <p>Controle de receitas especiais.</p>
+        </div>
+        <div class="row">
+            <a href="/Audit" class="btn btn-secondary"><i class="bi bi-arrow-left"></i>Voltar</a>
+            <button onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer"></i>Imprimir</button>
+        </div>
+    </div>
+
+    <div class="ds-card pad" style="margin-bottom:24px;">
+        <form method="get" class="filter-grid">
+            <div>
+                <label class="input-label">Data inicial</label>
+                <input type="date" name="startDate" class="input" value="@(((DateTime?)ViewBag.StartDate)?.ToString("yyyy-MM-dd"))">
+            </div>
+            <div>
+                <label class="input-label">Data final</label>
+                <input type="date" name="endDate" class="input" value="@(((DateTime?)ViewBag.EndDate)?.ToString("yyyy-MM-dd"))">
+            </div>
+            <div>
+                <label class="input-label">Tipo</label>
+                <select name="type" class="select">
+                    <option value="">Todos</option>
+                    <option value="AZUL">Azul (B)</option>
+                    <option value="AMARELA">Amarela (A)</option>
+                    <option value="BRANCA">Branca (C)</option>
+                </select>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i>Filtrar</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="ds-card">
+        <div class="ds-card-head">
+            <div>
+                <div class="ds-card-eyebrow">Livro de receitas</div>
+                <h3 class="ds-card-title">Receitas especiais</h3>
+            </div>
+            <span class="badge badge-neutral badge-no-dot">@(Model?.Count ?? 0) registro(s)</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table responsive-stack mb-0">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Nº receita</th>
+                        <th>Paciente</th>
+                        <th>Prescritor</th>
+                        <th>CRM</th>
+                        <th>Medicação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var p in Model)
+                        {
+                            var typeBadge = p.PrescriptionType == "AZUL" ? "badge-info" : p.PrescriptionType == "AMARELA" ? "badge-warn" : "badge-neutral";
+                            <tr>
+                                <td data-label="Data" class="mono" style="color:var(--ink-3);">@p.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                <td data-label="Tipo"><span class="badge @typeBadge badge-no-dot">@p.PrescriptionType</span></td>
+                                <td data-label="Nº receita" class="mono" style="color:var(--ink-2);">@p.PrescriptionNumber</td>
+                                <td data-label="Paciente"><span style="color:var(--ink);font-weight:500;">@p.PatientName</span></td>
+                                <td data-label="Prescritor">@p.DoctorName</td>
+                                <td data-label="CRM" class="mono" style="color:var(--ink-3);">@p.DoctorCrm</td>
+                                <td data-label="Medicação">@p.Medication</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="empty-row">
+                                <i class="bi bi-inbox"></i>
+                                Nenhuma receita encontrada no período.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Model != null && Model.Any())
+        {
+            <div class="summary-foot"><strong>Total:</strong> @Model.Count receita(s)</div>
+        }
+    </div>
+</div>

@@ -1,0 +1,194 @@
+@* Partial View para Etapa de Mistura *@
+@model dynamic
+
+<div class="card border-info mb-4" id="stepMistura">
+    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-arrow-repeat me-2"></i>
+            Etapa 3: Mistura
+        </h5>
+        <span class="badge bg-white text-info" id="statusMistura">PENDENTE</span>
+    </div>
+    <div class="card-body">
+        <form id="formMistura">
+            <div class="row g-3">
+                <!-- Método de Mistura -->
+                <div class="col-md-6">
+                    <label class="form-label">Método de Mistura <span class="text-danger">*</span></label>
+                    <select id="metodoMistura" name="MixingMethod" class="form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="HOMOGENEIZACAO">Homogeneização</option>
+                        <option value="TRITURACAO">Trituração</option>
+                        <option value="DILUICAO_GEOMETRICA">Diluição Geométrica</option>
+                        <option value="LEVIGACAO">Levigação</option>
+                        <option value="ESPATULACAO">Espatulação</option>
+                        <option value="AGITACAO">Agitação Mecânica</option>
+                    </select>
+                </div>
+
+                <!-- Equipamento -->
+                <div class="col-md-6">
+                    <label class="form-label">Equipamento Utilizado</label>
+                    <select id="equipamentoMistura" name="Equipment" class="form-select">
+                        <option value="">Selecione...</option>
+                        <option value="GRAL_PISTILO">Gral e Pistilo</option>
+                        <option value="MISTURADOR_V">Misturador em V</option>
+                        <option value="HOMOGENEIZADOR">Homogeneizador</option>
+                        <option value="AGITADOR_MECANICO">Agitador Mecânico</option>
+                        <option value="ULTRATURRAX">Ultra-Turrax</option>
+                        <option value="OUTRO">Outro</option>
+                    </select>
+                </div>
+
+                <!-- Tempo de Mistura -->
+                <div class="col-md-4">
+                    <label class="form-label">Tempo de Mistura (min) <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="number" id="tempoMistura" name="MixingDuration" class="form-control" min="1" required>
+                        <span class="input-group-text">min</span>
+                    </div>
+                </div>
+
+                <!-- Velocidade -->
+                <div class="col-md-4">
+                    <label class="form-label">Velocidade</label>
+                    <select id="velocidadeMistura" name="MixingSpeed" class="form-select">
+                        <option value="">N/A</option>
+                        <option value="BAIXA">Baixa</option>
+                        <option value="MEDIA">Média</option>
+                        <option value="ALTA">Alta</option>
+                    </select>
+                </div>
+
+                <!-- Cronômetro -->
+                <div class="col-md-4">
+                    <label class="form-label">Cronômetro</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-stopwatch"></i></span>
+                        <input type="text" id="cronometroMistura" class="form-control text-center fw-bold" value="00:00" readonly>
+                        <button type="button" class="btn btn-outline-success" onclick="startTimerMistura()">
+                            <i class="bi bi-play-fill"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="stopTimerMistura()">
+                            <i class="bi bi-stop-fill"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Observações -->
+                <div class="col-12">
+                    <label class="form-label">Observações</label>
+                    <textarea id="observacoesMistura" name="Observations" class="form-control" rows="2" 
+                        placeholder="Observações sobre a mistura..."></textarea>
+                </div>
+            </div>
+
+            <!-- Checklist Visual -->
+            <div class="mt-4 p-3 bg-light rounded">
+                <h6 class="mb-3"><i class="bi bi-check2-square me-2"></i>Checklist de Verificação</h6>
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="checkHomogeneidade">
+                            <label class="form-check-label" for="checkHomogeneidade">Homogeneidade visual OK</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="checkCor">
+                            <label class="form-check-label" for="checkCor">Cor uniforme</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="checkGrumos">
+                            <label class="form-check-label" for="checkGrumos">Sem grumos</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="mt-4 d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary" onclick="voltarEtapa('PESAGEM')">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </button>
+                <div>
+                    <button type="button" class="btn btn-outline-warning me-2" onclick="salvarRascunho('mistura')">
+                        <i class="bi bi-save me-1"></i> Salvar Rascunho
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-lg me-1"></i> Concluir Mistura
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let timerMistura;
+    let segundosMistura = 0;
+    let misturaInicio;
+
+    function startTimerMistura() {
+        if (timerMistura) return;
+        
+        misturaInicio = new Date();
+        timerMistura = setInterval(() => {
+            segundosMistura++;
+            const min = Math.floor(segundosMistura / 60).toString().padStart(2, '0');
+            const sec = (segundosMistura % 60).toString().padStart(2, '0');
+            document.getElementById('cronometroMistura').value = `${min}:${sec}`;
+            document.getElementById('tempoMistura').value = Math.floor(segundosMistura / 60);
+        }, 1000);
+    }
+
+    function stopTimerMistura() {
+        if (timerMistura) {
+            clearInterval(timerMistura);
+            timerMistura = null;
+        }
+    }
+
+    document.getElementById('formMistura').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        stopTimerMistura();
+        
+        const orderId = document.getElementById('orderId').value;
+        
+        const data = {
+            mixingMethod: document.getElementById('metodoMistura').value,
+            equipment: document.getElementById('equipamentoMistura').value,
+            mixingDuration: parseInt(document.getElementById('tempoMistura').value) || 0,
+            mixingSpeed: document.getElementById('velocidadeMistura').value,
+            observations: document.getElementById('observacoesMistura').value,
+            startTime: misturaInicio?.toISOString()
+        };
+
+        try {
+            const response = await fetch(`/api/ManipulationWorkflow/${orderId}/complete-mistura`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showToast('Mistura concluída com sucesso!', 'success');
+                document.getElementById('statusMistura').textContent = 'CONCLUÍDA';
+                document.getElementById('statusMistura').className = 'badge bg-success';
+                
+                // Avançar para próxima etapa
+                avancarEtapa('ENVASE');
+            } else {
+                showToast(result.message || 'Erro ao concluir mistura', 'danger');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showToast('Erro ao processar requisição', 'danger');
+        }
+    });
+</script>

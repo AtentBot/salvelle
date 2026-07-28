@@ -1,0 +1,646 @@
+﻿@model Models.OnlineOrder
+@{
+    ViewData["Title"] = $"Pedido {Model.OrderNumber}";
+    Layout = "_Layout";
+    
+    var statusClass = Model.Status?.ToLower() ?? "pending";
+    var statusDisplay = Model.Status switch
+    {
+        "PENDING" => "Pendente",
+        "CONFIRMED" => "Confirmado",
+        "PREPARING" => "Em Preparação",
+        "READY" => "Pronto para Retirada",
+        "DELIVERED" => "Entregue",
+        "CANCELLED" => "Cancelado",
+        _ => Model.Status
+    };
+}
+
+<style>
+    .order-detail-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    .order-detail-card h6 {
+        color: var(--ink-3);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--rule);
+    }
+    
+    .status-badge-lg {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 20px;
+        border-radius: 30px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+    .status-badge-lg.pending { background: var(--warn-soft); color: var(--amber-700); }
+    .status-badge-lg.confirmed { background: var(--info-soft); color: #1e40af; }
+    .status-badge-lg.preparing { background: #ede9fe; color: #5b21b6; }
+    .status-badge-lg.ready { background: var(--ok-soft); color: #065f46; }
+    .status-badge-lg.delivered { background: var(--bg-subtle); color: var(--ink-2); }
+    .status-badge-lg.cancelled { background: var(--danger-soft); color: var(--danger); }
+    
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--rule);
+    }
+    .timeline-item {
+        position: relative;
+        padding-bottom: 20px;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -26px;
+        top: 4px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--rule);
+    }
+    .timeline-item.active::before {
+        background: var(--petrol-500);
+    }
+    .timeline-item.completed::before {
+        background: var(--ok);
+    }
+    .timeline-time {
+        font-size: 12px;
+        color: var(--ink-3);
+    }
+    .timeline-title {
+        font-weight: 500;
+        color: var(--ink-2);
+    }
+    
+    .item-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--bg-subtle);
+    }
+    .item-row:last-child {
+        border-bottom: none;
+    }
+    .item-name {
+        font-weight: 500;
+    }
+    .item-qty {
+        color: var(--ink-3);
+        font-size: 14px;
+    }
+    .item-price {
+        font-weight: 600;
+        color: var(--ok);
+    }
+    
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+    }
+    .total-row.final {
+        font-size: 20px;
+        font-weight: bold;
+        color: var(--ink);
+        border-top: 2px solid var(--rule);
+        padding-top: 16px;
+        margin-top: 8px;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .action-buttons .btn {
+        flex: 1;
+        min-width: 140px;
+    }
+    
+    .customer-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .customer-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: var(--petrol-500);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+    }
+    .customer-details h5 {
+        margin-bottom: 4px;
+    }
+    .customer-contact {
+        display: flex;
+        gap: 16px;
+        margin-top: 8px;
+    }
+    .customer-contact a {
+        color: var(--petrol-500);
+        text-decoration: none;
+    }
+    .customer-contact a:hover {
+        text-decoration: underline;
+    }
+    
+    .btn-pdv {
+        background: linear-gradient(135deg, var(--amber-500), var(--amber-700));
+        border: none;
+        color: white;
+    }
+    .btn-pdv:hover {
+        background: linear-gradient(135deg, var(--amber-700), #b45309);
+        color: white;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <a href="/OnlineOrders" class="text-decoration-none text-muted mb-2 d-inline-block">
+                <i class="bi bi-arrow-left me-1"></i>Voltar aos pedidos
+            </a>
+            <h4 class="mb-1">Pedido #@Model.OrderNumber</h4>
+            <span class="status-badge-lg @statusClass">
+                @if (Model.Status == "PENDING") { <i class="bi bi-clock"></i> }
+                else if (Model.Status == "CONFIRMED") { <i class="bi bi-check"></i> }
+                else if (Model.Status == "PREPARING") { <i class="bi bi-gear"></i> }
+                else if (Model.Status == "READY") { <i class="bi bi-check-circle"></i> }
+                else if (Model.Status == "DELIVERED") { <i class="bi bi-bag-check"></i> }
+                else if (Model.Status == "CANCELLED") { <i class="bi bi-x-circle"></i> }
+                @statusDisplay
+            </span>
+        </div>
+        <div class="text-end">
+            <div class="text-muted small">Criado em</div>
+            <div class="fw-bold">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Coluna Principal -->
+        <div class="col-lg-8">
+            <!-- Itens do Pedido -->
+            <div class="order-detail-card">
+                <h6><i class="bi bi-box me-2"></i>Itens do Pedido</h6>
+                
+                @if (Model.Items != null && Model.Items.Any())
+                {
+                    foreach (var item in Model.Items)
+                    {
+                        <div class="item-row">
+                            <div>
+                                <div class="item-name">@item.ProductName</div>
+                                <div class="item-qty">Qtd: @item.Quantity × R$ @item.UnitPrice.ToString("N2")</div>
+                                @if (!string.IsNullOrEmpty(item.Notes))
+                                {
+                                    <small class="text-muted"><i class="bi bi-chat-left-text me-1"></i>@item.Notes</small>
+                                }
+                            </div>
+                            <div class="item-price">R$ @item.TotalPrice.ToString("N2")</div>
+                        </div>
+                    }
+                }
+                
+                <div class="mt-4">
+                    <div class="total-row">
+                        <span>Subtotal</span>
+                        <span>R$ @Model.Subtotal.ToString("N2")</span>
+                    </div>
+                    @if (Model.Discount > 0)
+                    {
+                        <div class="total-row text-success">
+                            <span>Desconto</span>
+                            <span>- R$ @Model.Discount.ToString("N2")</span>
+                        </div>
+                    }
+                    @if (Model.DeliveryFee > 0)
+                    {
+                        <div class="total-row">
+                            <span>Taxa de entrega</span>
+                            <span>R$ @Model.DeliveryFee.ToString("N2")</span>
+                        </div>
+                    }
+                    <div class="total-row final">
+                        <span>Total</span>
+                        <span class="text-success">R$ @Model.Total.ToString("N2")</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observações -->
+            @if (!string.IsNullOrEmpty(Model.CustomerNotes))
+            {
+                <div class="order-detail-card">
+                    <h6><i class="bi bi-chat-left-text me-2"></i>Observações do Cliente</h6>
+                    <p class="mb-0">@Model.CustomerNotes</p>
+                </div>
+            }
+
+            <!-- Ações -->
+            <div class="order-detail-card">
+                <h6><i class="bi bi-lightning me-2"></i>Ações</h6>
+                
+                <div class="action-buttons">
+                    @if (Model.Status == "PENDING")
+                    {
+                        <button class="btn btn-primary btn-lg" onclick="confirmOrder()">
+                            <i class="bi bi-check-lg me-2"></i>Confirmar Pedido
+                        </button>
+                        <button class="btn btn-outline-danger btn-lg" onclick="showCancelModal()">
+                            <i class="bi bi-x-lg me-2"></i>Cancelar
+                        </button>
+                    }
+                    else if (Model.Status == "CONFIRMED")
+                    {
+                        <button class="btn btn-purple btn-lg" onclick="updateStatus('PREPARING')">
+                            <i class="bi bi-gear me-2"></i>Iniciar Preparação
+                        </button>
+                        <button class="btn btn-success btn-lg" onclick="markReady()">
+                            <i class="bi bi-check-circle me-2"></i>Marcar como Pronto
+                        </button>
+                        @if (Model.PaymentStatus != "PAID")
+                        {
+                            <button class="btn btn-pdv btn-lg" onclick="goToPDV()">
+                                <i class="bi bi-cash-register me-2"></i>Cobrar no PDV
+                            </button>
+                        }
+                    }
+                    else if (Model.Status == "PREPARING")
+                    {
+                        <button class="btn btn-success btn-lg" onclick="markReady()">
+                            <i class="bi bi-check-circle me-2"></i>Marcar como Pronto
+                        </button>
+                        @if (Model.PaymentStatus != "PAID")
+                        {
+                            <button class="btn btn-pdv btn-lg" onclick="goToPDV()">
+                                <i class="bi bi-cash-register me-2"></i>Cobrar no PDV
+                            </button>
+                        }
+                    }
+                    else if (Model.Status == "READY")
+                    {
+                        @if (Model.PaymentStatus != "PAID")
+                        {
+                            <button class="btn btn-pdv btn-lg" onclick="goToPDV()">
+                                <i class="bi bi-cash-register me-2"></i>Cobrar no PDV
+                            </button>
+                        }
+                        <button class="btn btn-success btn-lg" onclick="markDelivered()">
+                            <i class="bi bi-bag-check me-2"></i>Confirmar Entrega
+                        </button>
+                    }
+                    
+                    @if (Model.Customer?.Phone != null && Model.Status != "CANCELLED")
+                    {
+                        <a href="https://wa.me/55@Model.Customer.Phone" target="_blank" 
+                           class="btn btn-outline-success btn-lg">
+                            <i class="bi bi-whatsapp me-2"></i>WhatsApp
+                        </a>
+                    }
+                    
+                    <button class="btn btn-outline-secondary btn-lg" onclick="window.print()">
+                        <i class="bi bi-printer me-2"></i>Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna Lateral -->
+        <div class="col-lg-4">
+            <!-- Cliente -->
+            <div class="order-detail-card">
+                <h6><i class="bi bi-person me-2"></i>Cliente</h6>
+                
+                <div class="customer-info">
+                    <div class="customer-avatar">
+                        @(Model.Customer?.FullName?.Substring(0, 1).ToUpper() ?? "?")
+                    </div>
+                    <div class="customer-details">
+                        <h5 class="mb-0">@Model.Customer?.FullName</h5>
+                        <div class="customer-contact">
+                            <a href="tel:@Model.Customer?.Phone">
+                                <i class="bi bi-telephone me-1"></i>@Model.Customer?.Phone
+                            </a>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.Customer?.Email))
+                        {
+                            <small class="text-muted">@Model.Customer.Email</small>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Entrega/Retirada -->
+            <div class="order-detail-card">
+                <h6><i class="bi bi-geo-alt me-2"></i>Entrega</h6>
+                
+                @if (Model.DeliveryType == "DELIVERY")
+                {
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-info">Entrega</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.DeliveryAddress))
+                    {
+                        <p class="mb-0">@Model.DeliveryAddress</p>
+                    }
+                }
+                else
+                {
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary">Retirada na Loja</span>
+                    </div>
+                }
+            </div>
+
+            <!-- Timeline -->
+            <div class="order-detail-card">
+                <h6><i class="bi bi-clock-history me-2"></i>Histórico</h6>
+                
+                <div class="timeline">
+                    <div class="timeline-item completed">
+                        <div class="timeline-time">@Model.CreatedAt.ToString("dd/MM HH:mm")</div>
+                        <div class="timeline-title">Pedido criado</div>
+                    </div>
+                    
+                    @if (Model.Status != "PENDING" && Model.Status != "CANCELLED")
+                    {
+                        <div class="timeline-item completed">
+                            <div class="timeline-time">
+                                @(Model.UpdatedAt?.ToString("dd/MM HH:mm") ?? "-")
+                            </div>
+                            <div class="timeline-title">Pedido confirmado</div>
+                        </div>
+                    }
+                    
+                    @if (Model.Status == "PREPARING" || Model.Status == "READY" || Model.Status == "DELIVERED")
+                    {
+                        <div class="timeline-item completed">
+                            <div class="timeline-time">-</div>
+                            <div class="timeline-title">Em preparação</div>
+                        </div>
+                    }
+                    
+                    @if (Model.Status == "READY" || Model.Status == "DELIVERED")
+                    {
+                        <div class="timeline-item completed">
+                            <div class="timeline-time">
+                                @(Model.ReadyAt?.ToString("dd/MM HH:mm") ?? "-")
+                            </div>
+                            <div class="timeline-title">Pronto para retirada</div>
+                        </div>
+                    }
+                    
+                    @if (Model.Status == "DELIVERED")
+                    {
+                        <div class="timeline-item completed">
+                            <div class="timeline-time">
+                                @(Model.DeliveredAt?.ToString("dd/MM HH:mm") ?? "-")
+                            </div>
+                            <div class="timeline-title">Entregue</div>
+                        </div>
+                    }
+                    
+                    @if (Model.Status == "CANCELLED")
+                    {
+                        <div class="timeline-item" style="--color: var(--danger);">
+                            <div class="timeline-time">
+                                @(Model.CancelledAt?.ToString("dd/MM HH:mm") ?? "-")
+                            </div>
+                            <div class="timeline-title text-danger">Cancelado</div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Pagamento -->
+            <div class="order-detail-card">
+                <h6><i class="bi bi-credit-card me-2"></i>Pagamento</h6>
+                
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Status</span>
+                    <span class="badge @(Model.PaymentStatus == "PAID" ? "bg-success" : "bg-warning")">
+                        @(Model.PaymentStatus == "PAID" ? "Pago" : "Pendente")
+                    </span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.PaymentMethod))
+                {
+                    <div class="d-flex justify-content-between">
+                        <span>Forma</span>
+                        <span>@Model.PaymentMethod</span>
+                    </div>
+                }
+                
+                @if (Model.SaleId.HasValue)
+                {
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Venda vinculada</span>
+                        <a href="/Vendas/Detalhes/@Model.SaleId" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-receipt me-1"></i>Ver Venda
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cancelar -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancelar Pedido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Motivo do cancelamento *</label>
+                    <textarea id="cancelReason" class="form-control" rows="3" 
+                              placeholder="Informe o motivo..."></textarea>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="notifyCancel" checked>
+                    <label class="form-check-label" for="notifyCancel">
+                        Notificar cliente por WhatsApp
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Voltar</button>
+                <button type="button" class="btn btn-danger" onclick="confirmCancel()">
+                    <i class="bi bi-x-circle me-1"></i>Confirmar Cancelamento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const orderId = '@Model.Id';
+    
+    async function confirmOrder() {
+        if (!confirm('Confirmar este pedido? O cliente será notificado.')) return;
+        
+        try {
+            const response = await fetch(`/api/online-orders/${orderId}/confirm`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert('Pedido confirmado!');
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao confirmar pedido');
+        }
+    }
+    
+    async function updateStatus(status) {
+        try {
+            const response = await fetch(`/api/online-orders/${orderId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status, notifyCustomer: true })
+            });
+            const data = await response.json();
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao atualizar status');
+        }
+    }
+    
+    async function markReady() {
+        if (!confirm('Marcar como pronto? O cliente será notificado para retirada.')) return;
+        
+        try {
+            const response = await fetch(`/api/online-orders/${orderId}/ready`, {
+                method: 'PUT'
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert('Cliente notificado!');
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao atualizar pedido');
+        }
+    }
+    
+    async function markDelivered() {
+        if (!confirm('Confirmar entrega do pedido?')) return;
+        
+        try {
+            const response = await fetch(`/api/online-orders/${orderId}/deliver`, {
+                method: 'PUT'
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert('Pedido entregue!');
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao confirmar entrega');
+        }
+    }
+    
+    // NOVA FUNÇÃO: Ir para PDV para cobrar
+    function goToPDV() {
+        if (!confirm('Abrir PDV para processar pagamento deste pedido?')) return;
+        window.location.href = `/PDV?orderId=${orderId}`;
+    }
+    
+    function showCancelModal() {
+        document.getElementById('cancelReason').value = '';
+        new bootstrap.Modal(document.getElementById('cancelModal')).show();
+    }
+    
+    async function confirmCancel() {
+        const reason = document.getElementById('cancelReason').value;
+        const notify = document.getElementById('notifyCancel').checked;
+        
+        if (!reason.trim()) {
+            alert('Informe o motivo do cancelamento');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/online-orders/${orderId}/cancel`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason, notifyCustomer: notify })
+            });
+            const data = await response.json();
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('cancelModal')).hide();
+                alert('Pedido cancelado');
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao cancelar pedido');
+        }
+    }
+</script>
+<style>
+    .btn-purple {
+        background: var(--petrol-500);
+        border-color: var(--petrol-500);
+        color: white;
+    }
+    .btn-purple:hover {
+        background: var(--controlled-black);
+        border-color: var(--controlled-black);
+        color: white;
+    }
+    
+    @@media print {
+        .action-buttons, .btn, nav, .sidebar { display: none !important; }
+        .order-detail-card { box-shadow: none; border: 1px solid var(--rule); }
+    }
+</style>
+}

@@ -1,0 +1,89 @@
+@* ════════════════════════════════════════════════════════════════════════════
+   _IngredientPriceDisplay.cshtml
+   Partial View para exibição de preço de ingrediente com indicador visual
+   ════════════════════════════════════════════════════════════════════════════ *@
+
+@model dynamic
+
+@{
+    // Model esperado:
+    // - Name: string
+    // - Price: decimal
+    // - Unit: string
+    // - Source: int (1=ESTOQUE, 2=HISTORICO, 3=BASE)
+    // - Confidence: int (0-100)
+    // - Warning: string? (opcional)
+    // - ShowDetails: bool (opcional, default true)
+
+    var name = Model?.Name ?? "Ingrediente";
+    var price = Model?.Price ?? 0m;
+    var unit = Model?.Unit ?? "g";
+    var source = Model?.Source ?? 3;
+    var confidence = Model?.Confidence ?? 0;
+    var warning = Model?.Warning;
+    var showDetails = Model?.ShowDetails ?? true;
+
+    // Configuração por fonte
+    var sourceClass = source switch
+    {
+        1 => "stock",
+        2 => "historical",
+        _ => "base"
+    };
+
+    var sourceName = source switch
+    {
+        1 => "Em Estoque",
+        2 => "Estimado",
+        _ => "Tabela Base"
+    };
+
+    var sourceIcon = source switch
+    {
+        1 => "🟢",
+        2 => "🟡",
+        _ => "🔴"
+    };
+
+    // Nível de confiança
+    var confidenceClass = confidence >= 80 ? "high" : confidence >= 50 ? "medium" : "low";
+}
+
+<div class="ingredient-price-card @sourceClass" data-source="@source" data-confidence="@confidence">
+    <div class="ingredient-name">@name</div>
+    
+    <div class="ingredient-details">
+        <div>
+            <span class="price-value">R$ @price.ToString("N4")</span>
+            <span class="price-unit">/@unit</span>
+        </div>
+        
+        @if (showDetails)
+        {
+            <div class="d-flex align-items-center gap-2">
+                <span class="price-indicator @sourceClass">@sourceName</span>
+                <span class="confidence-badge @confidenceClass">
+                    <span class="confidence-value">@confidence%</span>
+                </span>
+            </div>
+        }
+        else
+        {
+            <span class="price-indicator @sourceClass" title="@sourceName - @confidence% confiança">
+                @sourceIcon
+            </span>
+        }
+    </div>
+    
+    @if (!string.IsNullOrEmpty(warning))
+    {
+        <div class="warning-text">⚠️ @warning</div>
+    }
+    
+    @if (showDetails)
+    {
+        <div class="confidence-bar-container mt-2" title="Confiança: @confidence%">
+            <div class="confidence-bar @confidenceClass" style="width: @confidence%"></div>
+        </div>
+    }
+</div>

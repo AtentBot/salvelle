@@ -1,0 +1,252 @@
+@{
+    ViewData["Title"] = "Gestão da Qualidade";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-shield-check me-2"></i>Gestão da Qualidade</h4>
+            <p class="text-muted mb-0">POPs, CAPAs e Indicadores de Qualidade</p>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-file-earmark-text text-primary fs-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0" id="totalPOPs">-</h3>
+                            <small class="text-muted">POPs Vigentes</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0" id="capasAbertas">-</h3>
+                            <small class="text-muted">CAPAs Abertas</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-check-circle text-success fs-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0" id="taxaAprovacao">-</h3>
+                            <small class="text-muted">Taxa Aprovação</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-calendar-x text-danger fs-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0" id="popsVencidos">-</h3>
+                            <small class="text-muted">POPs p/ Revisão</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acesso Rápido -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <a href="/Qualidade/POPs" class="card border-0 shadow-sm h-100 text-decoration-none">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-file-earmark-text fs-1 text-primary mb-3 d-block"></i>
+                    <h5 class="mb-2">POPs</h5>
+                    <p class="text-muted small mb-0">Procedimentos Operacionais Padrão</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="/Qualidade/CAPAs" class="card border-0 shadow-sm h-100 text-decoration-none">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-tools fs-1 text-warning mb-3 d-block"></i>
+                    <h5 class="mb-2">CAPAs</h5>
+                    <p class="text-muted small mb-0">Ações Corretivas e Preventivas</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="/Qualidade/Indicadores" class="card border-0 shadow-sm h-100 text-decoration-none">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-graph-up fs-1 text-success mb-3 d-block"></i>
+                    <h5 class="mb-2">Indicadores</h5>
+                    <p class="text-muted small mb-0">Métricas de Qualidade</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="/Relatorios/SNGPC" class="card border-0 shadow-sm h-100 text-decoration-none">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-clipboard-data fs-1 text-info mb-3 d-block"></i>
+                    <h5 class="mb-2">SNGPC</h5>
+                    <p class="text-muted small mb-0">Controlados ANVISA</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- CAPAs Recentes -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>CAPAs Recentes</h6>
+                    <a href="/Qualidade/CAPAs" class="btn btn-sm btn-outline-primary">Ver Todas</a>
+                </div>
+                <div class="card-body p-0" id="capasRecentes">
+                    <div class="text-center py-4 text-muted">Carregando...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- POPs para Revisão -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-calendar-check me-2"></i>POPs para Revisão</h6>
+                    <a href="/Qualidade/POPs" class="btn btn-sm btn-outline-primary">Ver Todos</a>
+                </div>
+                <div class="card-body p-0" id="popsRevisao">
+                    <div class="text-center py-4 text-muted">Carregando...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        carregarIndicadores();
+        carregarCapasRecentes();
+        carregarPOPsRevisao();
+    });
+
+    async function carregarIndicadores() {
+        try {
+            const response = await fetch('/api/qualidade/indicadores');
+            const data = await response.json();
+
+            document.getElementById('totalPOPs').textContent = data.pops?.total || 0;
+            document.getElementById('popsVencidos').textContent = data.pops?.vencidos || 0;
+            document.getElementById('capasAbertas').textContent = data.capas?.abertas || 0;
+            document.getElementById('taxaAprovacao').textContent = (data.producao?.taxaAprovacao || 100) + '%';
+        } catch (error) {
+            console.error('Erro ao carregar indicadores:', error);
+        }
+    }
+
+    async function carregarCapasRecentes() {
+        try {
+            const response = await fetch('/api/qualidade/capas?pageSize=5');
+            const data = await response.json();
+            const container = document.getElementById('capasRecentes');
+
+            if (!data.items || data.items.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-check-circle fs-3 d-block mb-2"></i>
+                        Nenhuma CAPA registrada
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = data.items.map(capa => `
+                <div class="d-flex align-items-center p-3 border-bottom">
+                    <span class="badge bg-${getPrioridadeCor(capa.priority)} me-3">${capa.priority}</span>
+                    <div class="flex-grow-1">
+                        <div class="fw-medium">${capa.code} - ${capa.title}</div>
+                        <small class="text-muted">${capa.type} • ${formatarData(capa.createdAt)}</small>
+                    </div>
+                    <span class="badge bg-${getStatusCor(capa.status)}">${capa.status}</span>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Erro ao carregar CAPAs:', error);
+        }
+    }
+
+    async function carregarPOPsRevisao() {
+        try {
+            const response = await fetch('/api/qualidade/pops?status=VIGENTE&pageSize=5');
+            const data = await response.json();
+            const container = document.getElementById('popsRevisao');
+
+            const hoje = new Date();
+            const popsParaRevisao = (data.items || []).filter(p => new Date(p.reviewDate) <= hoje);
+
+            if (popsParaRevisao.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-check-circle fs-3 d-block mb-2 text-success"></i>
+                        Todos os POPs estão em dia
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = popsParaRevisao.map(pop => `
+                <div class="d-flex align-items-center p-3 border-bottom">
+                    <span class="badge bg-secondary me-3">${pop.code}</span>
+                    <div class="flex-grow-1">
+                        <div class="fw-medium">${pop.title}</div>
+                        <small class="text-muted">${pop.category}</small>
+                    </div>
+                    <span class="badge bg-warning">Revisar</span>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Erro ao carregar POPs:', error);
+        }
+    }
+
+    function getPrioridadeCor(prioridade) {
+        return { 'ALTA': 'danger', 'MEDIA': 'warning', 'BAIXA': 'secondary' }[prioridade] || 'secondary';
+    }
+
+    function getStatusCor(status) {
+        const cores = {
+            'ABERTA': 'primary',
+            'EM_ANDAMENTO': 'info',
+            'VERIFICACAO': 'warning',
+            'CONCLUIDA': 'success',
+            'CANCELADA': 'secondary'
+        };
+        return cores[status] || 'secondary';
+    }
+
+    function formatarData(dateString) {
+        return new Date(dateString).toLocaleDateString('pt-BR');
+    }
+</script>
+}

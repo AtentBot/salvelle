@@ -1,0 +1,300 @@
+@{
+    ViewData["Title"] = "Relatório Financeiro";
+    Layout = "_Layout";
+    var resumo = ViewBag.Resumo as FinanceiroResumoDto;
+    var recebimentosPorMetodo = ViewBag.RecebimentosPorMetodo as List<RecebimentoPorMetodoDto>;
+    var vendasDiarias = ViewBag.VendasDiarias as List<VendaDiariaDto>;
+    var startDate = (DateTime)ViewBag.StartDate;
+    var endDate = (DateTime)ViewBag.EndDate;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="/Reports" class="btn btn-outline-secondary btn-sm mb-2">
+                <i class="bi bi-arrow-left me-1"></i>Voltar ao Dashboard
+            </a>
+            <h4 class="mb-0">
+                <i class="bi bi-currency-dollar text-success me-2"></i>
+                Relatório Financeiro
+            </h4>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-outline-danger btn-sm" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i>Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small">Data Início</label>
+                    <input type="date" name="startDate" class="form-control" 
+                           value="@startDate.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">Data Fim</label>
+                    <input type="date" name="endDate" class="form-control" 
+                           value="@endDate.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>Filtrar
+                    </button>
+                    <a href="/Reports/Financeiro" class="btn btn-outline-secondary">Mês Atual</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resumo -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-0 small opacity-75">Receita Total</p>
+                            <h4 class="mb-0">R$ @(resumo?.ReceitaTotal.ToString("N2") ?? "0,00")</h4>
+                        </div>
+                        <i class="bi bi-graph-up-arrow fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-0 small opacity-75">Média Diária</p>
+                            <h4 class="mb-0">R$ @(resumo?.MediaDiaria.ToString("N2") ?? "0,00")</h4>
+                        </div>
+                        <i class="bi bi-calendar-check fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm bg-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-0 small">Descontos</p>
+                            <h4 class="mb-0">R$ @(resumo?.DescontosConcedidos.ToString("N2") ?? "0,00")</h4>
+                        </div>
+                        <i class="bi bi-tag fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm @(resumo?.PendenciasReceber > 0 ? "bg-danger text-white" : "bg-light")">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-0 small @(resumo?.PendenciasReceber > 0 ? "opacity-75" : "")">Pendências</p>
+                            <h4 class="mb-0">R$ @(resumo?.PendenciasReceber.ToString("N2") ?? "0,00")</h4>
+                        </div>
+                        <i class="bi bi-hourglass-split fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Gráfico de Vendas Diárias -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-bar-chart me-2 text-primary"></i>
+                        Faturamento Diário
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="vendasDiariasChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recebimentos por Método -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-credit-card me-2 text-success"></i>
+                        Por Forma de Pagamento
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @if (recebimentosPorMetodo != null && recebimentosPorMetodo.Any())
+                    {
+                        var total = recebimentosPorMetodo.Sum(r => r.Total);
+                        foreach (var metodo in recebimentosPorMetodo)
+                        {
+                            var percent = total > 0 ? (metodo.Total / total) * 100 : 0;
+                            var icon = metodo.Metodo switch
+                            {
+                                "DINHEIRO" => "bi-cash-coin text-success",
+                                "PIX" => "bi-qr-code text-info",
+                                "CARTAO_CREDITO" => "bi-credit-card text-primary",
+                                "CARTAO_DEBITO" => "bi-credit-card-2-front text-warning",
+                                "BOLETO" => "bi-upc text-secondary",
+                                _ => "bi-wallet text-muted"
+                            };
+                            var metodoNome = metodo.Metodo switch
+                            {
+                                "DINHEIRO" => "Dinheiro",
+                                "PIX" => "PIX",
+                                "CARTAO_CREDITO" => "Cartão Crédito",
+                                "CARTAO_DEBITO" => "Cartão Débito",
+                                "BOLETO" => "Boleto",
+                                _ => metodo.Metodo
+                            };
+                            <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
+                                <i class="bi @icon fs-4 me-3"></i>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="fw-medium">@metodoNome</span>
+                                        <span class="text-success fw-bold">R$ @metodo.Total.ToString("N2")</span>
+                                    </div>
+                                    <small class="text-muted">@metodo.Quantidade transações (@percent.ToString("N1")%)</small>
+                                </div>
+                            </div>
+                        }
+                        
+                        <hr>
+                        <div class="d-flex justify-content-between fw-bold">
+                            <span>Total</span>
+                            <span class="text-success">R$ @total.ToString("N2")</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center mb-0">Nenhum recebimento no período</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Vendas Diárias -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">Detalhamento Diário</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Dia da Semana</th>
+                                    <th class="text-center">Qtd Vendas</th>
+                                    <th class="text-end">Faturamento</th>
+                                    <th class="text-end">Média/Venda</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (vendasDiarias != null && vendasDiarias.Any())
+                                {
+                                    foreach (var dia in vendasDiarias.OrderByDescending(v => v.Data))
+                                    {
+                                        var mediaVenda = dia.Quantidade > 0 ? dia.Total / dia.Quantidade : 0;
+                                        <tr>
+                                            <td>@dia.Data.ToString("dd/MM/yyyy")</td>
+                                            <td>@dia.Data.ToString("dddd")</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-secondary">@dia.Quantidade</span>
+                                            </td>
+                                            <td class="text-end fw-bold text-success">R$ @dia.Total.ToString("N2")</td>
+                                            <td class="text-end">R$ @mediaVenda.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4 text-muted">
+                                            Nenhuma venda no período
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            @if (vendasDiarias != null && vendasDiarias.Any())
+                            {
+                                <tfoot class="table-light">
+                                    <tr class="fw-bold">
+                                        <td colspan="2">TOTAL</td>
+                                        <td class="text-center">@vendasDiarias.Sum(v => v.Quantidade)</td>
+                                        <td class="text-end text-success">R$ @vendasDiarias.Sum(v => v.Total).ToString("N2")</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            }
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@media print {
+        .btn, form, .sidebar, .top-nav { display: none !important; }
+        .main-content { margin-left: 0 !important; }
+    }
+</style>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var ctx = document.getElementById('vendasDiariasChart').getContext('2d');
+    var vendasData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(vendasDiarias?.Select(v => new { 
+        data = v.Data.ToString("dd/MM"), 
+        total = v.Total,
+        quantidade = v.Quantidade
+    }).OrderBy(v => v.data)));
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: vendasData.map(function(d) { return d.data; }),
+            datasets: [{
+                label: 'Faturamento (R$)',
+                data: vendasData.map(function(d) { return d.total; }),
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderColor: 'rgba(16, 185, 129, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'R$ ' + value.toLocaleString('pt-BR');
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+}

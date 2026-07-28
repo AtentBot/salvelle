@@ -1,0 +1,191 @@
+@using Models
+@model List<ControlledSubstanceMovement>
+@{
+    ViewData["Title"] = "Movimentações de Controlados";
+    var selectedList = ViewBag.SelectedList as string ?? "";
+    var selectedStatus = ViewBag.SelectedStatus as string ?? "";
+    var startDate = ViewBag.StartDate as DateTime?;
+    var endDate = ViewBag.EndDate as DateTime?;
+}
+
+@section Styles {
+<style>
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card.pad { padding: 20px; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .ds-card-eyebrow { font-family: var(--font-mono); font-size: 11px; color: var(--petrol-500); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ds-card-title { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+    .list-badge { font-family: var(--font-mono); font-weight: 600; font-size: 12px; }
+
+    .filter-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr auto; gap: 12px; align-items: end; }
+    .filter-actions { display: flex; gap: 8px; }
+
+    .empty-row { text-align: center; color: var(--ink-3); padding: 48px 24px; }
+    .empty-row i { font-size: 32px; display: block; margin-bottom: 8px; color: var(--ink-5); }
+
+    @@media (max-width: 900px) {
+        .filter-grid { grid-template-columns: 1fr 1fr; }
+        .filter-actions { grid-column: 1 / -1; }
+        .filter-actions .btn { flex: 1; justify-content: center; }
+    }
+    @@media (max-width: 780px) {
+        table.responsive-stack thead { display: none; }
+        table.responsive-stack tbody tr { display: block; border-bottom: 1px solid var(--rule); padding: 12px 16px; }
+        table.responsive-stack tbody tr:hover td { background: transparent; }
+        table.responsive-stack tbody td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 5px 0; border: none; text-align: right; }
+        table.responsive-stack tbody td::before { content: attr(data-label); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; text-align: left; }
+    }
+    @@media (max-width: 520px) {
+        .filter-grid { grid-template-columns: 1fr; }
+    }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">SNGPC · MOVIMENTAÇÕES</div>
+            <h1>Movimentações de Controlados</h1>
+            <p>Histórico de entradas e saídas de substâncias controladas.</p>
+        </div>
+        <div class="row">
+            <a class="btn btn-secondary" href="/Controlled"><i class="bi bi-arrow-left"></i>Voltar</a>
+        </div>
+    </div>
+
+    <div class="ds-card pad" style="margin-bottom:24px;">
+        <form method="get" class="filter-grid">
+            <div>
+                <label class="input-label">Lista</label>
+                <select name="list" class="select">
+                    <option value="">Todas</option>
+                    @{
+                        var lists = new[] {
+                            ("A1", "A1 - Entorpecentes"),
+                            ("A2", "A2 - Entorpecentes Especiais"),
+                            ("B1", "B1 - Psicotrópicos"),
+                            ("B2", "B2 - Anorexígenos"),
+                            ("C1", "C1 - Controlados"),
+                            ("C2", "C2 - Retinóides")
+                        };
+                        foreach (var (value, text) in lists)
+                        {
+                            if (selectedList == value)
+                            {
+                                <option value="@value" selected>@text</option>
+                            }
+                            else
+                            {
+                                <option value="@value">@text</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="input-label">Status SNGPC</label>
+                <select name="status" class="select">
+                    <option value="">Todos</option>
+                    @if (selectedStatus == "pending")
+                    {
+                        <option value="pending" selected>Pendente</option>
+                        <option value="sent">Enviado</option>
+                    }
+                    else if (selectedStatus == "sent")
+                    {
+                        <option value="pending">Pendente</option>
+                        <option value="sent" selected>Enviado</option>
+                    }
+                    else
+                    {
+                        <option value="pending">Pendente</option>
+                        <option value="sent">Enviado</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label class="input-label">Data início</label>
+                <input type="date" name="startDate" class="input" value="@(startDate?.ToString("yyyy-MM-dd"))">
+            </div>
+            <div>
+                <label class="input-label">Data fim</label>
+                <input type="date" name="endDate" class="input" value="@(endDate?.ToString("yyyy-MM-dd"))">
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i>Filtrar</button>
+                <a href="/Controlled/Movements" class="btn btn-secondary"><i class="bi bi-x-circle"></i>Limpar</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="ds-card">
+        <div class="ds-card-head">
+            <div>
+                <div class="ds-card-eyebrow">Histórico</div>
+                <h3 class="ds-card-title">Movimentações registradas</h3>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table responsive-stack mb-0">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Substância</th>
+                        <th>Lista</th>
+                        <th>Tipo</th>
+                        <th class="text-end">Quantidade</th>
+                        <th>Documento</th>
+                        <th>SNGPC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Count > 0)
+                    {
+                        foreach (var mov in Model)
+                        {
+                            var isEntrada = mov.MovementType == "ENTRADA";
+                            var typeColor = isEntrada ? "var(--ok)" : "var(--danger)";
+                            var typeIcon = isEntrada ? "bi-arrow-down-circle" : "bi-arrow-up-circle";
+                            var listBadge = "badge-neutral";
+                            if (!string.IsNullOrEmpty(mov.ControlledList))
+                            {
+                                if (mov.ControlledList.StartsWith("A")) listBadge = "badge-danger";
+                                else if (mov.ControlledList.StartsWith("B")) listBadge = "badge-petrol";
+                            }
+
+                            var docRef = !string.IsNullOrEmpty(mov.InvoiceNumber) ? mov.InvoiceNumber : mov.PrescriptionNumber;
+
+                            <tr>
+                                <td data-label="Data" class="mono">@mov.MovementDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td data-label="Substância" style="color:var(--ink);font-weight:500;">@mov.SubstanceName</td>
+                                <td data-label="Lista"><span class="badge @listBadge badge-no-dot list-badge">@mov.ControlledList</span></td>
+                                <td data-label="Tipo" style="color:@typeColor;font-weight:500;"><i class="bi @typeIcon me-1"></i>@mov.MovementType</td>
+                                <td data-label="Quantidade" class="text-end mono">@mov.Quantity.ToString("N3") @mov.Unit</td>
+                                <td data-label="Documento" class="mono" style="color:var(--ink-3);">@(docRef ?? "—")</td>
+                                <td data-label="SNGPC">
+                                    @if (mov.SngpcSent)
+                                    {
+                                        <span class="badge badge-ok badge-no-dot"><i class="bi bi-check"></i>Enviado</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-warn badge-no-dot"><i class="bi bi-clock"></i>Pendente</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="empty-row">
+                                <i class="bi bi-inbox"></i>
+                                Nenhuma movimentação encontrada.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

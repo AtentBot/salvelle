@@ -1,0 +1,503 @@
+@{
+    ViewData["Title"] = "Integrações";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-plug me-2"></i>Integrações</h4>
+            <p class="text-muted mb-0">Configure balanças, impressoras e serviços externos</p>
+        </div>
+        <button class="btn btn-outline-primary" onclick="testarTodas()">
+            <i class="bi bi-check-all me-1"></i>Testar Todas
+        </button>
+    </div>
+
+    <div class="row g-4">
+        <!-- Balanças -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100" id="card-balanca">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-speedometer2 me-2"></i>Balança Analítica
+                    </div>
+                    <span class="badge bg-secondary" id="status-balanca">Não configurado</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Porta Serial</label>
+                        <select class="form-select" id="balanca-porta">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Velocidade (Baud Rate)</label>
+                        <select class="form-select" id="balanca-baud">
+                            <option value="9600" selected>9600</option>
+                            <option value="19200">19200</option>
+                            <option value="38400">38400</option>
+                            <option value="115200">115200</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Protocolo</label>
+                        <select class="form-select" id="balanca-protocolo">
+                            <option value="TOLEDO">Toledo</option>
+                            <option value="FILIZOLA">Filizola</option>
+                            <option value="MARTE">Marte</option>
+                            <option value="SHIMADZU">Shimadzu</option>
+                            <option value="OHAUS">Ohaus</option>
+                            <option value="GEHAKA">Gehaka</option>
+                        </select>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="balanca-ativa">
+                        <label class="form-check-label">Ativar integração</label>
+                    </div>
+                </div>
+                <div class="card-footer d-flex gap-2">
+                    <button class="btn btn-outline-secondary flex-grow-1" onclick="testar('BALANCA')">
+                        <i class="bi bi-lightning me-1"></i>Testar
+                    </button>
+                    <button class="btn btn-primary flex-grow-1" onclick="salvar('BALANCA')">
+                        <i class="bi bi-save me-1"></i>Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Impressora de Cupom -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100" id="card-impressora-cupom">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-receipt me-2"></i>Impressora de Cupom
+                    </div>
+                    <span class="badge bg-secondary" id="status-impressora-cupom">Não configurado</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Impressora</label>
+                        <select class="form-select" id="cupom-impressora">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Largura do Papel</label>
+                        <select class="form-select" id="cupom-largura">
+                            <option value="58">58mm (Bobina pequena)</option>
+                            <option value="80" selected>80mm (Bobina padrão)</option>
+                        </select>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="cupom-ativa">
+                        <label class="form-check-label">Ativar integração</label>
+                    </div>
+                </div>
+                <div class="card-footer d-flex gap-2">
+                    <button class="btn btn-outline-secondary flex-grow-1" onclick="testar('IMPRESSORA_CUPOM')">
+                        <i class="bi bi-lightning me-1"></i>Testar
+                    </button>
+                    <button class="btn btn-primary flex-grow-1" onclick="salvar('IMPRESSORA_CUPOM')">
+                        <i class="bi bi-save me-1"></i>Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Impressora de Etiqueta -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100" id="card-impressora-etiqueta">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-tag me-2"></i>Impressora de Etiqueta
+                    </div>
+                    <span class="badge bg-secondary" id="status-impressora-etiqueta">Não configurado</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Impressora</label>
+                        <select class="form-select" id="etiqueta-impressora">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Largura (mm)</label>
+                            <input type="number" class="form-control" id="etiqueta-largura" value="50">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Altura (mm)</label>
+                            <input type="number" class="form-control" id="etiqueta-altura" value="40">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Linguagem</label>
+                        <select class="form-select" id="etiqueta-linguagem">
+                            <option value="ZPL" selected>ZPL (Zebra)</option>
+                            <option value="PPLA">PPLA (Argox)</option>
+                            <option value="EPL">EPL</option>
+                        </select>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="etiqueta-ativa">
+                        <label class="form-check-label">Ativar integração</label>
+                    </div>
+                </div>
+                <div class="card-footer d-flex gap-2">
+                    <button class="btn btn-outline-secondary flex-grow-1" onclick="testar('IMPRESSORA_ETIQUETA')">
+                        <i class="bi bi-lightning me-1"></i>Testar
+                    </button>
+                    <button class="btn btn-primary flex-grow-1" onclick="salvar('IMPRESSORA_ETIQUETA')">
+                        <i class="bi bi-save me-1"></i>Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- WhatsApp -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100" id="card-whatsapp">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-whatsapp me-2"></i>WhatsApp (AtentBot)
+                    </div>
+                    <span class="badge bg-secondary" id="status-whatsapp">Não configurado</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">API Key</label>
+                        <input type="password" class="form-control" id="whatsapp-apikey" placeholder="Sua API Key do AtentBot">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Instância</label>
+                        <input type="text" class="form-control" id="whatsapp-instancia" value="crescer">
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="whatsapp-ativa">
+                        <label class="form-check-label">Ativar integração</label>
+                    </div>
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Usado para envio de orçamentos e notificações
+                    </small>
+                </div>
+                <div class="card-footer d-flex gap-2">
+                    <button class="btn btn-outline-secondary flex-grow-1" onclick="testar('WHATSAPP')">
+                        <i class="bi bi-lightning me-1"></i>Testar
+                    </button>
+                    <button class="btn btn-primary flex-grow-1" onclick="salvar('WHATSAPP')">
+                        <i class="bi bi-save me-1"></i>Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SNGPC -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100" id="card-sngpc">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-building me-2"></i>SNGPC - ANVISA
+                    </div>
+                    <span class="badge bg-secondary" id="status-sngpc">Não configurado</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">CNPJ</label>
+                        <input type="text" class="form-control" id="sngpc-cnpj" placeholder="00.000.000/0001-00">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ambiente</label>
+                        <select class="form-select" id="sngpc-ambiente">
+                            <option value="homologacao" selected>Homologação</option>
+                            <option value="producao">Produção</option>
+                        </select>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="sngpc-ativa">
+                        <label class="form-check-label">Ativar integração</label>
+                    </div>
+                    <div class="alert alert-warning py-2 mb-0">
+                        <small><i class="bi bi-exclamation-triangle me-1"></i>
+                        Teste em homologação antes de ativar em produção</small>
+                    </div>
+                </div>
+                <div class="card-footer d-flex gap-2">
+                    <button class="btn btn-outline-secondary flex-grow-1" onclick="testar('SNGPC')">
+                        <i class="bi bi-lightning me-1"></i>Testar
+                    </button>
+                    <button class="btn btn-primary flex-grow-1" onclick="salvar('SNGPC')">
+                        <i class="bi bi-save me-1"></i>Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- NF-e -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100" id="card-nfe">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-file-earmark-text me-2"></i>NF-e / NFC-e
+                    </div>
+                    <span class="badge bg-secondary" id="status-nfe">Não configurado</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Certificado Digital (.pfx)</label>
+                        <input type="file" class="form-control" id="nfe-certificado" accept=".pfx,.p12">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Senha do Certificado</label>
+                        <input type="password" class="form-control" id="nfe-senha">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ambiente</label>
+                        <select class="form-select" id="nfe-ambiente">
+                            <option value="homologacao" selected>Homologação</option>
+                            <option value="producao">Produção</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Série</label>
+                        <input type="number" class="form-control" id="nfe-serie" value="1">
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="nfe-ativa">
+                        <label class="form-check-label">Ativar integração</label>
+                    </div>
+                </div>
+                <div class="card-footer d-flex gap-2">
+                    <button class="btn btn-outline-secondary flex-grow-1" onclick="testar('NFE')">
+                        <i class="bi bi-lightning me-1"></i>Testar
+                    </button>
+                    <button class="btn btn-primary flex-grow-1" onclick="salvar('NFE')">
+                        <i class="bi bi-save me-1"></i>Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast de notificação -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toast-notification" class="toast" role="alert">
+        <div class="toast-header">
+            <i class="bi bi-plug me-2" id="toast-icon"></i>
+            <strong class="me-auto" id="toast-title">Integração</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toast-message"></div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    carregarPortas();
+    carregarImpressoras();
+    carregarConfiguracoes();
+});
+
+async function carregarPortas() {
+    try {
+        const response = await fetch('/api/balanca/portas');
+        const data = await response.json();
+        
+        const select = document.getElementById('balanca-porta');
+        select.innerHTML = '<option value="">Selecione...</option>';
+        
+        if (data.portas) {
+            data.portas.forEach(porta => {
+                select.innerHTML += `<option value="${porta}">${porta}</option>`;
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao carregar portas:', error);
+    }
+}
+
+async function carregarImpressoras() {
+    try {
+        const response = await fetch('/api/impressora/listar');
+        const data = await response.json();
+        
+        const selectCupom = document.getElementById('cupom-impressora');
+        const selectEtiqueta = document.getElementById('etiqueta-impressora');
+        
+        selectCupom.innerHTML = '<option value="">Selecione...</option>';
+        selectEtiqueta.innerHTML = '<option value="">Selecione...</option>';
+        
+        if (data.impressoras) {
+            data.impressoras.forEach(imp => {
+                selectCupom.innerHTML += `<option value="${imp}">${imp}</option>`;
+                selectEtiqueta.innerHTML += `<option value="${imp}">${imp}</option>`;
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao carregar impressoras:', error);
+    }
+}
+
+async function carregarConfiguracoes() {
+    try {
+        const response = await fetch('/api/integracoes');
+        const data = await response.json();
+        
+        if (data.integracoes) {
+            data.integracoes.forEach(integracao => {
+                atualizarStatus(integracao.tipo, integracao.ativa, integracao.testeOk);
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao carregar configurações:', error);
+    }
+}
+
+function atualizarStatus(tipo, ativa, testeOk) {
+    const statusId = 'status-' + tipo.toLowerCase().replace('_', '-');
+    const badge = document.getElementById(statusId);
+    
+    if (!badge) return;
+    
+    if (!ativa) {
+        badge.className = 'badge bg-secondary';
+        badge.textContent = 'Desativado';
+    } else if (testeOk) {
+        badge.className = 'badge bg-success';
+        badge.textContent = 'OK';
+    } else {
+        badge.className = 'badge bg-warning';
+        badge.textContent = 'Erro';
+    }
+}
+
+async function testar(tipo) {
+    mostrarToast('info', tipo, 'Testando conexão...');
+    
+    try {
+        const response = await fetch(`/api/integracoes/${tipo}/testar`, { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarToast('success', tipo, data.message);
+            atualizarStatus(tipo, true, true);
+        } else {
+            mostrarToast('error', tipo, data.message || 'Erro no teste');
+            atualizarStatus(tipo, true, false);
+        }
+    } catch (error) {
+        mostrarToast('error', tipo, 'Erro ao testar: ' + error.message);
+    }
+}
+
+async function salvar(tipo) {
+    const config = obterConfiguracao(tipo);
+    
+    try {
+        const response = await fetch(`/api/integracoes/${tipo}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarToast('success', tipo, 'Configuração salva!');
+        } else {
+            mostrarToast('error', tipo, data.error || 'Erro ao salvar');
+        }
+    } catch (error) {
+        mostrarToast('error', tipo, 'Erro ao salvar: ' + error.message);
+    }
+}
+
+function obterConfiguracao(tipo) {
+    switch (tipo) {
+        case 'BALANCA':
+            return {
+                ativa: document.getElementById('balanca-ativa').checked,
+                configuracoes: {
+                    porta: document.getElementById('balanca-porta').value,
+                    baudRate: parseInt(document.getElementById('balanca-baud').value),
+                    protocolo: document.getElementById('balanca-protocolo').value
+                }
+            };
+        case 'IMPRESSORA_CUPOM':
+            return {
+                ativa: document.getElementById('cupom-ativa').checked,
+                configuracoes: {
+                    nome: document.getElementById('cupom-impressora').value,
+                    largura: parseInt(document.getElementById('cupom-largura').value)
+                }
+            };
+        case 'IMPRESSORA_ETIQUETA':
+            return {
+                ativa: document.getElementById('etiqueta-ativa').checked,
+                configuracoes: {
+                    nome: document.getElementById('etiqueta-impressora').value,
+                    largura: parseInt(document.getElementById('etiqueta-largura').value),
+                    altura: parseInt(document.getElementById('etiqueta-altura').value),
+                    linguagem: document.getElementById('etiqueta-linguagem').value
+                }
+            };
+        case 'WHATSAPP':
+            return {
+                ativa: document.getElementById('whatsapp-ativa').checked,
+                configuracoes: {
+                    apikey: document.getElementById('whatsapp-apikey').value,
+                    instancia: document.getElementById('whatsapp-instancia').value
+                }
+            };
+        case 'SNGPC':
+            return {
+                ativa: document.getElementById('sngpc-ativa').checked,
+                configuracoes: {
+                    cnpj: document.getElementById('sngpc-cnpj').value,
+                    ambiente: document.getElementById('sngpc-ambiente').value
+                }
+            };
+        case 'NFE':
+            return {
+                ativa: document.getElementById('nfe-ativa').checked,
+                configuracoes: {
+                    ambiente: document.getElementById('nfe-ambiente').value,
+                    serie: parseInt(document.getElementById('nfe-serie').value)
+                }
+            };
+        default:
+            return { ativa: false, configuracoes: {} };
+    }
+}
+
+async function testarTodas() {
+    const tipos = ['BALANCA', 'IMPRESSORA_CUPOM', 'IMPRESSORA_ETIQUETA', 'WHATSAPP', 'SNGPC', 'NFE'];
+    
+    for (const tipo of tipos) {
+        await testar(tipo);
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+}
+
+function mostrarToast(type, title, message) {
+    const toast = document.getElementById('toast-notification');
+    const icon = document.getElementById('toast-icon');
+    const titleEl = document.getElementById('toast-title');
+    const messageEl = document.getElementById('toast-message');
+    
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    
+    icon.className = 'bi me-2 ' + (type === 'success' ? 'bi-check-circle text-success' : 
+                                   type === 'error' ? 'bi-x-circle text-danger' : 
+                                   'bi-info-circle text-primary');
+    
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+</script>
+}

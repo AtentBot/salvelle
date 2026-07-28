@@ -1,0 +1,125 @@
+@model Models.Customer
+@{
+    ViewData["Title"] = "Meus Dados";
+    ViewData["ActiveNav"] = "perfil";
+    Layout = "_LayoutCliente";
+}
+
+<div class="container py-4">
+    <h4 class="mb-4">Meus Dados</h4>
+
+    <!-- Avatar e Nome -->
+    <div class="text-center mb-4">
+        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+            <i class="bi bi-person text-primary fs-1"></i>
+        </div>
+        <h5 class="mb-1">@Model?.FullName</h5>
+        <p class="text-muted">@Model?.Email</p>
+    </div>
+
+    <!-- Dados -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <h6 class="text-muted mb-3"><i class="bi bi-person me-2"></i>Dados Pessoais</h6>
+            
+            <div class="row mb-2">
+                <div class="col-5 text-muted">Nome</div>
+                <div class="col-7">@Model?.FullName</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-5 text-muted">CPF</div>
+                <div class="col-7">@(Model?.Cpf != null ? $"{Model.Cpf.Substring(0,3)}.{Model.Cpf.Substring(3,3)}.{Model.Cpf.Substring(6,3)}-{Model.Cpf.Substring(9,2)}" : "-")</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-5 text-muted">Nascimento</div>
+                <div class="col-7">@Model?.BirthDate?.ToString("dd/MM/yyyy")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <h6 class="text-muted mb-3"><i class="bi bi-telephone me-2"></i>Contato</h6>
+            
+            <div class="row mb-2">
+                <div class="col-5 text-muted">Telefone</div>
+                <div class="col-7">@Model?.Phone</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-5 text-muted">WhatsApp</div>
+                <div class="col-7">@Model?.WhatsApp</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-5 text-muted">Email</div>
+                <div class="col-7">@(Model?.Email ?? "-")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <h6 class="text-muted mb-3"><i class="bi bi-geo-alt me-2"></i>Endereço</h6>
+            
+            @if (!string.IsNullOrEmpty(Model?.Street))
+            {
+                <p class="mb-1">@Model.Street, @Model.Number @(string.IsNullOrEmpty(Model.Complement) ? "" : $" - {Model.Complement}")</p>
+                <p class="mb-1">@Model.Neighborhood</p>
+                <p class="mb-0">@Model.City - @Model.State, @Model.ZipCode</p>
+            }
+            else
+            {
+                <p class="text-muted mb-0">Endereço não cadastrado</p>
+            }
+        </div>
+    </div>
+
+    <!-- Ações -->
+    <div class="d-grid gap-2">
+        <a href="/Cliente/EditarDados" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-2"></i>Editar Dados
+        </a>
+        <a href="/Cliente/DefinirSenha" class="btn btn-outline-secondary">
+            <i class="bi bi-key me-2"></i>Definir/Alterar Senha
+        </a>
+        <a href="/Cliente/Logout" class="btn btn-outline-danger">
+            <i class="bi bi-box-arrow-right me-2"></i>Sair
+        </a>
+    </div>
+
+    <hr class="my-4">
+
+    <!-- LGPD -->
+    <div class="text-center">
+        <p class="text-muted small mb-2">Seus dados são protegidos pela LGPD</p>
+        <a href="#" class="text-decoration-none small" data-bs-toggle="modal" data-bs-target="#privacyModal">
+            Ver política de privacidade
+        </a>
+    </div>
+</div>
+
+<!-- Modal Privacidade -->
+<div class="modal fade" id="privacyModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Política de Privacidade</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Dados coletados:</strong> Nome, CPF, telefone, email, endereço e histórico de pedidos.</p>
+                <p><strong>Finalidade:</strong> Processamento de orçamentos e comunicação via WhatsApp.</p>
+                <p><strong>Seus direitos:</strong></p>
+                <ul>
+                    <li>Solicitar acesso aos seus dados</li>
+                    <li>Solicitar correção de dados incorretos</li>
+                    <li>Solicitar exclusão dos seus dados</li>
+                    <li>Revogar consentimento a qualquer momento</li>
+                </ul>
+                <p>Para exercer seus direitos, entre em contato conosco.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
+            </div>
+        </div>
+    </div>
+</div>

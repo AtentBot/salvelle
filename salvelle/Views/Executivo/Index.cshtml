@@ -1,0 +1,449 @@
+﻿@{
+    ViewData["Title"] = "Dashboard Executivo";
+    Layout = "_Layout";
+}
+
+@section Styles {
+<style>
+    .kpi-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        height: 100%;
+        transition: transform 0.2s;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .kpi-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    .kpi-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .kpi-label {
+        color: var(--ink-3);
+        font-size: 0.85rem;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+    .alert-item {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        border-bottom: 1px solid var(--bg-subtle);
+    }
+    .alert-item:last-child {
+        border-bottom: none;
+    }
+    .alert-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+    }
+</style>
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-speedometer2 me-2"></i>Dashboard Executivo</h4>
+            <p class="text-muted mb-0">Visão geral do estabelecimento</p>
+        </div>
+        <div>
+            <button class="btn btn-outline-primary" onclick="carregarDados()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+            </button>
+        </div>
+    </div>
+
+    <!-- KPIs Principais -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="d-flex align-items-center">
+                    <div class="kpi-icon bg-success bg-opacity-10 text-success me-3">
+                        <i class="bi bi-currency-dollar"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value text-success" id="vendasHoje">R$ --</div>
+                        <div class="kpi-label">Vendas Hoje</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="d-flex align-items-center">
+                    <div class="kpi-icon bg-primary bg-opacity-10 text-primary me-3">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value text-primary" id="vendasMes">R$ --</div>
+                        <div class="kpi-label">Vendas no Mês</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="d-flex align-items-center">
+                    <div class="kpi-icon bg-info bg-opacity-10 text-info me-3">
+                        <i class="bi bi-gear"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value text-info" id="ordensProducao">--</div>
+                        <div class="kpi-label">Em Produção</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="d-flex align-items-center">
+                    <div class="kpi-icon bg-warning bg-opacity-10 text-warning me-3">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value text-warning" id="alertasAtivos">--</div>
+                        <div class="kpi-label">Alertas Ativos</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Segunda linha de KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="d-flex align-items-center">
+                    <div class="kpi-icon bg-secondary bg-opacity-10 text-secondary me-3">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value" id="ticketMedio">R$ --</div>
+                        <div class="kpi-label">Ticket Médio</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="d-flex align-items-center">
+                    <div class="kpi-icon bg-danger bg-opacity-10 text-danger me-3">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value text-danger" id="estoqueCritico">--</div>
+                        <div class="kpi-label">Estoque Crítico</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="d-flex align-items-center">
+                    <div class="kpi-icon bg-purple bg-opacity-10 text-purple me-3" style="background: rgba(111,66,193,0.1); color: var(--controlled-black);">
+                        <i class="bi bi-file-text"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value" id="orcamentosPendentes">--</div>
+                        <div class="kpi-label">Orçamentos Pendentes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="d-flex align-items-center">
+                    <div class="kpi-icon bg-success bg-opacity-10 text-success me-3">
+                        <i class="bi bi-percent"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value" id="taxaConversao">--%</div>
+                        <div class="kpi-label">Taxa Conversão</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Gráfico de Vendas -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Vendas - Últimos 7 dias</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartVendas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertas -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-bell me-2"></i>Alertas</h6>
+                    <a href="/Executivo/Alertas" class="btn btn-sm btn-outline-primary">Ver Todos</a>
+                </div>
+                <div class="card-body p-0" id="listaAlertas" style="max-height: 350px; overflow-y: auto;">
+                    <div class="text-center py-4 text-muted">Carregando...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-2">
+        <!-- Top Produtos -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-trophy me-2"></i>Top Produtos do Mês</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Produto</th>
+                                    <th class="text-center">Qtd</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaTopProdutos">
+                                <tr><td colspan="3" class="text-center py-3">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Produção -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-kanban me-2"></i>Status da Produção</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="chartProducao"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let chartVendas, chartProducao;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        carregarDados();
+    });
+
+    async function carregarDados() {
+        await Promise.all([
+            carregarKPIs(),
+            carregarVendasSemana(),
+            carregarAlertas(),
+            carregarTopProdutos(),
+            carregarStatusProducao()
+        ]);
+    }
+
+    async function carregarKPIs() {
+        try {
+            const response = await fetch('/api/dashboardapi/kpis');
+            const data = await response.json();
+
+            document.getElementById('vendasHoje').textContent = formatarMoeda(data.vendas?.hoje || 0);
+            document.getElementById('vendasMes').textContent = formatarMoeda(data.vendas?.mes || 0);
+            document.getElementById('ticketMedio').textContent = formatarMoeda(data.vendas?.ticketMedio || 0);
+            document.getElementById('ordensProducao').textContent = data.producao?.emAndamento || 0;
+            document.getElementById('estoqueCritico').textContent = data.estoque?.critico || 0;
+            document.getElementById('orcamentosPendentes').textContent = data.comercial?.orcamentosPendentes || 0;
+            document.getElementById('taxaConversao').textContent = (data.comercial?.taxaConversao || 0) + '%';
+            
+            const totalAlertas = (data.estoque?.critico || 0) + (data.estoque?.lotesVencendo || 0);
+            document.getElementById('alertasAtivos').textContent = totalAlertas;
+        } catch (error) {
+            console.error('Erro ao carregar KPIs:', error);
+        }
+    }
+
+    async function carregarVendasSemana() {
+        try {
+            const response = await fetch('/api/dashboardapi/vendas-semana');
+            const data = await response.json();
+
+            const ctx = document.getElementById('chartVendas').getContext('2d');
+            
+            if (chartVendas) chartVendas.destroy();
+            
+            chartVendas = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.data),
+                    datasets: [{
+                        label: 'Vendas (R$)',
+                        data: data.map(d => d.total),
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: value => 'R$ ' + value.toLocaleString('pt-BR')
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Erro ao carregar vendas:', error);
+        }
+    }
+
+    async function carregarAlertas() {
+        try {
+            const response = await fetch('/api/dashboardapi/alertas');
+            const data = await response.json();
+            const container = document.getElementById('listaAlertas');
+
+            if (!data.alertas || data.alertas.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-check-circle fs-1 text-success"></i>
+                        <p class="mt-2 mb-0">Nenhum alerta ativo</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = data.alertas.map(a => `
+                <a href="${a.link || '#'}" class="alert-item text-decoration-none text-dark">
+                    <div class="alert-icon bg-${a.cor} bg-opacity-10">
+                        <i class="bi bi-${a.icone} text-${a.cor}"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-medium">${a.titulo}</div>
+                        <small class="text-muted">${a.mensagem}</small>
+                    </div>
+                </a>
+            `).join('');
+        } catch (error) {
+            console.error('Erro ao carregar alertas:', error);
+        }
+    }
+
+    async function carregarTopProdutos() {
+        try {
+            const response = await fetch('/api/dashboardapi/top-produtos');
+            const data = await response.json();
+            const tbody = document.getElementById('tabelaTopProdutos');
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-3 text-muted">Sem dados</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map((p, i) => `
+                <tr>
+                    <td>
+                        <span class="badge bg-${i < 3 ? 'warning' : 'secondary'} me-2">${i + 1}º</span>
+                        ${p.produto}
+                    </td>
+                    <td class="text-center">${p.quantidade}</td>
+                    <td class="text-end fw-bold">${formatarMoeda(p.total)}</td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Erro ao carregar top produtos:', error);
+        }
+    }
+
+    async function carregarStatusProducao() {
+        try {
+            const response = await fetch('/api/dashboardapi/producao-status');
+            const data = await response.json();
+
+            const ctx = document.getElementById('chartProducao').getContext('2d');
+            
+            if (chartProducao) chartProducao.destroy();
+
+            const cores = {
+                'PENDENTE': 'var(--ink-3)',
+                'AGUARDANDO_APROVACAO': 'var(--amber-500)',
+                'EM_SEPARACAO': 'var(--info)',
+                'EM_MANIPULACAO': '#007bff',
+                'CONTROLE_QUALIDADE': 'var(--controlled-black)',
+                'PRONTA': 'var(--ok)',
+                'CONCLUIDA': 'var(--ok)',
+                'ENTREGUE': 'var(--ok)'
+            };
+
+            chartProducao = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(d => d.status.replace(/_/g, ' ')),
+                    datasets: [{
+                        data: data.map(d => d.quantidade),
+                        backgroundColor: data.map(d => cores[d.status] || 'var(--ink-3)')
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { boxWidth: 12 }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Erro ao carregar status produção:', error);
+        }
+    }
+
+    function formatarMoeda(valor) {
+        return 'R$ ' + (valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    }
+</script>
+}

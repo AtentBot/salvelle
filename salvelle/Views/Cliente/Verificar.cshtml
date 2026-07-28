@@ -1,0 +1,205 @@
+@{
+    ViewData["Title"] = "Verificar Código";
+    ViewData["HideNav"] = true;
+    Layout = "_LayoutCliente";
+    var phone = ViewBag.Phone ?? "";
+}
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="logo" style="background: var(--ok);">
+                <i class="bi bi-whatsapp"></i>
+            </div>
+            <h4 class="mb-1">Verificar WhatsApp</h4>
+            <p class="text-muted mb-0">Digite o código que enviamos para</p>
+            <p class="fw-bold text-primary" id="phoneDisplay">@phone</p>
+        </div>
+
+        <form id="verifyForm">
+            <input type="hidden" id="phone" value="@phone">
+            
+            <div class="verification-input mb-4">
+                <input type="text" maxlength="1" class="code-input" data-index="0" inputmode="numeric">
+                <input type="text" maxlength="1" class="code-input" data-index="1" inputmode="numeric">
+                <input type="text" maxlength="1" class="code-input" data-index="2" inputmode="numeric">
+                <input type="text" maxlength="1" class="code-input" data-index="3" inputmode="numeric">
+                <input type="text" maxlength="1" class="code-input" data-index="4" inputmode="numeric">
+                <input type="text" maxlength="1" class="code-input" data-index="5" inputmode="numeric">
+            </div>
+
+            <div id="alertArea"></div>
+
+            <button type="submit" class="btn btn-primary w-100 mb-3" id="btnSubmit">
+                <span class="spinner-border spinner-border-sm d-none me-2" id="spinner"></span>
+                <span id="btnText">Verificar</span>
+            </button>
+        </form>
+
+        <div class="text-center">
+            <p class="text-muted small mb-2">Não recebeu o código?</p>
+            <button type="button" class="btn btn-link p-0" id="btnResend" onclick="resendCode()">
+                <i class="bi bi-arrow-repeat me-1"></i>Reenviar código
+            </button>
+            <p class="text-muted small mt-2" id="resendTimer" style="display: none;">
+                Aguarde <span id="timerCount">60</span>s para reenviar
+            </p>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="text-center">
+            <a href="/Cliente/Login" class="text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i>Voltar para login
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const inputs = document.querySelectorAll('.code-input');
+    const alertArea = document.getElementById('alertArea');
+    let canResend = true;
+
+    // Auto-focus e navegação entre inputs
+    inputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+            const value = e.target.value;
+            if (value && index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            }
+            
+            // Auto-submit quando completo
+            if (getCode().length === 6) {
+                document.getElementById('verifyForm').dispatchEvent(new Event('submit'));
+            }
+        });
+        
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !input.value && index > 0) {
+                inputs[index - 1].focus();
+            }
+        });
+        
+        // Permitir colar código
+        input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const paste = (e.clipboardData || window.clipboardData).getData('text');
+            const digits = paste.replace(/\D/g, '').slice(0, 6);
+            
+            digits.split('').forEach((digit, i) => {
+                if (inputs[i]) {
+                    inputs[i].value = digit;
+                }
+            });
+            
+            if (digits.length === 6) {
+                document.getElementById('verifyForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    });
+
+    // Focus primeiro input
+    inputs[0].focus();
+
+    function getCode() {
+        return Array.from(inputs).map(i => i.value).join('');
+    }
+
+    document.getElementById('verifyForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const code = getCode();
+        const phone = document.getElementById('phone').value;
+        
+        if (code.length !== 6) {
+            showAlert('Digite o código de 6 dígitos', 'danger');
+            return;
+        }
+        
+        setLoading(true);
+        alertArea.innerHTML = '';
+        
+        try {
+            const response = await fetch('/api/cliente/auth/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: phone.replace(/\D/g, ''), code })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showAlert('Verificado com sucesso!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/Cliente/Estabelecimentos';
+                }, 1000);
+            } else {
+                showAlert(data.message, 'danger');
+                // Limpar inputs
+                inputs.forEach(i => i.value = '');
+                inputs[0].focus();
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showAlert('Erro de conexão. Tente novamente.', 'danger');
+            setLoading(false);
+        }
+    });
+
+    async function resendCode() {
+        if (!canResend) return;
+        
+        const phone = document.getElementById('phone').value;
+        
+        try {
+            const response = await fetch('/api/cliente/auth/resend-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: phone.replace(/\D/g, '') })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showAlert('Novo código enviado!', 'success');
+                startResendTimer();
+            } else {
+                showAlert(data.message, 'warning');
+            }
+        } catch (error) {
+            showAlert('Erro ao reenviar código', 'danger');
+        }
+    }
+
+    function startResendTimer() {
+        canResend = false;
+        document.getElementById('btnResend').style.display = 'none';
+        document.getElementById('resendTimer').style.display = 'block';
+        
+        let seconds = 60;
+        const timer = setInterval(() => {
+            seconds--;
+            document.getElementById('timerCount').textContent = seconds;
+            
+            if (seconds <= 0) {
+                clearInterval(timer);
+                canResend = true;
+                document.getElementById('btnResend').style.display = 'inline-block';
+                document.getElementById('resendTimer').style.display = 'none';
+            }
+        }, 1000);
+    }
+    
+    function setLoading(loading) {
+        document.getElementById('spinner').classList.toggle('d-none', !loading);
+        document.getElementById('btnSubmit').disabled = loading;
+    }
+    
+    function showAlert(message, type) {
+        alertArea.innerHTML = `<div class="alert alert-${type} small py-2">${message}</div>`;
+    }
+</script>
+}

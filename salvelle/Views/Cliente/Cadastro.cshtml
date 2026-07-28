@@ -1,0 +1,252 @@
+@{
+    ViewData["Title"] = "Criar Conta";
+    ViewData["HideNav"] = true;
+    Layout = "_LayoutCliente";
+}
+
+<div class="auth-container" style="padding-top: 40px; padding-bottom: 40px;">
+    <div class="auth-card" style="max-width: 500px;">
+        <div class="auth-header">
+            <div class="logo">
+                <i class="bi bi-person-plus"></i>
+            </div>
+            <h4 class="mb-1">Criar Conta</h4>
+            <p class="text-muted mb-0">Preencha seus dados para começar</p>
+        </div>
+
+        <form id="registerForm">
+            <!-- Dados pessoais -->
+            <h6 class="text-muted mb-3"><i class="bi bi-person me-2"></i>Dados Pessoais</h6>
+            
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control" id="fullName" placeholder="Nome completo" required>
+                <label for="fullName">Nome completo</label>
+            </div>
+
+            <div class="row">
+                <div class="col-7">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="cpf" placeholder="CPF" 
+                               oninput="formatCpf(this)" maxlength="14" required>
+                        <label for="cpf">CPF</label>
+                    </div>
+                </div>
+                <div class="col-5">
+                    <div class="form-floating mb-3">
+                        <input type="date" class="form-control" id="birthDate">
+                        <label for="birthDate">Nascimento</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contato -->
+            <h6 class="text-muted mb-3 mt-2"><i class="bi bi-telephone me-2"></i>Contato</h6>
+            
+            <div class="form-floating mb-3">
+                <input type="tel" class="form-control" id="phone" placeholder="Telefone" 
+                       oninput="formatPhone(this)" required>
+                <label for="phone"><i class="bi bi-whatsapp text-success me-1"></i>WhatsApp</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input type="email" class="form-control" id="email" placeholder="Email">
+                <label for="email">Email (opcional)</label>
+            </div>
+
+            <!-- Endereço -->
+            <h6 class="text-muted mb-3 mt-2"><i class="bi bi-geo-alt me-2"></i>Endereço</h6>
+            
+            <div class="row">
+                <div class="col-5">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="zipCode" placeholder="CEP" 
+                               oninput="formatCep(this)" onblur="buscarCep(this.value)" maxlength="9">
+                        <label for="zipCode">CEP</label>
+                    </div>
+                </div>
+                <div class="col-7">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="street" placeholder="Rua">
+                        <label for="street">Rua</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-4">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="number" placeholder="Nº">
+                        <label for="number">Nº</label>
+                    </div>
+                </div>
+                <div class="col-8">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="neighborhood" placeholder="Bairro">
+                        <label for="neighborhood">Bairro</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-8">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="city" placeholder="Cidade">
+                        <label for="city">Cidade</label>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="state" placeholder="UF" maxlength="2" 
+                               style="text-transform: uppercase;">
+                        <label for="state">UF</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LGPD -->
+            <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" id="consent" required>
+                <label class="form-check-label small" for="consent">
+                    Li e aceito os <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">termos de uso</a> 
+                    e a <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">política de privacidade</a>
+                </label>
+            </div>
+
+            <div id="alertArea"></div>
+
+            <button type="submit" class="btn btn-primary w-100 mb-3" id="btnSubmit">
+                <span class="spinner-border spinner-border-sm d-none me-2" id="spinner"></span>
+                <span id="btnText">Criar Conta</span>
+            </button>
+        </form>
+
+        <div class="text-center">
+            <span class="text-muted small">Já tem conta?</span>
+            <a href="/Cliente/Login" class="text-decoration-none small ms-1">Entrar</a>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Termos -->
+<div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Termos de Uso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Ao utilizar o Portal do Cliente Salvelle, você concorda em fornecer informações verdadeiras e atualizadas.</p>
+                <p>O sistema permite solicitar orçamentos de fórmulas magistrais em farmácias de manipulação cadastradas.</p>
+                <p>Seus dados serão utilizados exclusivamente para processamento de pedidos e comunicação relacionada.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Privacidade -->
+<div class="modal fade" id="privacyModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Política de Privacidade</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Dados coletados:</strong> Nome, CPF, telefone, email, endereço e informações de pedidos.</p>
+                <p><strong>Finalidade:</strong> Processamento de orçamentos, comunicação via WhatsApp e histórico de compras.</p>
+                <p><strong>Compartilhamento:</strong> Seus dados serão compartilhados apenas com a farmácia selecionada para seu pedido.</p>
+                <p><strong>Direitos:</strong> Você pode solicitar acesso, correção ou exclusão de seus dados a qualquer momento.</p>
+                <p>Em conformidade com a LGPD - Lei Geral de Proteção de Dados.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const form = document.getElementById('registerForm');
+    const alertArea = document.getElementById('alertArea');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const data = {
+            fullName: document.getElementById('fullName').value.trim(),
+            cpf: document.getElementById('cpf').value.replace(/\D/g, ''),
+            phone: document.getElementById('phone').value.replace(/\D/g, ''),
+            email: document.getElementById('email').value.trim() || null,
+            birthDate: document.getElementById('birthDate').value || null,
+            zipCode: document.getElementById('zipCode').value.replace(/\D/g, '') || null,
+            street: document.getElementById('street').value.trim() || null,
+            number: document.getElementById('number').value.trim() || null,
+            neighborhood: document.getElementById('neighborhood').value.trim() || null,
+            city: document.getElementById('city').value.trim() || null,
+            state: document.getElementById('state').value.trim().toUpperCase() || null,
+            consentDataProcessing: document.getElementById('consent').checked
+        };
+        
+        if (!data.fullName || data.fullName.length < 3) {
+            showAlert('Informe seu nome completo', 'danger');
+            return;
+        }
+        
+        if (data.cpf.length !== 11) {
+            showAlert('CPF inválido', 'danger');
+            return;
+        }
+        
+        if (data.phone.length < 10) {
+            showAlert('Telefone inválido', 'danger');
+            return;
+        }
+        
+        if (!data.consentDataProcessing) {
+            showAlert('Você precisa aceitar os termos para continuar', 'danger');
+            return;
+        }
+        
+        setLoading(true);
+        alertArea.innerHTML = '';
+        
+        try {
+            const response = await fetch('/api/cliente/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('Conta criada! Enviamos um código para seu WhatsApp.', 'success');
+                setTimeout(() => {
+                    window.location.href = `/Cliente/Verificar?phone=${encodeURIComponent(document.getElementById('phone').value)}`;
+                }, 2000);
+            } else {
+                showAlert(result.message, 'danger');
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showAlert('Erro de conexão. Tente novamente.', 'danger');
+            setLoading(false);
+        }
+    });
+    
+    function setLoading(loading) {
+        document.getElementById('spinner').classList.toggle('d-none', !loading);
+        document.getElementById('btnSubmit').disabled = loading;
+    }
+    
+    function showAlert(message, type) {
+        alertArea.innerHTML = `<div class="alert alert-${type} small py-2">${message}</div>`;
+    }
+</script>
+}

@@ -1,0 +1,346 @@
+@{
+    ViewData["Title"] = "Movimentações de Estoque";
+}
+
+@section Styles {
+<style>
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card.pad { padding: 20px; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .ds-card-eyebrow { font-family: var(--font-mono); font-size: 11px; color: var(--petrol-500); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ds-card-title { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+
+    .filter-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr auto; gap: 12px; align-items: end; }
+    .filter-actions { display: flex; gap: 8px; }
+
+    .loading-row { text-align: center; color: var(--ink-3); padding: 40px; }
+    .spin { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--ink-5); border-top-color: var(--petrol-500); border-radius: 50%; animation: dsSpin .6s linear infinite; vertical-align: -3px; margin-right: 6px; }
+    @@keyframes dsSpin { to { transform: rotate(360deg); } }
+
+    /* Modal design-system */
+    .ds-modal-backdrop { position: fixed; inset: 0; background: rgba(10,24,20,.45); z-index: 1050; display: none; align-items: center; justify-content: center; padding: 16px; animation: dsFade .18s ease; }
+    .ds-modal-backdrop.show { display: flex; }
+    @@keyframes dsFade { from { opacity: 0; } to { opacity: 1; } }
+    .ds-modal { background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-3); width: 100%; max-width: 480px; max-height: calc(100vh - 32px); overflow-y: auto; }
+    .ds-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--rule); }
+    .ds-modal-head h3 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.015em; }
+    .ds-modal-close { background: transparent; border: none; color: var(--ink-3); font-size: 20px; cursor: pointer; line-height: 1; padding: 2px 6px; border-radius: var(--r-sm); }
+    .ds-modal-close:hover { background: var(--bg-subtle); color: var(--ink); }
+    .ds-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .ds-modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--rule); }
+    .field-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+
+    @@media (max-width: 900px) {
+        .filter-grid { grid-template-columns: 1fr 1fr; }
+        .filter-actions { grid-column: 1 / -1; }
+        .filter-actions .btn { flex: 1; justify-content: center; }
+    }
+
+    /* Tabela vira lista empilhada no mobile */
+    @@media (max-width: 780px) {
+        table.responsive-stack thead { display: none; }
+        table.responsive-stack tbody tr { display: block; border-bottom: 1px solid var(--rule); padding: 12px 16px; }
+        table.responsive-stack tbody tr:hover td { background: transparent; }
+        table.responsive-stack tbody td {
+            display: flex; justify-content: space-between; align-items: center; gap: 12px;
+            padding: 5px 0; border: none; text-align: right;
+        }
+        table.responsive-stack tbody td::before {
+            content: attr(data-label); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+            color: var(--ink-3); font-weight: 500; text-align: left;
+        }
+    }
+    @@media (max-width: 520px) {
+        .filter-grid { grid-template-columns: 1fr; }
+        .field-row { grid-template-columns: 1fr; }
+    }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">ESTOQUE · MOVIMENTAÇÕES</div>
+            <h1 style="font-size: var(--t-h2); font-weight: 600; letter-spacing: -0.025em; margin: 0 0 4px;">Movimentações de Estoque</h1>
+            <p style="color: var(--ink-3); font-size: 14px; margin: 0;">Histórico de entradas, saídas e ajustes de matérias-primas.</p>
+        </div>
+        <div class="row">
+            <a class="btn btn-secondary" href="/Stock"><i class="bi bi-arrow-left"></i>Voltar</a>
+            <button class="btn btn-primary" onclick="openMovementModal()"><i class="bi bi-plus"></i>Nova movimentação</button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="ds-card pad" style="margin-bottom:24px;">
+        <div class="filter-grid">
+            <div>
+                <label class="input-label">Matéria-prima</label>
+                <select class="select" id="filterRawMaterial"><option value="">Todas</option></select>
+            </div>
+            <div>
+                <label class="input-label">Tipo</label>
+                <select class="select" id="filterType">
+                    <option value="">Todos</option>
+                    <option value="ENTRADA">Entrada</option>
+                    <option value="SAIDA">Saída</option>
+                    <option value="AJUSTE">Ajuste</option>
+                    <option value="DEVOLUCAO">Devolução</option>
+                </select>
+            </div>
+            <div>
+                <label class="input-label">Data início</label>
+                <input type="date" class="input" id="filterStartDate">
+            </div>
+            <div>
+                <label class="input-label">Data fim</label>
+                <input type="date" class="input" id="filterEndDate">
+            </div>
+            <div class="filter-actions">
+                <button class="btn btn-primary" onclick="loadMovements()"><i class="bi bi-search"></i>Filtrar</button>
+                <button class="btn btn-secondary" onclick="clearFilters()"><i class="bi bi-x-circle"></i>Limpar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="ds-card">
+        <div class="ds-card-head">
+            <div>
+                <div class="ds-card-eyebrow">Histórico</div>
+                <h3 class="ds-card-title">Movimentações registradas</h3>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table responsive-stack mb-0" id="tableMovements">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Tipo</th>
+                        <th>Matéria-prima</th>
+                        <th class="text-end">Quantidade</th>
+                        <th>Lote</th>
+                        <th>Referência</th>
+                        <th>Motivo</th>
+                        <th>Operador</th>
+                    </tr>
+                </thead>
+                <tbody id="movementsBody">
+                    <tr><td colspan="8" class="loading-row"><span class="spin"></span>Carregando…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nova Movimentação -->
+<div class="ds-modal-backdrop" id="modalNewMovement" onclick="if(event.target===this)closeMovementModal()">
+    <div class="ds-modal">
+        <div class="ds-modal-head">
+            <h3>Nova movimentação</h3>
+            <button type="button" class="ds-modal-close" onclick="closeMovementModal()">&times;</button>
+        </div>
+        <div class="ds-modal-body">
+            <div>
+                <label class="input-label">Matéria-prima *</label>
+                <select class="select" id="newRawMaterial" required><option value="">Selecione…</option></select>
+            </div>
+            <div>
+                <label class="input-label">Tipo de movimentação *</label>
+                <select class="select" id="newType" required>
+                    <option value="ENTRADA">Entrada</option>
+                    <option value="SAIDA">Saída</option>
+                    <option value="AJUSTE">Ajuste</option>
+                    <option value="DEVOLUCAO">Devolução</option>
+                </select>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="input-label">Quantidade *</label>
+                    <input type="number" class="input" id="newQuantity" step="0.0001" required>
+                </div>
+                <div>
+                    <label class="input-label">Unidade</label>
+                    <input type="text" class="input" id="newUnit" readonly>
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="input-label">Lote</label>
+                    <input type="text" class="input" id="newBatch">
+                </div>
+                <div>
+                    <label class="input-label">Custo (R$)</label>
+                    <input type="number" class="input" id="newCost" step="0.01">
+                </div>
+            </div>
+            <div>
+                <label class="input-label">Motivo *</label>
+                <textarea class="textarea" id="newReason" rows="3" required></textarea>
+            </div>
+        </div>
+        <div class="ds-modal-foot">
+            <button type="button" class="btn btn-secondary" onclick="closeMovementModal()">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnSaveMovement" onclick="saveMovement()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let rawMaterials = [];
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadRawMaterials();
+
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('filterEndDate').value = today;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30);
+        document.getElementById('filterStartDate').value = startDate.toISOString().split('T')[0];
+
+        loadMovements();
+
+        document.getElementById('newRawMaterial').addEventListener('change', function () {
+            const rm = rawMaterials.find(r => r.id === this.value);
+            document.getElementById('newUnit').value = rm ? rm.unit : '';
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeMovementModal();
+        });
+    });
+
+    async function loadRawMaterials() {
+        try {
+            const response = await fetch('/api/RawMaterials', { credentials: 'include' });
+            const result = await response.json();
+            if (result.success) {
+                rawMaterials = result.data;
+                const selectFilter = document.getElementById('filterRawMaterial');
+                const selectNew = document.getElementById('newRawMaterial');
+                rawMaterials.forEach(rm => {
+                    selectFilter.add(new Option(`${rm.code} - ${rm.name}`, rm.id));
+                    selectNew.add(new Option(`${rm.code} - ${rm.name}`, rm.id));
+                });
+            }
+        } catch (error) {
+            console.error('Erro ao carregar matérias-primas:', error);
+        }
+    }
+
+    async function loadMovements() {
+        const rawMaterialId = document.getElementById('filterRawMaterial').value;
+        const movementType = document.getElementById('filterType').value;
+        const startDate = document.getElementById('filterStartDate').value;
+        const endDate = document.getElementById('filterEndDate').value;
+
+        let url = '/api/StockMovements/history?';
+        if (rawMaterialId) url += `rawMaterialId=${rawMaterialId}&`;
+        if (movementType) url += `movementType=${movementType}&`;
+        if (startDate) url += `startDate=${startDate}&`;
+        if (endDate) url += `endDate=${endDate}`;
+
+        const tbody = document.getElementById('movementsBody');
+        tbody.innerHTML = '<tr><td colspan="8" class="loading-row"><span class="spin"></span>Carregando…</td></tr>';
+
+        try {
+            const response = await fetch(url, { credentials: 'include' });
+            const result = await response.json();
+            tbody.innerHTML = '';
+
+            if (result.success && result.data.length > 0) {
+                tbody.innerHTML = result.data.map(m => `
+                    <tr>
+                        <td data-label="Data/Hora" class="mono">${new Date(m.movementDate).toLocaleString('pt-BR')}</td>
+                        <td data-label="Tipo"><span class="badge ${getTypeBadge(m.movementType)} badge-no-dot">${getTypeLabel(m.movementType)}</span></td>
+                        <td data-label="Matéria-prima" style="color:var(--ink);font-weight:500;">${m.rawMaterialCode ? m.rawMaterialCode + ' - ' : ''}${m.rawMaterialName ?? '—'}</td>
+                        <td data-label="Quantidade" class="text-end mono">${(m.quantity ?? 0).toLocaleString('pt-BR')} ${m.unit ?? ''}</td>
+                        <td data-label="Lote">${m.batchNumber || '—'}</td>
+                        <td data-label="Referência">${m.referenceType || '—'}</td>
+                        <td data-label="Motivo">${m.reason || '—'}</td>
+                        <td data-label="Operador">${m.employeeName || '—'}</td>
+                    </tr>`).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--ink-3);padding:40px;">Nenhuma movimentação encontrada no período.</td></tr>';
+            }
+        } catch (error) {
+            console.error('Erro ao carregar movimentações:', error);
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:40px;">Erro ao carregar dados.</td></tr>';
+        }
+    }
+
+    function getTypeBadge(type) {
+        const map = { 'ENTRADA': 'badge-ok', 'SAIDA': 'badge-danger', 'AJUSTE': 'badge-warn', 'DEVOLUCAO': 'badge-info' };
+        return map[type] || 'badge-neutral';
+    }
+    function getTypeLabel(type) {
+        const map = { 'ENTRADA': 'Entrada', 'SAIDA': 'Saída', 'AJUSTE': 'Ajuste', 'DEVOLUCAO': 'Devolução' };
+        return map[type] || type;
+    }
+
+    function clearFilters() {
+        document.getElementById('filterRawMaterial').value = '';
+        document.getElementById('filterType').value = '';
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('filterEndDate').value = today;
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30);
+        document.getElementById('filterStartDate').value = startDate.toISOString().split('T')[0];
+        loadMovements();
+    }
+
+    function openMovementModal() {
+        document.getElementById('modalNewMovement').classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeMovementModal() {
+        document.getElementById('modalNewMovement').classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    async function saveMovement() {
+        const data = {
+            rawMaterialId: document.getElementById('newRawMaterial').value,
+            movementType: document.getElementById('newType').value,
+            quantity: parseFloat(document.getElementById('newQuantity').value),
+            unit: document.getElementById('newUnit').value,
+            batchNumber: document.getElementById('newBatch').value || null,
+            cost: document.getElementById('newCost').value ? parseFloat(document.getElementById('newCost').value) : null,
+            reason: document.getElementById('newReason').value
+        };
+
+        if (!data.rawMaterialId || !data.quantity || !data.reason) {
+            alert('Preencha todos os campos obrigatórios.');
+            return;
+        }
+
+        const btn = document.getElementById('btnSaveMovement');
+        btn.disabled = true;
+        try {
+            const response = await fetch('/api/StockMovements/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                alert(result.message);
+                closeMovementModal();
+                ['newRawMaterial', 'newQuantity', 'newBatch', 'newCost', 'newReason', 'newUnit'].forEach(id => {
+                    document.getElementById(id).value = '';
+                });
+                loadMovements();
+            } else {
+                alert('Erro: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Erro ao salvar movimentação:', error);
+            alert('Erro ao salvar movimentação.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+</script>
+}

@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "Salvelle",
+    "slug": "formulacare-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAF9F5"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.formulacare.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Precisamos da câmera para fotografar receitas médicas",
+        "NSPhotoLibraryUsageDescription": "Precisamos acessar suas fotos para selecionar receitas",
+        "NSFaceIDUsageDescription": "Use Face ID para entrar de forma segura"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FAF9F5"
+      },
+      "package": "com.formulacare.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-camera",
+      "expo-image-picker",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Use Face ID para entrar de forma segura"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "3e0ce529-0756-456a-b48f-979826fb94ec"
+      }
+    },
+    "owner": "douglasbragamaster"
+  }
+}

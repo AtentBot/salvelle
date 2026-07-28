@@ -1,0 +1,277 @@
+@{
+    ViewData["Title"] = "Configuração de Gateways";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="@Url.Action("Index")">Gestão de Pagamentos</a></li>
+                    <li class="breadcrumb-item active">Configuração de Gateways</li>
+                </ol>
+            </nav>
+            <h2><i class="bi bi-plugin me-2"></i>Configuração de Gateways de Pagamento</h2>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Mercado Pago -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-info bg-opacity-10 p-3 rounded me-3">
+                            <i class="bi bi-badge-cc text-info fs-3"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Mercado Pago</h5>
+                            <small class="text-muted">PIX, Cartão, Boleto</small>
+                        </div>
+                        <div class="ms-auto">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="mpEnabled">
+                                <label class="form-check-label" for="mpEnabled">Ativo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="mercadoPagoForm">
+                        <div class="mb-3">
+                            <label class="form-label">Public Key</label>
+                            <input type="text" class="form-control" id="mpPublicKey" placeholder="APP_USR-...">
+                            <small class="text-muted">Obtenha em: developers.mercadopago.com</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Access Token</label>
+                            <input type="password" class="form-control" id="mpAccessToken" placeholder="APP_USR-...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ambiente</label>
+                            <select class="form-select" id="mpEnvironment">
+                                <option value="sandbox">Sandbox (Testes)</option>
+                                <option value="production">Produção</option>
+                            </select>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary" onclick="testMercadoPago()">
+                                <i class="bi bi-check-circle"></i> Testar Conexão
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-save"></i> Salvar Configurações
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- PagSeguro -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-warning bg-opacity-10 p-3 rounded me-3">
+                            <i class="bi bi-shield-check text-warning fs-3"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">PagSeguro</h5>
+                            <small class="text-muted">Cartão, Boleto</small>
+                        </div>
+                        <div class="ms-auto">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="psEnabled">
+                                <label class="form-check-label" for="psEnabled">Ativo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="pagSeguroForm">
+                        <div class="mb-3">
+                            <label class="form-label">Email da Conta</label>
+                            <input type="email" class="form-control" id="psEmail" placeholder="seuemail@exemplo.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Token</label>
+                            <input type="password" class="form-control" id="psToken" placeholder="Token de produção">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ambiente</label>
+                            <select class="form-select" id="psEnvironment">
+                                <option value="sandbox">Sandbox (Testes)</option>
+                                <option value="production">Produção</option>
+                            </select>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary" onclick="testPagSeguro()">
+                                <i class="bi bi-check-circle"></i> Testar Conexão
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-save"></i> Salvar Configurações
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stripe -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
+                            <i class="bi bi-credit-card text-primary fs-3"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Stripe</h5>
+                            <small class="text-muted">Cartão Internacional</small>
+                        </div>
+                        <div class="ms-auto">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="stripeEnabled">
+                                <label class="form-check-label" for="stripeEnabled">Ativo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="stripeForm">
+                        <div class="mb-3">
+                            <label class="form-label">Publishable Key</label>
+                            <input type="text" class="form-control" id="stripePublicKey" placeholder="pk_test_...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Secret Key</label>
+                            <input type="password" class="form-control" id="stripeSecretKey" placeholder="sk_test_...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Webhook Secret</label>
+                            <input type="password" class="form-control" id="stripeWebhookSecret" placeholder="whsec_...">
+                            <small class="text-muted">Para receber notificações de pagamento</small>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary" onclick="testStripe()">
+                                <i class="bi bi-check-circle"></i> Testar Conexão
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-save"></i> Salvar Configurações
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asaas -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-opacity-10 p-3 rounded me-3">
+                            <i class="bi bi-wallet2 text-success fs-3"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Asaas</h5>
+                            <small class="text-muted">PIX, Cartão, Boleto</small>
+                        </div>
+                        <div class="ms-auto">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="asaasEnabled">
+                                <label class="form-check-label" for="asaasEnabled">Ativo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="asaasForm">
+                        <div class="mb-3">
+                            <label class="form-label">API Key</label>
+                            <input type="password" class="form-control" id="asaasApiKey" placeholder="$aact_...">
+                            <small class="text-muted">Obtenha em: asaas.com/api</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ambiente</label>
+                            <select class="form-select" id="asaasEnvironment">
+                                <option value="sandbox">Sandbox (Testes)</option>
+                                <option value="production">Produção</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Webhook URL</label>
+                            <input type="text" class="form-control" id="asaasWebhook" readonly 
+                                   value="https://salvelle.atentbot.com/webhooks/asaas">
+                            <small class="text-muted">Configure esta URL no painel Asaas</small>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary" onclick="testAsaas()">
+                                <i class="bi bi-check-circle"></i> Testar Conexão
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-save"></i> Salvar Configurações
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção de Webhooks -->
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0"><i class="bi bi-arrow-repeat me-2"></i>Webhooks Recebidos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Data/Hora</th>
+                                    <th>Gateway</th>
+                                    <th>Evento</th>
+                                    <th>ID Transação</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="webhooksTable">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                        Nenhum webhook recebido ainda
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs de Integração -->
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-file-text me-2"></i>Logs de Integração</h5>
+                        <button class="btn btn-sm btn-outline-danger" onclick="clearLogs()">
+                            <i class="bi bi-trash"></i> Limpar Logs
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="logsContainer" class="bg-dark text-white p-3 rounded" style="height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;">
+                        <div class="text-muted">Aguardando eventos...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/gateway-configuration.js"></script>
+}

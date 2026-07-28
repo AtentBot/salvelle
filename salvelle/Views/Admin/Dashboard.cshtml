@@ -1,0 +1,366 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["Subtitle"] = "Visão geral do sistema";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon primary">
+                <i class="bi bi-building"></i>
+            </div>
+            <div class="stat-value" id="totalEstablishments">-</div>
+            <div class="stat-label">Estabelecimentos</div>
+            <div class="stat-change positive" id="establishmentsChange"></div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="stat-value" id="activeEstablishments">-</div>
+            <div class="stat-label">Ativos</div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div class="stat-value" id="trialingEstablishments">-</div>
+            <div class="stat-label">Em Trial</div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon danger">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <div class="stat-value" id="pastDueEstablishments">-</div>
+            <div class="stat-label">Inadimplentes</div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue & Charts -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-xl-8">
+        <div class="admin-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-graph-up me-2"></i>Receita Mensal</span>
+                <select class="form-select form-select-sm" style="width: auto;" id="chartPeriod" onchange="loadRevenueChart()">
+                    <option value="6">Últimos 6 meses</option>
+                    <option value="12">Últimos 12 meses</option>
+                </select>
+            </div>
+            <div class="card-body">
+                <div style="height: 280px; position: relative;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-4">
+        <div class="admin-card">
+            <div class="card-header">
+                <i class="bi bi-currency-dollar me-2"></i>Resumo Financeiro
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <small class="text-muted d-block mb-1">MRR (Receita Mensal Recorrente)</small>
+                    <h3 class="mb-0 text-primary" id="mrrValue">R$ -</h3>
+                </div>
+                <div class="mb-4">
+                    <small class="text-muted d-block mb-1">ARR (Receita Anual Recorrente)</small>
+                    <h3 class="mb-0 text-success" id="arrValue">R$ -</h3>
+                </div>
+                <div class="mb-4">
+                    <small class="text-muted d-block mb-1">Novos este mês</small>
+                    <h3 class="mb-0" id="newThisMonth">-</h3>
+                </div>
+                <div>
+                    <small class="text-muted d-block mb-1">Taxa de Churn</small>
+                    <h3 class="mb-0" id="churnRate">-</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Signups & Plans Distribution -->
+<div class="row g-4">
+    <div class="col-12 col-xl-8">
+        <div class="admin-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-person-plus me-2"></i>Cadastros Recentes</span>
+                <a href="/admin/establishments" class="btn btn-sm btn-outline-primary">Ver todos</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Estabelecimento</th>
+                                <th>Cidade/UF</th>
+                                <th>Status</th>
+                                <th>Data</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentSignupsTable">
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>
+                                    Carregando...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-4">
+        <div class="admin-card">
+            <div class="card-header">
+                <i class="bi bi-pie-chart me-2"></i>Distribuição por Plano
+            </div>
+            <div class="card-body">
+                <div style="height: 200px; position: relative;">
+                    <canvas id="plansChart"></canvas>
+                </div>
+                <div id="plansLegend" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let revenueChart = null;
+    let plansChart = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadMetrics();
+        loadRecentSignups();
+        loadRevenueChart();
+    });
+
+    async function loadMetrics() {
+        try {
+            const response = await fetch('/api/admin/dashboard/metrics');
+            if (response.ok) {
+                const data = await response.json();
+                
+                document.getElementById('totalEstablishments').textContent = data.totalEstablishments || 0;
+                document.getElementById('activeEstablishments').textContent = data.activeEstablishments || 0;
+                document.getElementById('trialingEstablishments').textContent = data.trialingEstablishments || 0;
+                document.getElementById('pastDueEstablishments').textContent = data.pastDueEstablishments || 0;
+                
+                document.getElementById('mrrValue').textContent = formatCurrency(data.monthlyRecurringRevenue || 0);
+                document.getElementById('arrValue').textContent = formatCurrency(data.annualRecurringRevenue || 0);
+                document.getElementById('newThisMonth').textContent = data.newSubscriptionsThisMonth || 0;
+                document.getElementById('churnRate').textContent = (data.churnRate || 0).toFixed(1) + '%';
+
+                // Plans distribution chart
+                if (data.subscriptionsByPlan) {
+                    renderPlansChart(data.subscriptionsByPlan);
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao carregar métricas:', error);
+        }
+    }
+
+    async function loadRecentSignups() {
+        try {
+            const response = await fetch('/api/admin/dashboard/recent-signups?limit=5');
+            if (response.ok) {
+                const data = await response.json();
+                renderSignupsTable(data);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar cadastros:', error);
+            document.getElementById('recentSignupsTable').innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-danger">
+                        Erro ao carregar dados
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    function renderSignupsTable(establishments) {
+        const tbody = document.getElementById('recentSignupsTable');
+        
+        if (!establishments || establishments.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">
+                        Nenhum cadastro encontrado
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = establishments.map(e => `
+            <tr>
+                <td>
+                    <strong>${e.nomeFantasia || '-'}</strong>
+                    <br><small class="text-muted">${e.email || '-'}</small>
+                </td>
+                <td>${e.city || '-'}/${e.state || '-'}</td>
+                <td>
+                    <span class="status-badge ${getStatusClass(e.subscriptionStatus)}">
+                        ${getStatusLabel(e.subscriptionStatus)}
+                    </span>
+                </td>
+                <td>${formatDate(e.createdAt)}</td>
+                <td>
+                    <a href="/admin/establishments/${e.id}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function loadRevenueChart() {
+        try {
+            const months = document.getElementById('chartPeriod').value;
+            const response = await fetch(`/api/admin/dashboard/revenue-chart?months=${months}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                renderRevenueChart(data);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar gráfico:', error);
+        }
+    }
+
+    function renderRevenueChart(data) {
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        
+        if (revenueChart) {
+            revenueChart.destroy();
+        }
+
+        const labels = data.map(d => d.label);
+        const values = data.map(d => d.value);
+
+        revenueChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Receita',
+                    data: values,
+                    backgroundColor: 'rgba(124, 58, 237, 0.8)',
+                    borderColor: 'rgba(124, 58, 237, 1)',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return formatCurrency(context.raw);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'R$ ' + value.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderPlansChart(subscriptionsByPlan) {
+        const ctx = document.getElementById('plansChart').getContext('2d');
+        
+        if (plansChart) {
+            plansChart.destroy();
+        }
+
+        const labels = Object.keys(subscriptionsByPlan);
+        const values = Object.values(subscriptionsByPlan);
+        const colors = ['var(--controlled-black)', 'var(--ok)', 'var(--amber-500)', 'var(--danger)', 'var(--info)'];
+
+        plansChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+
+        // Custom legend
+        const legendHtml = labels.map((label, i) => `
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="d-flex align-items-center">
+                    <div style="width: 12px; height: 12px; border-radius: 3px; background: ${colors[i]}; margin-right: 8px;"></div>
+                    <span class="small">${label}</span>
+                </div>
+                <strong class="small">${values[i]}</strong>
+            </div>
+        `).join('');
+        
+        document.getElementById('plansLegend').innerHTML = legendHtml;
+    }
+
+    function getStatusClass(status) {
+        switch (status?.toUpperCase()) {
+            case 'ACTIVE': return 'active';
+            case 'TRIALING': return 'trialing';
+            case 'PAST_DUE': return 'past-due';
+            case 'CANCELED': return 'canceled';
+            default: return 'inactive';
+        }
+    }
+
+    function getStatusLabel(status) {
+        switch (status?.toUpperCase()) {
+            case 'ACTIVE': return 'Ativo';
+            case 'TRIALING': return 'Trial';
+            case 'PAST_DUE': return 'Inadimplente';
+            case 'CANCELED': return 'Cancelado';
+            default: return 'Inativo';
+        }
+    }
+</script>
+}

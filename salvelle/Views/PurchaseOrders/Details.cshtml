@@ -1,0 +1,200 @@
+@{
+    ViewData["Title"] = "Detalhes do Pedido";
+    var orderId = ViewBag.OrderId;
+}
+
+@section Styles {
+<style>
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; margin-bottom: 20px; }
+    .ds-card-head { padding: 14px 20px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; gap: 8px; }
+    .ds-card-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; margin: 0; display: flex; align-items: center; gap: 8px; }
+    .ds-card-title i { color: var(--petrol-500); }
+    .ds-card-body { padding: 18px 20px; }
+
+    .detail-cols { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+    .info-field label, .info-field > strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; margin-bottom: 3px; }
+    .info-field p { margin: 0; font-size: 14px; color: var(--ink); font-weight: 500; }
+
+    .ds-table { width: 100%; border-collapse: collapse; }
+    .ds-table thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; padding: 10px 14px; border-bottom: 1px solid var(--rule); background: var(--bg-subtle); white-space: nowrap; }
+    .ds-table tbody td { padding: 11px 14px; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink-2); }
+    .ds-table tbody tr:last-child td { border-bottom: none; }
+
+    .fin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+    .action-stack { display: flex; flex-direction: column; gap: 10px; }
+    .action-stack .btn { width: 100%; justify-content: center; }
+
+    /* Bootstrap → design system (markup injetado / botões de ação) */
+    .badge { font-family: var(--font-mono); font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: var(--r-pill); letter-spacing: 0.02em; }
+    .badge.bg-success { background: var(--ok-soft) !important; color: var(--ok) !important; }
+    .badge.bg-warning { background: var(--amber-50) !important; color: var(--amber-700) !important; }
+    .badge.bg-info { background: var(--info-soft) !important; color: var(--info) !important; }
+    .badge.bg-danger { background: var(--danger-soft) !important; color: var(--danger) !important; }
+    .badge.bg-primary { background: var(--petrol-50) !important; color: var(--petrol-600) !important; }
+    .badge.bg-secondary { background: var(--bg-subtle) !important; color: var(--ink-3) !important; }
+    .btn.btn-success { background: var(--ok); color: #fff; border: none; }
+    .btn.btn-info { background: var(--info); color: #fff; border: none; }
+    .btn.btn-danger { background: var(--danger); color: #fff; border: none; }
+    .btn.btn-success:hover, .btn.btn-info:hover, .btn.btn-danger:hover { filter: brightness(0.95); }
+
+    .timeline-item { display: flex; padding-bottom: 1.4rem; position: relative; }
+    .timeline-item:not(:last-child)::before { content: ''; position: absolute; left: 9px; top: 22px; bottom: 0; width: 2px; background-color: var(--rule); }
+    .timeline-marker { width: 18px; height: 18px; border-radius: 50%; margin-right: 0.9rem; flex-shrink: 0; margin-top: 3px; box-shadow: 0 0 0 3px var(--surface); }
+    .timeline-marker.bg-secondary { background: var(--ink-5) !important; }
+    .timeline-marker.bg-success { background: var(--ok) !important; }
+    .timeline-marker.bg-primary { background: var(--petrol-500) !important; }
+    .timeline-marker.bg-info { background: var(--info) !important; }
+    .timeline-content strong { font-size: 13px; color: var(--ink); }
+    .timeline-content p { color: var(--ink-3); }
+
+    @@media (max-width: 900px) { .detail-cols { grid-template-columns: 1fr; } .info-grid { grid-template-columns: 1fr; } .fin-grid { grid-template-columns: 1fr 1fr; } }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">COMPRAS · PEDIDO</div>
+            <h1>Detalhes do pedido</h1>
+            <p>Acompanhamento e ações do pedido de compra.</p>
+        </div>
+        <div class="row">
+            <a href="/compras" class="btn btn-secondary"><i class="bi bi-arrow-left"></i>Voltar</a>
+        </div>
+    </div>
+
+    <div id="loadingOrder" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status" style="width:1.8rem;height:1.8rem;">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
+    </div>
+
+    <div id="orderDetails" style="display:none;">
+        <div class="detail-cols">
+            <div>
+                <div class="ds-card">
+                    <div class="ds-card-head">
+                        <h5 class="ds-card-title"><i class="bi bi-info-circle"></i>Informações do pedido</h5>
+                    </div>
+                    <div class="ds-card-body">
+                        <div class="info-grid">
+                            <div class="info-field"><strong>Número do pedido</strong><p id="orderNumber"></p></div>
+                            <div class="info-field"><strong>Status</strong><p id="orderStatus"></p></div>
+                            <div class="info-field"><strong>Fornecedor</strong><p id="supplierName"></p></div>
+                            <div class="info-field"><strong>Data do pedido</strong><p id="orderDate"></p></div>
+                            <div class="info-field"><strong>Previsão de entrega</strong><p id="expectedDeliveryDate"></p></div>
+                            <div class="info-field"><strong>Data de recebimento</strong><p id="actualDeliveryDate"></p></div>
+                            <div class="info-field"><strong>Criado por</strong><p id="createdByEmployee"></p></div>
+                            <div class="info-field"><strong>Aprovado por</strong><p id="approvedByEmployee"></p></div>
+                            <div class="info-field" id="notesRow" style="display:none;grid-column:1/-1;"><strong>Observações</strong><p id="orderNotes"></p></div>
+                            <div class="info-field" id="invoiceRow" style="display:none;grid-column:1/-1;"><strong>Nota fiscal</strong><p id="supplierInvoice"></p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ds-card">
+                    <div class="ds-card-head">
+                        <h5 class="ds-card-title"><i class="bi bi-list-ul"></i>Itens do pedido</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="ds-table">
+                            <thead>
+                                <tr>
+                                    <th>Matéria-prima</th>
+                                    <th>Qtd. pedida</th>
+                                    <th>Qtd. recebida</th>
+                                    <th>Unidade</th>
+                                    <th>Preço unit.</th>
+                                    <th>Desconto</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="ds-card">
+                    <div class="ds-card-head">
+                        <h5 class="ds-card-title"><i class="bi bi-calculator"></i>Resumo financeiro</h5>
+                    </div>
+                    <div class="ds-card-body">
+                        <div class="fin-grid">
+                            <div class="info-field"><strong>Subtotal</strong><p id="totalValue"></p></div>
+                            <div class="info-field"><strong>Desconto</strong><p id="discountValue"></p></div>
+                            <div class="info-field"><strong>Frete</strong><p id="shippingValue"></p></div>
+                            <div class="info-field"><strong>Valor final</strong><p id="finalValue" style="color:var(--ok);font-size:16px;font-weight:600;"></p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="ds-card">
+                    <div class="ds-card-head">
+                        <h5 class="ds-card-title"><i class="bi bi-lightning"></i>Ações</h5>
+                    </div>
+                    <div class="ds-card-body">
+                        <div class="action-stack" id="actionButtons">
+                            <button id="btnApprove" class="btn btn-success" style="display:none;"><i class="bi bi-check-circle"></i>Aprovar pedido</button>
+                            <button id="btnSend" class="btn btn-primary" style="display:none;"><i class="bi bi-send"></i>Enviar ao fornecedor</button>
+                            <button id="btnReceive" class="btn btn-info" style="display:none;"><i class="bi bi-box-seam"></i>Receber mercadoria</button>
+                            <button id="btnDelete" class="btn btn-danger" style="display:none;"><i class="bi bi-trash"></i>Excluir pedido</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ds-card">
+                    <div class="ds-card-head">
+                        <h5 class="ds-card-title"><i class="bi bi-clock-history"></i>Linha do tempo</h5>
+                    </div>
+                    <div class="ds-card-body">
+                        <div id="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-secondary"></div>
+                                <div class="timeline-content">
+                                    <strong>Criado</strong>
+                                    <p id="createdAt" class="mb-0 small"></p>
+                                </div>
+                            </div>
+                            <div id="approvedTimeline" class="timeline-item" style="display:none;">
+                                <div class="timeline-marker bg-success"></div>
+                                <div class="timeline-content">
+                                    <strong>Aprovado</strong>
+                                    <p id="approvedAt" class="mb-0 small"></p>
+                                </div>
+                            </div>
+                            <div id="sentTimeline" class="timeline-item" style="display:none;">
+                                <div class="timeline-marker bg-primary"></div>
+                                <div class="timeline-content">
+                                    <strong>Enviado</strong>
+                                    <p id="sentAt" class="mb-0 small"></p>
+                                </div>
+                            </div>
+                            <div id="receivedTimeline" class="timeline-item" style="display:none;">
+                                <div class="timeline-marker bg-info"></div>
+                                <div class="timeline-content">
+                                    <strong>Recebido</strong>
+                                    <p id="receivedAt" class="mb-0 small"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/purchase-orders-details.js"></script>
+    <script>
+        $(document).ready(function() {
+            PurchaseOrdersDetails.init(@orderId);
+        });
+    </script>
+}

@@ -1,0 +1,777 @@
+@{
+    ViewData["Title"] = "Processar Receita";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-prescription2 text-primary"></i> Processar Receita</h4>
+            <p class="text-muted mb-0">Upload → OCR → Match → Orçamento</p>
+        </div>
+        <a href="/Prescriptions" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <!-- Wizard Steps -->
+    <div class="card mb-4">
+        <div class="card-body py-4">
+            <div class="d-flex justify-content-between position-relative">
+                <!-- Progress Line -->
+                <div class="progress position-absolute" style="top: 25px; left: 10%; right: 10%; height: 4px;">
+                    <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                </div>
+                
+                <!-- Step 1 -->
+                <div class="text-center position-relative" style="z-index: 1;">
+                    <div class="step-circle active" id="step1Circle">
+                        <i class="bi bi-upload"></i>
+                    </div>
+                    <small class="d-block mt-2 fw-bold">Upload</small>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="text-center position-relative" style="z-index: 1;">
+                    <div class="step-circle" id="step2Circle">
+                        <i class="bi bi-eye"></i>
+                    </div>
+                    <small class="d-block mt-2">Revisão OCR</small>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="text-center position-relative" style="z-index: 1;">
+                    <div class="step-circle" id="step3Circle">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <small class="d-block mt-2">Ingredientes</small>
+                </div>
+                
+                <!-- Step 4 -->
+                <div class="text-center position-relative" style="z-index: 1;">
+                    <div class="step-circle" id="step4Circle">
+                        <i class="bi bi-calculator"></i>
+                    </div>
+                    <small class="d-block mt-2">Orçamento</small>
+                </div>
+                
+                <!-- Step 5 -->
+                <div class="text-center position-relative" style="z-index: 1;">
+                    <div class="step-circle" id="step5Circle">
+                        <i class="bi bi-check-lg"></i>
+                    </div>
+                    <small class="d-block mt-2">Finalizar</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 1: Upload -->
+    <div class="step-content" id="step1Content">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-camera"></i> Upload da Receita</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Drop Zone -->
+                        <div class="upload-zone" id="uploadZone">
+                            <input type="file" id="fileInput" accept="image/jpeg,image/png,application/pdf" hidden>
+                            <div class="text-center py-5">
+                                <i class="bi bi-cloud-upload display-1 text-primary mb-3"></i>
+                                <h5>Arraste a imagem da receita aqui</h5>
+                                <p class="text-muted">ou clique para selecionar</p>
+                                <button class="btn btn-primary btn-lg" onclick="document.getElementById('fileInput').click()">
+                                    <i class="bi bi-folder2-open"></i> Selecionar Arquivo
+                                </button>
+                                <p class="text-muted mt-3 mb-0">
+                                    <small>Formatos: JPG, PNG, PDF | Máximo: 5MB</small>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Preview -->
+                        <div id="previewContainer" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Preview da Receita</h6>
+                                <button class="btn btn-sm btn-outline-danger" onclick="clearUpload()">
+                                    <i class="bi bi-x"></i> Remover
+                                </button>
+                            </div>
+                            <img id="imagePreview" class="img-fluid rounded border" style="max-height: 400px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-person"></i> Dados do Cliente</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Cliente Cadastrado</label>
+                            <select class="form-select" id="customerId">
+                                <option value="">Selecione ou deixe em branco</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nome do Cliente *</label>
+                            <input type="text" class="form-control" id="customerName" placeholder="Nome completo">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Telefone (WhatsApp)</label>
+                            <input type="tel" class="form-control" id="customerPhone" placeholder="(XX) XXXXX-XXXX">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">E-mail</label>
+                            <input type="email" class="form-control" id="customerEmail" placeholder="email@exemplo.com">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-end mt-4">
+            <button class="btn btn-primary btn-lg" id="btnProcessOcr" disabled onclick="processOcr()">
+                <i class="bi bi-cpu"></i> Processar com IA
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 2: OCR Result -->
+    <div class="step-content" id="step2Content" style="display: none;">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-file-text"></i> Resultado do OCR</h5>
+                    </div>
+                    <div class="card-body" id="ocrResultContainer">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-image"></i> Imagem Original</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <img id="ocrImagePreview" class="img-fluid rounded" style="max-height: 500px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-between mt-4">
+            <button class="btn btn-outline-secondary btn-lg" onclick="goToStep(1)">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </button>
+            <button class="btn btn-primary btn-lg" onclick="goToStep(3)">
+                Confirmar e Continuar <i class="bi bi-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 3: Ingredient Matching -->
+    <div class="step-content" id="step3Content" style="display: none;">
+        <div class="card">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="bi bi-box-seam"></i> Confirmar Ingredientes</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="ingredientsTable">
+                        <thead>
+                            <tr>
+                                <th>Texto OCR</th>
+                                <th>Matéria-Prima</th>
+                                <th>Confiança</th>
+                                <th>Estoque</th>
+                                <th>Quantidade</th>
+                                <th>Unidade</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="ingredientsTbody">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-between mt-4">
+            <button class="btn btn-outline-secondary btn-lg" onclick="goToStep(2)">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </button>
+            <button class="btn btn-primary btn-lg" onclick="generateQuote()">
+                Gerar Orçamento <i class="bi bi-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 4: Quote -->
+    <div class="step-content" id="step4Content" style="display: none;">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-calculator"></i> Orçamento</h5>
+                    </div>
+                    <div class="card-body" id="quoteContainer">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-sliders"></i> Ajustes</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Markup (%)</label>
+                            <input type="number" class="form-control" id="markupPercentage" value="150" min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Desconto (%)</label>
+                            <input type="number" class="form-control" id="discountPercentage" value="0" min="0" max="100">
+                        </div>
+                        <button class="btn btn-outline-primary w-100" onclick="recalculateQuote()">
+                            <i class="bi bi-arrow-repeat"></i> Recalcular
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-send"></i> Enviar</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-success w-100 mb-2" onclick="sendWhatsApp()">
+                            <i class="bi bi-whatsapp"></i> Enviar WhatsApp
+                        </button>
+                        <button class="btn btn-outline-primary w-100 mb-2" onclick="copyLink()">
+                            <i class="bi bi-link-45deg"></i> Copiar Link
+                        </button>
+                        <button class="btn btn-outline-secondary w-100" onclick="printQuote()">
+                            <i class="bi bi-printer"></i> Imprimir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-between mt-4">
+            <button class="btn btn-outline-secondary btn-lg" onclick="goToStep(3)">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </button>
+            <button class="btn btn-primary btn-lg" onclick="goToStep(5)">
+                Finalizar <i class="bi bi-check-lg"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 5: Finish -->
+    <div class="step-content" id="step5Content" style="display: none;">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-check-circle-fill text-success display-1 mb-4"></i>
+                <h3>Orçamento Criado com Sucesso!</h3>
+                <p class="text-muted mb-4">O cliente pode aprovar pelo link enviado.</p>
+                
+                <div class="alert alert-info d-inline-block">
+                    <strong>Código:</strong> <span id="finalQuoteCode"></span>
+                    <br>
+                    <strong>Link:</strong> <a href="#" id="finalQuoteLink" target="_blank"></a>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="/Prescriptions/Processar" class="btn btn-primary btn-lg me-2">
+                        <i class="bi bi-plus-lg"></i> Nova Receita
+                    </a>
+                    <a href="/PrescriptionQuotes" class="btn btn-outline-secondary btn-lg">
+                        <i class="bi bi-list"></i> Ver Orçamentos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .step-circle {
+        width: 50px; height: 50px; border-radius: 50%;
+        background: var(--bg-subtle); color: var(--ink-3);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px; font-weight: 600; margin: 0 auto;
+        transition: all var(--t-base);
+        font-family: var(--font-mono);
+    }
+    .step-circle.active { background: var(--petrol-500); color: #fff; box-shadow: 0 0 0 4px var(--petrol-50); }
+    .step-circle.completed { background: var(--ok); color: #fff; }
+
+    .upload-zone {
+        border: 2px dashed var(--rule);
+        border-radius: var(--r-md);
+        background: var(--bg-subtle);
+        cursor: pointer;
+        transition: all var(--t-base);
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+        border-color: var(--petrol-500); border-style: solid;
+        background: var(--petrol-50);
+    }
+
+    .confidence-high { color: var(--ok); }
+    .confidence-medium { color: var(--warn); }
+    .confidence-low { color: var(--danger); }
+
+    .stock-ok { background: var(--ok-soft); }
+    .stock-low { background: var(--warn-soft); }
+    .stock-empty { background: var(--danger-soft); }
+</style>
+
+<script>
+let currentStep = 1;
+let uploadedFile = null;
+let ocrResult = null;
+let ingredientMatches = null;
+let currentQuote = null;
+
+// Upload handlers
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('dragover');
+});
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+        handleFile(e.dataTransfer.files[0]);
+    }
+});
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length) {
+        handleFile(e.target.files[0]);
+    }
+});
+
+function handleFile(file) {
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Arquivo muito grande. Máximo 5MB.');
+        return;
+    }
+    
+    uploadedFile = file;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('imagePreview').src = e.target.result;
+        document.getElementById('previewContainer').style.display = 'block';
+        uploadZone.style.display = 'none';
+        document.getElementById('btnProcessOcr').disabled = false;
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearUpload() {
+    uploadedFile = null;
+    fileInput.value = '';
+    document.getElementById('previewContainer').style.display = 'none';
+    uploadZone.style.display = 'block';
+    document.getElementById('btnProcessOcr').disabled = true;
+}
+
+async function processOcr() {
+    if (!uploadedFile) return;
+    
+    const customerName = document.getElementById('customerName').value;
+    if (!customerName) {
+        alert('Informe o nome do cliente');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const base64 = await fileToBase64(uploadedFile);
+        
+        const response = await fetch('/api/PrescriptionQuotes/quick-process', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                imageBase64: base64,
+                imageType: uploadedFile.type,
+                customerId: document.getElementById('customerId').value || null,
+                customerName: customerName,
+                customerPhone: document.getElementById('customerPhone').value,
+                customerEmail: document.getElementById('customerEmail').value,
+                autoCreateQuote: false
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            ocrResult = data.ocrResult;
+            ingredientMatches = data.ingredientMatches;
+            
+            renderOcrResult();
+            goToStep(2);
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    } catch (error) {
+        alert('Erro ao processar: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+function renderOcrResult() {
+    const container = document.getElementById('ocrResultContainer');
+    
+    let html = `
+        <div class="mb-3 p-3 bg-light rounded">
+            <strong>Confiança geral:</strong> 
+            <span class="${ocrResult.overallConfidence >= 0.8 ? 'text-success' : ocrResult.overallConfidence >= 0.6 ? 'text-warning' : 'text-danger'}">
+                ${(ocrResult.overallConfidence * 100).toFixed(0)}%
+            </span>
+        </div>
+        
+        <h6><i class="bi bi-person-badge"></i> Prescritor</h6>
+        <p class="mb-1"><strong>Nome:</strong> ${ocrResult.doctor?.name || 'Não identificado'}</p>
+        <p class="mb-1"><strong>CRM:</strong> ${ocrResult.doctor?.crm || '-'} ${ocrResult.doctor?.crmState || ''}</p>
+        <p class="mb-3"><strong>Especialidade:</strong> ${ocrResult.doctor?.specialty || '-'}</p>
+        
+        <h6><i class="bi bi-prescription2"></i> Fórmula</h6>
+        <p class="mb-1"><strong>Uso:</strong> ${ocrResult.patient?.usage || '-'}</p>
+        <p class="mb-1"><strong>Forma:</strong> ${ocrResult.pharmaceuticalForm || '-'}</p>
+        <p class="mb-1"><strong>Quantidade:</strong> ${ocrResult.totalQuantity || '-'}</p>
+        <p class="mb-3"><strong>Posologia:</strong> ${ocrResult.instructions || '-'}</p>
+        
+        <h6><i class="bi bi-list-check"></i> Componentes (${ocrResult.items?.length || 0})</h6>
+        <ul class="list-group">
+    `;
+    
+    if (ocrResult.items) {
+        ocrResult.items.forEach(item => {
+            html += `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${item.name}</strong>
+                        <small class="text-muted d-block">${item.rawText || ''}</small>
+                    </div>
+                    <span class="badge bg-primary">${item.quantity} ${item.unit}</span>
+                </li>
+            `;
+        });
+    }
+    
+    html += '</ul>';
+    container.innerHTML = html;
+    
+    // Copiar imagem para preview do step 2
+    document.getElementById('ocrImagePreview').src = document.getElementById('imagePreview').src;
+}
+
+function goToStep(step) {
+    // Hide all steps
+    document.querySelectorAll('.step-content').forEach(el => el.style.display = 'none');
+    
+    // Show target step
+    document.getElementById(`step${step}Content`).style.display = 'block';
+    
+    // Update circles
+    for (let i = 1; i <= 5; i++) {
+        const circle = document.getElementById(`step${i}Circle`);
+        circle.classList.remove('active', 'completed');
+        if (i < step) circle.classList.add('completed');
+        else if (i === step) circle.classList.add('active');
+    }
+    
+    // Update progress
+    document.getElementById('progressBar').style.width = `${(step - 1) * 25}%`;
+    
+    currentStep = step;
+    
+    // Render step content
+    if (step === 3) renderIngredients();
+}
+
+function renderIngredients() {
+    const tbody = document.getElementById('ingredientsTbody');
+    tbody.innerHTML = '';
+    
+    if (!ingredientMatches) return;
+    
+    ingredientMatches.forEach((match, index) => {
+        const hasMatch = match.bestMatch != null;
+        const suggestions = match.suggestions || [];
+        
+        let options = '<option value="">Selecione...</option>';
+        suggestions.forEach(s => {
+            options += `<option value="${s.rawMaterialId}" 
+                ${s.rawMaterialId === match.bestMatch?.rawMaterialId ? 'selected' : ''}
+                data-unit="${s.unit}" data-cost="${s.unitCost}" data-stock="${s.availableQuantity}">
+                ${s.name} (${(s.confidence * 100).toFixed(0)}% - ${s.availableQuantity} ${s.unit})
+            </option>`;
+        });
+        
+        const confidenceClass = hasMatch ? 
+            (match.bestMatch.confidence >= 0.8 ? 'confidence-high' : 
+             match.bestMatch.confidence >= 0.6 ? 'confidence-medium' : 'confidence-low') : 'confidence-low';
+        
+        const stockClass = hasMatch && match.bestMatch.inStock ? 
+            (match.bestMatch.availableQuantity > 100 ? 'stock-ok' : 'stock-low') : 'stock-empty';
+        
+        tbody.innerHTML += `
+            <tr data-index="${index}" class="${!hasMatch ? 'table-warning' : ''}">
+                <td>
+                    <strong>${match.ocrText}</strong>
+                    <small class="text-muted d-block">${match.ocrQuantity} ${match.ocrUnit}</small>
+                </td>
+                <td>
+                    <select class="form-select ingredient-select" data-index="${index}">
+                        ${options}
+                    </select>
+                </td>
+                <td class="${confidenceClass}">
+                    ${hasMatch ? (match.bestMatch.confidence * 100).toFixed(0) + '%' : '-'}
+                </td>
+                <td class="${stockClass}">
+                    ${hasMatch ? match.bestMatch.availableQuantity + ' ' + match.bestMatch.unit : 'Sem estoque'}
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm ingredient-qty" 
+                           data-index="${index}" value="${parseFloat(match.ocrQuantity) || 0}" step="0.01">
+                </td>
+                <td>
+                    <input type="text" class="form-control form-control-sm ingredient-unit" 
+                           data-index="${index}" value="${match.ocrUnit || 'g'}" style="width: 80px;">
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeIngredient(${index})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function removeIngredient(index) {
+    ingredientMatches.splice(index, 1);
+    renderIngredients();
+}
+
+async function generateQuote() {
+    const confirmedIngredients = [];
+    
+    document.querySelectorAll('#ingredientsTbody tr').forEach(row => {
+        const select = row.querySelector('.ingredient-select');
+        const qty = row.querySelector('.ingredient-qty');
+        const unit = row.querySelector('.ingredient-unit');
+        
+        if (select.value) {
+            const option = select.selectedOptions[0];
+            confirmedIngredients.push({
+                rawMaterialId: select.value,
+                rawMaterialName: option.text.split(' (')[0],
+                quantity: parseFloat(qty.value) || 0,
+                unit: unit.value || 'g',
+                isQsp: false
+            });
+        }
+    });
+    
+    if (confirmedIngredients.length === 0) {
+        alert('Selecione pelo menos um ingrediente');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const response = await fetch('/api/PrescriptionQuotes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                customerId: document.getElementById('customerId').value || null,
+                customerName: document.getElementById('customerName').value,
+                customerPhone: document.getElementById('customerPhone').value,
+                customerEmail: document.getElementById('customerEmail').value,
+                doctor: ocrResult.doctor || {},
+                usage: ocrResult.patient?.usage || '',
+                pharmaceuticalForm: ocrResult.pharmaceuticalForm || '',
+                totalQuantity: ocrResult.totalQuantity || '',
+                instructions: ocrResult.instructions || '',
+                ingredients: confirmedIngredients
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            currentQuote = data;
+            renderQuote();
+            goToStep(4);
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    } catch (error) {
+        alert('Erro: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+function renderQuote() {
+    if (!currentQuote) return;
+    
+    let html = `
+        <div class="alert alert-success mb-4">
+            <strong>Código:</strong> ${currentQuote.code}
+        </div>
+        
+        <h6>Componentes</h6>
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th class="text-end">Qtd</th>
+                    <th class="text-end">Custo</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    currentQuote.components.forEach(c => {
+        html += `
+            <tr>
+                <td>${c.name}</td>
+                <td class="text-end">${c.quantity.toFixed(2)} ${c.unit}</td>
+                <td class="text-end">R$ ${c.totalCost.toFixed(2)}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+            </tbody>
+        </table>
+        
+        <hr>
+        
+        <div class="d-flex justify-content-between mb-2">
+            <span>Matérias-primas:</span>
+            <span>R$ ${currentQuote.materialsCost.toFixed(2)}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+            <span>Markup (${currentQuote.markupPercentage}%):</span>
+            <span>R$ ${currentQuote.markupValue.toFixed(2)}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+            <span>Mão de obra:</span>
+            <span>R$ ${currentQuote.laborCost.toFixed(2)}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+            <span>Embalagem:</span>
+            <span>R$ ${currentQuote.packagingCost.toFixed(2)}</span>
+        </div>
+    `;
+    
+    if (currentQuote.discountValue > 0) {
+        html += `
+            <div class="d-flex justify-content-between mb-2 text-success">
+                <span>Desconto (${currentQuote.discountPercentage}%):</span>
+                <span>- R$ ${currentQuote.discountValue.toFixed(2)}</span>
+            </div>
+        `;
+    }
+    
+    html += `
+        <hr>
+        <div class="d-flex justify-content-between mb-2 h5">
+            <strong>TOTAL:</strong>
+            <strong class="text-success">R$ ${currentQuote.finalPrice.toFixed(2)}</strong>
+        </div>
+        
+        <div class="alert alert-info mt-3">
+            <i class="bi bi-clock"></i> Prazo: ${currentQuote.estimatedDays} dias úteis
+            <br>
+            <i class="bi bi-calendar"></i> Válido até: ${new Date(currentQuote.validUntil).toLocaleDateString('pt-BR')}
+        </div>
+    `;
+    
+    document.getElementById('quoteContainer').innerHTML = html;
+    
+    // Atualizar step 5
+    document.getElementById('finalQuoteCode').textContent = currentQuote.code;
+    const link = document.getElementById('finalQuoteLink');
+    link.href = currentQuote.publicUrl;
+    link.textContent = currentQuote.publicUrl;
+}
+
+function copyLink() {
+    if (!currentQuote) return;
+    navigator.clipboard.writeText(currentQuote.publicUrl);
+    alert('Link copiado!');
+}
+
+function sendWhatsApp() {
+    if (!currentQuote) return;
+    const phone = document.getElementById('customerPhone').value.replace(/\D/g, '');
+    const text = `Olá! Seu orçamento de manipulação está pronto.\n\nCódigo: ${currentQuote.code}\nValor: R$ ${currentQuote.finalPrice.toFixed(2)}\n\nVeja os detalhes e aprove pelo link:\n${currentQuote.publicUrl}`;
+    window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function printQuote() {
+    window.open(currentQuote.publicUrl, '_blank');
+}
+
+// Helpers
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+function showLoading() {
+    // Implementar overlay de loading
+    document.body.style.cursor = 'wait';
+}
+
+function hideLoading() {
+    document.body.style.cursor = 'default';
+}
+
+// Carregar clientes
+async function loadCustomers() {
+    try {
+        const response = await fetch('/api/Customers');
+        const customers = await response.json();
+        const select = document.getElementById('customerId');
+        customers.forEach(c => {
+            select.innerHTML += `<option value="${c.id}">${c.fullName} - ${c.cpf || c.phone}</option>`;
+        });
+    } catch (e) {
+        console.error('Erro ao carregar clientes:', e);
+    }
+}
+
+loadCustomers();
+</script>

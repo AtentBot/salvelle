@@ -1,0 +1,423 @@
+@{
+    ViewData["Title"] = "Ordens de Manipulação";
+    Layout = "_Layout";
+}
+
+<style>
+    .status-badge { font-size: 11px; padding: 3px 10px; border-radius: var(--r-pill); }
+    .order-row { cursor: pointer; transition: background-color var(--t-fast); }
+    .order-row:hover { background-color: var(--bg-subtle); }
+    .overdue { border-left: 3px solid var(--danger); }
+    .filter-card { border: 1px solid var(--rule); box-shadow: var(--shadow-1); border-radius: var(--r-md); }
+    .quick-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+    .quick-stat {
+        display: flex; align-items: center; gap: 8px;
+        padding: 8px 16px; background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-pill); font-size: 13px;
+    }
+    .quick-stat .count { font-weight: 600; color: var(--petrol-500); font-variant-numeric: tabular-nums; }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-prescription2 me-2"></i>Ordens de Manipulação</h4>
+            <small class="text-muted">Gerenciamento de fórmulas magistrais</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/Manipulacoes/Kanban" class="btn btn-outline-primary">
+                <i class="bi bi-kanban me-1"></i>Kanban
+            </a>
+            <a href="/Manipulacoes/Dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-graph-up me-1"></i>Dashboard
+            </a>
+            <a href="/Manipulacoes/Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Nova Ordem
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="quick-stats mb-4">
+        <div class="quick-stat">
+            <i class="bi bi-inbox text-secondary"></i>
+            <span>Pendentes: <span class="count" id="statPendentes">0</span></span>
+        </div>
+        <div class="quick-stat">
+            <i class="bi bi-gear text-primary"></i>
+            <span>Em Produção: <span class="count" id="statProducao">0</span></span>
+        </div>
+        <div class="quick-stat">
+            <i class="bi bi-check-circle text-success"></i>
+            <span>Finalizadas Hoje: <span class="count" id="statFinalizadas">0</span></span>
+        </div>
+        <div class="quick-stat">
+            <i class="bi bi-exclamation-triangle text-danger"></i>
+            <span>Atrasadas: <span class="count" id="statAtrasadas">0</span></span>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card filter-card mb-4">
+        <div class="card-body py-3">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="searchText" placeholder="Buscar ordem, cliente...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="filterStatus">
+                        <option value="">Todos os Status</option>
+                        <option value="PENDENTE">Pendente</option>
+                        <option value="SEPARACAO">Separação</option>
+                        <option value="PESAGEM">Pesagem</option>
+                        <option value="MISTURA">Mistura</option>
+                        <option value="ENVASE">Envase</option>
+                        <option value="ROTULAGEM">Rotulagem</option>
+                        <option value="CONFERENCIA">Conferência</option>
+                        <option value="FINALIZADO">Finalizado</option>
+                        <option value="CANCELADO">Cancelado</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="date" class="form-control" id="filterDateFrom" title="Data inicial">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" class="form-control" id="filterDateTo" title="Data final">
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox" id="filterOverdue">
+                        <label class="form-check-label" for="filterOverdue">Só atrasadas</label>
+                    </div>
+                </div>
+                <div class="col-md-1 text-end">
+                    <button class="btn btn-outline-secondary" onclick="loadOrders()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Ordens -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 140px;">Ordem</th>
+                            <th>Fórmula</th>
+                            <th>Cliente</th>
+                            <th class="text-center">Qtd</th>
+                            <th>Status</th>
+                            <th>Previsão</th>
+                            <th>Progresso</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTable">
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="spinner-border text-primary"></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+                Mostrando <span id="showingFrom">0</span>-<span id="showingTo">0</span> de <span id="totalItems">0</span>
+            </small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Ações Rápidas -->
+<div class="modal fade" id="modalQuickAction" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalQuickActionTitle">Ação Rápida</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalQuickActionBody"></div>
+            <div class="modal-footer" id="modalQuickActionFooter"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let currentPage = 1;
+const pageSize = 20;
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadOrders();
+    loadStats();
+    
+    // Event listeners para filtros
+    document.getElementById('searchText').addEventListener('input', debounce(loadOrders, 300));
+    document.getElementById('filterStatus').addEventListener('change', loadOrders);
+    document.getElementById('filterDateFrom').addEventListener('change', loadOrders);
+    document.getElementById('filterDateTo').addEventListener('change', loadOrders);
+    document.getElementById('filterOverdue').addEventListener('change', loadOrders);
+});
+
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+async function loadStats() {
+    try {
+        const response = await fetch('/api/ManipulationOrders/workflow-dashboard');
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('statPendentes').textContent = result.data.totalPendentes || 0;
+            document.getElementById('statProducao').textContent = result.data.totalEmProducao || 0;
+            document.getElementById('statFinalizadas').textContent = result.data.totalFinalizadosHoje || 0;
+            document.getElementById('statAtrasadas').textContent = result.data.totalAtrasados || 0;
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function loadOrders() {
+    const search = document.getElementById('searchText').value;
+    const status = document.getElementById('filterStatus').value;
+    const dateFrom = document.getElementById('filterDateFrom').value;
+    const dateTo = document.getElementById('filterDateTo').value;
+    const onlyOverdue = document.getElementById('filterOverdue').checked;
+    
+    let url = `/api/ManipulationOrders?pageNumber=${currentPage}&pageSize=${pageSize}`;
+    if (search) url += `&orderNumber=${encodeURIComponent(search)}&customerName=${encodeURIComponent(search)}`;
+    if (status) url += `&status=${status}`;
+    if (dateFrom) url += `&orderDateFrom=${dateFrom}`;
+    if (dateTo) url += `&orderDateTo=${dateTo}`;
+    if (onlyOverdue) url += `&onlyOverdue=true`;
+    
+    try {
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        renderOrders(result.items || []);
+        renderPagination(result.totalItems || 0);
+        
+        document.getElementById('totalItems').textContent = result.totalItems || 0;
+        document.getElementById('showingFrom').textContent = result.items?.length > 0 ? ((currentPage - 1) * pageSize + 1) : 0;
+        document.getElementById('showingTo').textContent = Math.min(currentPage * pageSize, result.totalItems || 0);
+        
+    } catch (error) {
+        console.error('Erro ao carregar ordens:', error);
+        document.getElementById('ordersTable').innerHTML = `
+            <tr><td colspan="8" class="text-center py-4 text-danger">Erro ao carregar dados</td></tr>
+        `;
+    }
+}
+
+function renderOrders(orders) {
+    if (!orders.length) {
+        document.getElementById('ordersTable').innerHTML = `
+            <tr><td colspan="8" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                Nenhuma ordem encontrada
+            </td></tr>
+        `;
+        return;
+    }
+    
+    const html = orders.map(order => {
+        const progress = getProgressPercent(order.status);
+        const isOverdue = order.isOverdue || order.daysUntilExpected < 0;
+        
+        return `
+            <tr class="order-row ${isOverdue ? 'overdue' : ''}" onclick="goToOrder('${order.id}')">
+                <td>
+                    <strong class="text-primary">${order.orderNumber}</strong>
+                    ${order.prescriptionNumber ? `<br><small class="text-muted">Rec: ${order.prescriptionNumber}</small>` : ''}
+                </td>
+                <td>
+                    ${order.formulaName || '<span class="text-muted">Fórmula Livre</span>'}
+                    ${order.formulaCode ? `<br><small class="text-muted">${order.formulaCode}</small>` : ''}
+                </td>
+                <td>
+                    <i class="bi bi-person me-1 text-muted"></i>${order.customerName || 'N/A'}
+                    ${order.customerPhone ? `<br><small class="text-muted">${order.customerPhone}</small>` : ''}
+                </td>
+                <td class="text-center">
+                    <strong>${order.quantityToProduce}</strong>
+                    <small class="text-muted">${order.unit}</small>
+                </td>
+                <td>
+                    <span class="badge status-badge bg-${getStatusColor(order.status)}">${order.status}</span>
+                </td>
+                <td>
+                    <span class="${isOverdue ? 'text-danger fw-bold' : ''}">
+                        ${formatDate(order.expectedDate)}
+                    </span>
+                    ${isOverdue ? '<br><small class="text-danger">ATRASADA</small>' : ''}
+                </td>
+                <td>
+                    <div class="progress" style="height: 8px; width: 100px;">
+                        <div class="progress-bar bg-${getStatusColor(order.status)}" style="width: ${progress}%"></div>
+                    </div>
+                    <small class="text-muted">${progress}%</small>
+                </td>
+                <td class="text-center" onclick="event.stopPropagation()">
+                    <div class="btn-group btn-group-sm">
+                        <a href="/Manipulacoes/Producao/${order.id}" class="btn btn-outline-primary" title="Produção">
+                            <i class="bi bi-play-fill"></i>
+                        </a>
+                        <a href="/Manipulacoes/Details/${order.id}" class="btn btn-outline-secondary" title="Detalhes">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" 
+                                data-bs-toggle="dropdown"></button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/Manipulacoes/FichaPesagem/${order.id}" target="_blank">
+                                <i class="bi bi-printer me-2"></i>Ficha Pesagem
+                            </a></li>
+                            <li><a class="dropdown-item" href="/Manipulacoes/Historico/${order.id}">
+                                <i class="bi bi-clock-history me-2"></i>Histórico
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/Manipulacoes/Edit/${order.id}">
+                                <i class="bi bi-pencil me-2"></i>Editar
+                            </a></li>
+                            ${order.status !== 'FINALIZADO' && order.status !== 'CANCELADO' ? `
+                            <li><a class="dropdown-item text-danger" href="#" onclick="cancelOrder('${order.id}')">
+                                <i class="bi bi-x-circle me-2"></i>Cancelar
+                            </a></li>
+                            ` : ''}
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    document.getElementById('ordersTable').innerHTML = html;
+}
+
+function renderPagination(totalItems) {
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const pagination = document.getElementById('pagination');
+    
+    if (totalPages <= 1) {
+        pagination.innerHTML = '';
+        return;
+    }
+    
+    let html = `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToPage(${currentPage - 1})">«</a>
+        </li>
+    `;
+    
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="goToPage(${i})">${i}</a>
+                </li>
+            `;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+    }
+    
+    html += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToPage(${currentPage + 1})">»</a>
+        </li>
+    `;
+    
+    pagination.innerHTML = html;
+}
+
+function goToPage(page) {
+    currentPage = page;
+    loadOrders();
+}
+
+function goToOrder(id) {
+    location.href = `/Manipulacoes/Producao/${id}`;
+}
+
+function getStatusColor(status) {
+    const colors = {
+        'PENDENTE': 'secondary',
+        'SEPARACAO': 'info',
+        'PESAGEM': 'primary',
+        'MISTURA': 'purple',
+        'ENVASE': 'pink',
+        'ROTULAGEM': 'warning',
+        'CONFERENCIA': 'success',
+        'APROVACAO': 'success',
+        'FINALIZADO': 'success',
+        'CANCELADO': 'danger',
+        'REJEITADO': 'danger'
+    };
+    return colors[status] || 'light';
+}
+
+function getProgressPercent(status) {
+    const percents = {
+        'PENDENTE': 0,
+        'SEPARACAO': 14,
+        'PESAGEM': 28,
+        'MISTURA': 42,
+        'ENVASE': 56,
+        'ROTULAGEM': 70,
+        'CONFERENCIA': 84,
+        'APROVACAO': 100,
+        'FINALIZADO': 100,
+        'CANCELADO': 0,
+        'REJEITADO': 0
+    };
+    return percents[status] || 0;
+}
+
+function formatDate(d) {
+    if (!d) return 'N/A';
+    return new Date(d).toLocaleDateString('pt-BR');
+}
+
+async function cancelOrder(id) {
+    const reason = prompt('Motivo do cancelamento:');
+    if (!reason || reason.length < 5) return;
+    
+    try {
+        const response = await fetch(`/api/ManipulationOrders/${id}/cancel`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Ordem cancelada com sucesso');
+            loadOrders();
+            loadStats();
+        } else {
+            alert('Erro: ' + result.message);
+        }
+    } catch (e) {
+        alert('Erro ao cancelar');
+    }
+}
+</script>
+}

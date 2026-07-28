@@ -1,0 +1,219 @@
+﻿@model List<Models.SubscriptionPlan>
+@{
+    Layout = null;
+    ViewData["Title"] = "Salvelle — Preços";
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>@@import url('https://api.fontshare.com/v2/css?f[]=general-sans@@400,500,600&display=swap');</style>
+    <link rel="stylesheet" href="~/css/design-system/tokens.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/design-system/components.css" asp-append-version="true">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@@1.11.2/font/bootstrap-icons.min.css">
+
+    <style>
+        body { background: var(--bg); }
+        .pub-nav { position: sticky; top: 0; z-index: 50; background: var(--surface); border-bottom: 1px solid var(--rule); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+        .pub-nav-links { display: flex; gap: 24px; align-items: center; }
+        .pub-nav-link { color: var(--ink-2); text-decoration: none; font-size: 14px; font-weight: 500; }
+        .pub-nav-link:hover, .pub-nav-link.active { color: var(--petrol-500); }
+
+        .pricing-hero { padding: 80px 64px 48px; text-align: center; background: var(--surface); border-bottom: 1px solid var(--rule); }
+        .pricing-hero h1 { font-size: var(--t-h1); font-weight: 600; letter-spacing: -0.025em; margin: 16px 0 12px; }
+        .pricing-hero p { color: var(--ink-3); font-size: 17px; max-width: 56ch; margin: 0 auto; }
+        .billing-toggle { display: inline-flex; background: var(--bg-subtle); border-radius: var(--r-pill); padding: 4px; margin-top: 24px; gap: 4px; }
+        .billing-toggle button { font-family: var(--font-sans); font-size: 13px; font-weight: 500; padding: 8px 16px; border: none; background: transparent; cursor: pointer; border-radius: var(--r-pill); color: var(--ink-3); }
+        .billing-toggle button.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+        .billing-save { font-family: var(--font-mono); font-size: 11px; color: var(--ok); margin-left: 6px; }
+
+        .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 1200px; margin: -32px auto 64px; padding: 0 64px; }
+        .plan { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-lg); padding: 32px; display: flex; flex-direction: column; gap: 20px; position: relative; }
+        .plan.featured { border-color: var(--petrol-500); box-shadow: var(--shadow-2); }
+        .plan-tag { position: absolute; top: -10px; left: 24px; background: var(--petrol-500); color: #fff; font-size: 11px; font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: var(--r-xs); }
+        .plan-name { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--petrol-500); }
+        .plan-price { display: flex; align-items: baseline; gap: 6px; }
+        .plan-price .v { font-size: 44px; font-weight: 600; letter-spacing: -0.025em; line-height: 1; font-variant-numeric: tabular-nums; }
+        .plan-price .p { font-size: 14px; color: var(--ink-3); }
+        .plan-desc { font-size: 14px; color: var(--ink-3); line-height: 1.55; min-height: 60px; }
+        .plan-features { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; padding-top: 20px; border-top: 1px solid var(--rule); }
+        .plan-features li { font-size: 13px; color: var(--ink-2); display: flex; gap: 10px; align-items: flex-start; }
+        .plan-features li i { color: var(--petrol-500); flex-shrink: 0; margin-top: 2px; }
+
+        .compare { max-width: 1200px; margin: 0 auto 64px; padding: 0 64px; }
+        .compare h2 { font-size: var(--t-h2); font-weight: 600; letter-spacing: -0.02em; margin: 0 0 24px; }
+        .compare table { width: 100%; }
+        .compare th { text-align: left; padding: 14px 16px; font-size: 12px; }
+        .compare td { padding: 14px 16px; }
+        .compare .cat { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); padding-top: 24px; }
+
+        .faq { max-width: 760px; margin: 0 auto 96px; padding: 0 64px; }
+        .faq h2 { font-size: var(--t-h2); font-weight: 600; letter-spacing: -0.02em; margin: 0 0 24px; }
+        .faq-item { padding: 20px 0; border-top: 1px solid var(--rule); }
+        .faq-item:last-child { border-bottom: 1px solid var(--rule); }
+        .faq-q { font-weight: 600; font-size: 16px; margin: 0 0 8px; }
+        .faq-a { color: var(--ink-3); font-size: 14px; margin: 0; line-height: 1.6; }
+
+        @@media (max-width: 980px) {
+            .pricing-grid { grid-template-columns: 1fr; padding: 0 24px; }
+            .pricing-hero, .compare, .faq { padding-left: 24px; padding-right: 24px; }
+            .pub-nav { padding: 14px 24px; }
+            .pub-nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="pub-nav">
+        <a href="/" class="brand">
+            <span class="brand-glyph" style="width:32px;height:32px;"><svg width="32" height="32" viewBox="0 0 88 88" fill="none" aria-hidden="true"><text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="var(--petrol-500)">S</text></svg></span>
+            <span class="brand-name">Salvelle</span>
+        </a>
+        <div class="pub-nav-links">
+            <a class="pub-nav-link" href="/">Produto</a>
+            <a class="pub-nav-link" href="/#features">Recursos</a>
+            <a class="pub-nav-link active" href="/Pricing">Preços</a>
+            <a class="pub-nav-link" href="#">Documentação</a>
+        </div>
+        <div class="row" style="gap:12px">
+            <a class="btn btn-ghost btn-sm" href="/Account/Login">Entrar</a>
+            <a class="btn btn-primary btn-sm" href="/Signup">Começar grátis</a>
+        </div>
+    </nav>
+
+    <section class="pricing-hero">
+        <div class="eyebrow">Planos · @DateTime.Now.Year</div>
+        <h1>Escolha como sua farmácia opera.</h1>
+        <p>Todos os planos incluem PDV, manipulação, rotulagem e suporte por chat. Sem add-ons, sem upgrade só pra ter relatório.</p>
+        <div class="billing-toggle" id="billingToggle">
+            <button data-period="monthly">Mensal</button>
+            <button data-period="yearly" class="active">Anual<span class="billing-save">−20%</span></button>
+        </div>
+    </section>
+
+    <div class="pricing-grid">
+        @if (Model != null && Model.Any())
+        {
+            @for (int i = 0; i < Model.Count; i++)
+            {
+                var plan = Model[i];
+                var isFeatured = i == 1 || (Model.Count == 1 && i == 0);
+                <div class="plan @(isFeatured ? "featured" : "")">
+                    @if (isFeatured) { <div class="plan-tag">Recomendado</div> }
+                    <div class="plan-name">@plan.Name</div>
+                    <div class="plan-price">
+                        <span class="v" data-monthly="R$ @plan.PriceMonthly.ToString("N0")" data-yearly="R$ @((plan.PriceYearly / 12).ToString("N0"))">
+                            R$ @((plan.PriceYearly / 12).ToString("N0"))
+                        </span>
+                        <span class="p">/mês</span>
+                    </div>
+                    <div class="plan-desc">@plan.Description</div>
+                    <a class="btn @(isFeatured ? "btn-primary" : "btn-secondary") btn-lg" href="/Signup?plan=@plan.Id" style="width:100%; justify-content:center;">
+                        @(isFeatured ? "Escolher" : "Começar grátis")
+                    </a>
+                    <ul class="plan-features">
+                        @if (plan.MaxMonthlyOrders.HasValue)
+                        {
+                            <li><i class="bi bi-check2"></i>Até @plan.MaxMonthlyOrders fórmulas/mês</li>
+                        }
+                        else
+                        {
+                            <li><i class="bi bi-check2"></i>Fórmulas ilimitadas</li>
+                        }
+                        @if (plan.MaxEmployees.HasValue)
+                        {
+                            <li><i class="bi bi-check2"></i>Até @plan.MaxEmployees usuários</li>
+                        }
+                        else
+                        {
+                            <li><i class="bi bi-check2"></i>Usuários ilimitados</li>
+                        }
+                        <li><i class="bi bi-check2"></i>PDV, manipulação, rotulagem</li>
+                        <li><i class="bi bi-check2"></i>Suporte por chat</li>
+                        @if (isFeatured)
+                        {
+                            <li><i class="bi bi-check2"></i>OCR de receita · pesagem</li>
+                            <li><i class="bi bi-check2"></i>Migração de dados gratuita</li>
+                        }
+                    </ul>
+                </div>
+            }
+        }
+        else
+        {
+            <!-- Fallback estático quando não há planos cadastrados -->
+            <div class="plan">
+                <div class="plan-name">Essencial</div>
+                <div class="plan-price"><span class="v">R$ 189</span><span class="p">/mês</span></div>
+                <div class="plan-desc">Para farmácias começando a digitalizar a manipulação.</div>
+                <a class="btn btn-secondary btn-lg" href="/Signup" style="width:100%; justify-content:center;">Começar grátis</a>
+                <ul class="plan-features">
+                    <li><i class="bi bi-check2"></i>Até 200 fórmulas/mês</li>
+                    <li><i class="bi bi-check2"></i>1 ponto de venda</li>
+                    <li><i class="bi bi-check2"></i>Rotulagem padrão</li>
+                    <li><i class="bi bi-check2"></i>Suporte por chat</li>
+                </ul>
+            </div>
+            <div class="plan featured">
+                <div class="plan-tag">Recomendado</div>
+                <div class="plan-name">Profissional</div>
+                <div class="plan-price"><span class="v">R$ 389</span><span class="p">/mês</span></div>
+                <div class="plan-desc">Para operações com manipulação controlada e múltiplos farmacêuticos.</div>
+                <a class="btn btn-primary btn-lg" href="/Signup" style="width:100%; justify-content:center;">Escolher Profissional</a>
+                <ul class="plan-features">
+                    <li><i class="bi bi-check2"></i>Fórmulas ilimitadas</li>
+                    <li><i class="bi bi-check2"></i>3 pontos de venda</li>
+                    <li><i class="bi bi-check2"></i>Rotulagem padrão e controlada</li>
+                    <li><i class="bi bi-check2"></i>OCR de receita · pesagem</li>
+                    <li><i class="bi bi-check2"></i>Estoque por lote e validade</li>
+                    <li><i class="bi bi-check2"></i>Suporte prioritário</li>
+                    <li><i class="bi bi-check2"></i>Migração de dados gratuita</li>
+                </ul>
+            </div>
+            <div class="plan">
+                <div class="plan-name">Rede</div>
+                <div class="plan-price"><span class="v">Sob consulta</span></div>
+                <div class="plan-desc">Para redes de manipulação com múltiplas unidades.</div>
+                <a class="btn btn-secondary btn-lg" href="#contact" style="width:100%; justify-content:center;">Falar com vendas</a>
+                <ul class="plan-features">
+                    <li><i class="bi bi-check2"></i>Multi-unidade · consolidado</li>
+                    <li><i class="bi bi-check2"></i>PDV ilimitado</li>
+                    <li><i class="bi bi-check2"></i>SLA dedicado · 99,9%</li>
+                    <li><i class="bi bi-check2"></i>Integrações sob medida</li>
+                    <li><i class="bi bi-check2"></i>SSO · auditoria</li>
+                    <li><i class="bi bi-check2"></i>Onboarding presencial</li>
+                </ul>
+            </div>
+        }
+    </div>
+
+    <section class="faq">
+        <h2>Perguntas frequentes</h2>
+        <div class="faq-item"><h4 class="faq-q">Posso trocar de plano depois?</h4><p class="faq-a">Sim, a qualquer momento. Trocas para um plano superior são proporcionais ao período restante; para inferiores, o crédito fica disponível para o próximo ciclo.</p></div>
+        <div class="faq-item"><h4 class="faq-q">A migração dos meus dados é gratuita?</h4><p class="faq-a">Sim, no plano Profissional e Rede. Trabalhamos com planilhas, exportações de outros sistemas e até bases SQL. O processo leva em média 5 dias úteis.</p></div>
+        <div class="faq-item"><h4 class="faq-q">O sistema atende exigências da Anvisa?</h4><p class="faq-a">Sim. Rotulagem padrão e controlada (faixa preta para psicotrópicos, vermelha para entorpecentes), livros eletrônicos, rastreabilidade por lote e SNGPC integrado.</p></div>
+        <div class="faq-item"><h4 class="faq-q">Funciona com minha balança?</h4><p class="faq-a">Trabalhamos com qualquer balança que tenha porta serial RS-232 ou USB-serial. Lista completa de modelos testados na documentação.</p></div>
+        <div class="faq-item"><h4 class="faq-q">E se eu cancelar?</h4><p class="faq-a">Sem multa, sem fidelidade. Exportamos todos os seus dados em CSV e PDF, e mantemos a conta arquivada por 6 meses caso queira voltar.</p></div>
+    </section>
+
+    <script>
+        const toggle = document.getElementById('billingToggle');
+        toggle.addEventListener('click', e => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            toggle.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+            const period = btn.dataset.period;
+            document.querySelectorAll('.plan-price .v').forEach(v => {
+                const val = v.dataset[period];
+                if (val) v.textContent = val;
+            });
+        });
+    </script>
+</body>
+</html>

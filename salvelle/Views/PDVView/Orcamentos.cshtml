@@ -1,0 +1,250 @@
+@model List<Models.Pharmacy.ManipulationOrder>
+@{
+    ViewData["Title"] = "Orçamentos para Conversão";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="/pdv" class="btn btn-outline-secondary btn-sm mb-2">
+                <i class="bi bi-arrow-left me-1"></i>Voltar ao PDV
+            </a>
+            <h4 class="mb-0">
+                <i class="bi bi-file-earmark-check text-success me-2"></i>
+                Orçamentos Aguardando
+            </h4>
+        </div>
+        <div>
+            <button class="btn btn-outline-primary" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+            </button>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-2">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="searchInput" 
+                               placeholder="Buscar por número ou cliente..." oninput="filtrar()">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="filterStatus" onchange="filtrar()">
+                        <option value="">Todos os Status</option>
+                        <option value="ORCAMENTO">Orçamento</option>
+                        <option value="AGUARDANDO_APROVACAO">Aguardando Aprovação</option>
+                        <option value="AGUARDANDO_PRODUCAO">Aguardando Produção</option>
+                        <option value="PENDENTE">Pendente</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="sortBy" onchange="ordenar()">
+                        <option value="date-desc">Mais recentes</option>
+                        <option value="date-asc">Mais antigos</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <span class="badge bg-success fs-6">@Model.Count ordens</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="row g-3" id="ordersContainer">
+            @foreach (var order in Model)
+            {
+                var statusClass = "bg-secondary";
+                var statusText = order.Status;
+                
+                if (order.Status == "ORCAMENTO")
+                {
+                    statusClass = "bg-info";
+                    statusText = "Orçamento";
+                }
+                else if (order.Status == "AGUARDANDO_APROVACAO")
+                {
+                    statusClass = "bg-warning text-dark";
+                    statusText = "Aguardando Aprovação";
+                }
+                else if (order.Status == "AGUARDANDO_PRODUCAO")
+                {
+                    statusClass = "bg-primary";
+                    statusText = "Aguardando Produção";
+                }
+                else if (order.Status == "PENDENTE")
+                {
+                    statusClass = "bg-secondary";
+                    statusText = "Pendente";
+                }
+                
+                var customerNameLower = (order.CustomerName ?? "").ToLower();
+                var orderNumberLower = order.OrderNumber.ToLower();
+                var formulaName = order.Formula?.Name ?? "Fórmula Livre";
+                var componentsCount = order.Formula?.Components?.Count ?? 0;
+                
+                <div class="col-md-6 col-lg-4 order-card" 
+                     data-number="@orderNumberLower"
+                     data-customer="@customerNameLower"
+                     data-status="@order.Status"
+                     data-date="@order.CreatedAt.ToString("yyyy-MM-dd HH:mm")">
+                    <div class="card h-100 border-0 shadow-sm" style="transition: all 0.2s;">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="mb-1 text-primary">@order.OrderNumber</h5>
+                                    <small class="text-muted">
+                                        @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                    </small>
+                                </div>
+                                <span class="badge @statusClass">@statusText</span>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-2">
+                                        <i class="bi bi-person text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <strong>@(order.CustomerName ?? "Não identificado")</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <small class="text-muted">Fórmula:</small>
+                                <br>
+                                <strong>@formulaName</strong>
+                            </div>
+
+                            <div class="row g-2 mb-3 text-center">
+                                <div class="col-6">
+                                    <div class="bg-light rounded p-2">
+                                        <small class="text-muted d-block">Quantidade</small>
+                                        <strong>@order.QuantityToProduce @order.Unit</strong>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="bg-light rounded p-2">
+                                        <small class="text-muted d-block">Componentes</small>
+                                        <strong>@componentsCount</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">Valor</small>
+                                    <h5 class="mb-0 text-muted">A calcular</h5>
+                                </div>
+                                <a href="/pdv/venda-rapida/@order.Id" class="btn btn-success">
+                                    <i class="bi bi-cart-check me-1"></i>
+                                    Vender
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div id="noResults" class="text-center py-5 d-none">
+            <i class="bi bi-search fs-1 text-muted"></i>
+            <p class="text-muted mt-2">Nenhuma ordem encontrada com os filtros selecionados</p>
+            <button class="btn btn-outline-primary" onclick="limparFiltros()">Limpar Filtros</button>
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-inbox fs-1 text-muted"></i>
+            <h5 class="mt-3 text-muted">Nenhuma ordem pendente</h5>
+            <p class="text-muted">Quando houver ordens aguardando aprovação ou produção, elas aparecerão aqui.</p>
+            <a href="/pdv" class="btn btn-primary">
+                <i class="bi bi-arrow-left me-1"></i>
+                Voltar ao PDV
+            </a>
+        </div>
+    }
+</div>
+
+<style>
+    .order-card .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    }
+</style>
+
+@section Scripts {
+<script>
+    function filtrar() {
+        var searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        var statusFilter = document.getElementById('filterStatus').value;
+
+        var cards = document.querySelectorAll('.order-card');
+        var visibleCount = 0;
+
+        cards.forEach(function(card) {
+            var number = card.getAttribute('data-number');
+            var customer = card.getAttribute('data-customer');
+            var status = card.getAttribute('data-status');
+
+            var show = true;
+
+            if (searchTerm && number.indexOf(searchTerm) === -1 && customer.indexOf(searchTerm) === -1) {
+                show = false;
+            }
+
+            if (statusFilter && status !== statusFilter) {
+                show = false;
+            }
+
+            card.style.display = show ? '' : 'none';
+            if (show) visibleCount++;
+        });
+
+        var noResults = document.getElementById('noResults');
+        var container = document.getElementById('ordersContainer');
+        if (visibleCount > 0) {
+            noResults.classList.add('d-none');
+            container.classList.remove('d-none');
+        } else {
+            noResults.classList.remove('d-none');
+            container.classList.add('d-none');
+        }
+    }
+
+    function ordenar() {
+        var sortOption = document.getElementById('sortBy').value;
+        var container = document.getElementById('ordersContainer');
+        var cards = Array.from(container.querySelectorAll('.order-card'));
+
+        cards.sort(function(a, b) {
+            var dateA = new Date(a.getAttribute('data-date'));
+            var dateB = new Date(b.getAttribute('data-date'));
+            
+            if (sortOption === 'date-desc') {
+                return dateB - dateA;
+            } else {
+                return dateA - dateB;
+            }
+        });
+
+        cards.forEach(function(card) {
+            container.appendChild(card);
+        });
+    }
+
+    function limparFiltros() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('sortBy').value = 'date-desc';
+        filtrar();
+    }
+</script>
+}

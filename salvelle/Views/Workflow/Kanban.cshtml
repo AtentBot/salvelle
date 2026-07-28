@@ -1,0 +1,352 @@
+﻿@{
+    ViewData["Title"] = "Kanban de Produção";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-3">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-columns-gap text-primary me-2"></i>
+                Kanban de Produção
+            </h2>
+            <p class="text-muted mb-0">Arraste e solte para atualizar o status das ordens</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary" onclick="refreshKanban()">
+                <i class="bi bi-arrow-clockwise"></i> Atualizar
+            </button>
+            <a href="/Workflow" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-list-ul"></i> Lista
+            </a>
+            <a href="/Workflow/Dashboard" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-graph-up"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban-board">
+        <div class="row g-3 flex-nowrap overflow-auto pb-3">
+            <!-- Coluna Pendentes -->
+            <div class="col-kanban">
+                <div class="card h-100">
+                    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-hourglass me-2"></i>Pendentes</span>
+                        <span class="badge bg-dark" id="countPendentes">0</span>
+                    </div>
+                    <div class="card-body kanban-column p-2" id="colPendentes" data-status="PENDENTE">
+                        <!-- Cards carregados via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Separação -->
+            <div class="col-kanban">
+                <div class="card h-100">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-collection me-2"></i>Separação</span>
+                        <span class="badge bg-light text-dark" id="countSeparacao">0</span>
+                    </div>
+                    <div class="card-body kanban-column p-2" id="colSeparacao" data-status="SEPARACAO">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Pesagem -->
+            <div class="col-kanban">
+                <div class="card h-100">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-speedometer me-2"></i>Pesagem</span>
+                        <span class="badge bg-light text-dark" id="countPesagem">0</span>
+                    </div>
+                    <div class="card-body kanban-column p-2" id="colPesagem" data-status="PESAGEM">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Mistura -->
+            <div class="col-kanban">
+                <div class="card h-100">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-arrow-repeat me-2"></i>Mistura</span>
+                        <span class="badge bg-light text-dark" id="countMistura">0</span>
+                    </div>
+                    <div class="card-body kanban-column p-2" id="colMistura" data-status="MISTURA">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Envase -->
+            <div class="col-kanban">
+                <div class="card h-100">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-box-seam me-2"></i>Envase</span>
+                        <span class="badge bg-light text-dark" id="countEnvase">0</span>
+                    </div>
+                    <div class="card-body kanban-column p-2" id="colEnvase" data-status="ENVASE">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Rotulagem -->
+            <div class="col-kanban">
+                <div class="card h-100">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-tag me-2"></i>Rotulagem</span>
+                        <span class="badge bg-light text-dark" id="countRotulagem">0</span>
+                    </div>
+                    <div class="card-body kanban-column p-2" id="colRotulagem" data-status="ROTULAGEM">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Conferência -->
+            <div class="col-kanban">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-clipboard-check me-2"></i>Conferência</span>
+                        <span class="badge bg-light text-dark" id="countConferencia">0</span>
+                    </div>
+                    <div class="card-body kanban-column p-2" id="colConferencia" data-status="CONFERENCIA">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Finalizado -->
+            <div class="col-kanban">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-check-circle me-2"></i>Finalizado</span>
+                        <span class="badge bg-light text-dark" id="countFinalizado">0</span>
+                    </div>
+                    <div class="card-body kanban-column p-2" id="colFinalizado" data-status="FINALIZADO">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .kanban-board {
+        min-height: calc(100vh - 200px);
+    }
+    
+    .col-kanban {
+        min-width: 280px;
+        max-width: 280px;
+    }
+    
+    .kanban-column {
+        min-height: 400px;
+        max-height: calc(100vh - 280px);
+        overflow-y: auto;
+        background: var(--bg-subtle);
+    }
+    
+    .kanban-card {
+        cursor: grab;
+        transition: all 0.2s;
+        border-left: 4px solid var(--ink-3);
+    }
+    
+    .kanban-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .kanban-card.dragging {
+        opacity: 0.5;
+        cursor: grabbing;
+    }
+    
+    .kanban-card.priority-URGENTE { border-left-color: var(--danger); }
+    .kanban-card.priority-ALTA { border-left-color: var(--amber-500); }
+    .kanban-card.priority-NORMAL { border-left-color: var(--ink-3); }
+    .kanban-card.priority-BAIXA { border-left-color: #adb5bd; }
+    
+    .kanban-column.drag-over {
+        background: #e3f2fd;
+    }
+</style>
+
+@section Scripts {
+<script>
+    let allOrders = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadOrders();
+        setupDragAndDrop();
+        
+        // Auto-refresh a cada 30 segundos
+        setInterval(loadOrders, 30000);
+    });
+
+    async function loadOrders() {
+        try {
+            const response = await fetch('/api/ManipulationOrders');
+            const result = await response.json();
+            
+            if (result.success) {
+                allOrders = result.data;
+                renderKanban();
+            }
+        } catch (error) {
+            console.error('Erro ao carregar ordens:', error);
+        }
+    }
+
+    function renderKanban() {
+        const statuses = ['PENDENTE', 'SEPARACAO', 'PESAGEM', 'MISTURA', 'ENVASE', 'ROTULAGEM', 'CONFERENCIA', 'FINALIZADO'];
+        
+        statuses.forEach(status => {
+            const column = document.getElementById('col' + capitalizeFirst(status.toLowerCase()));
+            const orders = allOrders.filter(o => o.status === status);
+            
+            if (column) {
+                column.innerHTML = orders.map(order => createKanbanCard(order)).join('');
+                
+                // Atualizar contador
+                const countEl = document.getElementById('count' + capitalizeFirst(status.toLowerCase()));
+                if (countEl) countEl.textContent = orders.length;
+            }
+        });
+        
+        // Re-attach drag events
+        setupDragAndDrop();
+    }
+
+    function createKanbanCard(order) {
+        const isDelayed = order.isDelayed ? 'border-danger' : '';
+        const priorityClass = `priority-${order.priority}`;
+        
+        return `
+            <div class="card kanban-card mb-2 ${priorityClass} ${isDelayed}" 
+                draggable="true" 
+                data-order-id="${order.id}"
+                data-order-number="${order.orderNumber}">
+                <div class="card-body p-2">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <strong class="text-primary small">${order.orderNumber}</strong>
+                        ${order.isDelayed ? '<i class="bi bi-exclamation-triangle text-danger"></i>' : ''}
+                    </div>
+                    <p class="mb-1 small text-truncate" title="${order.customerName || ''}">
+                        ${order.customerName || 'Cliente não informado'}
+                    </p>
+                    <p class="mb-2 small text-muted text-truncate" title="${order.formulaName || ''}">
+                        ${order.formulaName || 'Fórmula livre'}
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-${getPriorityColor(order.priority)} small">
+                            ${order.priority}
+                        </span>
+                        <a href="/Manipulacoes/ProducaoOrdem/${order.id}" 
+                            class="btn btn-sm btn-outline-primary py-0 px-1" title="Abrir">
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function getPriorityColor(priority) {
+        const colors = {
+            'URGENTE': 'danger',
+            'ALTA': 'warning',
+            'NORMAL': 'secondary',
+            'BAIXA': 'light text-dark'
+        };
+        return colors[priority] || 'secondary';
+    }
+
+    function capitalizeFirst(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function setupDragAndDrop() {
+        const cards = document.querySelectorAll('.kanban-card');
+        const columns = document.querySelectorAll('.kanban-column');
+
+        cards.forEach(card => {
+            card.addEventListener('dragstart', handleDragStart);
+            card.addEventListener('dragend', handleDragEnd);
+        });
+
+        columns.forEach(column => {
+            column.addEventListener('dragover', handleDragOver);
+            column.addEventListener('dragleave', handleDragLeave);
+            column.addEventListener('drop', handleDrop);
+        });
+    }
+
+    function handleDragStart(e) {
+        e.target.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', e.target.dataset.orderId);
+        e.dataTransfer.setData('orderNumber', e.target.dataset.orderNumber);
+    }
+
+    function handleDragEnd(e) {
+        e.target.classList.remove('dragging');
+        document.querySelectorAll('.kanban-column').forEach(col => {
+            col.classList.remove('drag-over');
+        });
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+        e.currentTarget.classList.remove('drag-over');
+    }
+
+    async function handleDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        
+        const orderId = e.dataTransfer.getData('text/plain');
+        const orderNumber = e.dataTransfer.getData('orderNumber');
+        const newStatus = e.currentTarget.dataset.status;
+        
+        // Por enquanto, apenas mostrar mensagem
+        // TODO: Implementar API para atualizar status via drag-and-drop
+        showToast(`Para mover ${orderNumber}, use a tela de produção.`, 'info');
+        
+        // Recarregar kanban
+        loadOrders();
+    }
+
+    function refreshKanban() {
+        loadOrders();
+        showToast('Kanban atualizado!', 'success');
+    }
+
+    function showToast(message, type = 'info') {
+        // Criar toast bootstrap
+        const toastHtml = `
+            <div class="toast align-items-center text-white bg-${type} border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        
+        let container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(container);
+        }
+        
+        container.innerHTML = toastHtml;
+        const toast = new bootstrap.Toast(container.querySelector('.toast'));
+        toast.show();
+    }
+</script>
+}

@@ -1,0 +1,237 @@
+@model DTOs.Labels.UpdateLabelTemplateDto
+@{
+    ViewData["Title"] = "Editar Template de Rótulo";
+    var templateId = ViewBag.TemplateId as Guid?;
+    var templateType = ViewBag.TemplateType as string ?? "PADRAO";
+    var pharmaceuticalForm = ViewBag.PharmaceuticalForm as string ?? "";
+    var width = ViewBag.Width ?? 100m;
+    var height = ViewBag.Height ?? 60m;
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="mb-0">
+                <i class="bi bi-pencil me-2"></i>Editar Template de Rótulo
+            </h2>
+        </div>
+        <div class="col-auto">
+            <a asp-action="Preview" asp-route-id="@templateId" class="btn btn-info me-2" target="_blank">
+                <i class="bi bi-eye me-2"></i>Preview
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form asp-action="Edit" asp-route-id="@templateId" method="post">
+        @Html.AntiForgeryToken()
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Informações Básicas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nome do Template *</label>
+                                <input asp-for="Name" class="form-control" required maxlength="100" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo</label>
+                                <input type="text" class="form-control" value="@templateType" readonly />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Descrição</label>
+                            <textarea asp-for="Description" class="form-control" rows="2" maxlength="500"></textarea>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Forma Farmacêutica</label>
+                                <input type="text" class="form-control" value="@pharmaceuticalForm" readonly />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Largura (mm)</label>
+                                <input type="text" class="form-control" value="@width" readonly />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Altura (mm)</label>
+                                <input type="text" class="form-control" value="@height" readonly />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-2">
+                                    <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                                    <label class="form-check-label" asp-for="IsActive">
+                                        Template Ativo
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-2">
+                                    <input asp-for="IsDefault" class="form-check-input" type="checkbox" />
+                                    <label class="form-check-label" asp-for="IsDefault">
+                                        Definir como template padrão
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Template HTML</h5>
+                        <button type="button" class="btn btn-sm btn-light" onclick="previewTemplate()">
+                            <i class="bi bi-eye me-1"></i>Atualizar Preview
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">HTML do Rótulo *</label>
+                            <textarea asp-for="HtmlTemplate" id="htmlTemplate" class="form-control font-monospace" 
+                                      rows="18" required></textarea>
+                            <small class="form-text text-muted">
+                                Placeholders: {{PHARMACY_NAME}}, {{PATIENT_NAME}}, {{FORMULA_NAME}}, 
+                                {{COMPOSITION}}, {{POSOLOGY}}, {{BATCH_NUMBER}}, {{MANIPULATION_DATE}}, 
+                                {{EXPIRATION_DATE}}, {{PHARMACIST_NAME}}, {{PHARMACIST_CRF}}, {{QR_CODE}}, {{WARNINGS}}
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">CSS (Opcional)</label>
+                            <textarea asp-for="CssStyles" id="cssStyles" class="form-control font-monospace" rows="10"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-eye me-2"></i>Preview</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <iframe id="previewFrame" style="width: 100%; height: 400px; border: none;"></iframe>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mt-3">
+                    <div class="card-body">
+                        <button type="submit" class="btn btn-primary w-100 mb-2">
+                            <i class="bi bi-save me-2"></i>Salvar Alterações
+                        </button>
+                        <button type="button" class="btn btn-danger w-100 mb-2" onclick="confirmDelete()">
+                            <i class="bi bi-trash me-2"></i>Desativar Template
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary w-100">
+                            Cancelar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirmar Desativação</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja desativar este template?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" onclick="deleteTemplate()">Desativar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const templateId = '@templateId';
+        
+        function previewTemplate() {
+            const html = document.getElementById('htmlTemplate').value;
+            const css = document.getElementById('cssStyles').value;
+            
+            let preview = html
+                .replace(/\{\{PHARMACY_NAME\}\}/g, 'Farmácia Salvelle')
+                .replace(/\{\{PHARMACY_CNPJ\}\}/g, '12.345.678/0001-90')
+                .replace(/\{\{PHARMACY_ADDRESS\}\}/g, 'Rua Exemplo, 123')
+                .replace(/\{\{PHARMACY_PHONE\}\}/g, '(11) 3333-4444')
+                .replace(/\{\{PATIENT_NAME\}\}/g, 'João da Silva')
+                .replace(/\{\{FORMULA_NAME\}\}/g, 'Vitamina C 500mg')
+                .replace(/\{\{PHARMACEUTICAL_FORM\}\}/g, 'Cápsulas')
+                .replace(/\{\{COMPOSITION\}\}/g, 'Vitamina C 500mg, Zinco 30mg')
+                .replace(/\{\{QUANTITY\}\}/g, '60')
+                .replace(/\{\{UNIT\}\}/g, 'cápsulas')
+                .replace(/\{\{POSOLOGY\}\}/g, 'Tomar 1 cápsula ao dia')
+                .replace(/\{\{BATCH_NUMBER\}\}/g, 'LOT-2024-001')
+                .replace(/\{\{MANIPULATION_DATE\}\}/g, new Date().toLocaleDateString('pt-BR'))
+                .replace(/\{\{EXPIRATION_DATE\}\}/g, new Date(Date.now() + 180*24*60*60*1000).toLocaleDateString('pt-BR'))
+                .replace(/\{\{PHARMACIST_NAME\}\}/g, 'Dr. João Farmacêutico')
+                .replace(/\{\{PHARMACIST_CRF\}\}/g, 'CRF-SP 54321')
+                .replace(/\{\{WARNINGS\}\}/g, 'Manter fora do alcance de crianças')
+                .replace(/\{\{CONTROL_SCHEDULE\}\}/g, 'C1')
+                .replace(/\{\{LABEL_CODE\}\}/g, 'ROT-001')
+                .replace(/\{\{QR_CODE\}\}/g, '')
+                .replace(/\{\{QR_CODE_URL\}\}/g, '');
+            
+            document.getElementById('previewFrame').srcdoc = preview;
+        }
+        
+        document.addEventListener('DOMContentLoaded', previewTemplate);
+        
+        let debounce;
+        ['htmlTemplate', 'cssStyles'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', () => {
+                clearTimeout(debounce);
+                debounce = setTimeout(previewTemplate, 500);
+            });
+        });
+        
+        function confirmDelete() {
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+        
+        async function deleteTemplate() {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const response = await fetch(`/Labels/Delete/${templateId}`, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token }
+            });
+            const result = await response.json();
+            if (result.success) window.location.href = '/Labels';
+            else alert('Erro: ' + result.message);
+        }
+    </script>
+}

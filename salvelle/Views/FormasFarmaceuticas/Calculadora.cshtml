@@ -1,0 +1,432 @@
+﻿@{
+    ViewData["Title"] = "Calculadora de Cápsulas";
+    Layout = "_Layout";
+}
+
+<style>
+    .calc-card {
+        border: none;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        border-radius: 12px;
+    }
+    .ingredient-row {
+        background: var(--bg-subtle);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+    .result-box {
+        background: linear-gradient(135deg, var(--ok) 0%, var(--ok) 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+    }
+    .result-box.warning {
+        background: linear-gradient(135deg, var(--amber-500) 0%, var(--amber-500) 100%);
+    }
+    .result-box.error {
+        background: linear-gradient(135deg, var(--danger) 0%, #c82333 100%);
+    }
+    .capsule-visual {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 80px;
+        height: 35px;
+        background: linear-gradient(90deg, var(--bg-subtle) 50%, #ced4da 50%);
+        border-radius: 17px;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+    .result-stat {
+        text-align: center;
+        padding: 1rem;
+    }
+    .result-stat .value {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+    .result-stat .label {
+        font-size: 0.8rem;
+        opacity: 0.8;
+    }
+    .warning-box {
+        background: var(--warn-soft);
+        border: 1px solid var(--amber-500);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    .ingredient-result {
+        background: white;
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+</style>
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item"><a href="/FormasFarmaceuticas">Formas Farmacêuticas</a></li>
+                <li class="breadcrumb-item"><a href="/FormasFarmaceuticas/Capsulas">Cápsulas</a></li>
+                <li class="breadcrumb-item active">Calculadora</li>
+            </ol>
+        </nav>
+        <h2 class="mb-0">
+            <i class="bi bi-calculator me-2"></i>Calculadora de Cápsulas
+        </h2>
+        <p class="text-muted mb-0">Calcule automaticamente o tamanho ideal e quantidades</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Formulário -->
+    <div class="col-lg-7">
+        <div class="card calc-card mb-4">
+            <div class="card-body">
+                <h5 class="mb-4"><i class="bi bi-list-check me-2"></i>Ingredientes</h5>
+                
+                <div id="ingredientsList">
+                    <!-- Ingredientes serão adicionados aqui -->
+                </div>
+
+                <button class="btn btn-outline-primary w-100" onclick="addIngredient()">
+                    <i class="bi bi-plus-lg me-1"></i>Adicionar Ingrediente
+                </button>
+            </div>
+        </div>
+
+        <div class="card calc-card mb-4">
+            <div class="card-body">
+                <h5 class="mb-4"><i class="bi bi-gear me-2"></i>Configurações</h5>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Quantidade de Cápsulas</label>
+                        <input type="number" class="form-control" id="capsuleCount" 
+                               min="1" value="30" placeholder="30">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tamanho Preferido (opcional)</label>
+                        <select class="form-select" id="preferredSize">
+                            <option value="">Automático</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn btn-primary btn-lg w-100 mb-4" onclick="calculate()">
+            <i class="bi bi-lightning me-1"></i>Calcular
+        </button>
+    </div>
+
+    <!-- Resultado -->
+    <div class="col-lg-5">
+        <div class="position-sticky" style="top: 100px;">
+            <!-- Resultado inicial -->
+            <div id="resultPlaceholder" class="card calc-card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-capsule text-muted" style="font-size: 4rem;"></i>
+                    <h5 class="mt-3 text-muted">Adicione ingredientes e clique em Calcular</h5>
+                </div>
+            </div>
+
+            <!-- Resultado do cálculo -->
+            <div id="resultBox" style="display: none;">
+                <div class="result-box mb-4" id="resultHeader">
+                    <div class="text-center mb-3">
+                        <div class="capsule-visual" id="capsuleVisual">00</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-4 result-stat">
+                            <div class="value" id="resultSize">00</div>
+                            <div class="label">Tamanho</div>
+                        </div>
+                        <div class="col-4 result-stat">
+                            <div class="value" id="resultMultiplier">1x</div>
+                            <div class="label">Por Dose</div>
+                        </div>
+                        <div class="col-4 result-stat">
+                            <div class="value" id="resultTotal">30</div>
+                            <div class="label">Total Cáps.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card calc-card mb-4">
+                    <div class="card-body">
+                        <h6 class="mb-3"><i class="bi bi-info-circle me-2"></i>Detalhes</h6>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Peso total ativos/dose:</span>
+                            <span class="fw-bold" id="resultActiveWeight">0 mg</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Capacidade da cápsula:</span>
+                            <span class="fw-bold" id="resultCapacity">0 mg</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Excipiente/dose:</span>
+                            <span class="fw-bold" id="resultExcipient">0 mg</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Excipiente total:</span>
+                            <span class="fw-bold" id="resultExcipientTotal">0 g</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card calc-card mb-4" id="ingredientResultsCard">
+                    <div class="card-body">
+                        <h6 class="mb-3"><i class="bi bi-list-ul me-2"></i>Por Ingrediente</h6>
+                        <div id="ingredientResults">
+                            <!-- Resultados por ingrediente -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="warningsBox" class="warning-box" style="display: none;">
+                    <h6><i class="bi bi-exclamation-triangle me-2"></i>Atenção</h6>
+                    <ul class="mb-0" id="warningsList">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let ingredientCount = 0;
+    let capsuleSizes = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadCapsuleSizes();
+        addIngredient(); // Adiciona primeiro ingrediente
+    });
+
+    async function loadCapsuleSizes() {
+        try {
+            const response = await fetch('/api/PharmaceuticalForms/capsules/sizes');
+            if (!response.ok) throw new Error('Erro ao carregar');
+            
+            capsuleSizes = await response.json();
+            
+            const select = document.getElementById('preferredSize');
+            capsuleSizes.forEach(size => {
+                const option = document.createElement('option');
+                option.value = size.sizeCode;
+                option.textContent = `${size.name} (${size.practicalCapacityMg} mg)`;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    }
+
+    function addIngredient() {
+        ingredientCount++;
+        const id = ingredientCount;
+        
+        const html = `
+            <div class="ingredient-row" id="ingredient-${id}">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong>Ingrediente ${id}</strong>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeIngredient(${id})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" id="name-${id}" placeholder="Nome do ativo">
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="dose-${id}" 
+                                   step="0.01" min="0" placeholder="Dose">
+                            <span class="input-group-text">mg</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="density-${id}" 
+                                   step="0.01" min="0.1" value="1" placeholder="Densidade">
+                            <span class="input-group-text">g/mL</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">FC</span>
+                            <input type="number" class="form-control" id="correction-${id}" 
+                                   step="0.01" min="0.1" value="1" placeholder="1.0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">Pureza</span>
+                            <input type="number" class="form-control" id="purity-${id}" 
+                                   step="0.01" min="0.1" max="1" value="1" placeholder="0.98">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">Diluição</span>
+                            <input type="number" class="form-control" id="dilution-${id}" 
+                                   step="0.01" min="1" value="1" placeholder="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('ingredientsList').insertAdjacentHTML('beforeend', html);
+    }
+
+    function removeIngredient(id) {
+        const element = document.getElementById(`ingredient-${id}`);
+        if (element) {
+            element.remove();
+        }
+    }
+
+    function getIngredients() {
+        const ingredients = [];
+        const rows = document.querySelectorAll('.ingredient-row');
+        
+        rows.forEach(row => {
+            const id = row.id.replace('ingredient-', '');
+            const name = document.getElementById(`name-${id}`)?.value;
+            const dose = parseFloat(document.getElementById(`dose-${id}`)?.value) || 0;
+            const density = parseFloat(document.getElementById(`density-${id}`)?.value) || 1;
+            const correction = parseFloat(document.getElementById(`correction-${id}`)?.value) || 1;
+            const purity = parseFloat(document.getElementById(`purity-${id}`)?.value) || 1;
+            const dilution = parseFloat(document.getElementById(`dilution-${id}`)?.value) || 1;
+
+            if (dose > 0) {
+                ingredients.push({
+                    rawMaterialId: '00000000-0000-0000-0000-000000000000',
+                    rawMaterialName: name || `Ingrediente ${id}`,
+                    doseMg: dose,
+                    density: density,
+                    correctionFactor: correction,
+                    purityFactor: purity,
+                    dilutionFactor: dilution
+                });
+            }
+        });
+
+        return ingredients;
+    }
+
+    async function calculate() {
+        const ingredients = getIngredients();
+        
+        if (ingredients.length === 0) {
+            showToast('Adicione pelo menos um ingrediente com dose', 'warning');
+            return;
+        }
+
+        const data = {
+            ingredients: ingredients,
+            requestedCapsuleCount: parseInt(document.getElementById('capsuleCount').value) || 30,
+            preferredCapsuleSize: document.getElementById('preferredSize').value || null
+        };
+
+        try {
+            const response = await fetch('/api/PharmaceuticalForms/capsules/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) throw new Error('Erro ao calcular');
+
+            const result = await response.json();
+            showResult(result);
+        } catch (error) {
+            showToast('Erro ao calcular', 'danger');
+            console.error('Erro:', error);
+        }
+    }
+
+    function showResult(result) {
+        document.getElementById('resultPlaceholder').style.display = 'none';
+        document.getElementById('resultBox').style.display = 'block';
+
+        // Header
+        const header = document.getElementById('resultHeader');
+        header.className = 'result-box mb-4';
+        if (result.suggestSachet) {
+            header.classList.add('error');
+        } else if (result.requiresMultipleCapsules) {
+            header.classList.add('warning');
+        }
+
+        document.getElementById('capsuleVisual').textContent = result.selectedCapsuleSize;
+        document.getElementById('resultSize').textContent = result.selectedCapsuleSize;
+        document.getElementById('resultMultiplier').textContent = result.capsulesPerDose + 'x';
+        document.getElementById('resultTotal').textContent = result.finalCapsuleCount;
+
+        // Detalhes
+        document.getElementById('resultActiveWeight').textContent = result.totalActivesWeightMg.toFixed(1) + ' mg';
+        document.getElementById('resultCapacity').textContent = result.capsulePracticalCapacityMg.toFixed(0) + ' mg';
+        document.getElementById('resultExcipient').textContent = result.excipientWeightMgPerDose.toFixed(1) + ' mg';
+        document.getElementById('resultExcipientTotal').textContent = (result.totalExcipientWeightMg / 1000).toFixed(2) + ' g';
+
+        // Resultados por ingrediente
+        const ingredientResults = document.getElementById('ingredientResults');
+        ingredientResults.innerHTML = result.ingredientResults.map(i => `
+            <div class="ingredient-result">
+                <div class="d-flex justify-content-between">
+                    <span class="fw-bold">${i.rawMaterialName}</span>
+                    <span>${i.totalWeightG.toFixed(3)} g</span>
+                </div>
+                <small class="text-muted">
+                    ${i.originalDoseMg} mg → ${i.correctedDoseMg.toFixed(1)} mg (corrigido) → 
+                    ${i.weightPerDoseMg.toFixed(1)} mg/dose
+                </small>
+            </div>
+        `).join('');
+
+        // Warnings
+        const warningsBox = document.getElementById('warningsBox');
+        const warningsList = document.getElementById('warningsList');
+        
+        if (result.warnings && result.warnings.length > 0) {
+            warningsBox.style.display = 'block';
+            warningsList.innerHTML = result.warnings.map(w => `<li>${w}</li>`).join('');
+        } else {
+            warningsBox.style.display = 'none';
+        }
+    }
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer') || createToastContainer();
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        container.appendChild(toast);
+        new bootstrap.Toast(toast).show();
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    function createToastContainer() {
+        const container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(container);
+        return container;
+    }
+</script>
+}

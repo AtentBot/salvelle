@@ -1,0 +1,292 @@
+@using Models.Pharmacy
+
+@{
+    ViewData["Title"] = "Gerenciar Cupons";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var coupons = ViewBag.Coupons as List<Coupon> ?? new List<Coupon>();
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Cupons de Desconto</h1>
+            <p class="text-muted mb-0">Gerencie os cupons promocionais da sua farmácia</p>
+        </div>
+        <a href="/Cupons/Criar" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-2"></i>
+            Novo Cupom
+        </a>
+    </div>
+
+    @if(TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if(TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle me-2"></i>
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+                                <i class="bi bi-ticket-perforated text-primary fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0">@coupons.Count</h3>
+                            <small class="text-muted">Total de Cupons</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 rounded-3 p-3">
+                                <i class="bi bi-check-circle text-success fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0">@coupons.Count(c => c.IsActive && c.IsValid)</h3>
+                            <small class="text-muted">Ativos</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 rounded-3 p-3">
+                                <i class="bi bi-graph-up text-warning fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0">@coupons.Sum(c => c.UsedCount)</h3>
+                            <small class="text-muted">Usos Totais</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-danger bg-opacity-10 rounded-3 p-3">
+                                <i class="bi bi-clock text-danger fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0">@coupons.Count(c => c.DaysRemaining <= 7 && c.DaysRemaining > 0)</h3>
+                            <small class="text-muted">Expirando</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coupons Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3">
+            <div class="row align-items-center">
+                <div class="col">
+                    <div class="input-group" style="max-width: 300px;">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" 
+                               placeholder="Buscar cupom..." id="searchInput" onkeyup="filterTable()">
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <select class="form-select" id="statusFilter" onchange="filterTable()">
+                        <option value="">Todos os status</option>
+                        <option value="active">Ativos</option>
+                        <option value="inactive">Inativos</option>
+                        <option value="expired">Expirados</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="couponsTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Código</th>
+                            <th>Desconto</th>
+                            <th>Validade</th>
+                            <th>Uso</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if(coupons.Any())
+                        {
+                            @foreach(var coupon in coupons)
+                            {
+                                var isExpired = coupon.ValidUntil < DateTime.UtcNow;
+                                var statusClass = !coupon.IsActive ? "secondary" : isExpired ? "danger" : "success";
+                                var statusText = !coupon.IsActive ? "Inativo" : isExpired ? "Expirado" : "Ativo";
+                                
+                                <tr data-status="@(coupon.IsActive && !isExpired ? "active" : isExpired ? "expired" : "inactive")">
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary bg-opacity-10 rounded p-2 me-3">
+                                                <i class="bi bi-ticket-perforated text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <strong class="d-block">@coupon.Code</strong>
+                                                <small class="text-muted">@(coupon.Description ?? "Sem descrição")</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning text-dark fs-6">
+                                            @coupon.DiscountDisplay
+                                        </span>
+                                        @if(coupon.MinOrderValue.HasValue)
+                                        {
+                                            <br><small class="text-muted">Mín. R$ @coupon.MinOrderValue.Value.ToString("N2")</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div>@coupon.ValidFrom.ToString("dd/MM/yyyy")</div>
+                                        <small class="text-muted">até @coupon.ValidUntil.ToString("dd/MM/yyyy")</small>
+                                        @if(coupon.DaysRemaining > 0 && coupon.DaysRemaining <= 7)
+                                        {
+                                            <br><span class="badge bg-danger">@coupon.DaysRemaining dias restantes</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="width: 100px; height: 6px;">
+                                                @{
+                                                    var percentage = coupon.MaxUses.HasValue 
+                                                        ? (coupon.UsedCount * 100 / coupon.MaxUses.Value) 
+                                                        : 0;
+                                                }
+                                                <div class="progress-bar" style="width: @percentage%"></div>
+                                            </div>
+                                            <span>@coupon.UsedCount/@(coupon.MaxUses?.ToString() ?? "∞")</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-@statusClass">@statusText</span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="btn-group">
+                                            <a href="/Cupons/Relatorio/@coupon.Id" class="btn btn-sm btn-outline-primary" title="Relatório">
+                                                <i class="bi bi-graph-up"></i>
+                                            </a>
+                                            <a href="/Cupons/Editar/@coupon.Id" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-@(coupon.IsActive ? "warning" : "success")" 
+                                                    onclick="toggleCoupon('@coupon.Id', @(coupon.IsActive ? "true" : "false"))"
+                                                    title="@(coupon.IsActive ? "Desativar" : "Ativar")">
+                                                <i class="bi bi-@(coupon.IsActive ? "pause" : "play")"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="deleteCoupon('@coupon.Id')" title="Excluir">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="bi bi-ticket-perforated fs-1 d-block mb-3"></i>
+                                        <p class="mb-2">Nenhum cupom cadastrado</p>
+                                        <a href="/Cupons/Criar" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-plus-lg me-1"></i>
+                                            Criar primeiro cupom
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function filterTable() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const status = document.getElementById('statusFilter').value;
+    const rows = document.querySelectorAll('#couponsTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const rowStatus = row.dataset.status;
+        
+        const matchSearch = text.includes(search);
+        const matchStatus = !status || rowStatus === status;
+        
+        row.style.display = matchSearch && matchStatus ? '' : 'none';
+    });
+}
+
+async function toggleCoupon(id, isActive) {
+    const action = isActive ? 'desativar' : 'ativar';
+    if (!confirm(`Deseja ${action} este cupom?`)) return;
+    
+    try {
+        const response = await fetch(`/Cupons/Toggle/${id}`, { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro ao alterar status do cupom');
+        }
+    } catch (e) {
+        alert('Erro ao alterar status do cupom');
+    }
+}
+
+async function deleteCoupon(id) {
+    if (!confirm('Deseja realmente excluir este cupom?')) return;
+    
+    try {
+        const response = await fetch(`/Cupons/Excluir/${id}`, { method: 'POST' });
+        location.reload();
+    } catch (e) {
+        alert('Erro ao excluir cupom');
+    }
+}
+</script>
+}

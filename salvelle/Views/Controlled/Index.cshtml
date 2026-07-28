@@ -1,0 +1,309 @@
+@using Helpers
+@{
+    ViewData["Title"] = "Dashboard SNGPC - Substâncias Controladas";
+    var pendingTransmissions = (int)(ViewBag.PendingTransmissions ?? 0);
+    var pendingApprovals = (int)(ViewBag.PendingApprovals ?? 0);
+}
+
+@section Styles {
+<style>
+    .ds-banner {
+        display: flex; align-items: center; gap: 14px;
+        padding: 14px 18px; border-radius: var(--r-md); margin-bottom: 16px;
+        border: 1px solid var(--rule); background: var(--surface);
+    }
+    .ds-banner-icon { font-size: 20px; flex-shrink: 0; display: grid; place-items: center; }
+    .ds-banner-body { flex: 1; min-width: 0; font-size: 14px; color: var(--ink-2); }
+    .ds-banner-body strong { color: var(--ink); }
+    .ds-banner.is-danger { border-color: var(--danger-border); background: var(--danger-soft); }
+    .ds-banner.is-danger .ds-banner-icon { color: var(--danger); }
+    .ds-banner.is-warn { border-color: var(--warn-border); background: var(--warn-soft); }
+    .ds-banner.is-warn .ds-banner-icon { color: var(--warn); }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .ds-stat {
+        background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md);
+        padding: 16px 20px; position: relative; overflow: hidden;
+    }
+    .ds-stat::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ink-5); }
+    .ds-stat.is-ok::before { background: var(--ok); }
+    .ds-stat.is-warn::before { background: var(--amber-500); }
+    .ds-stat.is-danger::before { background: var(--danger); }
+    .ds-stat.is-petrol::before { background: var(--petrol-500); }
+    .ds-stat-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .ds-stat-label { font-size: 12px; color: var(--ink-3); font-weight: 500; }
+    .ds-stat-value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--ink); margin-top: 4px; }
+    .ds-stat-value.sm { font-size: 18px; }
+    .ds-stat-icon { width: 34px; height: 34px; border-radius: var(--r-sm); display: grid; place-items: center; font-size: 16px; flex-shrink: 0; }
+    .ds-stat.is-danger .ds-stat-icon { background: var(--danger-soft); color: var(--danger); }
+    .ds-stat.is-warn .ds-stat-icon { background: var(--amber-50); color: var(--amber-700); }
+    .ds-stat.is-ok .ds-stat-icon { background: var(--ok-soft); color: var(--ok); }
+    .ds-stat.is-petrol .ds-stat-icon { background: var(--petrol-50); color: var(--petrol-500); }
+    .ds-stat-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 12px; font-size: 12px; font-weight: 500; text-decoration: none; color: var(--petrol-500); }
+    .ds-stat-link:hover { text-decoration: underline; }
+
+    .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start; }
+
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card + .ds-card { margin-top: 24px; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .ds-card-eyebrow { font-family: var(--font-mono); font-size: 11px; color: var(--petrol-500); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ds-card-title { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+    .ds-card-body { padding: 16px 20px; }
+
+    .list-badge { font-family: var(--font-mono); font-weight: 600; font-size: 12px; }
+
+    .quick-list { display: flex; flex-direction: column; gap: 8px; }
+    .quick-action {
+        background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-sm);
+        padding: 12px 14px; text-decoration: none; color: var(--ink-2);
+        display: flex; gap: 12px; align-items: center;
+        transition: all var(--t-fast);
+    }
+    .quick-action:hover { border-color: var(--petrol-500); color: var(--ink); transform: translateY(-1px); box-shadow: var(--shadow-2); }
+    .quick-action-icon { width: 34px; height: 34px; border-radius: var(--r-sm); background: var(--petrol-50); color: var(--petrol-500); display: grid; place-items: center; font-size: 15px; flex-shrink: 0; }
+    .quick-action.danger .quick-action-icon { background: var(--danger-soft); color: var(--danger); }
+    .quick-action.success .quick-action-icon { background: var(--ok-soft); color: var(--ok); }
+    .quick-action.warn .quick-action-icon { background: var(--amber-50); color: var(--amber-700); }
+    .quick-action.info .quick-action-icon { background: var(--info-soft); color: var(--info); }
+    .quick-action-text { font-size: 13px; font-weight: 500; }
+    .quick-action small { display: block; font-size: 11px; color: var(--ink-3); font-weight: 400; margin-top: 1px; }
+
+    .law-list { list-style: none; margin: 0; padding: 0; }
+    .law-list li { display: flex; gap: 10px; align-items: baseline; padding: 7px 0; font-size: 13px; color: var(--ink-2); border-bottom: 1px solid var(--rule); }
+    .law-list li:last-child { border-bottom: none; }
+    .law-list i { color: var(--ink-3); }
+    .law-list b { font-family: var(--font-mono); font-size: 12px; color: var(--ink); font-weight: 600; }
+
+    @@media (max-width: 1080px) {
+        .content-grid { grid-template-columns: 1fr; }
+    }
+    @@media (max-width: 900px) {
+        .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @@media (max-width: 560px) {
+        .stat-grid { grid-template-columns: 1fr; }
+        .ds-banner { flex-wrap: wrap; }
+        .ds-banner .btn { width: 100%; }
+    }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">SNGPC · PORTARIA 344/98</div>
+            <h1>Substâncias Controladas</h1>
+            <p>Gestão e escrituração de medicamentos sujeitos a controle especial.</p>
+        </div>
+        <div class="row">
+            <a class="btn btn-secondary" href="/Controlled/Movements"><i class="bi bi-arrow-left-right"></i>Movimentações</a>
+            <a class="btn btn-danger" href="/Controlled/PendingApprovals"><i class="bi bi-clipboard-check"></i>Aprovar</a>
+        </div>
+    </div>
+
+    @if (pendingApprovals > 0)
+    {
+        <div class="ds-banner is-danger" role="alert">
+            <span class="ds-banner-icon"><i class="bi bi-exclamation-triangle-fill"></i></span>
+            <div class="ds-banner-body">
+                <strong>@pendingApprovals ordens</strong> com substâncias controladas aguardam aprovação farmacêutica.
+            </div>
+            <a href="/Controlled/PendingApprovals" class="btn btn-danger btn-sm"><i class="bi bi-clipboard-check"></i>Aprovar</a>
+        </div>
+    }
+
+    @if (pendingTransmissions > 0)
+    {
+        <div class="ds-banner is-warn" role="alert">
+            <span class="ds-banner-icon"><i class="bi bi-cloud-upload-fill"></i></span>
+            <div class="ds-banner-body">
+                <strong>@pendingTransmissions movimentações</strong> pendentes de transmissão ao SNGPC/ANVISA.
+            </div>
+            <a href="/Sngpc/Transmissions" class="btn btn-amber btn-sm"><i class="bi bi-send"></i>Transmitir</a>
+        </div>
+    }
+
+    <div class="stat-grid">
+        <div class="ds-stat @(pendingApprovals > 0 ? "is-danger" : "is-ok")">
+            <div class="ds-stat-top">
+                <div>
+                    <div class="ds-stat-label">Aprovações pendentes</div>
+                    <div class="ds-stat-value">@pendingApprovals</div>
+                </div>
+                <div class="ds-stat-icon"><i class="bi bi-clipboard-check"></i></div>
+            </div>
+            <a href="/Controlled/PendingApprovals" class="ds-stat-link">Ver pendentes<i class="bi bi-arrow-right"></i></a>
+        </div>
+
+        <div class="ds-stat @(pendingTransmissions > 0 ? "is-warn" : "is-ok")">
+            <div class="ds-stat-top">
+                <div>
+                    <div class="ds-stat-label">Transmissões SNGPC</div>
+                    <div class="ds-stat-value">@pendingTransmissions</div>
+                </div>
+                <div class="ds-stat-icon"><i class="bi bi-cloud-upload"></i></div>
+            </div>
+            <a href="/Sngpc/Transmissions" class="ds-stat-link">Transmitir<i class="bi bi-arrow-right"></i></a>
+        </div>
+
+        <div class="ds-stat is-petrol">
+            <div class="ds-stat-top">
+                <div>
+                    <div class="ds-stat-label">Inventário mensal</div>
+                    <div class="ds-stat-value sm">@BrazilTime.Now.ToString("MMM/yyyy")</div>
+                </div>
+                <div class="ds-stat-icon"><i class="bi bi-clipboard-data"></i></div>
+            </div>
+            <a href="/Controlled/Inventory" class="ds-stat-link">Realizar contagem<i class="bi bi-arrow-right"></i></a>
+        </div>
+
+        <div class="ds-stat is-petrol">
+            <div class="ds-stat-top">
+                <div>
+                    <div class="ds-stat-label">Certificações</div>
+                    <div class="ds-stat-value sm">Fornecedores</div>
+                </div>
+                <div class="ds-stat-icon"><i class="bi bi-award"></i></div>
+            </div>
+            <a href="/SupplierCertification" class="ds-stat-link">AFE / AE<i class="bi bi-arrow-right"></i></a>
+        </div>
+    </div>
+
+    <div class="content-grid">
+        <div class="ds-card">
+            <div class="ds-card-head">
+                <div>
+                    <div class="ds-card-eyebrow">Portaria 344/98</div>
+                    <h3 class="ds-card-title">Listas de substâncias controladas</h3>
+                </div>
+                <a class="btn btn-ghost btn-sm" href="/Controlled/Movements">Ver todas<i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Lista</th>
+                            <th>Descrição</th>
+                            <th>Receituário</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-danger badge-no-dot list-badge">A1</span></td>
+                            <td>Entorpecentes</td>
+                            <td><span class="badge badge-warn badge-no-dot">Amarela</span></td>
+                            <td class="text-end"><a href="/Controlled/Movements?list=A1" class="btn btn-ghost btn-sm">Ver</a></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-danger badge-no-dot list-badge">A2</span></td>
+                            <td>Entorpecentes (uso permitido em concentrações especiais)</td>
+                            <td><span class="badge badge-warn badge-no-dot">Amarela</span></td>
+                            <td class="text-end"><a href="/Controlled/Movements?list=A2" class="btn btn-ghost btn-sm">Ver</a></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-danger badge-no-dot list-badge">A3</span></td>
+                            <td>Psicotrópicos (sujeitos a Notificação de Receita "A")</td>
+                            <td><span class="badge badge-warn badge-no-dot">Amarela</span></td>
+                            <td class="text-end"><a href="/Controlled/Movements?list=A3" class="btn btn-ghost btn-sm">Ver</a></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-petrol badge-no-dot list-badge">B1</span></td>
+                            <td>Psicotrópicos</td>
+                            <td><span class="badge badge-info badge-no-dot">Azul</span></td>
+                            <td class="text-end"><a href="/Controlled/Movements?list=B1" class="btn btn-ghost btn-sm">Ver</a></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-petrol badge-no-dot list-badge">B2</span></td>
+                            <td>Psicotrópicos anorexígenos</td>
+                            <td><span class="badge badge-info badge-no-dot">Azul</span></td>
+                            <td class="text-end"><a href="/Controlled/Movements?list=B2" class="btn btn-ghost btn-sm">Ver</a></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-neutral badge-no-dot list-badge">C1</span></td>
+                            <td>Outras substâncias sujeitas a controle especial</td>
+                            <td><span class="badge badge-neutral badge-no-dot">Branca 2 vias</span></td>
+                            <td class="text-end"><a href="/Controlled/Movements?list=C1" class="btn btn-ghost btn-sm">Ver</a></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-neutral badge-no-dot list-badge">C2</span></td>
+                            <td>Retinóides de uso sistêmico</td>
+                            <td><span class="badge badge-neutral badge-no-dot">Branca 2 vias</span></td>
+                            <td class="text-end"><a href="/Controlled/Movements?list=C2" class="btn btn-ghost btn-sm">Ver</a></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-neutral badge-no-dot list-badge">C4</span></td>
+                            <td>Anti-retrovirais</td>
+                            <td><span class="badge badge-neutral badge-no-dot">Receituário Programa</span></td>
+                            <td class="text-end"><a href="/Controlled/Movements?list=C4" class="btn btn-ghost btn-sm">Ver</a></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-neutral badge-no-dot list-badge">C5</span></td>
+                            <td>Anabolizantes</td>
+                            <td><span class="badge badge-neutral badge-no-dot">Branca 2 vias</span></td>
+                            <td class="text-end"><a href="/Controlled/Movements?list=C5" class="btn btn-ghost btn-sm">Ver</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div>
+            <div class="ds-card">
+                <div class="ds-card-head">
+                    <div>
+                        <div class="ds-card-eyebrow">Atalhos</div>
+                        <h3 class="ds-card-title">Ações rápidas</h3>
+                    </div>
+                </div>
+                <div class="ds-card-body">
+                    <div class="quick-list">
+                        <a href="/Controlled/PendingApprovals" class="quick-action danger">
+                            <div class="quick-action-icon"><i class="bi bi-clipboard-check"></i></div>
+                            <div class="quick-action-text">Aprovar controlados<small>Análise farmacêutica de ordens</small></div>
+                        </a>
+                        <a href="/Controlled/Inventory" class="quick-action success">
+                            <div class="quick-action-icon"><i class="bi bi-clipboard-data"></i></div>
+                            <div class="quick-action-text">Inventário mensal<small>Contagem e conferência de saldo</small></div>
+                        </a>
+                        <a href="/Controlled/Movements" class="quick-action">
+                            <div class="quick-action-icon"><i class="bi bi-arrow-left-right"></i></div>
+                            <div class="quick-action-text">Movimentações<small>Entradas, saídas e ajustes</small></div>
+                        </a>
+                        <a href="/Controlled/Prescriptions" class="quick-action warn">
+                            <div class="quick-action-icon"><i class="bi bi-file-medical"></i></div>
+                            <div class="quick-action-text">Receituários<small>Notificações e receitas</small></div>
+                        </a>
+                        <a href="/SupplierCertification" class="quick-action info">
+                            <div class="quick-action-icon"><i class="bi bi-award"></i></div>
+                            <div class="quick-action-text">Certificações AFE/AE<small>Habilitação de fornecedores</small></div>
+                        </a>
+                        <a href="/Audit" class="quick-action">
+                            <div class="quick-action-icon"><i class="bi bi-shield-check"></i></div>
+                            <div class="quick-action-text">Portal de auditoria<small>Trilha e conformidade</small></div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ds-card">
+                <div class="ds-card-head">
+                    <div>
+                        <div class="ds-card-eyebrow">Base legal</div>
+                        <h3 class="ds-card-title">Legislação</h3>
+                    </div>
+                </div>
+                <div class="ds-card-body">
+                    <ul class="law-list">
+                        <li><i class="bi bi-file-text"></i><span><b>Portaria 344/98</b> — SVS/MS</span></li>
+                        <li><i class="bi bi-file-text"></i><span><b>RDC 67/2007</b> — Boas Práticas</span></li>
+                        <li><i class="bi bi-file-text"></i><span><b>RDC 22/2014</b> — SNGPC</span></li>
+                        <li><i class="bi bi-file-text"></i><span><b>RDC 471/2021</b> — Receituário</span></li>
+                        <li><i class="bi bi-file-text"></i><span><b>RDC 20/2011</b> — Antimicrobianos</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

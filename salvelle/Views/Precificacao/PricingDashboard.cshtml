@@ -1,0 +1,915 @@
+﻿@{
+    ViewData["Title"] = "Dashboard de Precificação";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <style>
+        .settings-form .form-label {
+            font-weight: 500;
+            color: var(--ink-2);
+        }
+        .settings-form .form-text {
+            font-size: 0.8rem;
+        }
+        .settings-card {
+            background: white;
+            border: 1px solid var(--rule);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .settings-card h6 {
+            color: var(--ink-2);
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--bg-subtle);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-subtle);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .legend-item .icon {
+            font-size: 1.5rem;
+        }
+        .legend-item .text {
+            flex: 1;
+        }
+        .legend-item .title {
+            font-weight: 600;
+            color: var(--ink);
+        }
+        .legend-item .description {
+            font-size: 0.85rem;
+            color: var(--ink-3);
+        }
+        /* Stats Cards */
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--bg-subtle);
+            transition: all 0.2s ease;
+        }
+        .stat-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .stat-card .icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        .stat-card .value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--ink);
+        }
+        .stat-card .label {
+            font-size: 0.85rem;
+            color: var(--ink-3);
+        }
+        .stat-card.stock { border-left: 4px solid var(--ok); }
+        .stat-card.historical { border-left: 4px solid var(--amber-500); }
+        .stat-card.base { border-left: 4px solid var(--danger); }
+        .stat-card.total { border-left: 4px solid #007bff; }
+        /* Price result card */
+        .price-result-card {
+            background: white;
+            border: 1px solid var(--bg-subtle);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .price-result-card .price-source {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .price-result-card .price-source.stock {
+            background: var(--ok-soft);
+            color: var(--ok);
+        }
+        .price-result-card .price-source.historical {
+            background: var(--warn-soft);
+            color: var(--warn);
+        }
+        .price-result-card .price-source.base {
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+        .price-result-card .price-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--ink);
+        }
+        .price-result-card .price-unit {
+            font-size: 0.9rem;
+            color: var(--ink-3);
+        }
+        /* Confidence bar */
+        .confidence-bar {
+            height: 8px;
+            background: var(--bg-subtle);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .confidence-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .confidence-bar-fill.high { background: var(--ok); }
+        .confidence-bar-fill.medium { background: var(--amber-500); }
+        .confidence-bar-fill.low { background: var(--danger); }
+        
+        /* ═══════════════════════════════════════════════════════════════════ */
+        /* AUTOCOMPLETE STYLES */
+        /* ═══════════════════════════════════════════════════════════════════ */
+        .autocomplete-wrapper {
+            position: relative;
+        }
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--rule);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1050;
+            display: none;
+        }
+        .autocomplete-results.show {
+            display: block;
+        }
+        .autocomplete-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--bg-subtle);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background-color 0.15s;
+        }
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        .autocomplete-item:hover,
+        .autocomplete-item.active {
+            background-color: var(--bg-subtle);
+        }
+        .autocomplete-item .item-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .autocomplete-item .item-icon.stock {
+            background: var(--ok-soft);
+        }
+        .autocomplete-item .item-icon.historical {
+            background: var(--warn-soft);
+        }
+        .autocomplete-item .item-icon.base {
+            background: var(--danger-soft);
+        }
+        .autocomplete-item .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .autocomplete-item .item-name {
+            font-weight: 600;
+            color: var(--ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .autocomplete-item .item-details {
+            font-size: 0.8rem;
+            color: var(--ink-3);
+            display: flex;
+            gap: 10px;
+        }
+        .autocomplete-item .item-price {
+            font-weight: 600;
+            color: var(--ok);
+            white-space: nowrap;
+        }
+        .autocomplete-loading {
+            padding: 15px;
+            text-align: center;
+            color: var(--ink-3);
+        }
+        .autocomplete-empty {
+            padding: 15px;
+            text-align: center;
+            color: var(--ink-3);
+        }
+        .autocomplete-input {
+            border-radius: 8px;
+        }
+        .autocomplete-input:focus {
+            border-color: var(--info);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+        .search-input-group {
+            position: relative;
+        }
+        .search-input-group .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--ink-3);
+            z-index: 5;
+        }
+        .search-input-group input {
+            padding-left: 40px;
+        }
+        .highlight {
+            background-color: var(--warn-soft);
+            font-weight: 600;
+        }
+    </style>
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <i class="bi bi-graph-up-arrow me-2"></i>
+                Dashboard de Precificação
+            </h4>
+            <p class="text-muted mb-0">
+                Visão geral do sistema de precificação inteligente
+            </p>
+        </div>
+        <div>
+            <a href="/materias-primas" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-box-seam me-1"></i>
+                Matérias-Primas
+            </a>
+            <button class="btn btn-outline-primary" onclick="loadStatistics()">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Atualizar
+            </button>
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div id="statisticsContainer" class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card total">
+                <div class="icon">📦</div>
+                <div class="value" id="statTotal">--</div>
+                <div class="label">Total de Ingredientes</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card stock">
+                <div class="icon">🟢</div>
+                <div class="value" id="statStock">--</div>
+                <div class="label">Em Estoque</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card historical">
+                <div class="icon">🟡</div>
+                <div class="value" id="statHistorical">--</div>
+                <div class="label">Preço Histórico</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card base">
+                <div class="icon">🔴</div>
+                <div class="value" id="statBase">--</div>
+                <div class="label">Tabela Base</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Legenda -->
+        <div class="col-lg-6">
+            <div class="settings-card">
+                <h6><i class="bi bi-info-circle me-2"></i>Legenda dos Indicadores</h6>
+                
+                <div class="legend-item">
+                    <span class="icon">🟢</span>
+                    <div class="text">
+                        <div class="title">Em Estoque (ESTOQUE)</div>
+                        <div class="description">
+                            Preço obtido de lote aprovado em estoque. 
+                            <strong>100% de confiança</strong> - valor real pago na última compra.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="legend-item">
+                    <span class="icon">🟡</span>
+                    <div class="text">
+                        <div class="title">Preço Estimado (HISTÓRICO)</div>
+                        <div class="description">
+                            Último preço conhecido + correção inflacionária. 
+                            <strong>50-95% de confiança</strong> - quanto mais antigo, menor a confiança.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="legend-item">
+                    <span class="icon">🔴</span>
+                    <div class="text">
+                        <div class="title">Tabela Base (BASE)</div>
+                        <div class="description">
+                            Preço de referência de mercado + margem de segurança. 
+                            <strong>30% de confiança</strong> - ingrediente nunca foi adquirido.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configurações -->
+        <div class="col-lg-6">
+            <div class="settings-card">
+                <h6><i class="bi bi-gear me-2"></i>Configurações de Precificação</h6>
+                
+                <form id="settingsForm" class="settings-form">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Taxa de Inflação Mensal (%)</label>
+                            <input type="number" class="form-control" id="inflationRate" 
+                                   step="0.1" min="0" max="10" value="0.5">
+                            <div class="form-text">Correção aplicada a preços históricos</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Margem de Segurança (%)</label>
+                            <input type="number" class="form-control" id="safetyMargin" 
+                                   step="1" min="0" max="50" value="10">
+                            <div class="form-text">Adicionada a preços de tabela base</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Validade do Preço (dias)</label>
+                            <input type="number" class="form-control" id="priceValidityDays" 
+                                   step="1" min="30" max="365" value="180">
+                            <div class="form-text">Após esse período, alerta de desatualização</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Margem de Lucro Padrão (%)</label>
+                            <input type="number" class="form-control" id="profitMargin" 
+                                   step="5" min="0" max="300" value="100">
+                            <div class="form-text">Aplicada sobre o custo total</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Taxa de Manipulação (R$)</label>
+                            <input type="number" class="form-control" id="manipulationFee" 
+                                   step="1" min="0" max="200" value="25">
+                            <div class="form-text">Valor fixo por fórmula</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Custo de Embalagem Padrão (R$)</label>
+                            <input type="number" class="form-control" id="packagingCost" 
+                                   step="0.5" min="0" max="50" value="5">
+                            <div class="form-text">Usado quando não há custo específico</div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <hr>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="alertOnEstimated" checked>
+                                <label class="form-check-label" for="alertOnEstimated">
+                                    Alertar quando usar preço estimado
+                                </label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="blockWithoutStock">
+                                <label class="form-check-label" for="blockWithoutStock">
+                                    Bloquear venda sem estoque
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i>
+                                Salvar Configurações
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- SIMULADOR DE PREÇO COM AUTOCOMPLETE -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="settings-card">
+        <h6><i class="bi bi-calculator me-2"></i>Simulador de Preço de Ingrediente</h6>
+        
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label">Nome do Ingrediente</label>
+                <div class="autocomplete-wrapper">
+                    <div class="search-input-group">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" 
+                               class="form-control autocomplete-input" 
+                               id="searchIngredientName" 
+                               placeholder="Digite para buscar... (mínimo 2 caracteres)"
+                               autocomplete="off">
+                    </div>
+                    <div class="autocomplete-results" id="autocompleteResults"></div>
+                </div>
+                <div class="form-text">
+                    <i class="bi bi-lightbulb me-1"></i>
+                    Digite o nome e selecione da lista ou pressione Enter para buscar
+                </div>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button class="btn btn-primary w-100" onclick="searchIngredient()" id="btnSearch">
+                    <i class="bi bi-search me-1"></i>
+                    Buscar Preço
+                </button>
+            </div>
+        </div>
+        
+        <div id="searchResult" class="mt-3"></div>
+    </div>
+
+    <!-- Tabela de Ingredientes Recentes -->
+    <div class="settings-card">
+        <h6><i class="bi bi-clock-history me-2"></i>Últimas Consultas de Preço</h6>
+        <div id="recentPrices">
+            <p class="text-muted text-center py-3">
+                Faça uma busca acima para ver o histórico de consultas
+            </p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════
+        // VARIÁVEIS GLOBAIS
+        // ═══════════════════════════════════════════════════════════════════════
+        let autocompleteTimeout = null;
+        let currentFocus = -1;
+        const recentSearches = [];
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // INICIALIZAÇÃO
+        // ═══════════════════════════════════════════════════════════════════════
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStatistics();
+            loadSettings();
+            initAutocomplete();
+        });
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // AUTOCOMPLETE
+        // ═══════════════════════════════════════════════════════════════════════
+        function initAutocomplete() {
+            const input = document.getElementById('searchIngredientName');
+            const resultsContainer = document.getElementById('autocompleteResults');
+
+            // Input event - busca com debounce
+            input.addEventListener('input', function() {
+                clearTimeout(autocompleteTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    hideAutocomplete();
+                    return;
+                }
+
+                autocompleteTimeout = setTimeout(() => {
+                    fetchAutocomplete(query);
+                }, 300);
+            });
+
+            // Navegação por teclado
+            input.addEventListener('keydown', function(e) {
+                const items = resultsContainer.querySelectorAll('.autocomplete-item');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    currentFocus++;
+                    if (currentFocus >= items.length) currentFocus = 0;
+                    setActiveItem(items);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    currentFocus--;
+                    if (currentFocus < 0) currentFocus = items.length - 1;
+                    setActiveItem(items);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (currentFocus > -1 && items[currentFocus]) {
+                        items[currentFocus].click();
+                    } else {
+                        searchIngredient();
+                    }
+                } else if (e.key === 'Escape') {
+                    hideAutocomplete();
+                }
+            });
+
+            // Fechar ao clicar fora
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.autocomplete-wrapper')) {
+                    hideAutocomplete();
+                }
+            });
+
+            // Focar input mostra resultados se tiver texto
+            input.addEventListener('focus', function() {
+                if (this.value.length >= 2) {
+                    fetchAutocomplete(this.value.trim());
+                }
+            });
+        }
+
+        function setActiveItem(items) {
+            items.forEach((item, index) => {
+                item.classList.toggle('active', index === currentFocus);
+            });
+            if (items[currentFocus]) {
+                items[currentFocus].scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        async function fetchAutocomplete(query) {
+            const resultsContainer = document.getElementById('autocompleteResults');
+            
+            // Mostrar loading
+            resultsContainer.innerHTML = `
+                <div class="autocomplete-loading">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    Buscando...
+                </div>
+            `;
+            resultsContainer.classList.add('show');
+
+            try {
+                const response = await fetch(`/api/pricing/autocomplete?query=${encodeURIComponent(query)}&limit=10`);
+                
+                if (response.ok) {
+                    const items = await response.json();
+                    renderAutocompleteResults(items, query);
+                } else {
+                    // Fallback: buscar matérias-primas direto
+                    const fallbackResponse = await fetch(`/api/raw-materials?search=${encodeURIComponent(query)}&limit=10`);
+                    if (fallbackResponse.ok) {
+                        const data = await fallbackResponse.json();
+                        const items = (data.items || data || []).map(r => ({
+                            id: r.id,
+                            name: r.name,
+                            category: r.category,
+                            unit: r.unit,
+                            currentStock: r.currentStock,
+                            priceSource: r.currentStock > 0 ? 'ESTOQUE' : (r.lastKnownPrice ? 'HISTORICO' : 'BASE'),
+                            unitCost: r.currentStock > 0 ? r.currentStock : (r.lastKnownPrice || r.basePrice || 0)
+                        }));
+                        renderAutocompleteResults(items, query);
+                    } else {
+                        renderAutocompleteResults([], query);
+                    }
+                }
+            } catch (error) {
+                console.error('Erro no autocomplete:', error);
+                resultsContainer.innerHTML = `
+                    <div class="autocomplete-empty">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Erro ao buscar ingredientes
+                    </div>
+                `;
+            }
+        }
+
+        function renderAutocompleteResults(items, query) {
+            const resultsContainer = document.getElementById('autocompleteResults');
+            currentFocus = -1;
+
+            if (!items || items.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="autocomplete-empty">
+                        <i class="bi bi-inbox me-2"></i>
+                        Nenhum ingrediente encontrado para "<strong>${escapeHtml(query)}</strong>"
+                    </div>
+                `;
+                return;
+            }
+
+            resultsContainer.innerHTML = items.map((item, index) => {
+                const sourceInfo = {
+                    'ESTOQUE': { icon: '🟢', class: 'stock' },
+                    'HISTORICO': { icon: '🟡', class: 'historical' },
+                    'BASE': { icon: '🔴', class: 'base' }
+                };
+                const info = sourceInfo[item.priceSource] || sourceInfo['BASE'];
+                const highlightedName = highlightMatch(item.name, query);
+                
+                return `
+                    <div class="autocomplete-item" 
+                         data-id="${item.id}" 
+                         data-name="${escapeHtml(item.name)}"
+                         onclick="selectAutocompleteItem(this)">
+                        <div class="item-icon ${info.class}">${info.icon}</div>
+                        <div class="item-info">
+                            <div class="item-name">${highlightedName}</div>
+                            <div class="item-details">
+                                <span>${item.category || 'Sem categoria'}</span>
+                                <span>•</span>
+                                <span>Estoque: ${(item.currentStock || 0).toFixed(2)} ${item.unit || 'g'}</span>
+                            </div>
+                        </div>
+                        <div class="item-price">
+                            R$ ${(item.unitCost || 0).toFixed(2)}/${item.unit || 'g'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            resultsContainer.classList.add('show');
+        }
+
+        function selectAutocompleteItem(element) {
+            const name = element.dataset.name;
+            document.getElementById('searchIngredientName').value = name;
+            hideAutocomplete();
+            searchIngredient();
+        }
+
+        function hideAutocomplete() {
+            const resultsContainer = document.getElementById('autocompleteResults');
+            resultsContainer.classList.remove('show');
+            currentFocus = -1;
+        }
+
+        function highlightMatch(text, query) {
+            if (!query) return escapeHtml(text);
+            const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+            return escapeHtml(text).replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function escapeRegex(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // ESTATÍSTICAS E CONFIGURAÇÕES
+        // ═══════════════════════════════════════════════════════════════════════
+        async function loadStatistics() {
+            try {
+                const response = await fetch('/api/pricing/statistics');
+                if (response.ok) {
+                    const stats = await response.json();
+                    document.getElementById('statTotal').textContent = stats.totalIngredients || 0;
+                    document.getElementById('statStock').textContent = stats.inStockCount || 0;
+                    document.getElementById('statHistorical').textContent = stats.historicalCount || 0;
+                    document.getElementById('statBase').textContent = stats.baseCount || 0;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/pricing/settings');
+                if (response.ok) {
+                    const settings = await response.json();
+                    if (settings) {
+                        document.getElementById('inflationRate').value = settings.inflationRateMonthly || 0.5;
+                        document.getElementById('safetyMargin').value = settings.safetyMarginPercent || 10;
+                        document.getElementById('priceValidityDays').value = settings.priceValidityDays || 180;
+                        document.getElementById('profitMargin').value = settings.defaultProfitMargin || 100;
+                        document.getElementById('manipulationFee').value = settings.manipulationFee || 25;
+                        document.getElementById('packagingCost').value = settings.defaultPackagingCost || 5;
+                        document.getElementById('alertOnEstimated').checked = settings.alertOnEstimated ?? true;
+                        document.getElementById('blockWithoutStock').checked = settings.blockWithoutStock ?? false;
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao carregar configurações:', error);
+            }
+        }
+
+        document.getElementById('settingsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const settings = {
+                inflationRateMonthly: parseFloat(document.getElementById('inflationRate').value),
+                safetyMarginPercent: parseFloat(document.getElementById('safetyMargin').value),
+                priceValidityDays: parseInt(document.getElementById('priceValidityDays').value),
+                defaultProfitMargin: parseFloat(document.getElementById('profitMargin').value),
+                manipulationFee: parseFloat(document.getElementById('manipulationFee').value),
+                defaultPackagingCost: parseFloat(document.getElementById('packagingCost').value),
+                alertOnEstimated: document.getElementById('alertOnEstimated').checked,
+                blockWithoutStock: document.getElementById('blockWithoutStock').checked
+            };
+
+            try {
+                const response = await fetch('/api/pricing/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+
+                if (response.ok) {
+                    showToast('Configurações salvas com sucesso!', 'success');
+                } else if (response.status === 403) {
+                    showToast('Você não tem permissão para alterar configurações', 'warning');
+                } else {
+                    showToast('Erro ao salvar configurações', 'danger');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                showToast('Erro ao salvar configurações', 'danger');
+            }
+        });
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // BUSCA DE INGREDIENTE
+        // ═══════════════════════════════════════════════════════════════════════
+        async function searchIngredient() {
+            const name = document.getElementById('searchIngredientName').value.trim();
+            if (!name) {
+                showToast('Digite o nome do ingrediente', 'warning');
+                return;
+            }
+
+            hideAutocomplete();
+            const resultDiv = document.getElementById('searchResult');
+            const btnSearch = document.getElementById('btnSearch');
+            
+            btnSearch.disabled = true;
+            btnSearch.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Buscando...`;
+            
+            resultDiv.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Buscando preço de "${name}"...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/api/pricing/ingredient/search?name=${encodeURIComponent(name)}`);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    resultDiv.innerHTML = renderPriceResult(result);
+                    
+                    // Adicionar ao histórico
+                    recentSearches.unshift(result);
+                    if (recentSearches.length > 5) recentSearches.pop();
+                    updateRecentPrices();
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-warning d-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+                            <div>
+                                <strong>Ingrediente não encontrado</strong><br>
+                                <small>Não foi possível encontrar "${name}" no cadastro de matérias-primas.</small>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger d-flex align-items-center">
+                        <i class="bi bi-x-circle-fill me-3 fs-4"></i>
+                        <div>
+                            <strong>Erro ao buscar</strong><br>
+                            <small>Ocorreu um erro ao buscar o ingrediente. Tente novamente.</small>
+                        </div>
+                    </div>
+                `;
+            } finally {
+                btnSearch.disabled = false;
+                btnSearch.innerHTML = `<i class="bi bi-search me-1"></i> Buscar Preço`;
+            }
+        }
+
+        function renderPriceResult(result) {
+            const sourceInfo = {
+                'ESTOQUE': { icon: '🟢', class: 'stock', text: 'Em Estoque', description: 'Preço real do lote em estoque' },
+                'HISTORICO': { icon: '🟡', class: 'historical', text: 'Preço Histórico', description: 'Último preço + correção inflacionária' },
+                'BASE': { icon: '🔴', class: 'base', text: 'Tabela Base', description: 'Preço de referência de mercado' }
+            };
+            const info = sourceInfo[result.priceSource] || sourceInfo['BASE'];
+            const confidenceLevel = result.confidence >= 80 ? 'high' : result.confidence >= 50 ? 'medium' : 'low';
+            const stockClass = (result.availableStock || 0) > 0 ? 'text-success' : 'text-danger';
+            
+            return `
+                <div class="price-result-card">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="mb-1">${result.name}</h5>
+                            <small class="text-muted">
+                                ${result.dcbCode ? `<span class="badge bg-secondary me-1">${result.dcbCode}</span>` : ''}
+                                ${result.category || 'Sem categoria'}
+                            </small>
+                        </div>
+                        <span class="price-source ${info.class}" title="${info.description}">
+                            ${info.icon} ${info.text}
+                        </span>
+                    </div>
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <div class="price-value">R$ ${(result.unitCost || 0).toFixed(4)}</div>
+                            <div class="price-unit">por ${result.unit || 'g'}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <small class="text-muted">Confiança do Preço</small>
+                                <span class="float-end fw-bold">${result.confidence || 0}%</span>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-bar-fill ${confidenceLevel}" style="width: ${result.confidence || 0}%"></div>
+                            </div>
+                            <small class="text-muted">${info.description}</small>
+                        </div>
+                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                            <small class="text-muted d-block">Estoque Disponível</small>
+                            <strong class="${stockClass} fs-5">
+                                ${(result.availableStock || 0).toFixed(2)} ${result.unit || 'g'}
+                            </strong>
+                            ${(result.availableStock || 0) <= 0 ? '<br><small class="text-danger">⚠️ Sem estoque</small>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateRecentPrices() {
+            const container = document.getElementById('recentPrices');
+            if (recentSearches.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center py-3">Nenhuma consulta recente</p>';
+                return;
+            }
+            
+            container.innerHTML = recentSearches.map(r => renderPriceResult(r)).join('<hr class="my-3">');
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // UTILITÁRIOS
+        // ═══════════════════════════════════════════════════════════════════════
+        function showToast(message, type = 'info') {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+                const toastHtml = `
+                    <div class="toast align-items-center text-white bg-${type}" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">${message}</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                `;
+                let container = document.querySelector('.toast-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+                    container.style.zIndex = '1100';
+                    document.body.appendChild(container);
+                }
+                container.insertAdjacentHTML('beforeend', toastHtml);
+                const toastEl = container.lastElementChild;
+                const toast = new bootstrap.Toast(toastEl);
+                toast.show();
+                toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+            } else {
+                alert(message);
+            }
+        }
+    </script>
+}

@@ -1,0 +1,524 @@
+@{
+    ViewData["Title"] = "Faturas";
+    ViewData["Subtitle"] = "Gerenciar faturas e pagamentos";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<!-- Stats -->
+<div class="row g-4 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon success"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-value" id="paidCount">-</div>
+            <div class="stat-label">Pagas</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon warning"><i class="bi bi-clock"></i></div>
+            <div class="stat-value" id="pendingCount">-</div>
+            <div class="stat-label">Pendentes</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon danger"><i class="bi bi-x-circle"></i></div>
+            <div class="stat-value" id="overdueCount">-</div>
+            <div class="stat-label">Vencidas</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon primary"><i class="bi bi-currency-dollar"></i></div>
+            <div class="stat-value" id="totalRevenue">-</div>
+            <div class="stat-label">Receita do Mês</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters & Table -->
+<div class="admin-card">
+    <div class="card-header">
+        <div class="row align-items-center g-3">
+            <div class="col-md-3">
+                <input type="text" class="form-control form-control-sm" id="searchInput" 
+                       placeholder="Buscar estabelecimento..." onkeyup="debounceSearch()">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select form-select-sm" id="statusFilter" onchange="loadInvoices()">
+                    <option value="">Todos os status</option>
+                    <option value="PAID">Pagas</option>
+                    <option value="PENDING">Pendentes</option>
+                    <option value="OVERDUE">Vencidas</option>
+                    <option value="CANCELED">Canceladas</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select form-select-sm" id="monthFilter" onchange="loadInvoices()">
+                    <option value="">Todos os meses</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select form-select-sm" id="yearFilter" onchange="loadInvoices()">
+                    <option value="">Todos os anos</option>
+                </select>
+            </div>
+            <div class="col-md-3 text-end">
+                <button class="btn btn-sm btn-outline-success" onclick="exportInvoices()">
+                    <i class="bi bi-download me-1"></i>Exportar
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Fatura</th>
+                        <th>Estabelecimento</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Vencimento</th>
+                        <th>Pago em</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="invoicesTable">
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="spinner-border spinner-border-sm me-2"></div>
+                            Carregando...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-transparent">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+                Mostrando <span id="showingCount">0</span> de <span id="totalCount">0</span> faturas
+            </small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes da Fatura -->
+<div class="modal fade" id="invoiceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalhes da Fatura</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="invoiceLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary"></div>
+                </div>
+                <div id="invoiceContent" style="display: none;">
+                    <div class="text-center mb-4">
+                        <span class="status-badge fs-6" id="modalStatus">-</span>
+                    </div>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <small class="text-muted d-block">ID da Fatura</small>
+                            <code id="modalInvoiceId" class="small">-</code>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Valor</small>
+                            <strong class="text-success fs-5" id="modalAmount">-</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Estabelecimento</small>
+                            <span id="modalEstablishment">-</span>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Plano</small>
+                            <span id="modalPlan">-</span>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Vencimento</small>
+                            <span id="modalDueDate">-</span>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Pago em</small>
+                            <span id="modalPaidAt">-</span>
+                        </div>
+                        <div class="col-12">
+                            <small class="text-muted d-block">Criada em</small>
+                            <span id="modalCreatedAt">-</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-light rounded p-3">
+                        <small class="text-muted d-block mb-1">Stripe Invoice ID</small>
+                        <code id="modalStripeId" class="small">-</code>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="modalFooter" style="display: none;">
+                <a href="#" id="btnStripeInvoice" target="_blank" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-box-arrow-up-right me-1"></i>Ver no Stripe
+                </a>
+                <button type="button" class="btn btn-outline-success btn-sm" id="btnMarkPaid" onclick="markAsPaid()">
+                    <i class="bi bi-check-circle me-1"></i>Marcar como Paga
+                </button>
+                <a href="#" id="btnViewEstablishment" class="btn btn-primary btn-sm">
+                    <i class="bi bi-building me-1"></i>Ver Estabelecimento
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let searchTimeout = null;
+    let currentPage = 1;
+    let pageSize = 20;
+    let currentInvoice = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        populateFilters();
+        loadStats();
+        loadInvoices();
+    });
+
+    function populateFilters() {
+        // Months
+        const months = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ];
+        const monthSelect = document.getElementById('monthFilter');
+        months.forEach((m, i) => {
+            monthSelect.innerHTML += `<option value="${i + 1}">${m}</option>`;
+        });
+
+        // Years
+        const currentYear = new Date().getFullYear();
+        const yearSelect = document.getElementById('yearFilter');
+        for (let y = currentYear; y >= currentYear - 3; y--) {
+            yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
+        }
+    }
+
+    function debounceSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            currentPage = 1;
+            loadInvoices();
+        }, 300);
+    }
+
+    async function loadStats() {
+        try {
+            const response = await fetch('/api/admin/invoices/stats');
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('paidCount').textContent = data.paidCount || 0;
+                document.getElementById('pendingCount').textContent = data.pendingCount || 0;
+                document.getElementById('overdueCount').textContent = data.overdueCount || 0;
+                document.getElementById('totalRevenue').textContent = formatCurrencyShort(data.totalRevenueThisMonth || 0);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar stats:', error);
+        }
+    }
+
+    async function loadInvoices() {
+        const search = document.getElementById('searchInput').value;
+        const status = document.getElementById('statusFilter').value;
+        const month = document.getElementById('monthFilter').value;
+        const year = document.getElementById('yearFilter').value;
+
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+        if (month) params.append('month', month);
+        if (year) params.append('year', year);
+        params.append('skip', (currentPage - 1) * pageSize);
+        params.append('take', pageSize);
+
+        try {
+            const response = await fetch(`/api/admin/invoices?${params}`);
+            if (response.ok) {
+                const data = await response.json();
+                renderTable(data.invoices || []);
+                renderPagination(data.total || 0);
+                document.getElementById('totalCount').textContent = data.total || 0;
+                document.getElementById('showingCount').textContent = data.invoices?.length || 0;
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            document.getElementById('invoicesTable').innerHTML = `
+                <tr><td colspan="7" class="text-center text-danger py-4">Erro ao carregar dados</td></tr>
+            `;
+        }
+    }
+
+    function renderTable(invoices) {
+        const tbody = document.getElementById('invoicesTable');
+
+        if (!invoices || invoices.length === 0) {
+            tbody.innerHTML = `
+                <tr><td colspan="7" class="text-center text-muted py-4">
+                    <i class="bi bi-receipt fs-1 d-block mb-2"></i>
+                    Nenhuma fatura encontrada
+                </td></tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = invoices.map(inv => `
+            <tr>
+                <td>
+                    <code class="small">${inv.id?.substring(0, 8)}...</code>
+                </td>
+                <td>
+                    <strong>${inv.establishmentName || '-'}</strong>
+                    <br><small class="text-muted">${inv.planName || '-'}</small>
+                </td>
+                <td><strong>${formatCurrency(inv.amount)}</strong></td>
+                <td>
+                    <span class="status-badge ${getStatusClass(inv.status)}">
+                        ${getStatusLabel(inv.status)}
+                    </span>
+                </td>
+                <td>${formatDate(inv.dueDate)}</td>
+                <td>${inv.paidAt ? formatDate(inv.paidAt) : '-'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewInvoice('${inv.id}')" title="Ver detalhes">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    ${inv.invoiceUrl ? `
+                        <a href="${inv.invoiceUrl}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver PDF">
+                            <i class="bi bi-file-pdf"></i>
+                        </a>
+                    ` : ''}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function renderPagination(total) {
+        const totalPages = Math.ceil(total / pageSize);
+        const pagination = document.getElementById('pagination');
+
+        if (totalPages <= 1) {
+            pagination.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+
+        // Previous
+        html += `
+            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="goToPage(${currentPage - 1})">&laquo;</a>
+            </li>
+        `;
+
+        // Pages
+        for (let i = 1; i <= totalPages && i <= 5; i++) {
+            html += `
+                <li class="page-item ${currentPage === i ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="goToPage(${i})">${i}</a>
+                </li>
+            `;
+        }
+
+        // Next
+        html += `
+            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="goToPage(${currentPage + 1})">&raquo;</a>
+            </li>
+        `;
+
+        pagination.innerHTML = html;
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        loadInvoices();
+    }
+
+    async function viewInvoice(id) {
+        document.getElementById('invoiceLoading').style.display = 'block';
+        document.getElementById('invoiceContent').style.display = 'none';
+        document.getElementById('modalFooter').style.display = 'none';
+
+        const modal = new bootstrap.Modal(document.getElementById('invoiceModal'));
+        modal.show();
+
+        try {
+            const response = await fetch(`/api/admin/invoices/${id}`);
+            if (!response.ok) throw new Error('Fatura não encontrada');
+
+            currentInvoice = await response.json();
+            renderInvoiceModal(currentInvoice);
+
+            document.getElementById('invoiceLoading').style.display = 'none';
+            document.getElementById('invoiceContent').style.display = 'block';
+            document.getElementById('modalFooter').style.display = 'flex';
+        } catch (error) {
+            document.getElementById('invoiceLoading').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>${error.message}
+                </div>
+            `;
+        }
+    }
+
+    function renderInvoiceModal(inv) {
+        // Status
+        const statusEl = document.getElementById('modalStatus');
+        statusEl.textContent = getStatusLabel(inv.status);
+        statusEl.className = `status-badge fs-6 ${getStatusClass(inv.status)}`;
+
+        // Info
+        document.getElementById('modalInvoiceId').textContent = inv.id;
+        document.getElementById('modalAmount').textContent = formatCurrency(inv.amount);
+        document.getElementById('modalEstablishment').textContent = inv.establishmentName || '-';
+        document.getElementById('modalPlan').textContent = inv.planName || '-';
+        document.getElementById('modalDueDate').textContent = formatDate(inv.dueDate);
+        document.getElementById('modalPaidAt').textContent = inv.paidAt ? formatDateTime(inv.paidAt) : '-';
+        document.getElementById('modalCreatedAt').textContent = formatDateTime(inv.createdAt);
+        document.getElementById('modalStripeId').textContent = inv.stripeInvoiceId || '-';
+
+        // Links
+        document.getElementById('btnViewEstablishment').href = `/admin/establishments/${inv.establishmentId}`;
+        
+        if (inv.stripeInvoiceId) {
+            document.getElementById('btnStripeInvoice').href = `https://dashboard.stripe.com/invoices/${inv.stripeInvoiceId}`;
+            document.getElementById('btnStripeInvoice').style.display = 'inline-block';
+        } else {
+            document.getElementById('btnStripeInvoice').style.display = 'none';
+        }
+
+        // Show/hide mark as paid button
+        document.getElementById('btnMarkPaid').style.display = 
+            (inv.status === 'PENDING' || inv.status === 'OVERDUE') ? 'inline-block' : 'none';
+    }
+
+    async function markAsPaid() {
+        if (!currentInvoice) return;
+        if (!confirm('Marcar esta fatura como paga?')) return;
+
+        try {
+            const response = await fetch(`/api/admin/invoices/${currentInvoice.id}/mark-paid`, {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('invoiceModal')).hide();
+                showToast('Fatura marcada como paga!', 'success');
+                loadInvoices();
+                loadStats();
+            } else {
+                const error = await response.json();
+                showToast('Erro: ' + (error.message || 'Erro ao atualizar'), 'danger');
+            }
+        } catch (error) {
+            showToast('Erro ao atualizar fatura', 'danger');
+        }
+    }
+
+    function exportInvoices() {
+        const status = document.getElementById('statusFilter').value;
+        const month = document.getElementById('monthFilter').value;
+        const year = document.getElementById('yearFilter').value;
+
+        const params = new URLSearchParams();
+        if (status) params.append('status', status);
+        if (month) params.append('month', month);
+        if (year) params.append('year', year);
+
+        window.open(`/api/admin/invoices/export?${params}`, '_blank');
+    }
+
+    function showToast(message, type = 'info') {
+        let container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '1100';
+            document.body.appendChild(container);
+        }
+
+        const toastId = 'toast-' + Date.now();
+        const iconMap = {
+            success: 'bi-check-circle-fill text-success',
+            danger: 'bi-x-circle-fill text-danger',
+            warning: 'bi-exclamation-triangle-fill text-warning',
+            info: 'bi-info-circle-fill text-primary'
+        };
+
+        const toastHtml = `
+            <div id="${toastId}" class="toast align-items-center border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi ${iconMap[type] || iconMap.info} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', toastHtml);
+        const toastEl = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    function getStatusClass(status) {
+        switch (status?.toUpperCase()) {
+            case 'PAID': return 'active';
+            case 'PENDING': return 'trialing';
+            case 'OVERDUE': return 'past-due';
+            case 'CANCELED': return 'canceled';
+            default: return 'inactive';
+        }
+    }
+
+    function getStatusLabel(status) {
+        switch (status?.toUpperCase()) {
+            case 'PAID': return 'Paga';
+            case 'PENDING': return 'Pendente';
+            case 'OVERDUE': return 'Vencida';
+            case 'CANCELED': return 'Cancelada';
+            default: return '-';
+        }
+    }
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+    }
+
+    function formatCurrencyShort(value) {
+        if (value >= 1000) {
+            return 'R$ ' + (value / 1000).toFixed(1) + 'k';
+        }
+        return formatCurrency(value);
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleDateString('pt-BR');
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleString('pt-BR');
+    }
+</script>
+}

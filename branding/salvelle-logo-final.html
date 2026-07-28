@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salvelle · Sistema de Logo (final)</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=cabinet-grotesk@400,500,700,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --petrol:#0F6E78;--petrol-deep:#095861;--petrol-900:#042A2D;--petrol-50:#E6F2F1;
+    --amber:#D88B2C;--bone:#FAF9F5;--surface:#FFFFFF;--ink:#0A1814;--ink-2:#364946;--ink-3:#6B7B78;--rule:#E5E8E5;
+    --corm:"Cormorant Garamond",serif;
+    --disp:"Cabinet Grotesk","General Sans",sans-serif;--sans:"General Sans",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bone);color:var(--ink-2);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:56px 32px}
+  h1{font-family:var(--disp);font-weight:800;font-size:2rem;color:var(--ink);letter-spacing:-.02em}
+  .sub{color:var(--ink-3);max-width:660px;margin-top:8px}
+  .eyebrow{font-size:.7rem;letter-spacing:.26em;text-transform:uppercase;font-weight:700;color:var(--petrol);margin:44px 0 4px}
+  h2{font-family:var(--disp);font-weight:700;font-size:1.3rem;color:var(--ink);margin-bottom:16px}
+  .grid{display:grid;gap:18px}
+  .c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:repeat(3,1fr)}
+  .box{background:var(--surface);border:1px solid var(--rule);border-radius:16px;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:34px;position:relative}
+  .box.dark{background:var(--petrol-900)}.box.pet{background:var(--petrol)}.box.soft{background:var(--petrol-50)}
+  .lbl{position:absolute;top:13px;left:16px;font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+  .dark .lbl,.pet .lbl{color:rgba(255,255,255,.5)}
+
+  /* ===== LOGOTIPO OFICIAL ===== */
+  .mark{display:inline-flex;flex-direction:column;align-items:center;gap:.5em}
+  .mark .word{font-family:var(--corm);font-weight:600;text-transform:uppercase;letter-spacing:.30em;line-height:1;color:var(--ink);
+               /* compensa o tracking à direita para centralizar */ text-indent:.30em}
+  .mark .fio{height:1px;background:var(--amber);align-self:stretch}
+  .mark .desc{font-family:var(--disp);font-weight:600;text-transform:uppercase;letter-spacing:.42em;color:var(--amber);line-height:1;text-indent:.42em}
+  /* escala principal */
+  .mark.lg .word{font-size:2.7rem}.mark.lg .desc{font-size:.62rem}.mark.lg .fio{margin:.28em 0}
+  .mark.md .word{font-size:1.8rem}.mark.md .desc{font-size:.5rem}.mark.md .fio{margin:.24em 0}
+  .mark.sm .word{font-size:1.15rem}.mark.sm .desc{font-size:.38rem}.mark.sm .fio{margin:.2em 0}
+  /* variantes de cor */
+  .onbone .word{color:var(--ink)} .onbone .desc{color:var(--amber)} .onbone .fio{background:var(--amber)}
+  .ondark .word{color:var(--bone)} .ondark .desc{color:var(--amber)} .ondark .fio{background:var(--amber)}
+  .mono .word{color:var(--ink)} .mono .desc{color:var(--ink)} .mono .fio{background:var(--ink)}
+  .monolight .word{color:var(--bone)} .monolight .desc{color:var(--bone)} .monolight .fio{background:var(--bone)}
+
+  /* wordmark solo (sem descritor) */
+  .solo{font-family:var(--corm);font-weight:600;text-transform:uppercase;letter-spacing:.30em;text-indent:.30em;font-size:2.4rem;color:var(--ink);line-height:1}
+  .dark .solo{color:var(--bone)}
+
+  /* monograma S / app icon */
+  .appic{width:104px;height:104px;border-radius:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(4,42,45,.12)}
+  .appic.p{background:var(--petrol)}.appic.d{background:var(--petrol-900)}.appic.b{background:var(--bone);border:1px solid var(--rule)}
+  .appic .s{font-family:var(--corm);font-weight:600;font-size:3.6rem;line-height:1}
+  /* favicons */
+  .fav{display:flex;align-items:flex-end;gap:18px}
+  .favbox{border-radius:8px;background:var(--petrol);display:flex;align-items:center;justify-content:center;color:var(--bone);font-family:var(--corm);font-weight:600}
+  .f16{width:16px;height:16px;font-size:12px;border-radius:3px}
+  .f32{width:32px;height:32px;font-size:22px;border-radius:6px}
+  .f64{width:64px;height:64px;font-size:44px;border-radius:12px}
+
+  /* clear space */
+  .clear{position:relative;background:repeating-linear-gradient(45deg,#fff,#fff 8px,#faf7ef 8px,#faf7ef 16px);border:1px dashed var(--amber);padding:44px;border-radius:12px;display:inline-block}
+  .note{font-size:.85rem;color:var(--ink-3);margin-top:10px}
+  ul{margin:8px 0 0 18px;color:var(--ink-3);font-size:.9rem}
+  ul li{margin:3px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Salvelle · sistema de logo</h1>
+  <p class="sub">Direção <b>04 — Assinatura editorial</b>. Logotipo em serifa Didone (Cormorant Garamond), fio âmbar e descritor. Sem símbolo pictórico — a inicial <b>S</b> serve de ícone. Cores 100% do design system Farmify.</p>
+
+  <!-- OFICIAL -->
+  <div class="eyebrow">Assinatura oficial</div>
+  <h2>Versão principal (empilhada)</h2>
+  <div class="grid c2">
+    <div class="box"><span class="lbl">Positiva · fundo bone</span>
+      <span class="mark lg onbone"><span class="word">Salvelle</span><span class="fio"></span><span class="desc">Farmácia &amp; Bem-estar</span></span>
+    </div>
+    <div class="box dark"><span class="lbl">Negativa · fundo petróleo</span>
+      <span class="mark lg ondark"><span class="word">Salvelle</span><span class="fio"></span><span class="desc">Farmácia &amp; Bem-estar</span></span>
+    </div>
+  </div>
+
+  <!-- VARIANTES -->
+  <div class="eyebrow">Variantes de uso</div>
+  <h2>Wordmark solo · monocromática</h2>
+  <div class="grid c3">
+    <div class="box"><span class="lbl">Wordmark só (positiva)</span><span class="solo">Salvelle</span></div>
+    <div class="box mono" style="background:#fff"><span class="lbl">Mono tinta</span>
+      <span class="mark md mono"><span class="word">Salvelle</span><span class="fio"></span><span class="desc">Farmácia &amp; Bem-estar</span></span>
+    </div>
+    <div class="box dark"><span class="lbl">Mono bone (1 cor)</span>
+      <span class="mark md monolight"><span class="word">Salvelle</span><span class="fio"></span><span class="desc">Farmácia &amp; Bem-estar</span></span>
+    </div>
+  </div>
+
+  <!-- MONOGRAMA / APP ICON -->
+  <div class="eyebrow">Marca reduzida</div>
+  <h2>Monograma S — ícone de app &amp; avatar</h2>
+  <div class="grid c3">
+    <div class="box pet"><span class="lbl">App icon (primário)</span>
+      <div class="appic b"><span class="s" style="color:var(--petrol)">S</span></div>
+    </div>
+    <div class="box soft"><span class="lbl">Alternativas</span>
+      <div style="display:flex;gap:16px">
+        <div class="appic p"><span class="s" style="color:var(--bone)">S</span></div>
+        <div class="appic d"><span class="s" style="color:var(--amber)">S</span></div>
+      </div>
+    </div>
+    <div class="box"><span class="lbl">Favicon · 16/32/64px</span>
+      <div class="fav">
+        <div class="favbox f16">S</div>
+        <div class="favbox f32">S</div>
+        <div class="favbox f64">S</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGRAS -->
+  <div class="eyebrow">Regras de aplicação</div>
+  <h2>Área de proteção &amp; tamanho mínimo</h2>
+  <div class="grid c2">
+    <div class="box" style="align-items:flex-start;justify-content:flex-start">
+      <span class="lbl">Área de proteção</span>
+      <div style="width:100%;display:flex;justify-content:center;padding-top:14px">
+        <div class="clear">
+          <span class="mark md onbone"><span class="word">Salvelle</span><span class="fio"></span><span class="desc">Farmácia &amp; Bem-estar</span></span>
+        </div>
+      </div>
+      <p class="note">Margem livre mínima = a altura da letra “S” em todos os lados. Nada de texto, foto ou borda dentro dessa faixa.</p>
+    </div>
+    <div class="box" style="align-items:flex-start;justify-content:flex-start">
+      <span class="lbl">Tamanho mínimo</span>
+      <div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;padding-top:20px">
+        <span class="mark sm onbone"><span class="word">Salvelle</span><span class="fio"></span><span class="desc">Farmácia &amp; Bem-estar</span></span>
+        <span class="solo" style="font-size:1rem">Salvelle</span>
+      </div>
+      <ul>
+        <li>Assinatura completa: <b>≥ 24&nbsp;mm</b> impresso / <b>140&nbsp;px</b> digital. Abaixo disso, some o descritor.</li>
+        <li>Wordmark solo: <b>≥ 14&nbsp;mm</b> / <b>90&nbsp;px</b>.</li>
+        <li>Monograma S: até <b>16&nbsp;px</b> (favicon).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ESPECIFICAÇÕES -->
+  <div class="eyebrow">Especificação técnica</div>
+  <h2>Receita do logotipo</h2>
+  <div class="box" style="align-items:flex-start;min-height:auto">
+    <ul style="font-size:.92rem">
+      <li><b>Wordmark:</b> Cormorant Garamond, peso 600, CAIXA-ALTA, tracking <b>0.30em</b>.</li>
+      <li><b>Fio:</b> régua âmbar <b>#D88B2C</b>, 1px (proporcional), largura = largura do wordmark.</li>
+      <li><b>Descritor:</b> Cabinet Grotesk, peso 600, CAIXA-ALTA, tracking <b>0.42em</b>, cor âmbar. Texto: “Farmácia &amp; Bem-estar”.</li>
+      <li><b>Cores:</b> tinta <b>#0A1814</b> · petróleo <b>#0F6E78</b> · âmbar <b>#D88B2C</b> · bone <b>#FAF9F5</b>.</li>
+      <li><b>Monograma:</b> “S” Cormorant 600 em quadrado arredondado (raio 24 em 104px).</li>
+    </ul>
+  </div>
+
+  <p class="note" style="margin-top:36px">Salvelle · sistema de logo v1 (direção 04) · design system Farmify · 2026-07-26</p>
+</div>
+</body>
+</html>

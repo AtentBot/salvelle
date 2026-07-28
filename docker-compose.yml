@@ -1,0 +1,60 @@
+version: '3.8'
+services:
+  salvelle:
+    image: atentbot/salvelle:latest
+    volumes:
+      - salvelle-keys:/app/.keys
+      - salvelle-uploads:/app/uploads
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_HTTPS_PORT=8443
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      labels:
+        - "traefik.enable=true"
+
+        # Router HTTPS
+        - "traefik.http.routers.salvelle.rule=Host(`salvelle.atentbot.com`)"
+        - "traefik.http.routers.salvelle.entrypoints=websecure"
+        - "traefik.http.routers.salvelle.tls=true"
+        - "traefik.http.routers.salvelle.tls.certresolver=le"
+
+        # Service
+        - "traefik.http.services.salvelle.loadbalancer.server.port=8080"
+        - "traefik.docker.network=traefik_public"
+
+        # Health check
+        - "traefik.http.services.salvelle.loadbalancer.healthcheck.path=/health"
+        - "traefik.http.services.salvelle.loadbalancer.healthcheck.interval=10s"
+        - "traefik.http.services.salvelle.loadbalancer.healthcheck.timeout=3s"
+        - "traefik.http.services.salvelle.loadbalancer.healthcheck.scheme=http"
+
+        # Sticky sessions (2 réplicas)
+        - "traefik.http.services.salvelle.loadbalancer.sticky.cookie=true"
+        - "traefik.http.services.salvelle.loadbalancer.sticky.cookie.name=salvelle_sticky"
+        - "traefik.http.services.salvelle.loadbalancer.sticky.cookie.secure=true"
+        - "traefik.http.services.salvelle.loadbalancer.sticky.cookie.httpOnly=true"
+
+    networks:
+      - traefik_public
+
+volumes:
+  salvelle-keys:
+    driver: local
+  salvelle-uploads:
+    driver: local
+
+networks:
+  traefik_public:
+    external: true

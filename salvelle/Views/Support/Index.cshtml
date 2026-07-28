@@ -1,0 +1,291 @@
+@{
+    ViewData["Title"] = "Suporte";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-headset me-2 text-primary"></i>Suporte</h4>
+            <p class="text-muted mb-0">Abra e acompanhe chamados com a equipe Salvelle</p>
+        </div>
+        <button class="btn btn-primary" onclick="openNewTicketModal()">
+            <i class="bi bi-plus-lg me-2"></i>Novo Chamado
+        </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-3">
+        <div class="card-body py-2">
+            <div class="row g-2">
+                <div class="col-auto">
+                    <select class="form-select form-select-sm" id="filterStatus" onchange="loadTickets()">
+                        <option value="">Todos os status</option>
+                        <option value="OPEN">Abertos</option>
+                        <option value="IN_PROGRESS">Em andamento</option>
+                        <option value="RESOLVED">Resolvidos</option>
+                        <option value="CLOSED">Fechados</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Título</th>
+                            <th>Categoria</th>
+                            <th>Prioridade</th>
+                            <th>Status</th>
+                            <th>Aberto em</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="ticketsTable">
+                        <tr><td colspan="6" class="text-center py-4">
+                            <div class="spinner-border spinner-border-sm me-2"></div>Carregando...
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo Chamado -->
+<div class="modal fade" id="newTicketModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Novo Chamado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Título <span class="text-danger">*</span></label>
+                    <input type="text" id="newTitle" class="form-control" placeholder="Descreva o problema em uma frase">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Categoria</label>
+                    <select id="newCategory" class="form-select">
+                        <option value="GENERAL">Geral</option>
+                        <option value="TECHNICAL">Técnico</option>
+                        <option value="PAYMENT">Pagamento</option>
+                        <option value="WHATSAPP">WhatsApp</option>
+                        <option value="SIGNUP">Cadastro</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Prioridade</label>
+                    <select id="newPriority" class="form-select">
+                        <option value="MEDIUM">Média</option>
+                        <option value="LOW">Baixa</option>
+                        <option value="HIGH">Alta</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Descrição <span class="text-danger">*</span></label>
+                    <textarea id="newDescription" class="form-control" rows="4"
+                        placeholder="Descreva o problema com o máximo de detalhes possível..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="createTicket()">
+                    <i class="bi bi-send me-1"></i>Enviar chamado
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="detailTitle">Chamado</h5>
+                    <small class="text-muted" id="detailMeta"></small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="detailLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary"></div>
+                </div>
+                <div id="detailContent" class="d-none">
+                    <div class="p-3 bg-light rounded mb-3" id="detailDescription"></div>
+                    <h6 class="mb-3">Conversa</h6>
+                    <div id="detailMessages" style="max-height:320px;overflow-y:auto;"></div>
+                    <div id="replyArea" class="mt-3">
+                        <textarea id="replyBody" class="form-control" rows="2" placeholder="Sua resposta..."></textarea>
+                        <button class="btn btn-primary btn-sm mt-2" onclick="sendReply()">
+                            <i class="bi bi-send me-1"></i>Enviar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let currentTicketId = null;
+
+const PRIORITY_BADGE = {
+    CRITICAL: '<span class="badge bg-danger">Crítica</span>',
+    HIGH:     '<span class="badge bg-warning text-dark">Alta</span>',
+    MEDIUM:   '<span class="badge bg-secondary">Média</span>',
+    LOW:      '<span class="badge bg-light text-dark border">Baixa</span>'
+};
+
+const STATUS_BADGE = {
+    OPEN:        '<span class="badge bg-primary">Aberto</span>',
+    IN_PROGRESS: '<span class="badge bg-warning text-dark">Em andamento</span>',
+    RESOLVED:    '<span class="badge bg-success">Resolvido</span>',
+    CLOSED:      '<span class="badge bg-secondary">Fechado</span>'
+};
+
+async function loadTickets() {
+    const status = document.getElementById('filterStatus').value;
+    const params = new URLSearchParams({ page: 1 });
+    if (status) params.set('status', status);
+
+    const r = await fetch('/api/pharmacy/support/tickets?' + params);
+    if (!r.ok) return;
+    const { items } = await r.json();
+
+    const tbody = document.getElementById('ticketsTable');
+    if (!items.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">Nenhum chamado encontrado</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = items.map(t => `
+        <tr style="cursor:pointer" onclick="openDetail('${t.id}')">
+            <td>
+                <span class="fw-medium">${escHtml(t.title)}</span>
+                ${t.hasNewReply ? '<span class="badge bg-success ms-2">Nova resposta</span>' : ''}
+            </td>
+            <td><small>${escHtml(t.categoryDisplay)}</small></td>
+            <td>${PRIORITY_BADGE[t.priority] || t.priority}</td>
+            <td>${STATUS_BADGE[t.status] || t.status}</td>
+            <td><small class="text-muted">${fmtDate(t.createdAt)}</small></td>
+            <td><i class="bi bi-chevron-right text-muted"></i></td>
+        </tr>
+    `).join('');
+}
+
+function openNewTicketModal() {
+    document.getElementById('newTitle').value = '';
+    document.getElementById('newDescription').value = '';
+    document.getElementById('newCategory').value = 'GENERAL';
+    document.getElementById('newPriority').value = 'MEDIUM';
+    new bootstrap.Modal(document.getElementById('newTicketModal')).show();
+}
+
+async function createTicket() {
+    const title = document.getElementById('newTitle').value.trim();
+    const description = document.getElementById('newDescription').value.trim();
+    if (!title || !description) {
+        alert('Preencha título e descrição.');
+        return;
+    }
+
+    const r = await fetch('/api/pharmacy/support/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            title,
+            description,
+            category: document.getElementById('newCategory').value,
+            priority: document.getElementById('newPriority').value
+        })
+    });
+
+    if (r.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('newTicketModal')).hide();
+        await loadTickets();
+    } else {
+        const d = await r.json();
+        alert(d.message || 'Erro ao abrir chamado.');
+    }
+}
+
+async function openDetail(id) {
+    currentTicketId = id;
+    document.getElementById('detailLoading').classList.remove('d-none');
+    document.getElementById('detailContent').classList.add('d-none');
+    document.getElementById('replyBody').value = '';
+    new bootstrap.Modal(document.getElementById('detailModal')).show();
+
+    const r = await fetch(`/api/pharmacy/support/tickets/${id}`);
+    if (!r.ok) return;
+    const t = await r.json();
+
+    document.getElementById('detailTitle').textContent = t.title;
+    document.getElementById('detailMeta').innerHTML =
+        `${PRIORITY_BADGE[t.priority]} ${STATUS_BADGE[t.status]} · ${escHtml(t.categoryDisplay)}`;
+    document.getElementById('detailDescription').innerHTML =
+        `<p class="text-muted small mb-1">Descrição</p>${escHtml(t.description).replace(/\n/g,'<br>')}`;
+
+    const msgs = document.getElementById('detailMessages');
+    msgs.innerHTML = t.messages.length === 0
+        ? '<p class="text-muted small">Sem mensagens</p>'
+        : t.messages.map(m => {
+            const isAdmin = m.authorType === 'ADMIN' || m.authorType === 'SYSTEM';
+            return `
+                <div class="mb-2 ${!isAdmin ? 'text-end' : ''}">
+                    <div class="d-inline-block p-2 rounded ${
+                        isAdmin ? 'bg-light' : 'bg-primary text-white'
+                    }" style="max-width:80%;text-align:left;">
+                        <div class="small fw-bold mb-1">${escHtml(m.authorName)}</div>
+                        ${escHtml(m.body).replace(/\n/g,'<br>')}
+                        <div class="small opacity-75 mt-1">${fmtDate(m.createdAt)}</div>
+                    </div>
+                </div>`;
+        }).join('');
+    msgs.scrollTop = msgs.scrollHeight;
+
+    const isClosed = t.status === 'CLOSED' || t.status === 'RESOLVED';
+    document.getElementById('replyArea').style.display = isClosed ? 'none' : '';
+
+    document.getElementById('detailLoading').classList.add('d-none');
+    document.getElementById('detailContent').classList.remove('d-none');
+}
+
+async function sendReply() {
+    const body = document.getElementById('replyBody').value.trim();
+    if (!body || !currentTicketId) return;
+
+    const r = await fetch(`/api/pharmacy/support/tickets/${currentTicketId}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body })
+    });
+
+    if (r.ok) {
+        document.getElementById('replyBody').value = '';
+        await openDetail(currentTicketId);
+    }
+}
+
+function fmtDate(d) {
+    return d ? new Date(d).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }) : '—';
+}
+
+function escHtml(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+loadTickets();
+</script>
+}

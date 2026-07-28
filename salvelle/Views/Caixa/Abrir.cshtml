@@ -1,0 +1,144 @@
+@{
+    ViewData["Title"] = "Abrir Caixa";
+    Layout = "_Layout";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <!-- Header -->
+            <div class="d-flex align-items-center mb-4">
+                <a href="/Caixa" class="btn btn-outline-secondary me-3">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div>
+                    <h4 class="mb-0">Abrir Caixa</h4>
+                    <small class="text-muted">Inicie um novo turno de caixa</small>
+                </div>
+            </div>
+
+            <!-- Alertas -->
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <i class="bi bi-exclamation-triangle me-2"></i>@TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Warning"] != null)
+            {
+                <div class="alert alert-warning alert-dismissible fade show">
+                    <i class="bi bi-exclamation-circle me-2"></i>@TempData["Warning"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <!-- Card de Abertura -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-cash-stack me-2"></i>
+                        Novo Caixa
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="/Caixa/Abrir" id="formAbrirCaixa">
+                        <!-- Saldo Inicial -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Saldo Inicial (Fundo de Caixa) *</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" 
+                                       class="form-control" 
+                                       name="saldoInicial" 
+                                       id="saldoInicial"
+                                       step="0.01" 
+                                       min="0" 
+                                       value="0.00"
+                                       required
+                                       autofocus>
+                            </div>
+                            <div class="form-text">
+                                Informe o valor em dinheiro disponível no caixa para troco.
+                            </div>
+                        </div>
+
+                        <!-- Valores rápidos -->
+                        <div class="mb-4">
+                            <label class="form-label">Valores rápidos:</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button type="button" class="btn btn-outline-secondary" onclick="setSaldo(100)">R$ 100</button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setSaldo(200)">R$ 200</button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setSaldo(300)">R$ 300</button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setSaldo(500)">R$ 500</button>
+                            </div>
+                        </div>
+
+                        <!-- Observações -->
+                        <div class="mb-4">
+                            <label class="form-label">Observações (opcional)</label>
+                            <textarea class="form-control" 
+                                      name="observacoes" 
+                                      rows="2" 
+                                      placeholder="Ex: Cédulas conferidas, turno da manhã..."></textarea>
+                        </div>
+
+                        <!-- Info -->
+                        <div class="alert alert-info mb-4">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Dica:</strong> Conte o dinheiro antes de informar o saldo inicial. 
+                            Isso ajuda a identificar diferenças no fechamento do caixa.
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-unlock me-2"></i>
+                                Abrir Caixa
+                            </button>
+                            <a href="/Caixa" class="btn btn-outline-secondary">
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Resumo -->
+            <div class="card mt-4 border-0 bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Ao abrir o caixa você poderá:</h6>
+                    <ul class="mb-0">
+                        <li>Registrar vendas e recebimentos</li>
+                        <li>Fazer sangrias (retiradas)</li>
+                        <li>Fazer suprimentos (entradas)</li>
+                        <li>Processar pagamentos de pedidos online</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function setSaldo(valor) {
+        document.getElementById('saldoInicial').value = valor.toFixed(2);
+    }
+
+    document.getElementById('formAbrirCaixa').addEventListener('submit', function(e) {
+        const saldo = parseFloat(document.getElementById('saldoInicial').value) || 0;
+        
+        if (saldo < 0) {
+            e.preventDefault();
+            alert('O saldo inicial não pode ser negativo.');
+            return;
+        }
+
+        // Confirmação
+        if (!confirm(`Confirma abertura do caixa com saldo inicial de R$ ${saldo.toFixed(2)}?`)) {
+            e.preventDefault();
+        }
+    });
+</script>
+}

@@ -1,0 +1,416 @@
+﻿@{
+    ViewData["Title"] = "Criar Fórmula";
+    Layout = null;
+    var customerName = ViewBag.CustomerName ?? "Cliente";
+    var firstName = customerName.ToString().Split(' ')[0];
+    var pharmacyName = ViewBag.PharmacyName ?? "Farmácia";
+    var cartCount = ViewBag.CartCount ?? 0;
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="var(--petrol-500)">
+    <title>@ViewData["Title"] - Salvelle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/design-system/tokens.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/design-system/components.css" asp-append-version="true">
+    <style>
+        :root {
+            --primary: var(--petrol-500); --primary-dark: var(--petrol-700); --primary-light: var(--petrol-200);
+            --secondary: var(--ok); --accent: var(--amber-500);
+            --gray-900: var(--ink); --gray-700: var(--ink-2); --gray-500: var(--ink-3);
+            --gray-400: var(--ink-4); --gray-200: var(--rule); --gray-100: var(--bg-subtle);
+            --gray-50: var(--bg); --white: var(--surface);
+            --gradient-primary: var(--petrol-500);
+            --gradient-secondary: var(--ok);
+            --gradient-hero: var(--ink);
+            --shadow: var(--shadow-1); --shadow-md: var(--shadow-2); --shadow-lg: var(--shadow-3);
+            --shadow-glow: 0 0 0 4px var(--petrol-50);
+            --radius: var(--r-md); --radius-lg: var(--r-lg); --radius-xl: var(--r-lg); --radius-full: var(--r-pill);
+        }
+        * { box-sizing: border-box; }
+        body { font-family: var(--font-sans); background: var(--bg); color: var(--ink); min-height: 100vh; padding-bottom: 100px; margin: 0; }
+
+        .hero-header { background: var(--ink); padding: 20px 20px 100px; position: relative; overflow: hidden; }
+        .hero-header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(900px 500px at 80% 100%, color-mix(in srgb, var(--petrol-500) 45%, transparent), transparent 70%); pointer-events: none; }
+        .hero-header > * { position: relative; z-index: 1; }
+        @@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
+        .header-top { display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 10; margin-bottom: 20px; }
+        .back-btn { width: 44px; height: 44px; border-radius: var(--radius-full); background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: all 0.3s; text-decoration: none; }
+        .back-btn:hover { background: rgba(255,255,255,0.25); transform: scale(1.05); color: var(--white); }
+        
+        .page-title { color: var(--white); text-align: center; flex: 1; }
+        .page-title h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+        .page-title p { font-size: 13px; opacity: 0.8; }
+
+        .header-actions { display: flex; gap: 12px; }
+        .header-btn { width: 44px; height: 44px; border-radius: var(--radius-full); background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: all 0.3s; position: relative; text-decoration: none; }
+        .header-btn:hover { background: rgba(255,255,255,0.25); transform: scale(1.05); }
+        .header-btn .badge { position: absolute; top: -4px; right: -4px; width: 20px; height: 20px; background: var(--danger); border-radius: var(--radius-full); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--ink); color: var(--white); }
+
+        .main-content { padding: 0 16px; margin-top: -60px; position: relative; z-index: 20; }
+
+        .step-card { background: var(--white); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-lg); }
+        .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .step-number { width: 32px; height: 32px; border-radius: var(--radius-full); background: var(--gradient-primary); color: var(--white); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+        .step-number.completed { background: var(--secondary); }
+        .step-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 16px; }
+        .step-subtitle { font-size: 13px; color: var(--gray-500); }
+
+        .form-label { font-weight: 600; font-size: 14px; color: var(--gray-700); margin-bottom: 8px; display: block; }
+        .form-select, .form-control { width: 100%; padding: 14px 16px; border: 2px solid var(--gray-200); border-radius: var(--radius); font-size: 15px; transition: all 0.3s; background: var(--white); }
+        .form-select:focus, .form-control:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(139,92,246,0.1); }
+
+        .quantity-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+        .quantity-btn { padding: 14px; border: 2px solid var(--gray-200); border-radius: var(--radius); background: var(--white); font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s; }
+        .quantity-btn:hover { border-color: var(--primary-light); background: rgba(139,92,246,0.05); }
+        .quantity-btn.active { border-color: var(--primary); background: rgba(139,92,246,0.1); color: var(--primary); }
+
+        .ingredient-input-container { position: relative; }
+        .ingredient-input { padding-right: 50px; }
+
+        .autocomplete-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--white); border: 2px solid var(--gray-200); border-top: none; border-radius: 0 0 var(--radius) var(--radius); max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: var(--shadow-lg); }
+        .autocomplete-item { padding: 14px 16px; cursor: pointer; border-bottom: 1px solid var(--gray-100); transition: background 0.2s; }
+        .autocomplete-item:hover, .autocomplete-item.active { background: rgba(139,92,246,0.08); }
+        .autocomplete-item:last-child { border-bottom: none; }
+        .autocomplete-item strong { color: var(--gray-900); }
+        .autocomplete-item mark { background: var(--warn-soft); padding: 0 2px; border-radius: 2px; }
+        .autocomplete-loading { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); }
+
+        .add-btn { width: 100%; padding: 16px; background: var(--gradient-secondary); color: var(--white); border: none; border-radius: var(--radius); font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .add-btn:hover { transform: scale(1.02); box-shadow: var(--shadow-md); }
+
+        .ingredient-list { margin-top: 16px; }
+        .ingredient-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--gray-50); border-radius: var(--radius); margin-bottom: 8px; border-left: 4px solid var(--secondary); }
+        .ingredient-item-info { flex: 1; }
+        .ingredient-item-name { font-weight: 600; font-size: 15px; color: var(--gray-900); }
+        .ingredient-item-qty { font-size: 13px; color: var(--gray-500); }
+        .ingredient-item-remove { width: 36px; height: 36px; border-radius: var(--radius-full); background: rgba(239,68,68,0.1); color: var(--danger); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .ingredient-item-remove:hover { background: var(--danger); color: var(--white); }
+
+        .formula-summary { background: var(--ok-soft); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 16px; border: 1px solid var(--ok-border); }
+        .formula-summary-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .formula-summary-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 16px; color: var(--ok); }
+        .formula-summary-badge { background: var(--secondary); color: var(--white); padding: 6px 12px; border-radius: var(--radius-full); font-size: 12px; font-weight: 700; }
+        .formula-price { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 800; color: var(--ok); }
+        .formula-price-label { font-size: 13px; color: var(--ok); }
+
+        .save-formula-btn { width: 100%; padding: 18px; background: var(--gradient-primary); color: var(--white); border: none; border-radius: var(--radius); font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .save-formula-btn:hover { transform: scale(1.02); box-shadow: var(--shadow-lg), var(--shadow-glow); }
+
+        .saved-formulas { background: var(--white); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-lg); }
+        .saved-formulas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .saved-formulas-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+        .saved-formulas-count { background: var(--accent); color: var(--white); padding: 4px 12px; border-radius: var(--radius-full); font-size: 13px; font-weight: 700; }
+
+        .saved-formula-card { background: var(--petrol-50); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 12px; border: 1px solid var(--petrol-100); }
+        .saved-formula-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .saved-formula-num { background: var(--primary); color: var(--white); width: 28px; height: 28px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+        .saved-formula-type { font-weight: 700; font-size: 15px; flex: 1; margin-left: 10px; }
+        .saved-formula-remove { background: none; border: none; color: var(--danger); cursor: pointer; padding: 6px; border-radius: var(--radius-full); transition: all 0.3s; }
+        .saved-formula-remove:hover { background: rgba(239,68,68,0.1); }
+        .saved-formula-details { font-size: 13px; color: var(--gray-600); margin-bottom: 8px; }
+        .saved-formula-ingredients { font-size: 12px; color: var(--gray-500); }
+        .saved-formula-price { text-align: right; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 18px; color: var(--primary-dark); margin-top: 8px; }
+
+        .checkout-section { background: var(--gradient-hero); border-radius: var(--radius-xl); padding: 24px; margin-bottom: 20px; }
+        .checkout-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .checkout-total-label { color: rgba(255,255,255,0.8); font-size: 14px; }
+        .checkout-total-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 32px; font-weight: 800; color: var(--white); }
+        .checkout-btn { width: 100%; padding: 18px; background: var(--white); color: var(--primary-dark); border: none; border-radius: var(--radius); font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .checkout-btn:hover { transform: scale(1.02); box-shadow: var(--shadow-lg); }
+
+        .empty-state { text-align: center; padding: 40px 20px; }
+        .empty-icon { width: 80px; height: 80px; border-radius: var(--radius-full); background: var(--gray-100); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 32px; color: var(--gray-400); }
+        .empty-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 18px; margin-bottom: 8px; }
+        .empty-text { color: var(--gray-500); font-size: 14px; }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); padding: 12px 20px; display: flex; justify-content: space-around; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 100; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--gray-400); font-size: 11px; font-weight: 500; transition: all 0.3s; position: relative; }
+        .nav-item i { font-size: 22px; margin-bottom: 4px; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item .badge { position: absolute; top: -6px; right: -10px; background: var(--danger); color: var(--white); width: 18px; height: 18px; border-radius: var(--radius-full); font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
+        .loading-spinner { width: 60px; height: 60px; border: 4px solid rgba(255,255,255,0.2); border-top-color: var(--white); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @@keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: var(--white); font-size: 18px; font-weight: 600; }
+
+        .toast { position: fixed; top: 20px; right: 20px; padding: 16px 20px; border-radius: var(--radius); color: var(--white); font-weight: 600; z-index: 10000; animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px; max-width: 90%; }
+        .toast.success { background: var(--secondary); }
+        .toast.warning { background: var(--accent); }
+        .toast.danger { background: var(--danger); }
+        .toast.info { background: var(--primary); }
+        @@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .info-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(139,92,246,0.1); color: var(--primary); padding: 8px 14px; border-radius: var(--radius-full); font-size: 13px; font-weight: 600; margin-top: 8px; }
+
+        .current-formula-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--petrol-50); border: 1px solid var(--petrol-100); padding: 10px 16px; border-radius: var(--radius); margin-bottom: 16px; width: 100%; }
+        .current-formula-badge i { color: var(--primary); }
+        .current-formula-badge span { font-weight: 600; font-size: 14px; color: var(--primary-dark); flex: 1; }
+
+        .popular-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .popular-tag { padding: 8px 14px; background: var(--gray-100); border-radius: var(--radius-full); font-size: 13px; font-weight: 500; color: var(--gray-700); cursor: pointer; transition: all 0.3s; border: none; }
+        .popular-tag:hover { background: var(--primary-light); color: var(--primary-dark); }
+    </style>
+</head>
+<body>
+    <header class="hero-header">
+        <div class="header-top">
+            <a href="/Cliente/Inicio" class="back-btn"><i class="bi bi-arrow-left"></i></a>
+            <div class="page-title">
+                <h1><i class="bi bi-stars me-2"></i>Criar Fórmula</h1>
+                <p>Monte sua fórmula personalizada</p>
+            </div>
+            <div class="header-actions">
+                <a href="/Cliente/Carrinho" class="header-btn">
+                    <i class="bi bi-cart3"></i>
+                    @if((int)cartCount > 0){<span class="badge">@cartCount</span>}
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Step 1: Tipo de Produto -->
+        <div class="step-card" id="step1">
+            <div class="step-header">
+                <div class="step-number" id="step1Number">1</div>
+                <div>
+                    <div class="step-title">Tipo de Produto</div>
+                    <div class="step-subtitle">Escolha o formato da sua fórmula</div>
+                </div>
+            </div>
+            <select class="form-select" id="productType">
+                <option value="">Selecione o tipo...</option>
+            </select>
+        </div>
+
+        <!-- Step 2: Apresentação -->
+        <div class="step-card" id="step2" style="display: none;">
+            <div class="step-header">
+                <div class="step-number" id="step2Number">2</div>
+                <div>
+                    <div class="step-title">Apresentação</div>
+                    <div class="step-subtitle">Escolha a forma de apresentação</div>
+                </div>
+            </div>
+            <select class="form-select" id="productSubType">
+                <option value="">Selecione a apresentação...</option>
+            </select>
+        </div>
+
+        <!-- Step 3: Quantidade -->
+        <div class="step-card" id="step3" style="display: none;">
+            <div class="step-header">
+                <div class="step-number" id="step3Number">3</div>
+                <div>
+                    <div class="step-title">Quantidade</div>
+                    <div class="step-subtitle" id="quantityHint">Quantas unidades você precisa?</div>
+                </div>
+            </div>
+            <div class="quantity-grid" id="quantityGrid"></div>
+            <div style="margin-top: 12px;">
+                <input type="number" class="form-control" id="customQuantity" placeholder="Outra quantidade..." min="1" style="display: none;">
+            </div>
+        </div>
+
+        <!-- Step 4: Ingredientes -->
+        <div class="step-card" id="step4" style="display: none;">
+            <div class="step-header">
+                <div class="step-number" id="step4Number">4</div>
+                <div>
+                    <div class="step-title">Ingredientes</div>
+                    <div class="step-subtitle">Adicione os ativos da fórmula</div>
+                </div>
+            </div>
+
+            <div class="current-formula-badge" id="currentFormulaBadge">
+                <i class="bi bi-capsule"></i>
+                <span id="currentFormulaText">60 Cápsulas</span>
+                <button type="button" onclick="clearCurrentFormula()" style="background: none; border: none; color: var(--primary); cursor: pointer;">
+                    <i class="bi bi-arrow-repeat"></i>
+                </button>
+            </div>
+
+            <div class="ingredient-input-container">
+                <input type="text" class="form-control ingredient-input" id="ingredientName" placeholder="Digite o nome do ingrediente..." autocomplete="off">
+                <input type="hidden" id="ingredientId">
+                <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+                <div class="autocomplete-loading" id="autocompleteLoading" style="display: none;">
+                    <div class="loading-spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>
+                </div>
+            </div>
+
+            <div id="ingredientInfo" style="display: none; margin-top: 8px;">
+                <div class="info-badge">
+                    <i class="bi bi-info-circle"></i>
+                    <span id="ingredientCategory"></span>
+                    <span id="ingredientIndications"></span>
+                </div>
+            </div>
+
+            <div id="dosageRange" style="display: none; margin-top: 8px; font-size: 13px; color: var(--gray-500);"></div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;">
+                <div>
+                    <label class="form-label">Quantidade *</label>
+                    <input type="number" class="form-control" id="ingredientQuantity" min="0.001" step="0.01" placeholder="Ex: 500">
+                </div>
+                <div>
+                    <label class="form-label">Unidade *</label>
+                    <select class="form-select" id="ingredientUnit">
+                        <option value="mg">mg</option>
+                        <option value="g">g</option>
+                        <option value="mcg">mcg</option>
+                        <option value="ml">ml</option>
+                        <option value="%">%</option>
+                        <option value="UI">UI</option>
+                        <option value="UFC">UFC</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top: 12px;">
+                <label class="form-label">Observações (opcional)</label>
+                <input type="text" class="form-control" id="ingredientNotes" placeholder="Ex: forma líquida, concentração específica...">
+            </div>
+
+            <button type="button" class="add-btn" onclick="addIngredient()" style="margin-top: 16px;">
+                <i class="bi bi-plus-lg"></i>Adicionar Ingrediente
+            </button>
+
+            <div class="ingredient-list" id="currentIngredientsList"></div>
+
+            <div id="popularIngredientsSection" style="margin-top: 20px;">
+                <label class="form-label"><i class="bi bi-lightning me-1"></i>Ingredientes populares</label>
+                <div class="popular-tags" id="popularIngredients"></div>
+            </div>
+        </div>
+
+        <!-- Formula Summary -->
+        <div id="formulaSummary" style="display: none;">
+            <div class="formula-summary">
+                <div class="formula-summary-header">
+                    <div class="formula-summary-title"><i class="bi bi-calculator me-2"></i>Preço Estimado</div>
+                    <div class="formula-summary-badge" id="ingredientCountBadge">0 itens</div>
+                </div>
+                <div class="formula-price" id="currentFormulaPrice">R$ 0,00</div>
+                <div class="formula-price-label">Valor sujeito a análise farmacêutica</div>
+            </div>
+
+            <button type="button" class="save-formula-btn" onclick="saveFormula()">
+                <i class="bi bi-check-lg"></i>Salvar Fórmula e Criar Outra
+            </button>
+        </div>
+
+        <!-- Saved Formulas -->
+        <div class="saved-formulas" id="savedFormulasSection">
+            <div class="saved-formulas-header">
+                <div class="saved-formulas-title">
+                    <i class="bi bi-bag-check"></i>Seu Pedido
+                </div>
+                <div class="saved-formulas-count" id="totalFormulasCount">0</div>
+            </div>
+            <div id="savedFormulasList">
+                <div class="empty-state" id="emptyFormulasState">
+                    <div class="empty-icon"><i class="bi bi-clipboard-plus"></i></div>
+                    <div class="empty-title">Nenhuma fórmula ainda</div>
+                    <div class="empty-text">Monte sua primeira fórmula acima</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Checkout Section -->
+        <div class="checkout-section" id="checkoutSection" style="display: none;">
+            <div class="checkout-total">
+                <div>
+                    <div class="checkout-total-label">Total do Pedido</div>
+                    <div class="checkout-total-value" id="grandTotalPrice">R$ 0,00</div>
+                </div>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <textarea class="form-control" id="customerNotes" rows="2" placeholder="Observações gerais (alergias, restrições...)" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: var(--white);"></textarea>
+            </div>
+            <button type="button" class="checkout-btn" onclick="addAllToCart()">
+                <i class="bi bi-cart-plus"></i>Adicionar Tudo ao Carrinho
+            </button>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <a href="/Cliente/Inicio" class="nav-item"><i class="bi bi-house"></i><span>Início</span></a>
+        <a href="/Cliente/Buscar" class="nav-item"><i class="bi bi-search"></i><span>Buscar</span></a>
+        <a href="/Cliente/MeusPedidos" class="nav-item"><i class="bi bi-bag"></i><span>Pedidos</span></a>
+        <a href="/Cliente/Carrinho" class="nav-item cart-nav"><i class="bi bi-cart3"></i><span>Carrinho</span>@if((int)cartCount > 0){<span class="badge">@cartCount</span>}</a>
+        <a href="/Cliente/Perfil" class="nav-item"><i class="bi bi-person"></i><span>Perfil</span></a>
+    </nav>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Adicionando ao carrinho...</div>
+    </div>
+
+    <script>
+        const customerData = { name: '@(ViewBag.CustomerName ?? "")'.replace(/&quot;/g, '"'), phone: '@(ViewBag.CustomerPhone ?? "")'.replace(/&quot;/g, '"'), email: '@(ViewBag.CustomerEmail ?? "")'.replace(/&quot;/g, '"') };
+        let productTypes = [], selectedProductType = null, selectedSubType = null, selectedProductQuantity = null, currentIngredients = [], savedFormulas = [], autocompleteTimeout = null, selectedIngredientData = null, lastPricingResult = null;
+        const QUANTITY_OPTIONS = { 'cápsula': { unit: 'cápsulas', options: [30, 60, 90, 120, 180], default: 60 }, 'capsula': { unit: 'cápsulas', options: [30, 60, 90, 120, 180], default: 60 }, 'comprimido': { unit: 'comprimidos', options: [30, 60, 90, 120], default: 60 }, 'creme': { unit: 'g', options: [30, 50, 100, 150, 200], default: 50 }, 'pomada': { unit: 'g', options: [30, 50, 100, 150], default: 50 }, 'gel': { unit: 'g', options: [30, 50, 100, 150], default: 50 }, 'loção': { unit: 'ml', options: [50, 100, 150, 200], default: 100 }, 'solução': { unit: 'ml', options: [30, 50, 100, 150], default: 100 }, 'xarope': { unit: 'ml', options: [100, 150, 200, 250], default: 150 }, 'spray': { unit: 'ml', options: [30, 50, 100], default: 50 }, 'gotas': { unit: 'ml', options: [15, 30, 50], default: 30 }, 'sachê': { unit: 'sachês', options: [15, 30, 60, 90], default: 30 }, 'pó': { unit: 'g', options: [100, 200, 300, 500], default: 200 }, 'default': { unit: 'un', options: [30, 60, 90, 120], default: 60 } };
+        const PRICING = { basePrice: 25.00, pricePerGram: 2.50, pricePerMl: 2.00, pricePerMg: 0.05, pricePerMcg: 0.001, pricePerUi: 0.10, pricePerPercent: 15.00 };
+
+        document.addEventListener('DOMContentLoaded', () => loadProductTypes());
+        document.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && document.activeElement.closest('#step4') && document.getElementById('autocompleteDropdown').style.display !== 'block' && document.activeElement.tagName !== 'BUTTON') { e.preventDefault(); addIngredient(); } });
+
+        const ingredientInput = document.getElementById('ingredientName'), autocompleteDropdown = document.getElementById('autocompleteDropdown'), autocompleteLoading = document.getElementById('autocompleteLoading');
+        ingredientInput.addEventListener('input', function() { const query = this.value.trim(); selectedIngredientData = null; document.getElementById('ingredientId').value = ''; document.getElementById('ingredientInfo').style.display = 'none'; document.getElementById('dosageRange').style.display = 'none'; if (autocompleteTimeout) clearTimeout(autocompleteTimeout); if (query.length < 2) { hideAutocomplete(); return; } autocompleteLoading.style.display = 'block'; autocompleteTimeout = setTimeout(() => searchIngredients(query), 300); });
+        document.addEventListener('click', e => { if (!e.target.closest('.ingredient-input-container')) hideAutocomplete(); });
+        ingredientInput.addEventListener('keydown', function(e) { const items = autocompleteDropdown.querySelectorAll('.autocomplete-item:not(.autocomplete-no-results)'), activeItem = autocompleteDropdown.querySelector('.autocomplete-item.active'); if (autocompleteDropdown.style.display !== 'block') return; if (e.key === 'ArrowDown') { e.preventDefault(); if (!activeItem && items.length > 0) items[0].classList.add('active'); else if (activeItem?.nextElementSibling) { activeItem.classList.remove('active'); activeItem.nextElementSibling.classList.add('active'); } } else if (e.key === 'ArrowUp') { e.preventDefault(); if (activeItem?.previousElementSibling) { activeItem.classList.remove('active'); activeItem.previousElementSibling.classList.add('active'); } } else if (e.key === 'Enter' && activeItem) { e.preventDefault(); e.stopPropagation(); activeItem.click(); } else if (e.key === 'Escape') hideAutocomplete(); });
+
+        async function searchIngredients(query) { try { const response = await fetch(`/api/ingredients/search?q=${encodeURIComponent(query)}&limit=10`), data = await response.json(); autocompleteLoading.style.display = 'none'; if (data.success && data.data.length > 0) showAutocompleteResults(data.data); else showNoResults(query); } catch (error) { console.error('Erro:', error); autocompleteLoading.style.display = 'none'; hideAutocomplete(); } }
+        function showAutocompleteResults(results) { autocompleteDropdown.innerHTML = results.map(item => `<div class="autocomplete-item" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-category="${escapeHtml(item.category || '')}" data-unit="${item.defaultUnit}" data-min="${item.minDosage || ''}" data-max="${item.maxDosage || ''}" data-indications="${escapeHtml(item.indications || '')}" onclick="selectIngredient(this)"><div style="display: flex; justify-content: space-between;"><strong>${highlightMatch(item.name, ingredientInput.value)}</strong><small style="color: var(--gray-400);">${item.defaultUnit}</small></div><small style="color: var(--gray-500);">${item.category ? `<span style="background: var(--gray-100); padding: 2px 8px; border-radius: 10px; margin-right: 6px;">${item.category}</span>` : ''}${item.indications ? item.indications.substring(0, 40) + '...' : ''}</small></div>`).join(''); autocompleteDropdown.style.display = 'block'; }
+        function showNoResults(query) { autocompleteDropdown.innerHTML = `<div class="autocomplete-item autocomplete-no-results" style="cursor: default;"><div style="color: var(--gray-500);"><i class="bi bi-search me-2"></i>Nenhum resultado para "${escapeHtml(query)}"</div><small style="color: var(--gray-400);">Você pode digitar manualmente</small></div>`; autocompleteDropdown.style.display = 'block'; }
+        function hideAutocomplete() { autocompleteDropdown.style.display = 'none'; autocompleteLoading.style.display = 'none'; }
+        function selectIngredient(el) { const data = { id: el.dataset.id, name: el.dataset.name, category: el.dataset.category, defaultUnit: el.dataset.unit, minDosage: el.dataset.min ? parseFloat(el.dataset.min) : null, maxDosage: el.dataset.max ? parseFloat(el.dataset.max) : null, indications: el.dataset.indications }; selectedIngredientData = data; ingredientInput.value = data.name; document.getElementById('ingredientId').value = data.id; const unitOption = Array.from(document.getElementById('ingredientUnit').options).find(opt => opt.value.toLowerCase() === data.defaultUnit.toLowerCase()); if (unitOption) document.getElementById('ingredientUnit').value = unitOption.value; document.getElementById('ingredientCategory').textContent = data.category ? `📁 ${data.category}` : ''; document.getElementById('ingredientIndications').textContent = data.indications ? `• ${data.indications}` : ''; document.getElementById('ingredientInfo').style.display = data.category || data.indications ? 'block' : 'none'; if (data.minDosage || data.maxDosage) { document.getElementById('dosageRange').textContent = `Dosagem típica: ${data.minDosage || '?'} - ${data.maxDosage || '?'} ${data.defaultUnit}`; document.getElementById('dosageRange').style.display = 'block'; } hideAutocomplete(); document.getElementById('ingredientQuantity').focus(); }
+        function selectPopularIngredient(name, unit) { ingredientInput.value = name; document.getElementById('ingredientUnit').value = unit; document.getElementById('ingredientQuantity').focus(); }
+        async function loadPopularIngredients() { try { const response = await fetch('/api/ingredients/popular?limit=6'), data = await response.json(); if (data.success && data.data) document.getElementById('popularIngredients').innerHTML = data.data.map(item => `<button type="button" class="popular-tag" onclick="selectPopularIngredient('${escapeHtml(item.name)}', '${item.defaultUnit}')">${item.name}</button>`).join(''); } catch (error) { console.error('Erro:', error); } }
+
+        async function loadProductTypes() { try { const response = await fetch('/api/customer-portal/product-types'), data = await response.json(); if (data.success && data.data) { productTypes = data.data; const select = document.getElementById('productType'); productTypes.forEach(type => { const option = document.createElement('option'); option.value = type.id; option.textContent = type.name; select.appendChild(option); }); } } catch (error) { console.error('Erro:', error); showToast('Erro ao carregar tipos', 'danger'); } }
+
+        document.getElementById('productType').addEventListener('change', async function() { const typeId = this.value; if (!typeId) { document.getElementById('step2').style.display = 'none'; document.getElementById('step3').style.display = 'none'; document.getElementById('step4').style.display = 'none'; return; } selectedProductType = productTypes.find(t => t.id === typeId); document.getElementById('step1Number').classList.add('completed'); try { const response = await fetch(`/api/customer-portal/product-types/${typeId}/subtypes`), data = await response.json(); if (data.success && data.data) { const select = document.getElementById('productSubType'); select.innerHTML = '<option value="">Selecione...</option>'; data.data.forEach(subType => { const option = document.createElement('option'); option.value = subType.id; option.textContent = subType.name; option.dataset.unit = subType.standardUnit; select.appendChild(option); }); document.getElementById('step2').style.display = 'block'; document.getElementById('step2').scrollIntoView({ behavior: 'smooth', block: 'center' }); } } catch (error) { console.error('Erro:', error); showToast('Erro ao carregar apresentações', 'danger'); } });
+
+        document.getElementById('productSubType').addEventListener('change', function() { const subTypeId = this.value; if (!subTypeId) { document.getElementById('step3').style.display = 'none'; document.getElementById('step4').style.display = 'none'; return; } selectedSubType = { id: subTypeId, name: this.selectedOptions[0].textContent, unit: this.selectedOptions[0].dataset.unit || 'g' }; document.getElementById('step2Number').classList.add('completed'); setupQuantityOptions(); document.getElementById('step3').style.display = 'block'; document.getElementById('step3').scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+
+        function setupQuantityOptions() { const typeName = selectedProductType.name.toLowerCase(); let config = QUANTITY_OPTIONS.default; for (const [key, value] of Object.entries(QUANTITY_OPTIONS)) { if (typeName.includes(key)) { config = value; break; } } const grid = document.getElementById('quantityGrid'); grid.innerHTML = config.options.map(qty => `<button type="button" class="quantity-btn ${qty === config.default ? 'active' : ''}" data-qty="${qty}" onclick="selectQuantity(${qty}, this)">${qty} ${config.unit}</button>`).join('') + `<button type="button" class="quantity-btn" onclick="showCustomQuantity()">Outro</button>`; document.getElementById('quantityHint').textContent = `Selecione quantas ${config.unit} você deseja`; if (config.default) { selectedProductQuantity = config.default; showIngredientForm(); } }
+        function selectQuantity(qty, btn) { document.querySelectorAll('.quantity-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); document.getElementById('customQuantity').style.display = 'none'; selectedProductQuantity = qty; showIngredientForm(); }
+        function showCustomQuantity() { document.querySelectorAll('.quantity-btn').forEach(b => b.classList.remove('active')); document.getElementById('customQuantity').style.display = 'block'; document.getElementById('customQuantity').focus(); }
+        document.getElementById('customQuantity').addEventListener('change', function() { const value = parseInt(this.value); if (value > 0) { selectedProductQuantity = value; showIngredientForm(); } });
+        function showIngredientForm() { const config = getQuantityConfig(); document.getElementById('currentFormulaText').textContent = `${selectedProductQuantity} ${config.unit} - ${selectedProductType.name}`; document.getElementById('step3Number').classList.add('completed'); document.getElementById('step4').style.display = 'block'; document.getElementById('ingredientUnit').value = selectedSubType.unit; loadPopularIngredients(); setTimeout(() => { document.getElementById('step4').scrollIntoView({ behavior: 'smooth', block: 'center' }); document.getElementById('ingredientName').focus(); }, 100); }
+        function getQuantityConfig() { const typeName = selectedProductType.name.toLowerCase(); for (const [key, value] of Object.entries(QUANTITY_OPTIONS)) { if (typeName.includes(key)) return value; } return QUANTITY_OPTIONS.default; }
+
+        function addIngredient() { const name = document.getElementById('ingredientName').value.trim(), quantity = parseFloat(document.getElementById('ingredientQuantity').value), unit = document.getElementById('ingredientUnit').value, notes = document.getElementById('ingredientNotes').value.trim(); if (!name) { showToast('Digite o nome do ingrediente', 'warning'); document.getElementById('ingredientName').focus(); return; } if (!quantity || quantity <= 0) { showToast('Digite uma quantidade válida', 'warning'); document.getElementById('ingredientQuantity').focus(); return; } if (currentIngredients.some(i => i.name.toLowerCase() === name.toLowerCase())) { showToast('Este ingrediente já foi adicionado', 'warning'); return; } currentIngredients.push({ id: selectedIngredientData?.id || null, name, quantity, unit, notes }); renderCurrentIngredients(); clearIngredientInputs(); updateCurrentFormulaPrice(); showToast(`✓ ${name} adicionado!`, 'success'); }
+        function removeCurrentIngredient(index) { currentIngredients.splice(index, 1); renderCurrentIngredients(); updateCurrentFormulaPrice(); }
+        function renderCurrentIngredients() { const list = document.getElementById('currentIngredientsList'), summary = document.getElementById('formulaSummary'), badge = document.getElementById('ingredientCountBadge'); if (currentIngredients.length === 0) { list.innerHTML = ''; summary.style.display = 'none'; return; } badge.textContent = `${currentIngredients.length} ${currentIngredients.length === 1 ? 'item' : 'itens'}`; summary.style.display = 'block'; list.innerHTML = currentIngredients.map((ing, i) => `<div class="ingredient-item"><div class="ingredient-item-info"><div class="ingredient-item-name">${escapeHtml(ing.name)}</div><div class="ingredient-item-qty">${ing.quantity} ${ing.unit}${ing.notes ? ` • ${ing.notes}` : ''}</div></div><button type="button" class="ingredient-item-remove" onclick="removeCurrentIngredient(${i})"><i class="bi bi-x-lg"></i></button></div>`).join(''); }
+        function clearIngredientInputs() { document.getElementById('ingredientName').value = ''; document.getElementById('ingredientId').value = ''; document.getElementById('ingredientQuantity').value = ''; document.getElementById('ingredientNotes').value = ''; document.getElementById('ingredientInfo').style.display = 'none'; document.getElementById('dosageRange').style.display = 'none'; selectedIngredientData = null; document.getElementById('ingredientName').focus(); }
+        async function updateCurrentFormulaPrice() { const localPrice = calculateFormulaPrice(currentIngredients, selectedProductQuantity || 1); document.getElementById('currentFormulaPrice').textContent = formatCurrency(localPrice); }
+
+        function saveFormula() { if (currentIngredients.length === 0) { showToast('Adicione pelo menos um ingrediente', 'warning'); return; } if (!selectedProductQuantity) { showToast('Selecione a quantidade do produto', 'warning'); return; } const config = getQuantityConfig(), price = lastPricingResult?.suggestedPrice || calculateFormulaPrice(currentIngredients, selectedProductQuantity); savedFormulas.push({ id: Date.now(), productType: { ...selectedProductType }, subType: { ...selectedSubType }, productQuantity: selectedProductQuantity, productUnit: config.unit, ingredients: [...currentIngredients], price }); currentIngredients = []; selectedProductType = null; selectedSubType = null; selectedProductQuantity = null; lastPricingResult = null; document.getElementById('productType').value = ''; ['step2', 'step3', 'step4', 'formulaSummary'].forEach(id => document.getElementById(id).style.display = 'none'); ['step1Number', 'step2Number', 'step3Number'].forEach(id => document.getElementById(id).classList.remove('completed')); renderCurrentIngredients(); renderSavedFormulas(); showToast(`✓ Fórmula #${savedFormulas.length} salva!`, 'success'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function removeFormula(index) { if (!confirm('Remover esta fórmula?')) return; savedFormulas.splice(index, 1); renderSavedFormulas(); showToast('Fórmula removida', 'info'); }
+        function renderSavedFormulas() { const list = document.getElementById('savedFormulasList'), checkout = document.getElementById('checkoutSection'), countBadge = document.getElementById('totalFormulasCount'); if (savedFormulas.length === 0) { list.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="bi bi-clipboard-plus"></i></div><div class="empty-title">Nenhuma fórmula ainda</div><div class="empty-text">Monte sua primeira fórmula acima</div></div>`; checkout.style.display = 'none'; countBadge.textContent = '0'; return; } list.innerHTML = savedFormulas.map((formula, index) => `<div class="saved-formula-card"><div class="saved-formula-header"><div class="saved-formula-num">${index + 1}</div><div class="saved-formula-type">${escapeHtml(formula.productType.name)}</div><button type="button" class="saved-formula-remove" onclick="removeFormula(${index})"><i class="bi bi-trash"></i></button></div><div class="saved-formula-details">${escapeHtml(formula.subType.name)} • ${formula.productQuantity} ${formula.productUnit}</div><div class="saved-formula-ingredients">${formula.ingredients.map(ing => `${ing.name} ${ing.quantity}${ing.unit}`).join(' • ')}</div><div class="saved-formula-price">${formatCurrency(formula.price)}</div></div>`).join(''); countBadge.textContent = savedFormulas.length; const total = savedFormulas.reduce((sum, f) => sum + f.price, 0); document.getElementById('grandTotalPrice').textContent = formatCurrency(total); checkout.style.display = 'block'; }
+        function clearCurrentFormula() { if (currentIngredients.length > 0 && !confirm('Descartar ingredientes atuais?')) return; currentIngredients = []; selectedProductType = null; selectedSubType = null; selectedProductQuantity = null; lastPricingResult = null; document.getElementById('productType').value = ''; ['step2', 'step3', 'step4', 'formulaSummary'].forEach(id => document.getElementById(id).style.display = 'none'); ['step1Number', 'step2Number', 'step3Number'].forEach(id => document.getElementById(id).classList.remove('completed')); renderCurrentIngredients(); }
+
+        function calculateFormulaPrice(ingredients, productQty = 1) { let pricePerUnit = PRICING.basePrice; ingredients.forEach(ing => { const qty = ing.quantity, unit = ing.unit.toLowerCase(); switch(unit) { case 'g': pricePerUnit += qty * PRICING.pricePerGram; break; case 'ml': pricePerUnit += qty * PRICING.pricePerMl; break; case 'mg': pricePerUnit += qty * PRICING.pricePerMg; break; case 'mcg': pricePerUnit += qty * PRICING.pricePerMcg; break; case 'ui': case 'ufc': pricePerUnit += qty * PRICING.pricePerUi; break; case '%': pricePerUnit += qty * PRICING.pricePerPercent; break; } }); let multiplier = 1; if (productQty <= 30) multiplier = 1; else if (productQty <= 60) multiplier = 0.95; else if (productQty <= 120) multiplier = 0.90; else multiplier = 0.85; return pricePerUnit * (productQty / 30) * multiplier; }
+        function formatCurrency(value) { return `R$ ${value.toFixed(2).replace('.', ',')}`; }
+
+        async function addAllToCart() { if (currentIngredients.length > 0 && confirm('Você tem uma fórmula em progresso. Salvar antes de adicionar ao carrinho?')) saveFormula(); if (savedFormulas.length === 0) { showToast('Nenhuma fórmula para adicionar', 'warning'); return; } if (!customerData.name || !customerData.phone) { showToast('Erro: Dados do cliente não encontrados', 'danger'); return; } document.getElementById('loadingOverlay').style.display = 'flex'; const customerNotes = document.getElementById('customerNotes').value.trim(); let successCount = 0; try { for (const formula of savedFormulas) { const formulaData = { productTypeId: formula.productType.id, productSubTypeId: formula.subType.id, productTypeName: formula.productType.name, productSubTypeName: formula.subType.name, productQuantity: formula.productQuantity, productUnit: formula.productUnit, quantity: formula.productQuantity, unit: formula.productUnit, customerName: customerData.name, customerPhone: customerData.phone, customerEmail: customerData.email || '', customerNotes: successCount === 0 ? customerNotes : '', ingredients: formula.ingredients.map(ing => ({ id: ing.id || null, name: ing.name, quantity: ing.quantity, unit: ing.unit, notes: ing.notes || '' })), estimatedPrice: formula.price }; const response = await fetch('/api/cliente/cart/add-formula', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formulaData) }), result = await response.json(); if (result.success) successCount++; } if (successCount === savedFormulas.length) { showToast(`✓ ${successCount} fórmula(s) adicionada(s)!`, 'success'); setTimeout(() => window.location.href = '/Cliente/Carrinho', 1500); } else showToast(`${successCount}/${savedFormulas.length} fórmulas adicionadas`, 'warning'); } catch (error) { console.error('Erro:', error); showToast('Erro ao adicionar ao carrinho', 'danger'); } finally { document.getElementById('loadingOverlay').style.display = 'none'; } }
+
+        function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+        function highlightMatch(text, query) { if (!query) return escapeHtml(text); const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'); return escapeHtml(text).replace(regex, '<mark>$1</mark>'); }
+        function showToast(message, type) { const toast = document.createElement('div'); toast.className = `toast ${type}`; toast.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle-fill' : type === 'danger' ? 'x-circle-fill' : type === 'warning' ? 'exclamation-triangle-fill' : 'info-circle-fill'}"></i>${message}`; document.body.appendChild(toast); setTimeout(() => { toast.style.animation = 'slideIn 0.3s ease reverse'; setTimeout(() => toast.remove(), 300); }, 3000); }
+    </script>
+</body>
+</html>

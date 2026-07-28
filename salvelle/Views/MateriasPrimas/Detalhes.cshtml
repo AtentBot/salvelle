@@ -1,0 +1,412 @@
+@model Models.Pharmacy.RawMaterial
+@{
+    ViewData["Title"] = "Detalhes da Matéria-Prima";
+}
+
+<!-- Header -->
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0"><i class="bi bi-file-earmark-medical me-2"></i>@Model.Name</h2>
+                <p class="text-muted mb-0">@(Model.DciCode != null ? $"DCI: {Model.DciCode}" : "") @(Model.DcbCode != null ? $"| DCB: {Model.DcbCode}" : "")</p>
+            </div>
+            <div>
+                <a href="/MateriasPrimas" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </a>
+                <a href="/MateriasPrimas/Editar/@Model.Id" class="btn btn-primary">
+                    <i class="bi bi-pencil me-1"></i> Editar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Resumo -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Estoque Atual</p>
+                        <h3 class="mb-0">@Model.CurrentStock.ToString("N2")</h3>
+                        <small class="text-muted">@Model.Unit</small>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-box text-primary fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Lotes Ativos</p>
+                        <h3 class="mb-0" id="activeBatches">-</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-boxes text-success fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Status</p>
+                        <h5 class="mb-0" id="stockStatus">-</h5>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-speedometer text-warning fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Controle</p>
+                        <h5 class="mb-0" id="controlBadge">@Model.ControlType</h5>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-shield-check text-danger fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Informações Gerais -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Informações Gerais</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <td width="40%" class="text-muted">Código CAS:</td>
+                        <td><strong>@Model.CasNumber</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Código DCB:</td>
+                        <td><strong>@(Model.DcbCode ?? "-")</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Código DCI:</td>
+                        <td><strong>@(Model.DciCode ?? "-")</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Unidade:</td>
+                        <td><strong>@Model.Unit</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Fator de Pureza:</td>
+                        <td><strong>@Model.PurityFactor.ToString("N4")</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Tipo de Controle:</td>
+                        <td>
+                            @if (Model.ControlType == "COMUM")
+                            {
+                                <span class="badge bg-secondary">Comum</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">@Model.ControlType</span>
+                            }
+                        </td>
+                    </tr>
+                </table>
+
+                @if (!string.IsNullOrEmpty(Model.Description))
+                {
+                    <hr>
+                    <p class="mb-0"><strong>Descrição:</strong><br>@Model.Description</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Estoque e Condições -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Estoque e Condições</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="text-muted">Níveis de Estoque</h6>
+                <table class="table table-borderless mb-3">
+                    <tr>
+                        <td width="40%">Estoque Atual:</td>
+                        <td><strong>@Model.CurrentStock.ToString("N2") @Model.Unit</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Estoque Mínimo:</td>
+                        <td><strong>@Model.MinimumStock.ToString("N2") @Model.Unit</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Estoque Máximo:</td>
+                        <td><strong>@Model.MaximumStock.ToString("N2") @Model.Unit</strong></td>
+                    </tr>
+                </table>
+
+                <h6 class="text-muted">Condições de Armazenamento</h6>
+                <div class="mb-3">
+                    @if (Model.RequiresRefrigeration)
+                    {
+                        <span class="badge bg-info me-1">
+                            <i class="bi bi-thermometer-snow"></i> Requer Refrigeração
+                        </span>
+                    }
+                    @if (Model.LightSensitive)
+                    {
+                        <span class="badge bg-warning me-1">
+                            <i class="bi bi-brightness-high"></i> Sensível à Luz
+                        </span>
+                    }
+                    @if (Model.HumiditySensitive)
+                    {
+                        <span class="badge bg-primary me-1">
+                            <i class="bi bi-droplet"></i> Sensível à Umidade
+                        </span>
+                    }
+                    @if (!Model.RequiresRefrigeration && !Model.LightSensitive && !Model.HumiditySensitive)
+                    {
+                        <span class="text-muted">Nenhuma condição especial</span>
+                    }
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.StorageConditions))
+                {
+                    <p class="mb-0"><strong>Observações:</strong><br>@Model.StorageConditions</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Lotes Ativos -->
+    <div class="col-12 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Lotes Ativos</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Lote</th>
+                                <th>Fornecedor</th>
+                                <th>Status</th>
+                                <th class="text-end">Qtd. Recebida</th>
+                                <th class="text-end">Qtd. Atual</th>
+                                <th>Validade</th>
+                                <th>Recebimento</th>
+                                <th class="text-center">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchesTable">
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Carregando...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movimentações Recentes -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Movimentações Recentes (últimos 30 dias)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Lote</th>
+                                <th class="text-end">Quantidade</th>
+                                <th>Motivo</th>
+                                <th>Funcionário</th>
+                            </tr>
+                        </thead>
+                        <tbody id="movementsTable">
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Carregando...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+const materialId = '@Model.Id';
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateStockStatus();
+    loadBatches();
+    loadMovements();
+});
+
+function updateStockStatus() {
+    const current = @Model.CurrentStock;
+    const minimum = @Model.MinimumStock;
+    const maximum = @Model.MaximumStock;
+    
+    const statusElement = document.getElementById('stockStatus');
+    
+    if (current <= minimum) {
+        statusElement.innerHTML = '<span class="badge bg-danger">Estoque Baixo</span>';
+    } else if (current >= maximum) {
+        statusElement.innerHTML = '<span class="badge bg-warning">Estoque em Excesso</span>';
+    } else {
+        statusElement.innerHTML = '<span class="badge bg-success">Estoque Normal</span>';
+    }
+    
+    const controlBadge = document.getElementById('controlBadge');
+    const controlType = '@Model.ControlType';
+    if (controlType !== 'COMUM') {
+        controlBadge.innerHTML = `<span class="badge bg-danger">${controlType}</span>`;
+    } else {
+        controlBadge.innerHTML = '<span class="badge bg-secondary">COMUM</span>';
+    }
+}
+
+async function loadBatches() {
+    try {
+        const response = await fetch(`/api/Batches?rawMaterialId=${materialId}`, {
+            credentials: 'include'
+        });
+        const batches = await response.json();
+        
+        const activeBatches = batches.filter(b => b.status === 'APROVADO' && b.currentQuantity > 0);
+        document.getElementById('activeBatches').textContent = activeBatches.length;
+        
+        renderBatches(activeBatches);
+        
+    } catch (error) {
+        console.error('Erro ao carregar lotes:', error);
+    }
+}
+
+function renderBatches(batches) {
+    const tbody = document.getElementById('batchesTable');
+    
+    if (!batches || batches.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Nenhum lote ativo</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = batches.map(b => `
+        <tr>
+            <td><strong>${b.batchNumber}</strong></td>
+            <td><small>${b.supplier ? b.supplier.tradeName : '-'}</small></td>
+            <td><span class="badge bg-success">Aprovado</span></td>
+            <td class="text-end"><strong>${b.receivedQuantity.toFixed(2)}</strong></td>
+            <td class="text-end"><strong>${b.currentQuantity.toFixed(2)}</strong></td>
+            <td><small>${formatDate(b.expiryDate)}</small></td>
+            <td><small>${formatDate(b.receivedDate)}</small></td>
+            <td class="text-center">
+                <a href="/Estoque/Rastreabilidade/${b.id}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-search"></i>
+                </a>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function loadMovements() {
+    try {
+        const response = await fetch(`/api/StockMovements/by-raw-material/${materialId}?days=30`, {
+            credentials: 'include'
+        });
+        const movements = await response.json();
+        
+        renderMovements(movements);
+        
+    } catch (error) {
+        console.error('Erro ao carregar movimentações:', error);
+        document.getElementById('movementsTable').innerHTML = 
+            '<tr><td colspan="6" class="text-center text-muted py-4">Nenhuma movimentação encontrada</td></tr>';
+    }
+}
+
+function renderMovements(movements) {
+    const tbody = document.getElementById('movementsTable');
+    
+    if (!movements || movements.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">Nenhuma movimentação nos últimos 30 dias</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = movements.slice(0, 10).map(m => `
+        <tr>
+            <td><small>${formatDateTime(m.movementDate)}</small></td>
+            <td>${getMovementBadge(m.movementType)}</td>
+            <td><small>${m.batchNumber || '-'}</small></td>
+            <td class="text-end">
+                <strong class="${m.quantity > 0 ? 'text-success' : 'text-danger'}">
+                    ${m.quantity > 0 ? '+' : ''}${m.quantity.toFixed(2)}
+                </strong>
+            </td>
+            <td><small>${m.reason || '-'}</small></td>
+            <td><small>${m.performedByEmployeeName || '-'}</small></td>
+        </tr>
+    `).join('');
+}
+
+function getMovementBadge(type) {
+    const badges = {
+        'ENTRADA': '<span class="badge bg-success">Entrada</span>',
+        'SAIDA': '<span class="badge bg-danger">Saída</span>',
+        'AJUSTE': '<span class="badge bg-warning">Ajuste</span>',
+        'PERDA': '<span class="badge bg-secondary">Perda</span>'
+    };
+    return badges[type] || `<span class="badge bg-secondary">${type}</span>`;
+}
+
+function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR');
+}
+
+function formatDateTime(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+</script>
+}

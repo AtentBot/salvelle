@@ -1,0 +1,513 @@
+﻿@model Models.Pharmacy.ManipulationOrder
+@{
+    ViewData["Title"] = "Venda Rápida";
+    Layout = "_Layout";
+}
+
+<style>
+    .price-source-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; }
+    .price-source-badge.estoque { background: var(--ok-soft); color: var(--ok); }
+    .price-source-badge.historico { background: var(--warn-soft); color: var(--warn); }
+    .price-source-badge.base { background: var(--danger-soft); color: var(--danger); }
+    .confidence-bar { height: 6px; background: var(--bg-subtle); border-radius: 3px; overflow: hidden; }
+    .confidence-fill { height: 100%; border-radius: 3px; }
+    .confidence-fill.high { background: var(--ok); }
+    .confidence-fill.medium { background: var(--amber-500); }
+    .confidence-fill.low { background: var(--danger); }
+    .payment-btn { height: 70px; font-size: 0.95rem; border-width: 2px; transition: all 0.2s; }
+    .payment-btn.selected { box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.5); transform: scale(1.02); }
+    .payment-btn i { font-size: 1.3rem; }
+    .total-display { font-size: 2rem; font-weight: bold; }
+</style>
+
+<div class="container-fluid py-3">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="/pdv/orcamentos" class="btn btn-outline-secondary btn-sm mb-2">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+            <h4 class="mb-0">
+                <i class="bi bi-lightning-charge text-warning me-2"></i>
+                Venda Rápida - @Model.OrderNumber
+            </h4>
+        </div>
+        <div>
+            <span class="badge bg-info fs-6">@Model.Status</span>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Coluna Esquerda: Detalhes -->
+        <div class="col-lg-7">
+            <!-- Dados do Cliente -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-person me-2"></i>Cliente</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Nome:</strong> @(Model.CustomerName ?? "Não identificado")</p>
+                    <p class="mb-1"><strong>Fórmula:</strong> @(Model.Formula?.Name ?? "Fórmula Livre")</p>
+                    <p class="mb-0"><strong>Quantidade:</strong> @Model.QuantityToProduce @Model.Unit</p>
+                </div>
+            </div>
+
+            <!-- Preview de Orçamento (carregado via API) -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>Composição e Custos</h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="recalcular()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Recalcular
+                    </button>
+                </div>
+                <div class="card-body p-0" id="quotePreview">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="text-muted mt-2">Calculando orçamento...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configurações de Preço -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-sliders me-2"></i>Ajustar Preço</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Markup (%)</label>
+                            <input type="number" class="form-control" id="markupPercent" 
+                                   value="100" min="0" max="500" step="10" onchange="recalcular()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Mão de Obra (R$)</label>
+                            <input type="number" class="form-control" id="laborCost" 
+                                   value="25" min="0" step="5" onchange="recalcular()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Desconto (R$)</label>
+                            <input type="number" class="form-control" id="discount" 
+                                   value="0" min="0" step="5" onchange="recalcular()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coluna Direita: Pagamento -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 80px;">
+                <div class="card-header text-white" style="background: linear-gradient(135deg, var(--ok) 0%, var(--ok) 100%);">
+                    <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Finalizar Venda</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Resumo de Valores -->
+                    <div class="bg-light rounded p-3 mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Custo de Materiais:</span>
+                            <span id="displayMaterialsCost">R$ 0,00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Markup:</span>
+                            <span id="displayMarkup">R$ 0,00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Mão de Obra:</span>
+                            <span id="displayLabor">R$ 0,00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 text-success">
+                            <span>Desconto:</span>
+                            <span id="displayDiscount">- R$ 0,00</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between total-display text-success">
+                            <span>TOTAL:</span>
+                            <span id="displayTotal">R$ 0,00</span>
+                        </div>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">Confiança média: </small>
+                            <span id="displayConfidence" class="badge bg-secondary">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Forma de Pagamento -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Forma de Pagamento</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <button type="button" class="btn btn-outline-success payment-btn w-100" 
+                                        onclick="selecionarPagamento('DINHEIRO')" id="btnDinheiro">
+                                    <i class="bi bi-cash-coin d-block"></i>Dinheiro
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" class="btn btn-outline-primary payment-btn w-100" 
+                                        onclick="selecionarPagamento('CARTAO_DEBITO')" id="btnDebito">
+                                    <i class="bi bi-credit-card-2-front d-block"></i>Débito
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" class="btn btn-outline-purple payment-btn w-100" 
+                                        onclick="selecionarPagamento('CARTAO_CREDITO')" id="btnCredito"
+                                        style="border-color: var(--petrol-500); color: var(--petrol-500);">
+                                    <i class="bi bi-credit-card d-block"></i>Crédito
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" class="btn btn-outline-secondary payment-btn w-100" 
+                                        onclick="selecionarPagamento('PIX')" id="btnPix"
+                                        style="border-color: var(--ok); color: var(--ok);">
+                                    <i class="bi bi-qr-code d-block"></i>PIX
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Campos de Pagamento -->
+                    <div id="camposPagamento" class="d-none mb-4">
+                        <!-- Dinheiro -->
+                        <div id="camposDinheiro" class="d-none">
+                            <label class="form-label fw-bold">Valor Recebido</label>
+                            <div class="input-group input-group-lg mb-2">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control text-end" id="valorRecebido" 
+                                       step="0.01" min="0" oninput="calcularTroco()">
+                            </div>
+                            <div class="d-flex gap-1 mb-3">
+                                <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="setValor(10)">R$10</button>
+                                <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="setValor(20)">R$20</button>
+                                <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="setValor(50)">R$50</button>
+                                <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="setValor(100)">R$100</button>
+                                <button class="btn btn-outline-primary btn-sm flex-fill" onclick="setValorExato()">Exato</button>
+                            </div>
+                            <div id="trocoContainer" class="alert alert-info py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-cash-coin me-1"></i>Troco:</span>
+                                    <strong class="fs-5" id="trocoDisplay">R$ 0,00</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cartão -->
+                        <div id="camposCartao" class="d-none">
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Bandeira</label>
+                                    <select class="form-select" id="cardBrand">
+                                        <option value="">Selecione</option>
+                                        <option value="VISA">Visa</option>
+                                        <option value="MASTERCARD">Mastercard</option>
+                                        <option value="ELO">Elo</option>
+                                        <option value="AMEX">Amex</option>
+                                        <option value="HIPERCARD">Hipercard</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Últimos 4 dígitos</label>
+                                    <input type="text" class="form-control" id="cardLastDigits" 
+                                           maxlength="4" placeholder="0000">
+                                </div>
+                            </div>
+                            <div id="parcelasGroup" class="mb-3 d-none">
+                                <label class="form-label">Parcelas</label>
+                                <select class="form-select" id="installments">
+                                    <option value="1">1x (à vista)</option>
+                                    <option value="2">2x sem juros</option>
+                                    <option value="3">3x sem juros</option>
+                                    <option value="4">4x sem juros</option>
+                                    <option value="5">5x sem juros</option>
+                                    <option value="6">6x sem juros</option>
+                                </select>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">NSU</label>
+                                    <input type="text" class="form-control" id="nsu" placeholder="Opcional">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Cód. Autorização</label>
+                                    <input type="text" class="form-control" id="authCode" placeholder="Opcional">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PIX -->
+                        <div id="camposPix" class="d-none">
+                            <label class="form-label">ID da Transação PIX</label>
+                            <input type="text" class="form-control" id="pixTransactionId" 
+                                   placeholder="Opcional - código da transferência">
+                        </div>
+                    </div>
+
+                    <!-- Botão de Finalizar -->
+                    <button class="btn btn-success btn-lg w-100" id="btnFinalizar" onclick="finalizarVenda()" disabled>
+                        <i class="bi bi-check-circle me-2"></i>
+                        Finalizar Venda
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Sucesso -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-5">
+                <i class="bi bi-check-circle text-success" style="font-size: 5rem;"></i>
+                <h3 class="mt-3">Venda Realizada!</h3>
+                <p class="text-muted" id="successMessage"></p>
+                <div id="changeDisplay" class="alert alert-warning d-none">
+                    <strong>Troco: <span id="finalChange">R$ 0,00</span></strong>
+                </div>
+                <div class="d-flex gap-2 justify-content-center mt-4">
+                    <a href="/pdv" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Voltar ao PDV
+                    </a>
+                    <a href="#" id="receiptLink" class="btn btn-primary">
+                        <i class="bi bi-printer me-1"></i>Imprimir Recibo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const orderId = '@Model.Id';
+    let currentQuote = null;
+    let selectedPayment = null;
+
+    // Carregar orçamento ao iniciar
+    document.addEventListener('DOMContentLoaded', recalcular);
+
+    // Calcular/recalcular orçamento
+    async function recalcular() {
+        const preview = document.getElementById('quotePreview');
+        preview.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+
+        const dto = {
+            markupPercentage: parseFloat(document.getElementById('markupPercent').value) || 100,
+            laborCost: parseFloat(document.getElementById('laborCost').value) || 25,
+            discount: parseFloat(document.getElementById('discount').value) || 0
+        };
+
+        try {
+            const response = await fetch(`/api/QuoteApproval/manipulation-orders/${orderId}/calculate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dto)
+            });
+
+            const result = await response.json();
+
+            if (result.isSuccess && result.data) {
+                currentQuote = result.data;
+                renderQuotePreview(result.data);
+                updateTotals(result.data);
+            } else {
+                preview.innerHTML = `<div class="alert alert-danger m-3">${result.errorMessage || 'Erro ao calcular'}</div>`;
+            }
+        } catch (error) {
+            preview.innerHTML = '<div class="alert alert-danger m-3">Erro ao conectar com servidor</div>';
+        }
+    }
+
+    // Renderizar preview do orçamento
+    function renderQuotePreview(quote) {
+        const getSourceBadge = (source, confidence) => {
+            const cls = source === 'ESTOQUE' ? 'estoque' : source === 'HISTORICO' ? 'historico' : 'base';
+            return `<span class="price-source-badge ${cls}">${source} ${confidence}%</span>`;
+        };
+
+        const getConfidenceClass = (conf) => conf >= 80 ? 'high' : conf >= 50 ? 'medium' : 'low';
+
+        let html = `
+            <table class="table table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Ingrediente</th>
+                        <th class="text-center">Qtd</th>
+                        <th class="text-end">Custo Unit.</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-center">Fonte</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        for (const comp of quote.components) {
+            html += `
+                <tr>
+                    <td>${comp.name}</td>
+                    <td class="text-center">${comp.quantity.toFixed(2)} ${comp.unit}</td>
+                    <td class="text-end">R$ ${comp.unitCost.toFixed(4)}</td>
+                    <td class="text-end">R$ ${comp.totalCost.toFixed(2)}</td>
+                    <td class="text-center">
+                        ${getSourceBadge(comp.priceSource, comp.confidence)}
+                        <div class="confidence-bar mt-1">
+                            <div class="confidence-fill ${getConfidenceClass(comp.confidence)}" 
+                                 style="width: ${comp.confidence}%"></div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        html += '</tbody></table>';
+        document.getElementById('quotePreview').innerHTML = html;
+    }
+
+    // Atualizar totais
+    function updateTotals(quote) {
+        document.getElementById('displayMaterialsCost').textContent = formatMoney(quote.materialsCost);
+        document.getElementById('displayMarkup').textContent = formatMoney(quote.markupValue);
+        document.getElementById('displayLabor').textContent = formatMoney(quote.laborCost);
+        document.getElementById('displayDiscount').textContent = '- ' + formatMoney(quote.discount);
+        document.getElementById('displayTotal').textContent = formatMoney(quote.total);
+        
+        const confClass = quote.averageConfidence >= 80 ? 'bg-success' : 
+                          quote.averageConfidence >= 50 ? 'bg-warning text-dark' : 'bg-danger';
+        document.getElementById('displayConfidence').className = `badge ${confClass}`;
+        document.getElementById('displayConfidence').textContent = `${quote.averageConfidence}%`;
+    }
+
+    // Selecionar forma de pagamento
+    function selecionarPagamento(method) {
+        selectedPayment = method;
+        
+        // Remover seleção anterior
+        ['btnDinheiro', 'btnDebito', 'btnCredito', 'btnPix'].forEach(id => {
+            document.getElementById(id).classList.remove('selected');
+        });
+
+        // Adicionar seleção
+        const btnMap = {
+            'DINHEIRO': 'btnDinheiro',
+            'CARTAO_DEBITO': 'btnDebito',
+            'CARTAO_CREDITO': 'btnCredito',
+            'PIX': 'btnPix'
+        };
+        document.getElementById(btnMap[method]).classList.add('selected');
+
+        // Mostrar campos apropriados
+        document.getElementById('camposPagamento').classList.remove('d-none');
+        ['camposDinheiro', 'camposCartao', 'camposPix'].forEach(id => {
+            document.getElementById(id).classList.add('d-none');
+        });
+
+        if (method === 'DINHEIRO') {
+            document.getElementById('camposDinheiro').classList.remove('d-none');
+        } else if (method.includes('CARTAO')) {
+            document.getElementById('camposCartao').classList.remove('d-none');
+            document.getElementById('parcelasGroup').classList.toggle('d-none', method !== 'CARTAO_CREDITO');
+        } else if (method === 'PIX') {
+            document.getElementById('camposPix').classList.remove('d-none');
+        }
+
+        document.getElementById('btnFinalizar').disabled = false;
+    }
+
+    // Funções de dinheiro
+    function setValor(v) {
+        document.getElementById('valorRecebido').value = v.toFixed(2);
+        calcularTroco();
+    }
+
+    function setValorExato() {
+        if (!currentQuote) return;
+        document.getElementById('valorRecebido').value = currentQuote.total.toFixed(2);
+        calcularTroco();
+    }
+
+    function calcularTroco() {
+        if (!currentQuote) return;
+        const recebido = parseFloat(document.getElementById('valorRecebido').value) || 0;
+        const troco = recebido - currentQuote.total;
+        
+        const container = document.getElementById('trocoContainer');
+        const display = document.getElementById('trocoDisplay');
+        
+        display.textContent = formatMoney(Math.max(0, troco));
+        container.className = troco < 0 ? 'alert alert-danger py-2' : 'alert alert-info py-2';
+    }
+
+    // Finalizar venda
+    async function finalizarVenda() {
+        if (!currentQuote || !selectedPayment) {
+            alert('Selecione a forma de pagamento');
+            return;
+        }
+
+        // Validar dinheiro
+        if (selectedPayment === 'DINHEIRO') {
+            const recebido = parseFloat(document.getElementById('valorRecebido').value) || 0;
+            if (recebido < currentQuote.total) {
+                alert('Valor recebido é menor que o total!');
+                return;
+            }
+        }
+
+        const btn = document.getElementById('btnFinalizar');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processando...';
+
+        const dto = {
+            paymentMethod: selectedPayment,
+            amountPaid: currentQuote.total,
+            cashReceived: selectedPayment === 'DINHEIRO' ? 
+                parseFloat(document.getElementById('valorRecebido').value) : null,
+            markupPercentage: parseFloat(document.getElementById('markupPercent').value),
+            laborCost: parseFloat(document.getElementById('laborCost').value),
+            discount: parseFloat(document.getElementById('discount').value),
+            installments: selectedPayment === 'CARTAO_CREDITO' ? 
+                parseInt(document.getElementById('installments').value) : 1,
+            cardBrand: selectedPayment.includes('CARTAO') ? 
+                document.getElementById('cardBrand').value : null,
+            cardLastDigits: selectedPayment.includes('CARTAO') ? 
+                document.getElementById('cardLastDigits').value : null,
+            nsu: document.getElementById('nsu')?.value || null,
+            authorizationCode: document.getElementById('authCode')?.value || null,
+            pixTransactionId: document.getElementById('pixTransactionId')?.value || null
+        };
+
+        try {
+            const response = await fetch(`/api/QuoteApproval/manipulation-orders/${orderId}/approve-and-sell`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dto)
+            });
+
+            const result = await response.json();
+
+            if (result.isSuccess && result.data) {
+                document.getElementById('successMessage').textContent = 
+                    `Venda ${result.data.saleCode} - Ordem ${result.data.orderNumber}`;
+                document.getElementById('receiptLink').href = `/pdv/recibo/${result.data.saleId}`;
+
+                if (result.data.changeAmount > 0) {
+                    document.getElementById('changeDisplay').classList.remove('d-none');
+                    document.getElementById('finalChange').textContent = formatMoney(result.data.changeAmount);
+                }
+
+                new bootstrap.Modal(document.getElementById('successModal')).show();
+            } else {
+                alert('Erro: ' + (result.errorMessage || 'Falha ao processar'));
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Finalizar Venda';
+            }
+        } catch (error) {
+            alert('Erro ao conectar com servidor');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Finalizar Venda';
+        }
+    }
+
+    function formatMoney(v) {
+        return 'R$ ' + (v || 0).toFixed(2).replace('.', ',');
+    }
+</script>
+}

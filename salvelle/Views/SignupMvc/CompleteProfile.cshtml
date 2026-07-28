@@ -1,0 +1,307 @@
+﻿@{
+    ViewData["Title"] = "Completar Cadastro";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Completar Cadastro - Salvelle</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/signup.css"/>
+    <style>
+        .info-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .info-card i {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .step.completed {
+            background: var(--ok);
+            color: white;
+        }
+        .step.active {
+            background: white;
+            color: var(--petrol-500);
+        }
+        .step-line {
+            width: 50px;
+            height: 2px;
+            background: rgba(255,255,255,0.3);
+            align-self: center;
+        }
+        .step-line.completed {
+            background: var(--ok);
+        }
+    </style>
+</head>
+<body>
+<div class="signup-wrapper">
+    <div class="signup-container">
+        <!-- Indicador de passos -->
+        <div class="step-indicator">
+            <div class="step completed"><i class="bi bi-check"></i></div>
+            <div class="step-line completed"></div>
+            <div class="step completed"><i class="bi bi-check"></i></div>
+            <div class="step-line completed"></div>
+            <div class="step active">3</div>
+        </div>
+
+        <div class="signup-header">
+            <h1><i class="bi bi-person-badge me-2"></i>Seus Dados</h1>
+            <p>Complete seu cadastro como proprietário</p>
+        </div>
+
+        <!-- Info do estabelecimento -->
+        <div class="info-card">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-building text-success"></i>
+                <div>
+                    <small class="text-muted">Estabelecimento</small>
+                    <div class="fw-bold">@ViewBag.EstablishmentName</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="signup-body">
+            <form id="completeProfileForm">
+                <input type="hidden" id="establishmentId" value="@ViewBag.EstablishmentId" />
+                
+                <!-- Nome Completo -->
+                <div class="form-floating mb-3">
+                    <input type="text" 
+                           class="form-control" 
+                           id="fullName" 
+                           placeholder="Nome Completo"
+                           required 
+                           autofocus />
+                    <label><i class="bi bi-person me-1"></i>Nome Completo</label>
+                </div>
+
+                <!-- CPF -->
+                <div class="form-floating mb-3">
+                    <input type="text" 
+                           class="form-control" 
+                           id="cpf" 
+                           placeholder="CPF"
+                           maxlength="14"
+                           required />
+                    <label><i class="bi bi-card-text me-1"></i>CPF</label>
+                    <div class="form-text text-muted">Será usado para fazer login no sistema</div>
+                </div>
+
+                <!-- Data de Nascimento (opcional) -->
+                <div class="form-floating mb-3">
+                    <input type="date" 
+                           class="form-control" 
+                           id="dateOfBirth" 
+                           placeholder="Data de Nascimento" />
+                    <label><i class="bi bi-calendar me-1"></i>Data de Nascimento (opcional)</label>
+                </div>
+
+                <!-- Telefone (opcional) -->
+                <div class="form-floating mb-4">
+                    <input type="text" 
+                           class="form-control" 
+                           id="phone" 
+                           placeholder="Telefone"
+                           maxlength="15" />
+                    <label><i class="bi bi-telephone me-1"></i>Telefone Pessoal (opcional)</label>
+                </div>
+
+                <!-- Alert de erro -->
+                <div id="errorAlert" class="alert alert-danger d-none" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <span id="errorMessage"></span>
+                </div>
+
+                <!-- Botão submit -->
+                <button type="submit" class="btn btn-signup w-100" id="submitBtn">
+                    <span id="btnText">Finalizar Cadastro</span>
+                    <span id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                </button>
+
+                <!-- Info de login -->
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Após finalizar, você poderá fazer login com seu CPF e a senha cadastrada anteriormente.
+                    </small>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('completeProfileForm');
+    const cpfInput = document.getElementById('cpf');
+    const phoneInput = document.getElementById('phone');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // Máscara de CPF
+    cpfInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 11) value = value.slice(0, 11);
+        
+        if (value.length > 9) {
+            value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        } else if (value.length > 6) {
+            value = value.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+        } else if (value.length > 3) {
+            value = value.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+        }
+        
+        e.target.value = value;
+    });
+
+    // Máscara de telefone
+    phoneInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 11) value = value.slice(0, 11);
+        
+        if (value.length > 10) {
+            value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        } else if (value.length > 6) {
+            value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+        } else if (value.length > 2) {
+            value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+        }
+        
+        e.target.value = value;
+    });
+
+    // Validação de CPF
+    function validarCPF(cpf) {
+        cpf = cpf.replace(/\D/g, '');
+        if (cpf.length !== 11) return false;
+        if (/^(\d)\1+$/.test(cpf)) return false;
+        
+        let soma = 0;
+        for (let i = 0; i < 9; i++) {
+            soma += parseInt(cpf.charAt(i)) * (10 - i);
+        }
+        let resto = (soma * 10) % 11;
+        if (resto === 10 || resto === 11) resto = 0;
+        if (resto !== parseInt(cpf.charAt(9))) return false;
+        
+        soma = 0;
+        for (let i = 0; i < 10; i++) {
+            soma += parseInt(cpf.charAt(i)) * (11 - i);
+        }
+        resto = (soma * 10) % 11;
+        if (resto === 10 || resto === 11) resto = 0;
+        if (resto !== parseInt(cpf.charAt(10))) return false;
+        
+        return true;
+    }
+
+    // Mostrar erro
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorAlert.classList.remove('d-none');
+        errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // Esconder erro
+    function hideError() {
+        errorAlert.classList.add('d-none');
+    }
+
+    // Loading state
+    function setLoading(loading) {
+        submitBtn.disabled = loading;
+        btnText.textContent = loading ? 'Finalizando...' : 'Finalizar Cadastro';
+        btnSpinner.classList.toggle('d-none', !loading);
+    }
+
+    // Submit do formulário
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        hideError();
+
+        const fullName = document.getElementById('fullName').value.trim();
+        const cpf = cpfInput.value.trim();
+        const dateOfBirth = document.getElementById('dateOfBirth').value;
+        const phone = phoneInput.value.trim();
+        const establishmentId = document.getElementById('establishmentId').value;
+
+        // Validações
+        if (!fullName || fullName.length < 3) {
+            showError('Por favor, informe seu nome completo');
+            return;
+        }
+
+        if (!validarCPF(cpf)) {
+            showError('CPF inválido. Verifique o número informado.');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const response = await fetch('/api/signup/complete-profile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    establishmentId: establishmentId,
+                    fullName: fullName,
+                    cpf: cpf.replace(/\D/g, ''),
+                    dateOfBirth: dateOfBirth || null,
+                    phone: phone ? phone.replace(/\D/g, '') : null
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showError(data.message || 'Erro ao finalizar cadastro');
+                setLoading(false);
+                return;
+            }
+
+            // Sucesso! Redirecionar para login
+                    window.location.href = '/Account/Login?success=1&message=' + encodeURIComponent('Cadastro finalizado! Faça login com seu CPF.');
+
+        } catch (error) {
+            console.error('Erro:', error);
+            showError('Erro de conexão. Tente novamente.');
+            setLoading(false);
+        }
+    });
+});
+</script>
+@await Html.PartialAsync("_SupportChat")
+</body>
+</html>

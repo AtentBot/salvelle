@@ -1,0 +1,268 @@
+@{
+    ViewData["Title"] = "Gerenciamento de Estoque";
+}
+
+<!-- Header -->
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0"><i class="bi bi-boxes me-2"></i>Gerenciamento de Estoque</h2>
+                <p class="text-muted mb-0">Controle de matérias-primas, lotes e movimentações</p>
+            </div>
+            <div>
+                <a href="/" class="btn btn-outline-secondary">
+                    <i class="bi bi-house me-1"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Matérias-Primas</p>
+                        <h3 class="mb-0" id="totalMaterials">-</h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-boxes text-primary fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Estoque Baixo</p>
+                        <h3 class="mb-0 text-warning" id="lowStockItems">-</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-exclamation-triangle text-warning fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Vencendo em 30 dias</p>
+                        <h3 class="mb-0 text-danger" id="expiringBatches">-</h3>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-calendar-x text-danger fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Em Quarentena</p>
+                        <h3 class="mb-0 text-info" id="quarantineBatches">-</h3>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-shield-check text-info fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Movimentações do Dia -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Entradas Hoje</p>
+                        <h3 class="mb-0 text-success" id="entradasHoje">-</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-arrow-down-circle text-success fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Saídas Hoje</p>
+                        <h3 class="mb-0 text-danger" id="saidasHoje">-</h3>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-arrow-up-circle text-danger fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small">Perdas Hoje</p>
+                        <h3 class="mb-0 text-warning" id="perdasHoje">-</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-trash text-warning fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Acesso Rápido -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning-charge me-2"></i>
+                    Acesso Rápido
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="/Estoque/Movimentacoes" class="text-decoration-none">
+                            <div class="card h-100 border-0 bg-light hover-card">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-arrow-left-right text-primary fs-1 mb-3"></i>
+                                    <h6 class="card-title">Movimentações</h6>
+                                    <p class="card-text small text-muted">Histórico completo</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <a href="/Estoque/Lotes" class="text-decoration-none">
+                            <div class="card h-100 border-0 bg-light hover-card">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-box-seam text-success fs-1 mb-3"></i>
+                                    <h6 class="card-title">Lotes</h6>
+                                    <p class="card-text small text-muted">Gerenciar lotes</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <a href="/Estoque/Qualidade" class="text-decoration-none">
+                            <div class="card h-100 border-0 bg-light hover-card">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-shield-check text-info fs-1 mb-3"></i>
+                                    <h6 class="card-title">Controle de Qualidade</h6>
+                                    <p class="card-text small text-muted">Lotes em análise</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <a href="/Estoque/Posicao" class="text-decoration-none">
+                            <div class="card h-100 border-0 bg-light hover-card">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-graph-up text-warning fs-1 mb-3"></i>
+                                    <h6 class="card-title">Posição de Estoque</h6>
+                                    <p class="card-text small text-muted">Consolidado</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadStockStats();
+    loadMovementStats();
+});
+
+async function loadStockStats() {
+    try {
+        const rawMaterialsResponse = await fetch('/api/RawMaterials', {
+            credentials: 'include'
+        });
+        const rawMaterials = await rawMaterialsResponse.json();
+        document.getElementById('totalMaterials').textContent = rawMaterials.length || 0;
+
+        const lowStock = rawMaterials.filter(rm => rm.currentStock <= rm.minimumStock);
+        document.getElementById('lowStockItems').textContent = lowStock.length || 0;
+
+        const batchesResponse = await fetch('/api/Batches', {
+            credentials: 'include'
+        });
+        const batches = await batchesResponse.json();
+        
+        const quarantineBatches = batches.filter(b => b.status === 'QUARENTENA');
+        document.getElementById('quarantineBatches').textContent = quarantineBatches.length || 0;
+
+        const today = new Date();
+        const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+        const expiringBatches = batches.filter(b => {
+            const expiryDate = new Date(b.expiryDate);
+            return expiryDate <= thirtyDaysFromNow && b.status === 'APROVADO';
+        });
+        document.getElementById('expiringBatches').textContent = expiringBatches.length || 0;
+
+    } catch (error) {
+        console.error('Erro ao carregar estatísticas:', error);
+        document.getElementById('totalMaterials').textContent = '0';
+        document.getElementById('lowStockItems').textContent = '0';
+        document.getElementById('quarantineBatches').textContent = '0';
+        document.getElementById('expiringBatches').textContent = '0';
+    }
+}
+
+async function loadMovementStats() {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const response = await fetch(`/api/StockMovements/stats?startDate=${today}`, {
+            credentials: 'include'
+        });
+        const stats = await response.json();
+
+        document.getElementById('entradasHoje').textContent = stats.entradasCount || 0;
+        document.getElementById('saidasHoje').textContent = stats.saidasCount || 0;
+        document.getElementById('perdasHoje').textContent = stats.perdasCount || 0;
+
+    } catch (error) {
+        console.error('Erro ao carregar movimentações:', error);
+        document.getElementById('entradasHoje').textContent = '0';
+        document.getElementById('saidasHoje').textContent = '0';
+        document.getElementById('perdasHoje').textContent = '0';
+    }
+}
+</script>
+}

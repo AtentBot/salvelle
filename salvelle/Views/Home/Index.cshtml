@@ -1,0 +1,233 @@
+﻿@{
+    ViewData["Title"] = "Salvelle - Home";
+}
+
+<style>
+    .welcome-container {
+        min-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+        background: var(--bg-subtle);
+    }
+    
+    .welcome-title {
+        font-size: 3rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+    
+    .welcome-subtitle {
+        font-size: 1.2rem;
+        color: #7f8c8d;
+        margin-bottom: 3rem;
+        text-align: center;
+    }
+    
+    .access-cards {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        max-width: 900px;
+        width: 100%;
+    }
+    
+    .access-cards .access-card:last-child {
+        grid-column: 1 / -1;
+        max-width: 420px;
+        justify-self: center;
+    }
+    
+    .access-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .access-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .access-card.dashboard { border-top: 4px solid var(--ok); }
+    .access-card.signup { border-top: 4px solid var(--controlled-black); }
+    .access-card.admin { border-top: 4px solid var(--amber-500); }
+    .access-card.api { border-top: 4px solid var(--info); }
+    .access-card.portal { border-top: 4px solid var(--danger); }
+    
+    .card-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.2rem;
+        font-size: 2.5rem;
+    }
+    
+    .card-icon.dashboard { background: linear-gradient(135deg, var(--ok) 0%, var(--ok) 100%); color: white; }
+    .card-icon.signup { background: linear-gradient(135deg, var(--controlled-black) 0%, var(--controlled-black) 100%); color: white; }
+    .card-icon.admin { background: linear-gradient(135deg, var(--amber-500) 0%, var(--amber-500) 100%); color: white; }
+    .card-icon.api { background: linear-gradient(135deg, var(--info) 0%, var(--info) 100%); color: white; }
+    .card-icon.portal { background: var(--danger); color: white; }
+    
+    .card-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+        text-align: center;
+    }
+    
+    .card-description {
+        font-size: 0.95rem;
+        color: var(--ink-3);
+        text-align: center;
+        margin-bottom: 1.2rem;
+        flex-grow: 1;
+    }
+    
+    .card-button {
+        color: white;
+        padding: 0.7rem 1.8rem;
+        border-radius: 25px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: inline-block;
+        font-size: 0.95rem;
+    }
+    
+    .card-button:hover {
+        color: white;
+        text-decoration: none;
+        filter: brightness(0.9);
+    }
+    
+    .access-card.dashboard .card-button { background: var(--ok); }
+    .access-card.signup .card-button { background: var(--controlled-black); }
+    .access-card.admin .card-button { background: var(--amber-500); }
+    .access-card.api .card-button { background: var(--info); }
+    .access-card.portal .card-button { background: var(--danger); }
+    
+    .card-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 10px;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .badge-client { background: var(--ok-soft); color: var(--ok); }
+    .badge-new { background: #f3e5f5; color: #7b1fa2; }
+    .badge-owner { background: #fff3e0; color: #e65100; }
+    .badge-dev { background: #e0f7fa; color: #00838f; }
+    .badge-consumer { background: #fce4ec; color: var(--danger); }
+
+    @@media (max-width: 768px) {
+        .welcome-title { font-size: 2rem; }
+        .access-cards {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        .access-cards .access-card:last-child {
+            max-width: 100%;
+        }
+    }
+</style>
+
+<div class="welcome-container">
+    <h1 class="welcome-title">
+        <i class="bi bi-capsule me-2"></i>Salvelle
+    </h1>
+    <p class="welcome-subtitle">Sistema de Gestão para Farmácias de Manipulação</p>
+    
+    <div class="access-cards">
+        <!-- Card Dashboard - Clientes -->
+        <div class="access-card dashboard">
+            <span class="card-badge badge-client">Cliente</span>
+            <div class="card-icon dashboard">
+                <i class="bi bi-speedometer2"></i>
+            </div>
+            <h2 class="card-title">Dashboard</h2>
+            <p class="card-description">
+                Acesse o sistema completo de gestão da sua farmácia de manipulação
+            </p>
+            <a href="/Dashboard" class="card-button">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Entrar
+            </a>
+        </div>
+        
+        <!-- Card Signup - Novos Clientes -->
+        <div class="access-card signup">
+            <span class="card-badge badge-new">Novo Cliente</span>
+            <div class="card-icon signup">
+                <i class="bi bi-person-plus-fill"></i>
+            </div>
+            <h2 class="card-title">Cadastre-se</h2>
+            <p class="card-description">
+                Comece agora com 14 dias grátis! Gerencie sua farmácia de forma profissional
+            </p>
+            <a href="/Signup" class="card-button">
+                <i class="bi bi-rocket-takeoff me-1"></i> Começar Grátis
+            </a>
+        </div>
+        
+        <!-- Card Admin - Dono do SaaS -->
+        <div class="access-card admin">
+            <span class="card-badge badge-owner">Administração</span>
+            <div class="card-icon admin">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <h2 class="card-title">Área Admin</h2>
+            <p class="card-description">
+                Painel administrativo do SaaS: métricas, clientes, assinaturas e faturamento
+            </p>
+            <a href="/Admin" class="card-button">
+                <i class="bi bi-gear-fill me-1"></i> Acessar Admin
+            </a>
+        </div>
+        
+        <!-- Card API - Desenvolvedores -->
+        <div class="access-card api">
+            <span class="card-badge badge-dev">Desenvolvedores</span>
+            <div class="card-icon api">
+                <i class="bi bi-code-slash"></i>
+            </div>
+            <h2 class="card-title">API Docs</h2>
+            <p class="card-description">
+                Documentação interativa das APIs REST com Swagger
+            </p>
+            <a href="/swagger" class="card-button">
+                <i class="bi bi-journal-code me-1"></i> Ver Documentação
+            </a>
+        </div>
+        
+        <!-- Card Portal - Consumidor Final -->
+        <div class="access-card portal">
+            <span class="card-badge badge-consumer">Consumidor</span>
+            <div class="card-icon portal">
+                <i class="bi bi-phone"></i>
+            </div>
+            <h2 class="card-title">Portal do Cliente</h2>
+            <p class="card-description">
+                Área do consumidor final: catálogo, pedidos online e acompanhamento
+            </p>
+            <a href="/Cliente/Login" class="card-button">
+                <i class="bi bi-bag-check me-1"></i> Acessar Portal
+            </a>
+        </div>
+    </div>
+</div>

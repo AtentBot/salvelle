@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Salvelle — Criar conta</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88'><rect width='88' height='88' rx='18' fill='%230F6E78'/><path d='M30 26 H42 a10 10 0 0 1 10 10 V52 H42 a10 10 0 0 1 -10 -10 V26 Z' fill='white'/><rect x='52' y='26' width='14' height='8' rx='4' fill='white'/><rect x='52' y='38' width='10' height='7' rx='3.5' fill='white'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<style>@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=cabinet-grotesk@500,700,800&display=swap');</style>
+<link rel="stylesheet" href="ds/tokens.css">
+<link rel="stylesheet" href="ds/components.css">
+<style>
+  body { background: var(--bg); }
+  .auth-wrap { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .auth-form { padding: 64px 80px; display: flex; flex-direction: column; }
+  .auth-form .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 64px; }
+  .auth-form .top a { font-size: 13px; color: var(--ink-3); text-decoration: none; }
+  .auth-form .top a:hover { color: var(--petrol-500); }
+  .auth-content { max-width: 420px; width: 100%; margin: auto 0; }
+  .auth-content h1 { font-size: 32px; font-weight: 600; letter-spacing: -0.025em; margin: 0 0 8px; }
+  .auth-content .sub { color: var(--ink-3); font-size: 15px; margin: 0 0 32px; }
+  .step-indicator { display: flex; gap: 6px; margin-bottom: 32px; }
+  .step-indicator .pip { height: 4px; flex: 1; border-radius: 2px; background: var(--rule); }
+  .step-indicator .pip.active { background: var(--petrol-500); }
+  .step-indicator .pip.done { background: var(--petrol-500); opacity: .5; }
+  .step-label { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 24px; }
+  .form-grid { display: grid; gap: 16px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .auth-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 32px; }
+  .auth-aside { background: var(--ink); color: #fff; padding: 64px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .auth-aside::before { content: ''; position: absolute; inset: 0; background: radial-gradient(900px 500px at 80% 100%, color-mix(in oklch, var(--petrol-500) 45%, transparent), transparent 70%); }
+  .auth-aside-content { position: relative; z-index: 1; margin-top: auto; }
+  .auth-quote { font-size: 22px; line-height: 1.4; letter-spacing: -0.015em; font-weight: 500; margin: 0 0 20px; max-width: 36ch; }
+  .auth-quote-author { display: flex; align-items: center; gap: 12px; }
+  .auth-quote-author .av { width: 40px; height: 40px; border-radius: 50%; background: var(--petrol-500); display: grid; place-items: center; font-weight: 600; font-size: 14px; }
+  .auth-quote-author .info { font-size: 13px; line-height: 1.4; }
+  .auth-quote-author .info .name { font-weight: 500; }
+  .auth-quote-author .info .role { color: rgba(255,255,255,.55); }
+  .auth-aside .badge-row { display: flex; gap: 12px; margin-top: 32px; padding-top: 32px; border-top: 1px solid rgba(255,255,255,.1); }
+  .auth-aside .badge-item { font-family: var(--font-mono); font-size: 11px; color: rgba(255,255,255,.55); letter-spacing: 0.06em; text-transform: uppercase; }
+  .perks { list-style: none; padding: 0; margin: 24px 0 0; display: flex; flex-direction: column; gap: 14px; }
+  .perks li { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; color: rgba(255,255,255,.85); }
+  .perks li svg { color: var(--ok); flex-shrink: 0; margin-top: 2px; }
+  .perks li b { font-weight: 600; color: #fff; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/shell.jsx"></script>
+<script type="text/babel" data-presets="react">
+const { useState } = React;
+
+function App() {
+  const [step, setStep] = useState(1);
+  return (
+    <div className="auth-wrap">
+      <div className="auth-form">
+        <div className="top">
+          <Brand />
+          <a href="login.html">Já tem conta? <strong style={{color:'var(--petrol-500)'}}>Entrar</strong></a>
+        </div>
+        <div className="auth-content">
+          <div className="step-indicator">
+            <div className={`pip ${step >= 1 ? (step === 1 ? 'active' : 'done') : ''}`}/>
+            <div className={`pip ${step >= 2 ? (step === 2 ? 'active' : 'done') : ''}`}/>
+            <div className={`pip ${step >= 3 ? (step === 3 ? 'active' : 'done') : ''}`}/>
+          </div>
+          <div className="step-label">Passo {step} de 3 · {step === 1 ? 'Sobre você' : step === 2 ? 'Sua farmácia' : 'Conta e segurança'}</div>
+
+          {step === 1 && <>
+            <h1>Vamos começar.</h1>
+            <p className="sub">14 dias grátis. Sem cartão. Configuração inicial em 8 minutos.</p>
+            <div className="form-grid">
+              <div className="form-row">
+                <div><label className="input-label">Nome</label><input className="input" placeholder="Douglas" defaultValue="Douglas"/></div>
+                <div><label className="input-label">Sobrenome</label><input className="input" placeholder="Braga" defaultValue="Braga"/></div>
+              </div>
+              <div><label className="input-label">E-mail profissional</label><input className="input" type="email" placeholder="voce@farmacia.com.br"/></div>
+              <div><label className="input-label">Cargo</label>
+                <select className="select"><option>Farmacêutico responsável (RT)</option><option>Proprietário</option><option>Gerente</option><option>Manipulador</option><option>Atendente</option></select>
+              </div>
+            </div>
+          </>}
+
+          {step === 2 && <>
+            <h1>Sua farmácia.</h1>
+            <p className="sub">Usamos esses dados para configurar rotulagem, NFC-e e SNGPC corretamente desde o primeiro dia.</p>
+            <div className="form-grid">
+              <div><label className="input-label">Razão social</label><input className="input" placeholder="Farmácia de Manipulação Vita Ltda."/></div>
+              <div className="form-row">
+                <div><label className="input-label">CNPJ</label><input className="input mono" placeholder="00.000.000/0001-00"/></div>
+                <div><label className="input-label">Tipo</label><select className="select"><option>Manipulação magistral</option><option>Drogaria</option><option>Manipulação + drogaria</option></select></div>
+              </div>
+              <div className="form-row">
+                <div><label className="input-label">CEP</label><input className="input mono" placeholder="00000-000"/></div>
+                <div><label className="input-label">Quantos pontos de venda?</label><select className="select"><option>1 unidade</option><option>2-3 unidades</option><option>4+ unidades</option></select></div>
+              </div>
+              <div><label className="input-label">CRF do farmacêutico responsável</label><input className="input mono" placeholder="CRF/SP 12345"/></div>
+            </div>
+          </>}
+
+          {step === 3 && <>
+            <h1>Senha e termos.</h1>
+            <p className="sub">Use uma senha forte. Recomendamos 2FA para o farmacêutico RT — exigência da Anvisa para liberação de controlados.</p>
+            <div className="form-grid">
+              <div><label className="input-label">Senha</label><input className="input" type="password" placeholder="••••••••••"/><div className="input-hint">Mínimo 12 caracteres, com número e símbolo.</div></div>
+              <div><label className="input-label">Confirmar senha</label><input className="input" type="password" placeholder="••••••••••"/></div>
+              <label style={{display:'flex',gap:10,alignItems:'flex-start',fontSize:13,color:'var(--ink-2)',marginTop:8,cursor:'pointer'}}>
+                <input type="checkbox" defaultChecked style={{marginTop:3}}/>
+                <span>Aceito os <a href="#" style={{color:'var(--petrol-500)'}}>termos de uso</a> e a <a href="#" style={{color:'var(--petrol-500)'}}>política de privacidade</a>. Concordo com o tratamento dos dados conforme LGPD.</span>
+              </label>
+              <label style={{display:'flex',gap:10,alignItems:'flex-start',fontSize:13,color:'var(--ink-2)',cursor:'pointer'}}>
+                <input type="checkbox" style={{marginTop:3}}/>
+                <span>Quero receber boas práticas de manipulação e atualizações regulatórias por e-mail.</span>
+              </label>
+            </div>
+          </>}
+
+          <div className="auth-actions">
+            {step > 1 ? <button className="btn btn-secondary" onClick={() => setStep(step - 1)}><Icon name="arrow-left"/>Voltar</button> : <span/>}
+            {step < 3 ? <button className="btn btn-primary" onClick={() => setStep(step + 1)}>Continuar<Icon name="arrow-right"/></button>
+                      : <a className="btn btn-primary" href="dashboard.html">Criar conta<Icon name="arrow-right"/></a>}
+          </div>
+        </div>
+      </div>
+
+      <aside className="auth-aside">
+        <div className="auth-aside-content">
+          <div className="eyebrow" style={{color:'var(--amber-500)'}}>NA PRÁTICA</div>
+          <p className="auth-quote">"Saímos de planilhas e três sistemas para um só. Reduzimos em 40% o tempo de manipulação por fórmula."</p>
+          <div className="auth-quote-author">
+            <div className="av">RT</div>
+            <div className="info"><div className="name">Renata Tavares</div><div className="role">Farmacêutica RT · Manipulare Curitiba</div></div>
+          </div>
+          <ul className="perks">
+            <li><Icon name="check"/><span><b>14 dias grátis</b>, sem cartão de crédito</span></li>
+            <li><Icon name="check"/><span><b>Migração</b> dos seus dados em até 5 dias</span></li>
+            <li><Icon name="check"/><span><b>Suporte</b> com farmacêuticos no chat</span></li>
+            <li><Icon name="check"/><span><b>SNGPC e NFC-e</b> ativos desde o dia 1</span></li>
+          </ul>
+          <div className="badge-row">
+            <span className="badge-item">LGPD</span>
+            <span className="badge-item">Anvisa RDC 67</span>
+            <span className="badge-item">SNGPC</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

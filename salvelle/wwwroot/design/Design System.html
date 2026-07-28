@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Salvelle — Propostas de Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=General+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* General Sans not on Google Fonts — use Fontshare */
+  @import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&f[]=geist@400,500,600&f[]=geist-mono@400,500&display=swap');
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #efefef; }
+</style>
+<link rel="stylesheet" href="proposal-shared.css">
+<link rel="stylesheet" href="proposal-a.css">
+<link rel="stylesheet" href="proposal-b.css">
+<link rel="stylesheet" href="proposal-c.css">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="proposal-shared.jsx"></script>
+<script type="text/babel" src="proposal-a.jsx"></script>
+<script type="text/babel" src="proposal-b.jsx"></script>
+<script type="text/babel" src="proposal-c.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+  function App() {
+    return (
+      <DesignCanvas
+        title="Salvelle — Design System"
+        subtitle="Três direções de identidade · escolha uma para evoluir"
+      >
+        <DCSection id="proposals" title="Propostas">
+          <DCArtboard id="prop-a" label="A · Apothecary — sálvia + papel + serif editorial" width={1280} height={2900}>
+            <ApothecaryProposal />
+          </DCArtboard>
+          <DCArtboard id="prop-b" label="B · Clinical — petróleo + frio + sans humanista" width={1280} height={2900}>
+            <ClinicalProposal />
+          </DCArtboard>
+          <DCArtboard id="prop-c" label="C · Compound — grafite + âmbar + grotesque mono" width={1280} height={2900}>
+            <CompoundProposal />
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+@model Models.Pharmacy.SupplierCertificate
+@{
+    ViewData["Title"] = "Editar Certificado";
+    var suppliers = ViewBag.Suppliers as List<Models.Pharmacy.Supplier>;
+}
+
+@section Styles {
+<style>
+    .form-wrap { max-width: 860px; }
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card + .ds-card { margin-top: 24px; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; gap: 10px; }
+    .ds-card-head i { color: var(--petrol-500); font-size: 16px; }
+    .ds-card-title { font-size: 16px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+    .ds-card-body { padding: 20px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+    .form-grid .span-2 { grid-column: 1 / -1; }
+    .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+    @@media (max-width: 640px) {
+        .form-grid { grid-template-columns: 1fr; }
+        .form-actions { flex-direction: column-reverse; }
+        .form-actions .btn { width: 100%; justify-content: center; }
+    }
+</style>
+}
+
+<div class="form-wrap">
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">FORNECEDORES · ANVISA</div>
+            <h1>Editar Certificado</h1>
+            <p>@Model.Supplier?.CompanyName</p>
+        </div>
+        <div class="row">
+            <a href="/SupplierCertification/Details/@Model.Id" class="btn btn-secondary"><i class="bi bi-arrow-left"></i>Voltar</a>
+        </div>
+    </div>
+
+    <form asp-action="EditSubmit" asp-route-id="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="ds-card">
+            <div class="ds-card-head">
+                <i class="bi bi-building"></i>
+                <h3 class="ds-card-title">Fornecedor</h3>
+            </div>
+            <div class="ds-card-body">
+                <label class="input-label">Fornecedor</label>
+                <input type="text" class="input" value="@Model.Supplier?.CompanyName" disabled>
+                <div class="input-hint">O fornecedor não pode ser alterado.</div>
+            </div>
+        </div>
+
+        <div class="ds-card">
+            <div class="ds-card-head">
+                <i class="bi bi-file-earmark-text"></i>
+                <h3 class="ds-card-title">Dados do certificado</h3>
+            </div>
+            <div class="ds-card-body">
+                <div class="form-grid">
+                    <div>
+                        <label class="input-label">Tipo de certificado</label>
+                        <select name="CertificateType" class="select">
+                            <option value="AFE" selected="@(Model.CertificateType == "AFE")">AFE — Autorização de Funcionamento</option>
+                            <option value="AE" selected="@(Model.CertificateType == "AE")">AE — Autorização Especial</option>
+                            <option value="CBPF" selected="@(Model.CertificateType == "CBPF")">CBPF — Certificado de Boas Práticas</option>
+                            <option value="ISO" selected="@(Model.CertificateType == "ISO")">ISO — Certificação ISO</option>
+                            <option value="GMP" selected="@(Model.CertificateType == "GMP")">GMP — Boas Práticas de Fabricação</option>
+                            <option value="OUTRO" selected="@(Model.CertificateType == "OUTRO")">Outro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="input-label">Nome do certificado</label>
+                        <input type="text" name="Name" class="input" value="@Model.Name">
+                    </div>
+                    <div>
+                        <label class="input-label">Número</label>
+                        <input type="text" name="Number" class="input" value="@Model.Number">
+                    </div>
+                    <div>
+                        <label class="input-label">Órgão emissor</label>
+                        <input type="text" name="IssuingAuthority" class="input" value="@Model.IssuingAuthority">
+                    </div>
+                    <div>
+                        <label class="input-label">Data de emissão</label>
+                        <input type="date" name="IssueDate" class="input" value="@Model.IssueDate?.ToString("yyyy-MM-dd")">
+                    </div>
+                    <div>
+                        <label class="input-label">Data de validade</label>
+                        <input type="date" name="ExpiryDate" class="input" value="@Model.ExpiryDate?.ToString("yyyy-MM-dd")">
+                    </div>
+                    <div class="span-2">
+                        <label class="input-label">Observações</label>
+                        <textarea name="Notes" class="textarea" rows="3">@Model.Notes</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="/SupplierCertification/Details/@Model.Id" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i>Salvar alterações</button>
+        </div>
+    </form>
+</div>

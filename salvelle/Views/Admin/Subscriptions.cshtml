@@ -1,0 +1,600 @@
+@{
+    ViewData["Title"] = "Assinaturas";
+    ViewData["Subtitle"] = "Gerenciar assinaturas e cobranças";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<!-- Stats -->
+<div class="row g-4 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon success"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-value" id="activeCount">-</div>
+            <div class="stat-label">Ativas</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon primary"><i class="bi bi-clock"></i></div>
+            <div class="stat-value" id="trialingCount">-</div>
+            <div class="stat-label">Em Trial</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon warning"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="stat-value" id="pastDueCount">-</div>
+            <div class="stat-label">Inadimplentes</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon danger"><i class="bi bi-x-circle"></i></div>
+            <div class="stat-value" id="canceledCount">-</div>
+            <div class="stat-label">Canceladas</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters & Table -->
+<div class="admin-card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <input type="text" class="form-control form-control-sm" id="searchInput" 
+                       placeholder="Buscar..." onkeyup="debounceSearch()">
+            </div>
+            <div class="col-md-3">
+                <select class="form-select form-select-sm" id="statusFilter" onchange="loadSubscriptions()">
+                    <option value="">Todos os status</option>
+                    <option value="ACTIVE">Ativas</option>
+                    <option value="TRIALING">Trial</option>
+                    <option value="PAST_DUE">Inadimplentes</option>
+                    <option value="CANCELED">Canceladas</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Estabelecimento</th>
+                        <th>Plano</th>
+                        <th>Ciclo</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Próximo vencimento</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="subscriptionsTable">
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="spinner-border spinner-border-sm me-2"></div>
+                            Carregando...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes da Assinatura -->
+<div class="modal fade" id="subscriptionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="modalTitle">Detalhes da Assinatura</h5>
+                    <small class="text-muted" id="modalSubtitle"></small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Loading -->
+                <div id="modalLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2 text-muted">Carregando...</p>
+                </div>
+
+                <!-- Content -->
+                <div id="modalContent" style="display: none;">
+                    <!-- Status Badge -->
+                    <div class="text-center mb-4">
+                        <span class="status-badge fs-6" id="modalStatus">-</span>
+                    </div>
+
+                    <!-- Info Grid -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <small class="text-muted d-block mb-1">Plano</small>
+                                <strong id="modalPlan">-</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <small class="text-muted d-block mb-1">Valor</small>
+                                <strong class="text-success" id="modalAmount">-</strong>
+                                <small class="text-muted" id="modalCycle"></small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <small class="text-muted d-block mb-1">Período Atual</small>
+                                <span id="modalPeriod">-</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <small class="text-muted d-block mb-1">Próximo Vencimento</small>
+                                <span id="modalNextDue">-</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <small class="text-muted d-block mb-1">Trial</small>
+                                <span id="modalTrial">-</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <small class="text-muted d-block mb-1">Criada em</small>
+                                <span id="modalCreatedAt">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stripe Info -->
+                    <div class="bg-light rounded p-3 mb-4">
+                        <h6 class="mb-2"><i class="bi bi-stripe me-2"></i>Informações Stripe</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">Subscription ID</small>
+                                <div><code id="modalStripeSubId" class="small">-</code></div>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">Customer ID</small>
+                                <div><code id="modalStripeCusId" class="small">-</code></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invoices -->
+                    <h6 class="mb-3"><i class="bi bi-receipt me-2"></i>Últimas Faturas</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Pago em</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalInvoices">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Nenhuma fatura</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="modalFooter" style="display: none;">
+                <a href="#" id="btnViewEstablishment" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-building me-1"></i>Ver Estabelecimento
+                </a>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="showChangePlanModal()">
+                    <i class="bi bi-arrow-repeat me-1"></i>Alterar Plano
+                </button>
+                <button type="button" class="btn btn-outline-success btn-sm" id="btnReactivate" onclick="reactivateSubscription()" style="display: none;">
+                    <i class="bi bi-check-circle me-1"></i>Reativar
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" id="btnCancel" onclick="showCancelModal()">
+                    <i class="bi bi-x-circle me-1"></i>Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cancelar -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancelar Assinatura</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Esta ação irá cancelar a assinatura imediatamente.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Motivo do cancelamento</label>
+                    <textarea class="form-control" id="cancelReason" rows="3" placeholder="Opcional..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-danger" onclick="confirmCancel()">Confirmar Cancelamento</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Alterar Plano -->
+<div class="modal fade" id="changePlanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Alterar Plano</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Selecione o novo plano</label>
+                    <select class="form-select" id="newPlanSelect">
+                        <option value="">Carregando planos...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" onclick="confirmChangePlan()">Confirmar Alteração</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let searchTimeout = null;
+    let currentSubscription = null;
+    let subscriptionModal = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        subscriptionModal = new bootstrap.Modal(document.getElementById('subscriptionModal'));
+        loadStats();
+        loadSubscriptions();
+    });
+
+    function debounceSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => loadSubscriptions(), 300);
+    }
+
+    async function loadStats() {
+        try {
+            const response = await fetch('/api/admin/dashboard/metrics');
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('activeCount').textContent = data.activeEstablishments || 0;
+                document.getElementById('trialingCount').textContent = data.trialingEstablishments || 0;
+                document.getElementById('pastDueCount').textContent = data.pastDueEstablishments || 0;
+                document.getElementById('canceledCount').textContent = '0';
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    }
+
+    async function loadSubscriptions() {
+        const search = document.getElementById('searchInput').value;
+        const status = document.getElementById('statusFilter').value;
+
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+
+        try {
+            const response = await fetch(`/api/admin/subscriptions?${params}`);
+            if (response.ok) {
+                const data = await response.json();
+                renderTable(data.subscriptions || data);
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            document.getElementById('subscriptionsTable').innerHTML = `
+                <tr><td colspan="7" class="text-center text-danger py-4">Erro ao carregar dados</td></tr>
+            `;
+        }
+    }
+
+    function renderTable(subscriptions) {
+        const tbody = document.getElementById('subscriptionsTable');
+
+        if (!subscriptions || subscriptions.length === 0) {
+            tbody.innerHTML = `
+                <tr><td colspan="7" class="text-center text-muted py-4">Nenhuma assinatura encontrada</td></tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = subscriptions.map(s => `
+            <tr>
+                <td>
+                    <strong>${s.establishmentName || '-'}</strong>
+                </td>
+                <td>${s.planName || '-'}</td>
+                <td>${s.billingCycle === 'YEARLY' ? 'Anual' : 'Mensal'}</td>
+                <td>${formatCurrency(s.amount || 0)}</td>
+                <td>
+                    <span class="status-badge ${getStatusClass(s.status)}">
+                        ${getStatusLabel(s.status)}
+                    </span>
+                </td>
+                <td>${formatDate(s.currentPeriodEnd)}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewDetails('${s.id}')" title="Ver detalhes">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function viewDetails(id) {
+        // Reset modal
+        document.getElementById('modalLoading').style.display = 'block';
+        document.getElementById('modalContent').style.display = 'none';
+        document.getElementById('modalFooter').style.display = 'none';
+        document.getElementById('modalTitle').textContent = 'Detalhes da Assinatura';
+        document.getElementById('modalSubtitle').textContent = '';
+        
+        subscriptionModal.show();
+
+        try {
+            const response = await fetch(`/api/admin/subscriptions/${id}`);
+            if (!response.ok) throw new Error('Assinatura não encontrada');
+
+            currentSubscription = await response.json();
+            renderModal(currentSubscription);
+
+            document.getElementById('modalLoading').style.display = 'none';
+            document.getElementById('modalContent').style.display = 'block';
+            document.getElementById('modalFooter').style.display = 'flex';
+        } catch (error) {
+            document.getElementById('modalLoading').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    ${error.message}
+                </div>
+            `;
+        }
+    }
+
+    function renderModal(data) {
+        document.getElementById('modalTitle').textContent = data.establishmentName || '-';
+        document.getElementById('modalSubtitle').textContent = `ID: ${data.id}`;
+
+        // Status
+        const statusEl = document.getElementById('modalStatus');
+        statusEl.textContent = getStatusLabel(data.status);
+        statusEl.className = `status-badge fs-6 ${getStatusClass(data.status)}`;
+
+        // Info
+        document.getElementById('modalPlan').textContent = data.planName || '-';
+        document.getElementById('modalAmount').textContent = formatCurrency(data.amount || 0);
+        document.getElementById('modalCycle').textContent = data.billingCycle === 'YEARLY' ? '/ano' : '/mês';
+        document.getElementById('modalPeriod').textContent = 
+            `${formatDate(data.currentPeriodStart)} - ${formatDate(data.currentPeriodEnd)}`;
+        document.getElementById('modalNextDue').textContent = formatDate(data.currentPeriodEnd);
+        document.getElementById('modalTrial').textContent = data.trialEnd 
+            ? `Até ${formatDate(data.trialEnd)}` 
+            : 'Sem trial';
+        document.getElementById('modalCreatedAt').textContent = formatDateTime(data.createdAt);
+
+        // Stripe
+        document.getElementById('modalStripeSubId').textContent = data.stripeSubscriptionId || '-';
+        document.getElementById('modalStripeCusId').textContent = data.stripeCustomerId || '-';
+
+        // Establishment link
+        document.getElementById('btnViewEstablishment').href = `/admin/establishments/${data.establishmentId}`;
+
+        // Buttons based on status
+        if (data.status === 'CANCELED') {
+            document.getElementById('btnCancel').style.display = 'none';
+            document.getElementById('btnReactivate').style.display = 'inline-block';
+        } else {
+            document.getElementById('btnCancel').style.display = 'inline-block';
+            document.getElementById('btnReactivate').style.display = 'none';
+        }
+
+        // Invoices
+        renderInvoices(data.invoices || []);
+    }
+
+    function renderInvoices(invoices) {
+        const tbody = document.getElementById('modalInvoices');
+
+        if (!invoices || invoices.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Nenhuma fatura</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = invoices.map(inv => `
+            <tr>
+                <td>${formatDate(inv.createdAt)}</td>
+                <td>${formatCurrency(inv.amount)}</td>
+                <td>
+                    <span class="badge ${inv.status === 'PAID' ? 'bg-success' : 'bg-warning'}">
+                        ${inv.status === 'PAID' ? 'Paga' : 'Pendente'}
+                    </span>
+                </td>
+                <td>${inv.paidAt ? formatDate(inv.paidAt) : '-'}</td>
+                <td>
+                    ${inv.invoiceUrl ? `<a href="${inv.invoiceUrl}" target="_blank" class="btn btn-sm btn-link p-0">
+                        <i class="bi bi-file-pdf"></i>
+                    </a>` : ''}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function showCancelModal() {
+        subscriptionModal.hide();
+        setTimeout(() => {
+            const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
+            modal.show();
+        }, 300);
+    }
+
+    async function confirmCancel() {
+        if (!currentSubscription) return;
+
+        const reason = document.getElementById('cancelReason').value;
+
+        try {
+            const response = await fetch(`/api/admin/subscriptions/${currentSubscription.id}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason })
+            });
+
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('cancelModal')).hide();
+                showToast('Assinatura cancelada com sucesso!', 'success');
+                loadSubscriptions();
+                loadStats();
+            } else {
+                const error = await response.json();
+                showToast('Erro: ' + (error.message || 'Erro ao cancelar'), 'danger');
+            }
+        } catch (error) {
+            showToast('Erro ao cancelar assinatura', 'danger');
+        }
+    }
+
+    async function reactivateSubscription() {
+        if (!currentSubscription) return;
+        if (!confirm('Deseja reativar esta assinatura?')) return;
+
+        try {
+            const response = await fetch(`/api/admin/subscriptions/${currentSubscription.id}/reactivate`, {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                subscriptionModal.hide();
+                showToast('Assinatura reativada com sucesso!', 'success');
+                loadSubscriptions();
+                loadStats();
+            } else {
+                const error = await response.json();
+                showToast('Erro: ' + (error.message || 'Erro ao reativar'), 'danger');
+            }
+        } catch (error) {
+            showToast('Erro ao reativar assinatura', 'danger');
+        }
+    }
+
+    async function showChangePlanModal() {
+        subscriptionModal.hide();
+
+        const select = document.getElementById('newPlanSelect');
+        select.innerHTML = '<option value="">Carregando...</option>';
+
+        setTimeout(async () => {
+            try {
+                const response = await fetch('/api/subscriptionplans');
+                if (response.ok) {
+                    const plans = await response.json();
+                    select.innerHTML = '<option value="">Selecione um plano</option>' + 
+                        plans.map(p => 
+                            `<option value="${p.id}" ${p.id === currentSubscription?.planId ? 'disabled' : ''}>
+                                ${p.name} - ${formatCurrency(p.priceMonthly)}/mês
+                            </option>`
+                        ).join('');
+                }
+            } catch (error) {
+                select.innerHTML = '<option value="">Erro ao carregar planos</option>';
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('changePlanModal'));
+            modal.show();
+        }, 300);
+    }
+
+    async function confirmChangePlan() {
+        if (!currentSubscription) return;
+
+        const newPlanId = document.getElementById('newPlanSelect').value;
+        if (!newPlanId) {
+            showToast('Selecione um plano', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/admin/subscriptions/${currentSubscription.id}/change-plan`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newPlanId })
+            });
+
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('changePlanModal')).hide();
+                showToast('Plano alterado com sucesso!', 'success');
+                loadSubscriptions();
+            } else {
+                const error = await response.json();
+                showToast('Erro: ' + (error.message || 'Erro ao alterar plano'), 'danger');
+            }
+        } catch (error) {
+            showToast('Erro ao alterar plano', 'danger');
+        }
+    }
+
+    function showToast(message, type = 'info') {
+        // Simple toast using alert for now
+        // You can implement a proper toast system
+        if (type === 'danger') {
+            alert('❌ ' + message);
+        } else if (type === 'success') {
+            alert('✅ ' + message);
+        } else {
+            alert(message);
+        }
+    }
+
+    function getStatusClass(status) {
+        switch (status?.toUpperCase()) {
+            case 'ACTIVE': return 'active';
+            case 'TRIALING': return 'trialing';
+            case 'PAST_DUE': return 'past-due';
+            case 'CANCELED': return 'canceled';
+            default: return 'inactive';
+        }
+    }
+
+    function getStatusLabel(status) {
+        switch (status?.toUpperCase()) {
+            case 'ACTIVE': return 'Ativa';
+            case 'TRIALING': return 'Trial';
+            case 'PAST_DUE': return 'Inadimplente';
+            case 'CANCELED': return 'Cancelada';
+            default: return '-';
+        }
+    }
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleDateString('pt-BR');
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleString('pt-BR');
+    }
+</script>
+}

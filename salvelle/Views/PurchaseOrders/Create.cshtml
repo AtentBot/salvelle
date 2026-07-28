@@ -1,0 +1,204 @@
+@{
+    ViewData["Title"] = "Novo Pedido de Compra";
+}
+
+@section Styles {
+<style>
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; margin-bottom: 20px; }
+    .ds-card-head { padding: 14px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .ds-card-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; margin: 0; display: flex; align-items: center; gap: 8px; }
+    .ds-card-title i { color: var(--petrol-500); }
+    .ds-card-body { padding: 18px 20px; }
+
+    .form-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; }
+    .form-grid .col-span { grid-column: 1 / -1; }
+    .fin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+    .ds-table { width: 100%; border-collapse: collapse; }
+    .ds-table thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 500; padding: 10px 14px; border-bottom: 1px solid var(--rule); background: var(--bg-subtle); }
+    .ds-table tbody td { padding: 11px 14px; border-bottom: 1px solid var(--rule); font-size: 14px; color: var(--ink-2); }
+    .ds-table tbody tr:last-child td { border-bottom: none; }
+    .empty-cell { text-align: center; color: var(--ink-3); padding: 28px 16px; }
+
+    /* Bootstrap → design system (markup injetado / modal) */
+    .btn.btn-danger { background: var(--danger); color: #fff; border: none; }
+    .btn.btn-danger:hover { background: var(--danger); filter: brightness(0.95); }
+    .modal-content { border: 1px solid var(--rule); border-radius: var(--r-md); background: var(--surface); }
+    .modal-header, .modal-footer { border-color: var(--rule); }
+    .modal-title { font-size: 15px; font-weight: 600; color: var(--ink); }
+    .modal .form-label { font-size: 12px; font-weight: 500; color: var(--ink-2); margin-bottom: 4px; }
+    .modal .form-control, .modal .form-select { border: 1px solid var(--rule); border-radius: var(--r-sm); font-size: 14px; }
+    .modal .form-control:focus, .modal .form-select:focus { border-color: var(--petrol-500); box-shadow: 0 0 0 3px var(--petrol-50); }
+
+    @@media (max-width: 780px) { .form-grid { grid-template-columns: 1fr; } .fin-grid { grid-template-columns: 1fr 1fr; } }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">COMPRAS · NOVO PEDIDO</div>
+            <h1>Novo pedido de compra</h1>
+            <p>Registre um pedido de matérias-primas a um fornecedor.</p>
+        </div>
+        <div class="row">
+            <a href="/compras" class="btn btn-secondary"><i class="bi bi-arrow-left"></i>Voltar</a>
+        </div>
+    </div>
+
+    <form id="formCreateOrder">
+        <div class="ds-card">
+            <div class="ds-card-head">
+                <h5 class="ds-card-title"><i class="bi bi-info-circle"></i>Informações do pedido</h5>
+            </div>
+            <div class="ds-card-body">
+                <div class="form-grid">
+                    <div>
+                        <label for="supplierId" class="input-label">Fornecedor *</label>
+                        <select id="supplierId" name="supplierId" class="select" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="expectedDeliveryDate" class="input-label">Previsão de entrega</label>
+                        <input type="date" id="expectedDeliveryDate" name="expectedDeliveryDate" class="input">
+                    </div>
+                    <div>
+                        <label class="input-label">Data do pedido</label>
+                        <input type="text" class="input" readonly value="@BrazilTime.Now.ToString("dd/MM/yyyy")">
+                    </div>
+                    <div class="col-span">
+                        <label for="notes" class="input-label">Observações</label>
+                        <textarea id="notes" name="notes" class="textarea" rows="2" maxlength="500"></textarea>
+                        <span class="input-hint">Máximo 500 caracteres</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ds-card">
+            <div class="ds-card-head">
+                <h5 class="ds-card-title"><i class="bi bi-list-ul"></i>Itens do pedido</h5>
+                <button type="button" id="btnAddItem" class="btn btn-secondary btn-sm"><i class="bi bi-plus-circle"></i>Adicionar item</button>
+            </div>
+            <div class="table-responsive">
+                <table class="ds-table">
+                    <thead>
+                        <tr>
+                            <th style="width:35%">Matéria-prima *</th>
+                            <th style="width:12%">Quantidade *</th>
+                            <th style="width:10%">Unidade *</th>
+                            <th style="width:13%">Preço unit.</th>
+                            <th style="width:10%">Desconto %</th>
+                            <th style="width:13%">Total</th>
+                            <th style="width:7%">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsTableBody">
+                        <tr>
+                            <td colspan="7" class="empty-cell">
+                                Nenhum item adicionado. Clique em "Adicionar item" para começar.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="ds-card">
+            <div class="ds-card-head">
+                <h5 class="ds-card-title"><i class="bi bi-calculator"></i>Resumo financeiro</h5>
+            </div>
+            <div class="ds-card-body">
+                <div class="fin-grid">
+                    <div>
+                        <label class="input-label">Subtotal</label>
+                        <input type="text" id="displaySubtotal" class="input" readonly value="R$ 0,00">
+                    </div>
+                    <div>
+                        <label for="discountValue" class="input-label">Desconto geral (R$)</label>
+                        <input type="number" id="discountValue" name="discountValue" class="input" min="0" step="0.01" value="0">
+                    </div>
+                    <div>
+                        <label for="shippingValue" class="input-label">Frete (R$)</label>
+                        <input type="number" id="shippingValue" name="shippingValue" class="input" min="0" step="0.01" value="0">
+                    </div>
+                    <div>
+                        <label class="input-label">Valor final</label>
+                        <input type="text" id="displayFinalValue" class="input" readonly value="R$ 0,00" style="font-weight:600;color:var(--ink);">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" style="gap:12px;">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i>Criar pedido</button>
+            <button type="button" id="btnCancelCreate" class="btn btn-secondary"><i class="bi bi-x-circle"></i>Cancelar</button>
+        </div>
+    </form>
+</div>
+
+<!-- Modal Adicionar Item -->
+<div class="modal fade" id="modalAddItem" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adicionar item ao pedido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label for="itemRawMaterialId" class="form-label">Matéria-prima *</label>
+                        <select id="itemRawMaterialId" class="form-select" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="itemQuantity" class="form-label">Quantidade *</label>
+                        <input type="number" id="itemQuantity" class="form-control" min="0.01" step="0.01" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="itemUnit" class="form-label">Unidade *</label>
+                        <select id="itemUnit" class="form-select" required>
+                            <option value="g">g (gramas)</option>
+                            <option value="kg">kg (quilogramas)</option>
+                            <option value="mL">mL (mililitros)</option>
+                            <option value="L">L (litros)</option>
+                            <option value="UN">UN (unidades)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="itemUnitPrice" class="form-label">Preço unitário</label>
+                        <input type="number" id="itemUnitPrice" class="form-control" min="0" step="0.01" value="0">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="itemDiscountPercentage" class="form-label">Desconto (%)</label>
+                        <input type="number" id="itemDiscountPercentage" class="form-control" min="0" max="100" step="0.01" value="0">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Total do item</label>
+                        <input type="text" id="itemTotal" class="form-control fw-bold" readonly value="R$ 0,00">
+                    </div>
+                    <div class="col-md-12">
+                        <label for="itemNotes" class="form-label">Observações</label>
+                        <textarea id="itemNotes" class="form-control" rows="2" maxlength="200"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnConfirmAddItem" class="btn btn-primary">Adicionar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/purchase-orders-create.js"></script>
+    <script>
+        $(document).ready(function() {
+            PurchaseOrdersCreate.init();
+        });
+    </script>
+}

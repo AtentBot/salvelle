@@ -1,0 +1,96 @@
+@model Models.Pharmacy.SupplierCertificate
+@{
+    ViewData["Title"] = "Renovar Certificado";
+}
+
+@section Styles {
+<style>
+    .form-wrap { max-width: 760px; }
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; gap: 10px; }
+    .ds-card-head i { color: var(--petrol-500); font-size: 16px; }
+    .ds-card-title { font-size: 16px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+    .ds-card-body { padding: 20px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+    .req { color: var(--danger); font-weight: 600; }
+
+    .ds-banner { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-radius: var(--r-md); margin-bottom: 24px; border: 1px solid var(--info-border); background: var(--info-soft); font-size: 14px; color: var(--ink-2); }
+    .ds-banner i { font-size: 18px; color: var(--info); flex-shrink: 0; }
+    .ds-banner strong { color: var(--ink); }
+
+    .info-note { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--r-md); border: 1px solid var(--warn-border); background: var(--warn-soft); margin-top: 20px; }
+    .info-note i { color: var(--warn); font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .info-note p { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+    .info-note a { color: var(--warn); font-weight: 500; }
+
+    .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+    @@media (max-width: 640px) {
+        .form-grid { grid-template-columns: 1fr; }
+        .form-actions { flex-direction: column-reverse; }
+        .form-actions .btn { width: 100%; justify-content: center; }
+    }
+</style>
+}
+
+<div class="form-wrap">
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">FORNECEDORES · RENOVAÇÃO</div>
+            <h1>Renovar Certificado</h1>
+            <p>@Model.Supplier?.CompanyName</p>
+        </div>
+        <div class="row">
+            <a href="/SupplierCertification" class="btn btn-secondary"><i class="bi bi-arrow-left"></i>Voltar</a>
+        </div>
+    </div>
+
+    <div class="ds-banner">
+        <i class="bi bi-info-circle-fill"></i>
+        <div>
+            <strong>Certificado atual:</strong> @Model.CertificateType — @Model.Number
+            @if (Model.ExpiryDate.HasValue)
+            {
+                <span>(validade @Model.ExpiryDate.Value.ToString("dd/MM/yyyy"))</span>
+            }
+        </div>
+    </div>
+
+    <form asp-action="RenewSubmit" asp-route-id="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="ds-card">
+            <div class="ds-card-head">
+                <i class="bi bi-arrow-repeat"></i>
+                <h3 class="ds-card-title">Dados da renovação</h3>
+            </div>
+            <div class="ds-card-body">
+                <div class="form-grid">
+                    <div>
+                        <label class="input-label">Novo número (se alterado)</label>
+                        <input type="text" name="NewNumber" class="input" value="@Model.Number" placeholder="Manter o mesmo ou informar novo número">
+                    </div>
+                    <div>
+                        <label class="input-label">Nova data de emissão</label>
+                        <input type="date" name="NewIssueDate" class="input" value="@DateTime.UtcNow.ToString("yyyy-MM-dd")">
+                    </div>
+                    <div>
+                        <label class="input-label">Nova data de validade <span class="req">*</span></label>
+                        <input type="date" name="NewExpiryDate" class="input" required>
+                    </div>
+                </div>
+
+                <div class="info-note">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <p>Verifique os dados no portal da ANVISA antes de confirmar a renovação — <a href="https://consultas.anvisa.gov.br/" target="_blank" rel="noopener">consultas.anvisa.gov.br</a>.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="/SupplierCertification" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i>Confirmar renovação</button>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,981 @@
+﻿@{
+    ViewData["Title"] = "Gestão Fiscal";
+    Layout = "_Layout";
+}
+
+<style>
+    .stat-card { transition: transform 0.2s; }
+    .stat-card:hover { transform: translateY(-2px); }
+    .invoice-row { cursor: pointer; transition: background-color 0.2s; }
+    .invoice-row:hover { background-color: var(--bg-subtle); }
+    .config-section { border-left: 4px solid var(--info); padding-left: 1rem; margin-bottom: 1.5rem; }
+    .cert-status { padding: 0.5rem 1rem; border-radius: 0.5rem; }
+    .cert-valid { background: var(--ok-soft); color: var(--ok); }
+    .cert-warning { background: var(--warn-soft); color: var(--warn); }
+    .cert-expired { background: var(--danger-soft); color: var(--danger); }
+    .config-alert { border-left: 4px solid var(--amber-500); }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-receipt me-2"></i>Gestão Fiscal</h4>
+            <small class="text-muted">NF-e / NFC-e - Emissão, consulta e configuração</small>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" onclick="loadData()" title="Atualizar">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalEmitir" id="btnEmitirNota">
+                <i class="bi bi-plus-lg me-1"></i>Emitir Nota
+            </button>
+        </div>
+    </div>
+
+    <!-- Alerta de Configuração Pendente -->
+    <div id="configAlertContainer" style="display: none;">
+        <div class="alert alert-warning config-alert mb-4">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill fs-3 me-3 text-warning"></i>
+                <div class="flex-grow-1">
+                    <h5 class="mb-1"><i class="bi bi-gear me-2"></i>Configuração Fiscal Não Encontrada</h5>
+                    <p class="mb-0">
+                        Para emitir notas fiscais, configure os dados fiscais da sua farmácia:
+                        <strong>Certificado Digital A1</strong>, <strong>Inscrição Estadual</strong>, <strong>CSC/Token</strong> (NFC-e), etc.
+                    </p>
+                </div>
+                <button class="btn btn-warning ms-3" onclick="showConfigTab()">
+                    <i class="bi bi-gear me-1"></i>Configurar Agora
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas Gerais -->
+    <div id="alertsContainer"></div>
+
+    <!-- Status Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-2">
+            <div class="card stat-card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-file-earmark-text text-primary fs-2"></i>
+                    <h3 class="mb-0 mt-2" id="statNFeHoje">0</h3>
+                    <small class="text-muted">NF-e Hoje</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-receipt text-success fs-2"></i>
+                    <h3 class="mb-0 mt-2" id="statNFCeHoje">0</h3>
+                    <small class="text-muted">NFC-e Hoje</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-currency-dollar text-warning fs-2"></i>
+                    <h3 class="mb-0 mt-2" id="statFaturamentoHoje">R$ 0</h3>
+                    <small class="text-muted">Faturado Hoje</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-hourglass-split text-info fs-2"></i>
+                    <h3 class="mb-0 mt-2" id="statPendentes">0</h3>
+                    <small class="text-muted">Pendentes</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-x-circle text-danger fs-2"></i>
+                    <h3 class="mb-0 mt-2" id="statErros">0</h3>
+                    <small class="text-muted">Erros</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-calendar-month text-secondary fs-2"></i>
+                    <h3 class="mb-0 mt-2" id="statMes">R$ 0</h3>
+                    <small class="text-muted">Faturado Mês</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabNotas" id="tabNotasBtn">
+                <i class="bi bi-list-ul me-1"></i>Notas Fiscais
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabFila">
+                <i class="bi bi-clock-history me-1"></i>Fila de Contingência
+                <span id="badgeFila" class="badge bg-warning text-dark ms-1">0</span>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabConfig" id="tabConfigBtn">
+                <i class="bi bi-gear me-1"></i>Configuração
+                <span id="badgeConfig" class="badge bg-danger ms-1" style="display: none;">!</span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Tab: Notas Fiscais -->
+        <div class="tab-pane fade show active" id="tabNotas">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="row g-2">
+                        <div class="col-md-2">
+                            <select class="form-select form-select-sm" id="filterType" onchange="loadInvoices()">
+                                <option value="">Todos os tipos</option>
+                                <option value="NFE">NF-e</option>
+                                <option value="NFCE">NFC-e</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select form-select-sm" id="filterStatus" onchange="loadInvoices()">
+                                <option value="">Todos os status</option>
+                                <option value="AUTORIZADO">Autorizadas</option>
+                                <option value="CANCELADO">Canceladas</option>
+                                <option value="REJEITADO">Rejeitadas</option>
+                                <option value="PENDENTE">Pendentes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="date" class="form-control form-control-sm" id="filterStartDate" onchange="loadInvoices()">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="date" class="form-control form-control-sm" id="filterEndDate" onchange="loadInvoices()">
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="exportInvoices()">
+                                <i class="bi bi-download me-1"></i>Exportar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Tipo</th>
+                                    <th>Cliente</th>
+                                    <th>Venda</th>
+                                    <th class="text-end">Valor</th>
+                                    <th>Data</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoicesTable">
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <div class="spinner-border text-primary"></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Fila de Contingência -->
+        <div class="tab-pane fade" id="tabFila">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-clock-history me-2"></i>Notas em Contingência</span>
+                    <button class="btn btn-sm btn-success" onclick="processQueue()">
+                        <i class="bi bi-play-fill me-1"></i>Processar Fila
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Venda</th>
+                                    <th>Tipo</th>
+                                    <th>Status</th>
+                                    <th>Tentativas</th>
+                                    <th>Última Tentativa</th>
+                                    <th>Próxima</th>
+                                    <th>Erro</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="queueTable">
+                                <tr><td colspan="8" class="text-center py-4 text-muted">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Configuração -->
+        <div class="tab-pane fade" id="tabConfig">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white">
+                            <i class="bi bi-gear me-2"></i>Configuração Fiscal
+                        </div>
+                        <div class="card-body">
+                            <!-- Dados do Emitente (NOVO) -->
+                            <div class="config-section">
+                                <h6><i class="bi bi-building me-2"></i>Dados do Emitente</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Inscrição Estadual <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="cfgInscricaoEstadual" 
+                                               placeholder="Ex: 123.456.789.123" maxlength="20">
+                                        <small class="text-muted">Obrigatório para emissão de NF-e/NFC-e</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Inscrição Municipal</label>
+                                        <input type="text" class="form-control" id="cfgInscricaoMunicipal" 
+                                               placeholder="Ex: 12345678" maxlength="20">
+                                        <small class="text-muted">Opcional - para NFS-e de serviços</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Certificado Digital -->
+                            <div class="config-section">
+                                <h6><i class="bi bi-shield-lock me-2"></i>Certificado Digital A1</h6>
+                                <div id="certStatus" class="cert-status cert-warning mb-3">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>Certificado não configurado
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <input type="file" class="form-control" id="certFile" accept=".pfx,.p12">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="certPassword" placeholder="Senha">
+                                            <button class="btn btn-primary" onclick="uploadCertificate()">
+                                                <i class="bi bi-upload"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ambiente -->
+                            <div class="config-section">
+                                <h6><i class="bi bi-globe me-2"></i>Ambiente SEFAZ</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Ambiente</label>
+                                        <select class="form-select" id="cfgEnvironment">
+                                            <option value="HOMOLOGACAO">Homologação (Testes)</option>
+                                            <option value="PRODUCAO">Produção</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">UF</label>
+                                        <select class="form-select" id="cfgUf">
+                                            <option value="AC">Acre</option>
+                                            <option value="AL">Alagoas</option>
+                                            <option value="AP">Amapá</option>
+                                            <option value="AM">Amazonas</option>
+                                            <option value="BA">Bahia</option>
+                                            <option value="CE">Ceará</option>
+                                            <option value="DF">Distrito Federal</option>
+                                            <option value="ES">Espírito Santo</option>
+                                            <option value="GO">Goiás</option>
+                                            <option value="MA">Maranhão</option>
+                                            <option value="MT">Mato Grosso</option>
+                                            <option value="MS">Mato Grosso do Sul</option>
+                                            <option value="MG">Minas Gerais</option>
+                                            <option value="PA">Pará</option>
+                                            <option value="PB">Paraíba</option>
+                                            <option value="PR">Paraná</option>
+                                            <option value="PE">Pernambuco</option>
+                                            <option value="PI">Piauí</option>
+                                            <option value="RJ">Rio de Janeiro</option>
+                                            <option value="RN">Rio Grande do Norte</option>
+                                            <option value="RS">Rio Grande do Sul</option>
+                                            <option value="RO">Rondônia</option>
+                                            <option value="RR">Roraima</option>
+                                            <option value="SC">Santa Catarina</option>
+                                            <option value="SP" selected>São Paulo</option>
+                                            <option value="SE">Sergipe</option>
+                                            <option value="TO">Tocantins</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Regime Tributário</label>
+                                        <select class="form-select" id="cfgTaxRegime">
+                                            <option value="SIMPLES_NACIONAL">Simples Nacional</option>
+                                            <option value="SIMPLES_EXCESSO">Simples - Excesso Sublimite</option>
+                                            <option value="LUCRO_PRESUMIDO">Lucro Presumido</option>
+                                            <option value="LUCRO_REAL">Lucro Real</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Séries -->
+                            <div class="config-section">
+                                <h6><i class="bi bi-123 me-2"></i>Séries e Numeração</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Série NF-e</label>
+                                        <input type="number" class="form-control" id="cfgNfeSeries" value="1" min="1">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Última NF-e</label>
+                                        <input type="number" class="form-control" id="cfgNfeLastNumber" readonly>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Série NFC-e</label>
+                                        <input type="number" class="form-control" id="cfgNfceSeries" value="1" min="1">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Última NFC-e</label>
+                                        <input type="number" class="form-control" id="cfgNfceLastNumber" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CSC para NFC-e -->
+                            <div class="config-section">
+                                <h6><i class="bi bi-key me-2"></i>CSC (Código de Segurança do Contribuinte)</h6>
+                                <p class="text-muted small">Necessário para emissão de NFC-e. Obtenha no portal da SEFAZ do seu estado.</p>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">ID do CSC</label>
+                                        <input type="text" class="form-control" id="cfgCscId" placeholder="Ex: 1">
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label">Token CSC</label>
+                                        <input type="password" class="form-control" id="cfgCscToken" placeholder="Token fornecido pela SEFAZ">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CFOP e NCM -->
+                            <div class="config-section">
+                                <h6><i class="bi bi-tag me-2"></i>CFOP e NCM Padrão</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">CFOP Venda Produtos</label>
+                                        <input type="text" class="form-control" id="cfgCfopVenda" value="5102" maxlength="4">
+                                        <small class="text-muted">5102 = Venda dentro do estado</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">CFOP Manipulação</label>
+                                        <input type="text" class="form-control" id="cfgCfopManipulacao" value="5101" maxlength="4">
+                                        <small class="text-muted">5101 = Industrialização</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">NCM Manipulados</label>
+                                        <input type="text" class="form-control" id="cfgNcmManipulacao" value="30049099" maxlength="8">
+                                        <small class="text-muted">30049099 = Outros medicamentos</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Opções -->
+                            <div class="config-section">
+                                <h6><i class="bi bi-toggles me-2"></i>Opções</h6>
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input" id="cfgPrintDanfeAuto" checked>
+                                    <label class="form-check-label">Imprimir DANFE automaticamente após emissão</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input" id="cfgContingencyEnabled" checked>
+                                    <label class="form-check-label">Habilitar contingência offline</label>
+                                </div>
+                            </div>
+
+                            <!-- Natureza da Operação -->
+                            <div class="config-section">
+                                <h6><i class="bi bi-card-text me-2"></i>Natureza da Operação</h6>
+                                <input type="text" class="form-control" id="cfgDefaultNature" value="VENDA DE MERCADORIA" maxlength="100">
+                            </div>
+
+                            <!-- Informações Adicionais -->
+                            <div class="config-section">
+                                <h6><i class="bi bi-info-circle me-2"></i>Informações Adicionais Padrão</h6>
+                                <textarea class="form-control" id="cfgDefaultAdditionalInfo" rows="2" 
+                                          placeholder="Ex: Documento emitido por ME/EPP optante pelo Simples Nacional..."></textarea>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" onclick="saveConfig()">
+                                    <i class="bi bi-check-lg me-1"></i>Salvar Configuração
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="testConnection()">
+                                    <i class="bi bi-wifi me-1"></i>Testar Conexão SEFAZ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-header bg-white">
+                            <i class="bi bi-info-circle me-2"></i>Status da Configuração
+                        </div>
+                        <div class="card-body">
+                            <div id="configInfo">
+                                <p class="text-muted">Carregando...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-header bg-white">
+                            <i class="bi bi-check2-square me-2"></i>Checklist
+                        </div>
+                        <div class="card-body">
+                            <div id="configChecklist">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-circle text-muted me-2" id="checkIE"></i>
+                                    <span>Inscrição Estadual</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-circle text-muted me-2" id="checkCert"></i>
+                                    <span>Certificado Digital</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-circle text-muted me-2" id="checkCSC"></i>
+                                    <span>CSC (para NFC-e)</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-circle text-muted me-2" id="checkAmbiente"></i>
+                                    <span>Ambiente Configurado</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white">
+                            <i class="bi bi-question-circle me-2"></i>Ajuda
+                        </div>
+                        <div class="card-body">
+                            <p class="small"><strong>Inscrição Estadual:</strong> Número de registro na SEFAZ do seu estado.</p>
+                            <p class="small"><strong>Certificado A1:</strong> Arquivo .pfx ou .p12 com validade de 1 ano.</p>
+                            <p class="small"><strong>CSC:</strong> Cadastre no portal da SEFAZ do seu estado para NFC-e.</p>
+                            <p class="small"><strong>Homologação:</strong> Use para testes antes de ir para produção.</p>
+                            <p class="small mb-0"><strong>Contingência:</strong> Notas são salvas localmente se SEFAZ estiver indisponível.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Emitir Nota -->
+<div class="modal fade" id="modalEmitir" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-plus-lg me-2"></i>Emitir Nota Fiscal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Alerta se não configurado -->
+                <div id="modalConfigAlert" class="alert alert-warning" style="display: none;">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Atenção:</strong> Configure os dados fiscais antes de emitir notas.
+                    <button class="btn btn-sm btn-warning ms-2" onclick="bootstrap.Modal.getInstance(document.getElementById('modalEmitir')).hide(); showConfigTab();">
+                        Configurar
+                    </button>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Código da Venda</label>
+                    <input type="text" class="form-control" id="emitSaleCode" placeholder="V20251220-0001">
+                    <small class="text-muted">Digite o código da venda para emitir a nota fiscal</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tipo de Nota</label>
+                    <select class="form-select" id="emitInvoiceType">
+                        <option value="NFCE">NFC-e (Consumidor Final)</option>
+                        <option value="NFE">NF-e (Pessoa Jurídica)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Natureza da Operação</label>
+                    <input type="text" class="form-control" id="emitNature" value="VENDA DE MERCADORIA">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Informações Adicionais (opcional)</label>
+                    <textarea class="form-control" id="emitAdditionalInfo" rows="2"></textarea>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="emitPrintDanfe" checked>
+                    <label class="form-check-label">Imprimir DANFE após emissão</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="emitirNota()" id="btnConfirmarEmissao">
+                    <i class="bi bi-send me-1"></i>Emitir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes -->
+<div class="modal fade" id="modalDetalhes" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-text me-2"></i>Detalhes da Nota</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalDetalhesContent">
+                <div class="text-center py-4"><div class="spinner-border"></div></div>
+            </div>
+            <div class="modal-footer" id="modalDetalhesFooter">
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let isConfigured = false;
+
+document.addEventListener('DOMContentLoaded', loadData);
+
+function showConfigTab() {
+    // Ativar a tab de configuração
+    const tabConfigBtn = document.getElementById('tabConfigBtn');
+    const tab = new bootstrap.Tab(tabConfigBtn);
+    tab.show();
+}
+
+async function loadData() {
+    await Promise.all([loadStats(), loadInvoices(), loadQueue(), loadConfig()]);
+}
+
+async function loadStats() {
+    try {
+        const response = await fetch('/api/Fiscal/stats');
+        const data = await response.json();
+        if (data.success) {
+            const s = data.data;
+            document.getElementById('statNFeHoje').textContent = s.nFeHoje || 0;
+            document.getElementById('statNFCeHoje').textContent = s.nfCeHoje || 0;
+            document.getElementById('statFaturamentoHoje').textContent = formatMoney(s.faturamentoHoje);
+            document.getElementById('statPendentes').textContent = s.notasPendentes || 0;
+            document.getElementById('statErros').textContent = s.notasComErro || 0;
+            document.getElementById('statMes').textContent = formatMoney(s.faturamentoMes);
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function loadInvoices() {
+    const type = document.getElementById('filterType').value;
+    const status = document.getElementById('filterStatus').value;
+    const startDate = document.getElementById('filterStartDate').value;
+    const endDate = document.getElementById('filterEndDate').value;
+
+    let url = '/api/Fiscal/invoices?';
+    if (type) url += `type=${type}&`;
+    if (status) url += `status=${status}&`;
+    if (startDate) url += `startDate=${startDate}&`;
+    if (endDate) url += `endDate=${endDate}&`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        const tbody = document.getElementById('invoicesTable');
+
+        if (data.success && data.data.length > 0) {
+            tbody.innerHTML = data.data.map(inv => `
+                <tr class="invoice-row" onclick="showDetails('${inv.id}')">
+                    <td><strong>${inv.invoiceNumber}</strong> / ${inv.series}</td>
+                    <td><span class="badge ${inv.invoiceType === 'NFE' ? 'bg-primary' : 'bg-success'}">${inv.invoiceType}</span></td>
+                    <td>${inv.customerName || 'Consumidor'}</td>
+                    <td><small>${inv.saleCode || '-'}</small></td>
+                    <td class="text-end"><strong>${formatMoney(inv.totalAmount)}</strong></td>
+                    <td><small>${formatDate(inv.issueDate)}</small></td>
+                    <td><span class="badge bg-${inv.statusBadge || 'secondary'}">${inv.status}</span></td>
+                    <td class="text-center" onclick="event.stopPropagation()">
+                        <a href="/api/Fiscal/xml/${inv.id}" class="btn btn-sm btn-outline-secondary me-1" title="XML"><i class="bi bi-code"></i></a>
+                        ${inv.status === 'AUTORIZADO' ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelarNota('${inv.id}')" title="Cancelar"><i class="bi bi-x-lg"></i></button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Nenhuma nota encontrada</td></tr>';
+        }
+    } catch (e) {
+        document.getElementById('invoicesTable').innerHTML = '<tr><td colspan="8" class="text-center py-4 text-danger">Erro ao carregar</td></tr>';
+    }
+}
+
+async function loadQueue() {
+    try {
+        const response = await fetch('/api/Fiscal/queue');
+        const data = await response.json();
+        const tbody = document.getElementById('queueTable');
+        document.getElementById('badgeFila').textContent = data.data?.length || 0;
+
+        if (data.success && data.data.length > 0) {
+            tbody.innerHTML = data.data.map(item => `
+                <tr>
+                    <td>${item.saleCode}</td>
+                    <td><span class="badge bg-info">${item.invoiceType}</span></td>
+                    <td><span class="badge bg-${item.status === 'ERRO' ? 'danger' : 'warning'}">${item.status}</span></td>
+                    <td>${item.attempts} / 3</td>
+                    <td><small>${item.lastAttempt ? formatDate(item.lastAttempt) : '-'}</small></td>
+                    <td><small>${item.nextAttempt ? formatDate(item.nextAttempt) : '-'}</small></td>
+                    <td><small class="text-danger">${item.errorMessage || '-'}</small></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeFromQueue('${item.id}')"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Fila vazia</td></tr>';
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function loadConfig() {
+    try {
+        const [configRes, statusRes] = await Promise.all([
+            fetch('/api/Fiscal/config'),
+            fetch('/api/Fiscal/config/status')
+        ]);
+        const config = await configRes.json();
+        const status = await statusRes.json();
+
+        // Verificar se está configurado
+        isConfigured = status.success && status.data && status.data.isConfigured;
+        
+        // Mostrar/ocultar alerta de configuração
+        document.getElementById('configAlertContainer').style.display = isConfigured ? 'none' : 'block';
+        document.getElementById('badgeConfig').style.display = isConfigured ? 'none' : 'inline';
+        document.getElementById('modalConfigAlert').style.display = isConfigured ? 'none' : 'block';
+
+        if (config.success && config.data) {
+            const c = config.data;
+            // Dados do Emitente
+            document.getElementById('cfgInscricaoEstadual').value = c.inscricaoEstadual || '';
+            document.getElementById('cfgInscricaoMunicipal').value = c.inscricaoMunicipal || '';
+            // Ambiente
+            document.getElementById('cfgEnvironment').value = c.environment || 'HOMOLOGACAO';
+            document.getElementById('cfgUf').value = c.uf || 'SP';
+            document.getElementById('cfgTaxRegime').value = c.taxRegime || 'SIMPLES_NACIONAL';
+            // Séries
+            document.getElementById('cfgNfeSeries').value = c.nfeSeries || 1;
+            document.getElementById('cfgNfceSeries').value = c.nfceSeries || 1;
+            // CSC
+            document.getElementById('cfgCscId').value = c.cscId || '';
+            // CFOP/NCM
+            document.getElementById('cfgCfopVenda').value = c.defaultCfopVenda || '5102';
+            document.getElementById('cfgCfopManipulacao').value = c.defaultCfopManipulacao || '5101';
+            document.getElementById('cfgNcmManipulacao').value = c.defaultNcmManipulacao || '30049099';
+            // Opções
+            document.getElementById('cfgPrintDanfeAuto').checked = c.printDanfeAuto !== false;
+            document.getElementById('cfgContingencyEnabled').checked = c.contingencyEnabled !== false;
+            document.getElementById('cfgDefaultNature').value = c.defaultNature || 'VENDA DE MERCADORIA';
+            document.getElementById('cfgDefaultAdditionalInfo').value = c.defaultAdditionalInfo || '';
+        }
+
+        if (status.success && status.data) {
+            const s = status.data;
+            document.getElementById('cfgNfeLastNumber').value = s.nfeLastNumber || 0;
+            document.getElementById('cfgNfceLastNumber').value = s.nfceLastNumber || 0;
+
+            // Atualizar checklist
+            updateChecklist('checkIE', config.data?.inscricaoEstadual);
+            updateChecklist('checkCert', s.hasValidCertificate);
+            updateChecklist('checkCSC', config.data?.cscId);
+            updateChecklist('checkAmbiente', config.data?.environment);
+
+            // Certificado
+            const certDiv = document.getElementById('certStatus');
+            if (s.hasValidCertificate) {
+                certDiv.className = 'cert-status ' + (s.daysUntilExpiry > 30 ? 'cert-valid' : 'cert-warning');
+                certDiv.innerHTML = `<i class="bi bi-shield-check me-2"></i>Certificado válido até ${formatDate(s.certificateExpiry)} (${s.daysUntilExpiry} dias)`;
+            } else {
+                certDiv.className = 'cert-status cert-expired';
+                certDiv.innerHTML = '<i class="bi bi-shield-x me-2"></i>Certificado não configurado ou expirado';
+            }
+
+            // Info
+            const infoDiv = document.getElementById('configInfo');
+            if (s.isConfigured) {
+                let warnings = (s.warnings || []).map(w => `<li class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>${w}</li>`).join('');
+                infoDiv.innerHTML = `
+                    <p><strong>Ambiente:</strong> <span class="badge ${s.environment === 'PRODUCAO' ? 'bg-success' : 'bg-warning'}">${s.environment}</span></p>
+                    <p><strong>Provedor:</strong> ${s.provider || 'INTERNO'}</p>
+                    <p><strong>Regime:</strong> ${(s.taxRegime || '').replace('_', ' ')}</p>
+                    <p><strong>Última NF-e:</strong> ${s.nfeLastNumber || 0}</p>
+                    <p><strong>Última NFC-e:</strong> ${s.nfceLastNumber || 0}</p>
+                    ${warnings ? `<ul class="mb-0 ps-3">${warnings}</ul>` : '<p class="text-success mb-0"><i class="bi bi-check-circle me-1"></i>Configuração OK</p>'}
+                `;
+            } else {
+                infoDiv.innerHTML = `
+                    <div class="text-center py-3">
+                        <i class="bi bi-exclamation-circle text-warning fs-1"></i>
+                        <p class="mt-2 mb-0 text-muted">Configuração fiscal não encontrada</p>
+                        <small>Preencha os dados ao lado para habilitar a emissão de notas fiscais</small>
+                    </div>
+                `;
+            }
+
+            // Alertas globais
+            const alertsDiv = document.getElementById('alertsContainer');
+            if (s.warnings && s.warnings.length > 0) {
+                alertsDiv.innerHTML = s.warnings.map(w => 
+                    `<div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>${w}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>`
+                ).join('');
+            }
+        }
+    } catch (e) { 
+        console.error(e);
+        // Mostrar alerta de erro
+        document.getElementById('configAlertContainer').style.display = 'block';
+    }
+}
+
+function updateChecklist(elementId, hasValue) {
+    const el = document.getElementById(elementId);
+    if (hasValue) {
+        el.className = 'bi bi-check-circle-fill text-success me-2';
+    } else {
+        el.className = 'bi bi-circle text-muted me-2';
+    }
+}
+
+async function saveConfig() {
+    const config = {
+        inscricaoEstadual: document.getElementById('cfgInscricaoEstadual').value,
+        inscricaoMunicipal: document.getElementById('cfgInscricaoMunicipal').value,
+        environment: document.getElementById('cfgEnvironment').value,
+        uf: document.getElementById('cfgUf').value,
+        taxRegime: document.getElementById('cfgTaxRegime').value,
+        nfeSeries: parseInt(document.getElementById('cfgNfeSeries').value),
+        nfceSeries: parseInt(document.getElementById('cfgNfceSeries').value),
+        cscId: document.getElementById('cfgCscId').value,
+        cscToken: document.getElementById('cfgCscToken').value || null,
+        defaultCfopVenda: document.getElementById('cfgCfopVenda').value,
+        defaultCfopManipulacao: document.getElementById('cfgCfopManipulacao').value,
+        defaultNcmManipulacao: document.getElementById('cfgNcmManipulacao').value,
+        printDanfeAuto: document.getElementById('cfgPrintDanfeAuto').checked,
+        contingencyEnabled: document.getElementById('cfgContingencyEnabled').checked,
+        defaultNature: document.getElementById('cfgDefaultNature').value,
+        defaultAdditionalInfo: document.getElementById('cfgDefaultAdditionalInfo').value
+    };
+
+    // Validação básica
+    if (!config.inscricaoEstadual) {
+        alert('⚠️ Inscrição Estadual é obrigatória');
+        document.getElementById('cfgInscricaoEstadual').focus();
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/Fiscal/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        const data = await response.json();
+        alert(data.success ? '✅ Configuração salva!' : '❌ ' + data.message);
+        if (data.success) loadConfig();
+    } catch (e) { alert('Erro ao salvar'); }
+}
+
+async function uploadCertificate() {
+    const fileInput = document.getElementById('certFile');
+    const password = document.getElementById('certPassword').value;
+
+    if (!fileInput.files[0]) { alert('Selecione o arquivo do certificado'); return; }
+    if (!password) { alert('Digite a senha do certificado'); return; }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const base64 = e.target.result.split(',')[1];
+        try {
+            const response = await fetch('/api/Fiscal/config/certificate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ certificateBase64: base64, password: password })
+            });
+            const data = await response.json();
+            alert(data.success ? '✅ ' + data.data : '❌ ' + data.message);
+            if (data.success) {
+                document.getElementById('certFile').value = '';
+                document.getElementById('certPassword').value = '';
+                loadConfig();
+            }
+        } catch (e) { alert('Erro no upload'); }
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+}
+
+async function testConnection() {
+    try {
+        const response = await fetch('/api/Fiscal/config/test-connection', { method: 'POST' });
+        const data = await response.json();
+        alert(data.success ? '✅ Conexão OK!' : '❌ ' + data.message);
+    } catch (e) { alert('Erro ao testar'); }
+}
+
+async function emitirNota() {
+    if (!isConfigured) {
+        alert('⚠️ Configure os dados fiscais antes de emitir notas');
+        return;
+    }
+
+    const saleCode = document.getElementById('emitSaleCode').value.trim();
+    if (!saleCode) { alert('Informe o código da venda'); return; }
+
+    // Buscar venda pelo código
+    try {
+        const searchRes = await fetch(`/api/Sales/by-code/${saleCode}`);
+        const searchData = await searchRes.json();
+        if (!searchData.success) { alert('Venda não encontrada'); return; }
+
+        const response = await fetch('/api/Fiscal/emitir', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                saleId: searchData.data.id,
+                invoiceType: document.getElementById('emitInvoiceType').value,
+                natureOperation: document.getElementById('emitNature').value,
+                additionalInfo: document.getElementById('emitAdditionalInfo').value,
+                printDanfe: document.getElementById('emitPrintDanfe').checked
+            })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`✅ ${data.message}\nNúmero: ${data.data.invoiceNumber}\nChave: ${data.data.invoiceKey || 'Pendente'}`);
+            bootstrap.Modal.getInstance(document.getElementById('modalEmitir')).hide();
+            document.getElementById('emitSaleCode').value = '';
+            loadData();
+        } else {
+            alert('❌ ' + data.message);
+        }
+    } catch (e) { alert('Erro ao emitir: ' + e.message); }
+}
+
+async function showDetails(id) {
+    const modal = new bootstrap.Modal(document.getElementById('modalDetalhes'));
+    modal.show();
+
+    try {
+        const response = await fetch(`/api/Fiscal/invoices/${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const inv = data.data;
+            document.getElementById('modalDetalhesContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Número:</strong> ${inv.invoiceNumber} / Série ${inv.series}</p>
+                        <p><strong>Tipo:</strong> ${inv.invoiceType}</p>
+                        <p><strong>Chave:</strong> <small class="text-muted">${inv.invoiceKey || 'N/A'}</small></p>
+                        <p><strong>Protocolo:</strong> ${inv.protocol || 'N/A'}</p>
+                        <p><strong>Status:</strong> <span class="badge bg-${inv.status === 'AUTORIZADO' ? 'success' : 'secondary'}">${inv.status}</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Cliente:</strong> ${inv.customerName || 'Consumidor'}</p>
+                        <p><strong>CPF/CNPJ:</strong> ${inv.customerCpf || 'N/A'}</p>
+                        <p><strong>Venda:</strong> ${inv.saleCode || 'N/A'}</p>
+                        <p><strong>Emissão:</strong> ${formatDate(inv.issueDate)}</p>
+                        <p><strong>Autorização:</strong> ${inv.authorizationDate ? formatDate(inv.authorizationDate) : 'N/A'}</p>
+                    </div>
+                </div>
+                <hr>
+                <h6>Itens</h6>
+                <table class="table table-sm">
+                    <thead><tr><th>#</th><th>Descrição</th><th>Qtd</th><th class="text-end">Unit</th><th class="text-end">Total</th></tr></thead>
+                    <tbody>
+                        ${(inv.items || []).map(i => `<tr><td>${i.itemNumber}</td><td>${i.description}</td><td>${i.quantity}</td><td class="text-end">${formatMoney(i.unitPrice)}</td><td class="text-end">${formatMoney(i.totalPrice)}</td></tr>`).join('')}
+                    </tbody>
+                    <tfoot><tr><th colspan="4" class="text-end">TOTAL:</th><th class="text-end">${formatMoney(inv.totalAmount)}</th></tr></tfoot>
+                </table>
+                ${inv.errorMessage ? `<div class="alert alert-danger"><strong>Erro:</strong> ${inv.errorMessage}</div>` : ''}
+                ${inv.cancellationReason ? `<div class="alert alert-secondary"><strong>Cancelado:</strong> ${inv.cancellationReason}</div>` : ''}
+            `;
+
+            document.getElementById('modalDetalhesFooter').innerHTML = `
+                <a href="/api/Fiscal/xml/${inv.id}" class="btn btn-outline-secondary"><i class="bi bi-code me-1"></i>Download XML</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            `;
+        }
+    } catch (e) {
+        document.getElementById('modalDetalhesContent').innerHTML = '<div class="alert alert-danger">Erro ao carregar detalhes</div>';
+    }
+}
+
+async function cancelarNota(id) {
+    const justificativa = prompt('Justificativa do cancelamento (mínimo 15 caracteres):');
+    if (!justificativa || justificativa.length < 15) {
+        alert('Justificativa deve ter pelo menos 15 caracteres');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/Fiscal/cancelar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fiscalInvoiceId: id, justification: justificativa })
+        });
+        const data = await response.json();
+        alert(data.success ? '✅ Nota cancelada!' : '❌ ' + data.message);
+        if (data.success) loadData();
+    } catch (e) { alert('Erro ao cancelar'); }
+}
+
+async function processQueue() {
+    try {
+        const response = await fetch('/api/Fiscal/queue/process', { method: 'POST' });
+        const data = await response.json();
+        alert(data.success ? '✅ Fila processada!' : '❌ ' + data.message);
+        loadData();
+    } catch (e) { alert('Erro ao processar fila'); }
+}
+
+async function removeFromQueue(id) {
+    if (!confirm('Remover da fila? A nota não será emitida.')) return;
+    try {
+        const response = await fetch(`/api/Fiscal/queue/${id}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (data.success) loadQueue();
+    } catch (e) { alert('Erro'); }
+}
+
+function formatMoney(v) { return 'R$ ' + (v || 0).toFixed(2).replace('.', ','); }
+function formatDate(d) { return d ? new Date(d).toLocaleString('pt-BR') : '-'; }
+function exportInvoices() { alert('Exportação em desenvolvimento'); }
+</script>
+}

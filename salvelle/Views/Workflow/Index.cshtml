@@ -1,0 +1,424 @@
+@{
+    ViewData["Title"] = "Workflow de Manipulação";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-3">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-kanban text-primary me-2"></i>
+                Workflow de Manipulação
+            </h2>
+            <p class="text-muted mb-0">Acompanhe todas as ordens em produção</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/Manipulacoes/Dashboard" class="btn btn-outline-primary">
+                <i class="bi bi-graph-up me-1"></i> Dashboard
+            </a>
+            <a href="/Manipulacoes/Kanban" class="btn btn-outline-secondary">
+                <i class="bi bi-columns-gap me-1"></i> Kanban
+            </a>
+            <a href="/ManipulationOrders/Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Nova Ordem
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body py-2">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Buscar ordem...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select id="filterStatus" class="form-select form-select-sm">
+                        <option value="">Todos os status</option>
+                        <option value="PENDENTE">Pendente</option>
+                        <option value="SEPARACAO">Separação</option>
+                        <option value="PESAGEM">Pesagem</option>
+                        <option value="MISTURA">Mistura</option>
+                        <option value="ENVASE">Envase</option>
+                        <option value="ROTULAGEM">Rotulagem</option>
+                        <option value="CONFERENCIA">Conferência</option>
+                        <option value="FINALIZADO">Finalizado</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select id="filterPriority" class="form-select form-select-sm">
+                        <option value="">Todas prioridades</option>
+                        <option value="URGENTE">Urgente</option>
+                        <option value="ALTA">Alta</option>
+                        <option value="NORMAL">Normal</option>
+                        <option value="BAIXA">Baixa</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="date" id="filterDate" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3 text-end">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">
+                        <i class="bi bi-x-circle me-1"></i> Limpar
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="applyFilters()">
+                        <i class="bi bi-funnel me-1"></i> Filtrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-2">
+            <div class="card bg-warning bg-opacity-10 border-warning h-100">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0 text-warning" id="countPendentes">0</h3>
+                    <small class="text-muted">Pendentes</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info bg-opacity-10 border-info h-100">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0 text-info" id="countProducao">0</h3>
+                    <small class="text-muted">Em Produção</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-primary bg-opacity-10 border-primary h-100">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0 text-primary" id="countConferencia">0</h3>
+                    <small class="text-muted">Conferência</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success bg-opacity-10 border-success h-100">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0 text-success" id="countFinalizados">0</h3>
+                    <small class="text-muted">Finalizados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger bg-opacity-10 border-danger h-100">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0 text-danger" id="countRejeitados">0</h3>
+                    <small class="text-muted">Rejeitados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary bg-opacity-10 border-secondary h-100">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-0 text-secondary" id="taxaAprovacao">0%</h3>
+                    <small class="text-muted">Taxa Aprovação</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Ordens -->
+    <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-list-ul me-2"></i>Ordens de Manipulação</span>
+            <span class="badge bg-secondary" id="totalOrdens">0 ordens</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="ordersTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 120px;">Ordem</th>
+                            <th>Cliente / Fórmula</th>
+                            <th style="width: 280px;">Progresso</th>
+                            <th style="width: 100px;">Status</th>
+                            <th style="width: 100px;">Prioridade</th>
+                            <th style="width: 120px;">Previsão</th>
+                            <th style="width: 100px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody">
+                        <!-- Carregado via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Detalhes da Ordem -->
+<div class="modal fade" id="orderDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Detalhes da Ordem <span id="modalOrderNumber"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Carregado via JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <a href="#" id="btnIrParaProducao" class="btn btn-primary">
+                    <i class="bi bi-play-fill me-1"></i> Ir para Produção
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let allOrders = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadDashboardData();
+        loadOrders();
+        
+        // Auto-refresh a cada 30 segundos
+        setInterval(() => {
+            loadDashboardData();
+            loadOrders();
+        }, 30000);
+    });
+
+    async function loadDashboardData() {
+        try {
+            const response = await fetch('/api/ManipulationWorkflow/dashboard');
+            const result = await response.json();
+            
+            if (result.success) {
+                const data = result.data;
+                document.getElementById('countPendentes').textContent = data.totalPendentes;
+                document.getElementById('countProducao').textContent = data.totalEmProducao;
+                document.getElementById('countFinalizados').textContent = data.totalFinalizados;
+                document.getElementById('countRejeitados').textContent = data.totalRejeitados;
+                document.getElementById('taxaAprovacao').textContent = data.taxaAprovacao.toFixed(1) + '%';
+            }
+        } catch (error) {
+            console.error('Erro ao carregar dashboard:', error);
+        }
+    }
+
+    async function loadOrders() {
+        try {
+            const response = await fetch('/api/ManipulationOrders');
+            const result = await response.json();
+            
+            if (result.success) {
+                allOrders = result.data;
+                renderOrders(allOrders);
+                document.getElementById('totalOrdens').textContent = allOrders.length + ' ordens';
+                
+                // Atualizar contador de conferência
+                const emConferencia = allOrders.filter(o => o.status === 'CONFERENCIA' || o.status === 'APROVADO').length;
+                document.getElementById('countConferencia').textContent = emConferencia;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar ordens:', error);
+        }
+    }
+
+    function renderOrders(orders) {
+        const tbody = document.getElementById('ordersTableBody');
+        
+        if (orders.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        Nenhuma ordem encontrada
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = orders.map(order => `
+            <tr class="${order.isDelayed ? 'table-danger' : ''}">
+                <td>
+                    <strong class="text-primary">${order.orderNumber}</strong>
+                    ${order.isDelayed ? '<br><small class="text-danger"><i class="bi bi-exclamation-triangle"></i> Atrasada</small>' : ''}
+                </td>
+                <td>
+                    <div><strong>${order.customerName || 'Cliente não informado'}</strong></div>
+                    <small class="text-muted">${order.formulaName || 'Fórmula livre'}</small>
+                </td>
+                <td>
+                    ${renderProgressBar(order)}
+                </td>
+                <td>
+                    ${renderStatusBadge(order.status)}
+                </td>
+                <td>
+                    ${renderPriorityBadge(order.priority)}
+                </td>
+                <td>
+                    <small>${order.estimatedCompletionDate ? formatDate(order.estimatedCompletionDate) : '-'}</small>
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="showOrderDetail('${order.id}')" title="Detalhes">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <a href="/Manipulacoes/ProducaoOrdem/${order.id}" class="btn btn-outline-success" title="Produção">
+                            <i class="bi bi-play-fill"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function renderProgressBar(order) {
+        const steps = ['SEPARACAO', 'PESAGEM', 'MISTURA', 'ENVASE', 'ROTULAGEM', 'CONFERENCIA', 'APROVACAO'];
+        const stepNames = ['Sep', 'Pes', 'Mis', 'Env', 'Rot', 'Conf', 'Apr'];
+        const currentIndex = steps.indexOf(order.status);
+        
+        let html = '<div class="d-flex gap-1">';
+        
+        steps.forEach((step, index) => {
+            let className = 'bg-secondary';
+            if (order.status === 'FINALIZADO') {
+                className = 'bg-success';
+            } else if (order.status === 'REJEITADO') {
+                className = index <= currentIndex ? 'bg-danger' : 'bg-secondary';
+            } else if (index < currentIndex) {
+                className = 'bg-success';
+            } else if (index === currentIndex) {
+                className = 'bg-primary';
+            }
+            
+            html += `
+                <div class="text-center" style="flex: 1;">
+                    <div class="rounded ${className}" style="height: 6px;"></div>
+                    <small class="text-muted" style="font-size: 9px;">${stepNames[index]}</small>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        return html;
+    }
+
+    function renderStatusBadge(status) {
+        const badges = {
+            'PENDENTE': 'bg-warning text-dark',
+            'SEPARACAO': 'bg-info',
+            'PESAGEM': 'bg-info',
+            'MISTURA': 'bg-info',
+            'ENVASE': 'bg-info',
+            'ROTULAGEM': 'bg-info',
+            'CONFERENCIA': 'bg-primary',
+            'APROVADO': 'bg-primary',
+            'FINALIZADO': 'bg-success',
+            'REJEITADO': 'bg-danger'
+        };
+        return `<span class="badge ${badges[status] || 'bg-secondary'}">${status}</span>`;
+    }
+
+    function renderPriorityBadge(priority) {
+        const badges = {
+            'URGENTE': 'bg-danger',
+            'ALTA': 'bg-warning text-dark',
+            'NORMAL': 'bg-secondary',
+            'BAIXA': 'bg-light text-dark'
+        };
+        return `<span class="badge ${badges[priority] || 'bg-secondary'}">${priority}</span>`;
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '-';
+        return new Date(dateString).toLocaleDateString('pt-BR');
+    }
+
+    async function showOrderDetail(orderId) {
+        try {
+            const response = await fetch(`/api/ManipulationWorkflow/${orderId}/progress`);
+            const result = await response.json();
+            
+            if (result.success) {
+                const order = result.data;
+                document.getElementById('modalOrderNumber').textContent = order.orderNumber;
+                document.getElementById('btnIrParaProducao').href = `/Manipulacoes/ProducaoOrdem/${orderId}`;
+                
+                document.getElementById('modalBody').innerHTML = `
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <p><strong>Fórmula:</strong> ${order.formulaName || 'Fórmula livre'}</p>
+                            <p><strong>Status:</strong> ${renderStatusBadge(order.status)}</p>
+                            <p><strong>Progresso:</strong> ${order.progress}%</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Etapas:</strong> ${order.completedSteps}/${order.totalSteps}</p>
+                            <p><strong>Criado em:</strong> ${formatDate(order.createdAt)}</p>
+                            <p><strong>Conclusão:</strong> ${order.completionDate ? formatDate(order.completionDate) : 'Em andamento'}</p>
+                        </div>
+                    </div>
+                    
+                    <h6 class="mb-3">Etapas do Workflow</h6>
+                    <div class="list-group">
+                        ${order.steps.map(step => `
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${step.stepType}</strong>
+                                    ${step.completedAt ? `<br><small class="text-muted">Concluído em ${formatDate(step.completedAt)}</small>` : ''}
+                                </div>
+                                ${renderStatusBadge(step.status)}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                new bootstrap.Modal(document.getElementById('orderDetailModal')).show();
+            }
+        } catch (error) {
+            console.error('Erro ao carregar detalhes:', error);
+        }
+    }
+
+    function applyFilters() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const status = document.getElementById('filterStatus').value;
+        const priority = document.getElementById('filterPriority').value;
+        
+        let filtered = allOrders.filter(order => {
+            if (search && !order.orderNumber.toLowerCase().includes(search) && 
+                !order.customerName?.toLowerCase().includes(search)) {
+                return false;
+            }
+            if (status && order.status !== status) return false;
+            if (priority && order.priority !== priority) return false;
+            return true;
+        });
+        
+        renderOrders(filtered);
+        document.getElementById('totalOrdens').textContent = filtered.length + ' ordens';
+    }
+
+    function clearFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterPriority').value = '';
+        document.getElementById('filterDate').value = '';
+        renderOrders(allOrders);
+        document.getElementById('totalOrdens').textContent = allOrders.length + ' ordens';
+    }
+
+    // Busca em tempo real
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('filterStatus').addEventListener('change', applyFilters);
+    document.getElementById('filterPriority').addEventListener('change', applyFilters);
+</script>
+}

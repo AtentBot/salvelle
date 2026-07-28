@@ -1,0 +1,234 @@
+﻿@using Models
+@model CatalogProduct
+@{
+    ViewData["Title"] = Model.Name;
+    ViewData["ActiveNav"] = "catalogo";
+    Layout = "_LayoutCliente";
+    
+    var establishment = ViewBag.Establishment as Establishment;
+}
+
+<style>
+    .product-hero {
+        background: var(--bg-subtle);
+        height: 250px;
+        display: grid; place-items: center;
+        position: relative;
+    }
+    .product-hero i { font-size: 80px; color: var(--ink-4); }
+    .product-badge {
+        position: absolute; top: 14px; right: 14px;
+        padding: 4px 12px;
+        border-radius: var(--r-pill);
+        font-size: 12px; font-weight: 500;
+    }
+    .price-box { background: var(--bg-subtle); border-radius: var(--r-md); padding: 16px; }
+    .current-price { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--ok); }
+    .old-price { font-size: 14px; color: var(--ink-4); text-decoration: line-through; }
+    .info-section {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-md);
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: var(--shadow-1);
+    }
+    .info-section h6 { color: var(--ink-2); margin-bottom: 8px; font-weight: 600; letter-spacing: -0.005em; }
+    .qty-control { display: flex; align-items: center; gap: 12px; }
+    .qty-btn {
+        width: 40px; height: 40px; border-radius: 50%;
+        border: 1px solid var(--rule);
+        background: var(--surface);
+        display: grid; place-items: center;
+        cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .qty-btn:hover { background: var(--petrol-500); color: #fff; border-color: var(--petrol-500); }
+    .qty-value { font-size: 20px; font-weight: 600; min-width: 40px; text-align: center; font-variant-numeric: tabular-nums; }
+    .bottom-bar {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        background: var(--surface);
+        padding: 12px 20px;
+        border-top: 1px solid var(--rule);
+        box-shadow: 0 -4px 20px rgba(11,18,32,.06);
+        z-index: 50;
+    }
+</style>
+
+<div class="product-hero">
+    <i class="bi bi-capsule"></i>
+    @if (Model.IsOnPromotion)
+    {
+        <span class="product-badge bg-danger text-white">-@Model.DiscountPercent% OFF</span>
+    }
+    else if (Model.IsHighlight)
+    {
+        <span class="product-badge bg-warning text-dark">⭐ Destaque</span>
+    }
+    
+    <a href="/Cliente/Catalogo" class="btn btn-light rounded-circle position-absolute" style="top: 15px; left: 15px;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+</div>
+
+<div class="container py-4" style="padding-bottom: 100px;">
+    <!-- Nome e Categoria -->
+    <div class="mb-3">
+        @if (Model.Category != null)
+        {
+            <span class="badge bg-secondary mb-2">@Model.Category.Name</span>
+        }
+        <h4 class="mb-1">@Model.Name</h4>
+        <p class="text-muted mb-0">@Model.ShortDescription</p>
+    </div>
+
+    <!-- Preço -->
+    <div class="price-box mb-4">
+        @if (Model.IsOnPromotion)
+        {
+            <div class="old-price">De R$ @Model.Price.ToString("N2")</div>
+            <div class="current-price">R$ @Model.PromotionalPrice?.ToString("N2")</div>
+            <small class="text-success">
+                <i class="bi bi-clock me-1"></i>
+                Promoção válida até @Model.PromotionEndsAt?.ToString("dd/MM")
+            </small>
+        }
+        else
+        {
+            <div class="current-price">R$ @Model.Price.ToString("N2")</div>
+        }
+    </div>
+
+    <!-- Quantidade -->
+    <div class="info-section">
+        <h6><i class="bi bi-bag me-2"></i>Quantidade</h6>
+        <div class="qty-control">
+            <button type="button" class="qty-btn" onclick="changeQty(-1)">
+                <i class="bi bi-dash"></i>
+            </button>
+            <span class="qty-value" id="quantity">1</span>
+            <button type="button" class="qty-btn" onclick="changeQty(1)">
+                <i class="bi bi-plus"></i>
+            </button>
+            <span class="text-muted ms-2">@Model.Unit</span>
+        </div>
+    </div>
+
+    <!-- Composição -->
+    @if (!string.IsNullOrEmpty(Model.Composition))
+    {
+        <div class="info-section">
+            <h6><i class="bi bi-list-check me-2"></i>Composição</h6>
+            <p class="mb-0 text-muted">@Model.Composition</p>
+        </div>
+    }
+
+    <!-- Posologia -->
+    @if (!string.IsNullOrEmpty(Model.Dosage))
+    {
+        <div class="info-section">
+            <h6><i class="bi bi-clock-history me-2"></i>Modo de Uso</h6>
+            <p class="mb-0 text-muted">@Model.Dosage</p>
+        </div>
+    }
+
+    <!-- Descrição -->
+    @if (!string.IsNullOrEmpty(Model.Description))
+    {
+        <div class="info-section">
+            <h6><i class="bi bi-info-circle me-2"></i>Descrição</h6>
+            <p class="mb-0 text-muted">@Model.Description</p>
+        </div>
+    }
+
+    <!-- Estoque -->
+    <div class="text-center mt-4">
+        @if (Model.StockQuantity > 10)
+        {
+            <span class="text-success"><i class="bi bi-check-circle me-1"></i>Em estoque</span>
+        }
+        else if (Model.StockQuantity > 0)
+        {
+            <span class="text-warning"><i class="bi bi-exclamation-circle me-1"></i>Últimas @Model.StockQuantity unidades</span>
+        }
+        else
+        {
+            <span class="text-danger"><i class="bi bi-x-circle me-1"></i>Fora de estoque</span>
+        }
+    </div>
+</div>
+
+<!-- Bottom Bar -->
+<div class="bottom-bar">
+    <div class="d-flex align-items-center gap-3">
+        <div class="flex-grow-1">
+            <small class="text-muted">Total</small>
+            <div class="fw-bold fs-5 text-success" id="totalPrice">
+                R$ @Model.CurrentPrice.ToString("N2")
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary btn-lg px-4" onclick="addToCart()" @(Model.StockQuantity <= 0 ? "disabled" : "")>
+            <i class="bi bi-cart-plus me-2"></i>Adicionar
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const productId = '@Model.Id';
+    const unitPrice = @Model.CurrentPrice.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    let quantity = 1;
+    
+    function changeQty(delta) {
+        quantity = Math.max(1, Math.min(99, quantity + delta));
+        document.getElementById('quantity').textContent = quantity;
+        updateTotal();
+    }
+    
+    function updateTotal() {
+        const total = (unitPrice * quantity).toFixed(2).replace('.', ',');
+        document.getElementById('totalPrice').textContent = 'R$ ' + total;
+    }
+    
+    async function addToCart() {
+        try {
+            const response = await fetch('/api/cliente/cart/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    productId: productId, 
+                    quantity: quantity 
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Mostrar toast de sucesso
+                showToast('Produto adicionado ao carrinho!', 'success');
+                
+                // Redirecionar ou continuar comprando
+                setTimeout(() => {
+                    if (confirm('Produto adicionado! Deseja ir para o carrinho?')) {
+                        window.location.href = '/Cliente/Carrinho';
+                    }
+                }, 500);
+            } else {
+                showToast(data.message || 'Erro ao adicionar', 'danger');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showToast('Erro ao adicionar ao carrinho', 'danger');
+        }
+    }
+    
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} position-fixed`;
+        toast.style.cssText = 'top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; min-width: 250px; text-align: center;';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+</script>
+}

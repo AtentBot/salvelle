@@ -1,0 +1,295 @@
+@{
+    ViewData["Title"] = "Converter em Venda";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var quote = ViewBag.Quote;
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <i class="fas fa-shopping-cart text-success me-2"></i>Converter Orçamento em Venda
+            </h4>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="/PrescriptionsView">Orçamentos</a></li>
+                    <li class="breadcrumb-item"><a href="/PrescriptionsView/Details/@quote.Id">@quote.Code</a></li>
+                    <li class="breadcrumb-item active">Converter em Venda</li>
+                </ol>
+            </nav>
+        </div>
+        <a href="/PrescriptionsView/Details/@quote.Id" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Voltar
+        </a>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Resumo do Orçamento -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-file-invoice-dollar me-2"></i>Resumo do Orçamento</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted">Código:</td>
+                            <td class="fw-bold">@quote.Code</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Cliente:</td>
+                            <td class="fw-bold">@(quote.CustomerName ?? "Não informado")</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Status:</td>
+                            <td>
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check me-1"></i>@quote.Status
+                                </span>
+                            </td>
+                        </tr>
+                        <tr class="border-top">
+                            <td class="text-muted fs-5">Valor Total:</td>
+                            <td class="fw-bold fs-4 text-success">
+                                R$ @quote.FinalPrice.ToString("N2")
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Info -->
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>O que acontece ao converter:</strong>
+                <ul class="mb-0 mt-2">
+                    <li>Uma <strong>venda</strong> será registrada no sistema</li>
+                    <li>Uma <strong>ordem de manipulação</strong> será criada automaticamente</li>
+                    <li>O cliente receberá confirmação por <strong>WhatsApp</strong></li>
+                    <li>O orçamento será marcado como <strong>CONVERTIDO</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Formulário de Pagamento -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-credit-card me-2"></i>Dados do Pagamento</h6>
+                </div>
+                <div class="card-body">
+                    <form id="convertForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Forma de Pagamento <span class="text-danger">*</span></label>
+                                <select id="paymentMethod" class="form-select" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="DINHEIRO">💵 Dinheiro</option>
+                                    <option value="PIX">📱 PIX</option>
+                                    <option value="CARTAO_CREDITO">💳 Cartão de Crédito</option>
+                                    <option value="CARTAO_DEBITO">💳 Cartão de Débito</option>
+                                    <option value="BOLETO">📄 Boleto</option>
+                                    <option value="CONVENIO">🏢 Convênio</option>
+                                    <option value="TRANSFERENCIA">🏦 Transferência</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3" id="installmentsGroup" style="display: none;">
+                                <label class="form-label">Parcelas</label>
+                                <select id="installments" class="form-select">
+                                    <option value="1">1x de R$ @quote.FinalPrice.ToString("N2")</option>
+                                    @for (int i = 2; i <= 12; i++)
+                                    {
+                                        var parcela = quote.FinalPrice / i;
+                                        <option value="@i">@i x de R$ @parcela.ToString("N2")</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Valor Pago <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" id="amountPaid" class="form-control" 
+                                           step="0.01" min="0" value="@quote.FinalPrice.ToString("F2")" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Troco</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="text" id="change" class="form-control" readonly value="0,00">
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Desconto Adicional</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" id="discountAmount" class="form-control" 
+                                           step="0.01" min="0" value="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Motivo do Desconto</label>
+                                <input type="text" id="discountReason" class="form-control" 
+                                       placeholder="Ex: Cliente fidelidade">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Valor Final</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="text" id="finalValue" class="form-control form-control-lg fw-bold text-success" 
+                                       readonly value="@quote.FinalPrice.ToString("N2")">
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-success btn-lg" onclick="convertToSale()">
+                                <i class="fas fa-check-circle me-2"></i>Confirmar Venda
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-5">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                <h5>Processando venda...</h5>
+                <p class="text-muted mb-0">Aguarde enquanto registramos a venda e criamos a ordem de manipulação.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-5">
+                <div class="text-success mb-3">
+                    <i class="fas fa-check-circle" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="text-success">Venda Realizada!</h4>
+                <p class="text-muted mb-4" id="successMessage">A venda foi registrada com sucesso.</p>
+                <div class="d-grid gap-2">
+                    <a href="/Manipulacoes" class="btn btn-primary">
+                        <i class="fas fa-flask me-2"></i>Ver Ordens de Manipulação
+                    </a>
+                    <a href="/PrescriptionsView" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-2"></i>Voltar aos Orçamentos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const quoteId = '@quote.Id';
+    const originalPrice = @quote.FinalPrice;
+    
+    document.getElementById('paymentMethod').addEventListener('change', function() {
+        const installmentsGroup = document.getElementById('installmentsGroup');
+        if (this.value === 'CARTAO_CREDITO') {
+            installmentsGroup.style.display = 'block';
+        } else {
+            installmentsGroup.style.display = 'none';
+            document.getElementById('installments').value = '1';
+        }
+    });
+    
+    document.getElementById('amountPaid').addEventListener('input', calculateChange);
+    document.getElementById('discountAmount').addEventListener('input', calculateFinal);
+    
+    function calculateChange() {
+        const finalValue = parseFloat(document.getElementById('finalValue').value.replace(',', '.')) || 0;
+        const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
+        const change = Math.max(0, amountPaid - finalValue);
+        document.getElementById('change').value = change.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    }
+    
+    function calculateFinal() {
+        const discount = parseFloat(document.getElementById('discountAmount').value) || 0;
+        const finalValue = Math.max(0, originalPrice - discount);
+        document.getElementById('finalValue').value = finalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        calculateChange();
+    }
+    
+    async function convertToSale() {
+        const paymentMethod = document.getElementById('paymentMethod').value;
+        const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
+        const installments = parseInt(document.getElementById('installments').value) || 1;
+        const discountAmount = parseFloat(document.getElementById('discountAmount').value) || 0;
+        const discountReason = document.getElementById('discountReason').value;
+        
+        if (!paymentMethod) {
+            alert('Selecione a forma de pagamento');
+            return;
+        }
+        
+        const finalValue = originalPrice - discountAmount;
+        if (amountPaid < finalValue && paymentMethod !== 'CONVENIO' && paymentMethod !== 'BOLETO') {
+            alert('O valor pago não pode ser menor que o valor total');
+            return;
+        }
+        
+        // Show loading
+        const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+        loadingModal.show();
+        
+        try {
+            const response = await fetch(`/api/PrescriptionQuotes/${quoteId}/convert-to-sale`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    paymentMethod,
+                    amountPaid,
+                    installments,
+                    discountAmount,
+                    discountReason
+                })
+            });
+            
+            const result = await response.json();
+            loadingModal.hide();
+            
+            if (response.ok) {
+                document.getElementById('successMessage').textContent = result.message || 'A venda foi registrada com sucesso.';
+                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+            } else {
+                alert(result.message || 'Erro ao processar venda');
+            }
+        } catch (error) {
+            loadingModal.hide();
+            alert('Erro ao processar venda: ' + error.message);
+        }
+    }
+</script>
+}

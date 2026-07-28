@@ -1,0 +1,195 @@
+@{
+    ViewData["Title"] = "Portal de Auditoria";
+    var stats = ViewBag.Stats as AuditDashboardStats;
+    var establishment = ViewBag.Establishment as Models.Establishment;
+}
+
+@section Styles {
+<style>
+    .stat-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 24px; }
+    .ds-stat { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); padding: 16px 18px; position: relative; overflow: hidden; }
+    .ds-stat::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ink-5); }
+    .ds-stat.is-ok::before { background: var(--ok); }
+    .ds-stat.is-warn::before { background: var(--amber-500); }
+    .ds-stat.is-danger::before { background: var(--danger); }
+    .ds-stat.is-info::before { background: var(--info); }
+    .ds-stat.is-petrol::before { background: var(--petrol-500); }
+    .ds-stat-icon { width: 32px; height: 32px; border-radius: var(--r-sm); display: grid; place-items: center; font-size: 15px; margin-bottom: 10px; background: var(--bg-subtle); color: var(--ink-2); }
+    .ds-stat.is-ok .ds-stat-icon { background: var(--ok-soft); color: var(--ok); }
+    .ds-stat.is-warn .ds-stat-icon { background: var(--amber-50); color: var(--amber-700); }
+    .ds-stat.is-info .ds-stat-icon { background: var(--info-soft); color: var(--info); }
+    .ds-stat.is-petrol .ds-stat-icon { background: var(--petrol-50); color: var(--petrol-500); }
+    .ds-stat-value { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--ink); }
+    .ds-stat-label { font-size: 12px; color: var(--ink-3); font-weight: 500; margin-top: 2px; }
+
+    .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+
+    .ds-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); overflow: hidden; }
+    .ds-card + .ds-card { margin-top: 24px; }
+    .ds-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .ds-card-head i.head-icon { color: var(--petrol-500); font-size: 16px; margin-right: 8px; }
+    .ds-card-title { font-size: 16px; font-weight: 600; letter-spacing: -0.015em; margin: 0; display: flex; align-items: center; }
+    .ds-card-body { padding: 16px 20px; }
+
+    .report-list { display: flex; flex-direction: column; }
+    .report-link { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 4px; text-decoration: none; border-bottom: 1px solid var(--rule); transition: all var(--t-fast); }
+    .report-link:last-child { border-bottom: none; }
+    .report-link:hover { padding-left: 10px; }
+    .report-link .rl-title { font-size: 14px; font-weight: 600; color: var(--ink); }
+    .report-link .rl-sub { display: block; font-size: 12px; color: var(--ink-3); font-weight: 400; margin-top: 1px; }
+    .report-link .rl-arrow { color: var(--ink-3); font-size: 14px; }
+
+    .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .quick-action { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-sm); padding: 16px 14px; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; transition: all var(--t-fast); color: var(--ink-2); }
+    .quick-action:hover { border-color: var(--petrol-500); color: var(--ink); transform: translateY(-1px); box-shadow: var(--shadow-2); }
+    .quick-action i { font-size: 22px; }
+    .quick-action.danger i { color: var(--danger); }
+    .quick-action.petrol i { color: var(--petrol-500); }
+    .quick-action.ok i { color: var(--ok); }
+    .quick-action.amber i { color: var(--amber-700); }
+    .quick-action span { font-size: 13px; font-weight: 500; }
+
+    .ds-banner { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-radius: var(--r-md); margin-bottom: 16px; border: 1px solid var(--danger-border); background: var(--danger-soft); font-size: 14px; color: var(--ink-2); }
+    .ds-banner i { font-size: 18px; color: var(--danger); flex-shrink: 0; }
+
+    .copy-row { display: flex; gap: 8px; }
+    .copy-row .input { flex: 1; }
+
+    @@media (max-width: 1080px) {
+        .stat-grid { grid-template-columns: repeat(3, 1fr); }
+        .content-grid { grid-template-columns: 1fr; }
+    }
+    @@media (max-width: 560px) {
+        .stat-grid { grid-template-columns: repeat(2, 1fr); }
+        .copy-row { flex-direction: column; }
+    }
+</style>
+}
+
+<div>
+    <div class="page-head">
+        <div>
+            <div class="eyebrow" style="margin-bottom:6px;">ANVISA · SNGPC</div>
+            <h1>Portal de Auditoria</h1>
+            <p>Controle e rastreabilidade de substâncias controladas.</p>
+        </div>
+        <div class="row">
+            <span class="badge badge-petrol badge-no-dot"><i class="bi bi-building"></i>&nbsp;@establishment?.NomeFantasia</span>
+        </div>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="ds-banner"><i class="bi bi-x-circle-fill"></i><div>@TempData["Error"]</div></div>
+    }
+
+    <div class="stat-grid">
+        <div class="ds-stat is-petrol">
+            <div class="ds-stat-icon"><i class="bi bi-arrow-left-right"></i></div>
+            <div class="ds-stat-value">@(stats?.TotalControlledMovements ?? 0)</div>
+            <div class="ds-stat-label">Movimentações</div>
+        </div>
+        <div class="ds-stat @((stats?.PendingSngpcTransmissions ?? 0) > 0 ? "is-warn" : "is-ok")">
+            <div class="ds-stat-icon"><i class="bi bi-cloud-upload"></i></div>
+            <div class="ds-stat-value">@(stats?.PendingSngpcTransmissions ?? 0)</div>
+            <div class="ds-stat-label">Pendentes SNGPC</div>
+        </div>
+        <div class="ds-stat is-info">
+            <div class="ds-stat-icon"><i class="bi bi-file-medical"></i></div>
+            <div class="ds-stat-value">@(stats?.TotalPrescriptionsThisMonth ?? 0)</div>
+            <div class="ds-stat-label">Receitas (mês)</div>
+        </div>
+        <div class="ds-stat is-ok">
+            <div class="ds-stat-icon"><i class="bi bi-check2-square"></i></div>
+            <div class="ds-stat-value">@(stats?.TotalApprovals ?? 0)</div>
+            <div class="ds-stat-label">Aprovações</div>
+        </div>
+        <div class="ds-stat is-petrol">
+            <div class="ds-stat-icon"><i class="bi bi-award"></i></div>
+            <div class="ds-stat-value">@(stats?.ActiveSupplierCertificates ?? 0)</div>
+            <div class="ds-stat-label">Certificados AFE</div>
+        </div>
+        <div class="ds-stat @((stats?.ExpiringCertificates ?? 0) > 0 ? "is-warn" : "")">
+            <div class="ds-stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="ds-stat-value">@(stats?.ExpiringCertificates ?? 0)</div>
+            <div class="ds-stat-label">Cert. vencendo</div>
+        </div>
+    </div>
+
+    <div class="content-grid">
+        <div class="ds-card">
+            <div class="ds-card-head">
+                <h3 class="ds-card-title"><i class="bi bi-file-earmark-bar-graph head-icon"></i>Relatórios obrigatórios ANVISA</h3>
+            </div>
+            <div class="ds-card-body">
+                <div class="report-list">
+                    <a href="/Audit/Reports/BMPO" class="report-link">
+                        <div><span class="rl-title">BMPO</span><span class="rl-sub">Balanço Mensal de Psicotrópicos</span></div>
+                        <span class="badge badge-petrol badge-no-dot">Mensal</span>
+                    </a>
+                    <a href="/Audit/Reports/BSPO" class="report-link">
+                        <div><span class="rl-title">BSPO</span><span class="rl-sub">Balanço de Substâncias Psicoativas</span></div>
+                        <span class="badge badge-info badge-no-dot">Trimestral</span>
+                    </a>
+                    <a href="/Audit/Reports/Movements" class="report-link">
+                        <div><span class="rl-title">Movimentações</span><span class="rl-sub">Relatório de movimentações por período</span></div>
+                        <i class="bi bi-chevron-right rl-arrow"></i>
+                    </a>
+                    <a href="/Audit/Reports/Prescriptions" class="report-link">
+                        <div><span class="rl-title">Receituários</span><span class="rl-sub">Controle de receitas especiais</span></div>
+                        <i class="bi bi-chevron-right rl-arrow"></i>
+                    </a>
+                    <a href="/Audit/Reports/Approvals" class="report-link">
+                        <div><span class="rl-title">Aprovações RT</span><span class="rl-sub">Histórico de aprovações farmacêuticas</span></div>
+                        <i class="bi bi-chevron-right rl-arrow"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="ds-card">
+            <div class="ds-card-head">
+                <h3 class="ds-card-title"><i class="bi bi-lightning head-icon"></i>Acesso rápido</h3>
+            </div>
+            <div class="ds-card-body">
+                <div class="quick-grid">
+                    <a href="/Controlled" class="quick-action danger"><i class="bi bi-shield-exclamation"></i><span>Dashboard SNGPC</span></a>
+                    <a href="/Controlled/Movements" class="quick-action petrol"><i class="bi bi-arrow-left-right"></i><span>Movimentações</span></a>
+                    <a href="/Controlled/Inventory" class="quick-action ok"><i class="bi bi-clipboard-check"></i><span>Inventário mensal</span></a>
+                    <a href="/SupplierCertification" class="quick-action amber"><i class="bi bi-award"></i><span>Certificações AFE</span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ds-card" style="margin-top:24px;">
+        <div class="ds-card-head">
+            <h3 class="ds-card-title"><i class="bi bi-person-badge head-icon"></i>Acesso de auditores externos</h3>
+            <a href="/Audit/PendingAccessRequests" class="btn btn-secondary btn-sm"><i class="bi bi-inbox"></i>Solicitações pendentes</a>
+        </div>
+        <div class="ds-card-body">
+            <p style="color:var(--ink-3);font-size:14px;margin:0 0 14px;">
+                Auditores da ANVISA, Vigilância Sanitária ou outros órgãos podem solicitar acesso temporário aos relatórios de controlados através do link abaixo:
+            </p>
+            <div class="copy-row">
+                <input type="text" class="input mono" value="@Context.Request.Scheme://@Context.Request.Host/Audit/AccessRequest" readonly id="accessLink">
+                <button class="btn btn-secondary" type="button" onclick="copyLink()"><i class="bi bi-clipboard"></i>Copiar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function copyLink() {
+    var input = document.getElementById('accessLink');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(input.value).catch(function () { document.execCommand('copy'); });
+    } else {
+        document.execCommand('copy');
+    }
+}
+</script>
+}

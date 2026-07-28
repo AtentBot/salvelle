@@ -1,0 +1,427 @@
+﻿@{
+    ViewData["Title"] = "Workflow de Produção";
+    Layout = "_Layout";
+}
+
+<style>
+    .workflow-stage {
+        text-align: center;
+        padding: 18px 12px;
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-md);
+        transition: all var(--t-base);
+        cursor: pointer;
+    }
+    .workflow-stage:hover { border-color: var(--petrol-500); box-shadow: var(--shadow-2); transform: translateY(-2px); }
+    .stage-icon {
+        width: 48px; height: 48px;
+        border-radius: var(--r-md);
+        display: grid; place-items: center;
+        margin: 0 auto 12px;
+        font-size: 20px;
+        color: #fff;
+    }
+    .stage-icon.bg-secondary { background: var(--ink-3) !important; }
+    .stage-icon.bg-info { background: var(--info) !important; }
+    .stage-icon.bg-primary { background: var(--petrol-500) !important; }
+    .stage-icon.bg-warning { background: var(--amber-500) !important; }
+    .stage-icon.bg-success { background: var(--ok) !important; }
+    .stage-icon.bg-dark { background: var(--ink) !important; }
+    .stage-count { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--ink); }
+    .workflow-stage > div:last-child { font-size: 12px; color: var(--ink-3); margin-top: 4px; font-weight: 500; }
+    .stage-arrow {
+        display: flex; align-items: center; justify-content: center;
+        color: var(--ink-5); font-size: 20px;
+    }
+    .stat-card-mini {
+        border: 1px solid var(--rule);
+        border-radius: var(--r-md);
+        background: var(--surface);
+        transition: box-shadow var(--t-fast);
+    }
+    .stat-card-mini:hover { box-shadow: var(--shadow-2); }
+    .recent-orders { max-height: 400px; overflow-y: auto; }
+    .order-item {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--rule);
+        transition: background-color var(--t-fast);
+        cursor: pointer;
+    }
+    .order-item:hover { background-color: var(--bg-subtle); }
+    .order-item:last-child { border-bottom: none; }
+    .chart-container { height: 250px; }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-diagram-3 me-2"></i>Workflow de Produção</h4>
+            <small class="text-muted">Visão geral do processo de manipulação</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/Manipulacoes/Kanban" class="btn btn-outline-primary">
+                <i class="bi bi-kanban me-1"></i>Kanban
+            </a>
+            <a href="/Manipulacoes" class="btn btn-outline-secondary">
+                <i class="bi bi-list me-1"></i>Lista
+            </a>
+            <button class="btn btn-outline-secondary" onclick="loadData()">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Workflow Visual -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h6 class="mb-0"><i class="bi bi-signpost-split me-2"></i>Etapas do Processo</h6>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center g-2">
+                <!-- PENDENTE -->
+                <div class="col">
+                    <div class="workflow-stage bg-light" onclick="filterByStatus('PENDENTE')">
+                        <div class="stage-icon bg-secondary"><i class="bi bi-inbox"></i></div>
+                        <div class="stage-count" id="countPendente">0</div>
+                        <div class="text-muted small">Pendentes</div>
+                    </div>
+                </div>
+                <div class="col-auto stage-arrow"><i class="bi bi-arrow-right"></i></div>
+                
+                <!-- SEPARAÇÃO -->
+                <div class="col">
+                    <div class="workflow-stage bg-light" onclick="filterByStatus('SEPARACAO')">
+                        <div class="stage-icon bg-info"><i class="bi bi-box-seam"></i></div>
+                        <div class="stage-count" id="countSeparacao">0</div>
+                        <div class="text-muted small">Separação</div>
+                    </div>
+                </div>
+                <div class="col-auto stage-arrow"><i class="bi bi-arrow-right"></i></div>
+                
+                <!-- PESAGEM -->
+                <div class="col">
+                    <div class="workflow-stage bg-light" onclick="filterByStatus('PESAGEM')">
+                        <div class="stage-icon bg-primary"><i class="bi bi-speedometer"></i></div>
+                        <div class="stage-count" id="countPesagem">0</div>
+                        <div class="text-muted small">Pesagem</div>
+                    </div>
+                </div>
+                <div class="col-auto stage-arrow"><i class="bi bi-arrow-right"></i></div>
+                
+                <!-- MISTURA -->
+                <div class="col">
+                    <div class="workflow-stage bg-light" onclick="filterByStatus('MISTURA')">
+                        <div class="stage-icon" style="background: var(--controlled-black);"><i class="bi bi-arrow-repeat"></i></div>
+                        <div class="stage-count" id="countMistura">0</div>
+                        <div class="text-muted small">Mistura</div>
+                    </div>
+                </div>
+                <div class="col-auto stage-arrow"><i class="bi bi-arrow-right"></i></div>
+                
+                <!-- ENVASE -->
+                <div class="col">
+                    <div class="workflow-stage bg-light" onclick="filterByStatus('ENVASE')">
+                        <div class="stage-icon" style="background: var(--danger);"><i class="bi bi-droplet"></i></div>
+                        <div class="stage-count" id="countEnvase">0</div>
+                        <div class="text-muted small">Envase</div>
+                    </div>
+                </div>
+                <div class="col-auto stage-arrow"><i class="bi bi-arrow-right"></i></div>
+                
+                <!-- ROTULAGEM -->
+                <div class="col">
+                    <div class="workflow-stage bg-light" onclick="filterByStatus('ROTULAGEM')">
+                        <div class="stage-icon bg-warning"><i class="bi bi-tag"></i></div>
+                        <div class="stage-count" id="countRotulagem">0</div>
+                        <div class="text-muted small">Rotulagem</div>
+                    </div>
+                </div>
+                <div class="col-auto stage-arrow"><i class="bi bi-arrow-right"></i></div>
+                
+                <!-- CONFERÊNCIA -->
+                <div class="col">
+                    <div class="workflow-stage bg-light" onclick="filterByStatus('CONFERENCIA')">
+                        <div class="stage-icon" style="background: var(--ok);"><i class="bi bi-check2-square"></i></div>
+                        <div class="stage-count" id="countConferencia">0</div>
+                        <div class="text-muted small">Conferência</div>
+                    </div>
+                </div>
+                <div class="col-auto stage-arrow"><i class="bi bi-arrow-right"></i></div>
+                
+                <!-- FINALIZADO -->
+                <div class="col">
+                    <div class="workflow-stage bg-light" onclick="filterByStatus('FINALIZADO')">
+                        <div class="stage-icon bg-success"><i class="bi bi-patch-check"></i></div>
+                        <div class="stage-count" id="countFinalizado">0</div>
+                        <div class="text-muted small">Finalizados</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- KPIs -->
+        <div class="col-lg-8">
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card stat-card-mini shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-calendar-check text-success fs-2"></i>
+                            <h3 class="mb-0 mt-2" id="kpiHoje">0</h3>
+                            <small class="text-muted">Produzidos Hoje</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card-mini shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-clock-history text-warning fs-2"></i>
+                            <h3 class="mb-0 mt-2" id="kpiTempoMedio">0h</h3>
+                            <small class="text-muted">Tempo Médio</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card-mini shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-exclamation-triangle text-danger fs-2"></i>
+                            <h3 class="mb-0 mt-2" id="kpiAtrasados">0</h3>
+                            <small class="text-muted">Atrasados</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card-mini shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-percent text-info fs-2"></i>
+                            <h3 class="mb-0 mt-2" id="kpiAprovacao">0%</h3>
+                            <small class="text-muted">Taxa Aprovação</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico de Produção -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Produção Semanal</h6>
+                    <select class="form-select form-select-sm" style="width: auto;" id="chartPeriod" onchange="loadChart()">
+                        <option value="7">Últimos 7 dias</option>
+                        <option value="14">Últimos 14 dias</option>
+                        <option value="30">Últimos 30 dias</option>
+                    </select>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="productionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ordens Recentes e Alertas -->
+        <div class="col-lg-4">
+            <!-- Alertas -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-danger text-white">
+                    <i class="bi bi-bell me-2"></i>Atenção Necessária
+                </div>
+                <div class="card-body p-0">
+                    <div id="alertsList" class="recent-orders">
+                        <div class="text-center py-4 text-muted">
+                            <div class="spinner-border spinner-border-sm"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Próximas a Vencer -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <i class="bi bi-hourglass-split me-2"></i>Próximas a Vencer
+                </div>
+                <div class="card-body p-0">
+                    <div id="upcomingList" class="recent-orders">
+                        <div class="text-center py-4 text-muted">
+                            <div class="spinner-border spinner-border-sm"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let productionChart = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadData();
+});
+
+async function loadData() {
+    await Promise.all([
+        loadDashboard(),
+        loadAlerts(),
+        loadUpcoming(),
+        loadChart()
+    ]);
+}
+
+async function loadDashboard() {
+    try {
+        const response = await fetch('/api/ManipulationOrders/workflow-dashboard');
+        const result = await response.json();
+        
+        if (result.success) {
+            const d = result.data;
+            
+            // Contadores por etapa
+            document.getElementById('countPendente').textContent = d.totalPendentes || 0;
+            document.getElementById('countFinalizado').textContent = d.totalFinalizadosHoje || 0;
+            document.getElementById('kpiHoje').textContent = d.totalFinalizadosHoje || 0;
+            document.getElementById('kpiAtrasados').textContent = d.totalAtrasados || 0;
+            
+            // Distribuição por status
+            if (d.ordersByStatus) {
+                document.getElementById('countSeparacao').textContent = d.ordersByStatus['SEPARACAO'] || 0;
+                document.getElementById('countPesagem').textContent = d.ordersByStatus['PESAGEM'] || 0;
+                document.getElementById('countMistura').textContent = d.ordersByStatus['MISTURA'] || 0;
+                document.getElementById('countEnvase').textContent = d.ordersByStatus['ENVASE'] || 0;
+                document.getElementById('countRotulagem').textContent = d.ordersByStatus['ROTULAGEM'] || 0;
+                document.getElementById('countConferencia').textContent = d.ordersByStatus['CONFERENCIA'] || 0;
+            }
+        }
+        
+        // Taxa de aprovação
+        const statsResponse = await fetch('/api/ManipulationWorkflow/dashboard');
+        const statsResult = await statsResponse.json();
+        if (statsResult.success) {
+            document.getElementById('kpiAprovacao').textContent = (statsResult.data.taxaAprovacao || 0) + '%';
+        }
+        
+    } catch (e) { 
+        console.error('Erro ao carregar dashboard:', e); 
+    }
+}
+
+async function loadAlerts() {
+    try {
+        const response = await fetch('/api/ManipulationOrders?onlyOverdue=true&pageSize=10');
+        const result = await response.json();
+        
+        const container = document.getElementById('alertsList');
+        
+        if (result.items && result.items.length > 0) {
+            container.innerHTML = result.items.map(order => `
+                <div class="order-item" onclick="location.href='/Manipulacoes/Producao/${order.id}'">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong class="text-danger">${order.orderNumber}</strong>
+                            <br><small class="text-muted">${order.customerName || 'N/A'}</small>
+                        </div>
+                        <span class="badge bg-danger">${Math.abs(order.daysUntilExpected)}d</span>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-4 text-success">
+                    <i class="bi bi-check-circle fs-2"></i>
+                    <p class="mb-0 mt-2">Nenhum atraso!</p>
+                </div>
+            `;
+        }
+    } catch (e) {
+        document.getElementById('alertsList').innerHTML = `<div class="text-center py-4 text-danger">Erro</div>`;
+    }
+}
+
+async function loadUpcoming() {
+    try {
+        const response = await fetch('/api/ManipulationOrders?status=PENDENTE&pageSize=10&sortBy=expectedDate&ascending=true');
+        const result = await response.json();
+        
+        const container = document.getElementById('upcomingList');
+        
+        if (result.items && result.items.length > 0) {
+            container.innerHTML = result.items.map(order => `
+                <div class="order-item" onclick="location.href='/Manipulacoes/Producao/${order.id}'">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${order.orderNumber}</strong>
+                            <br><small class="text-muted">${order.formulaName || 'Fórmula Livre'}</small>
+                        </div>
+                        <span class="badge ${order.daysUntilExpected <= 1 ? 'bg-warning' : 'bg-light text-dark'}">
+                            ${order.daysUntilExpected}d
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `<div class="text-center py-4 text-muted">Nenhuma ordem pendente</div>`;
+        }
+    } catch (e) {
+        document.getElementById('upcomingList').innerHTML = `<div class="text-center py-4 text-danger">Erro</div>`;
+    }
+}
+
+async function loadChart() {
+    const days = parseInt(document.getElementById('chartPeriod').value);
+    
+    // Simular dados de produção (em produção real, viria da API)
+    const labels = [];
+    const data = [];
+    
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        labels.push(date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }));
+        data.push(Math.floor(Math.random() * 10) + 2); // Dados simulados
+    }
+    
+    const ctx = document.getElementById('productionChart').getContext('2d');
+    
+    if (productionChart) {
+        productionChart.destroy();
+    }
+    
+    productionChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Manipulações Finalizadas',
+                data: data,
+                backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                borderColor: 'rgba(40, 167, 69, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
+            }
+        }
+    });
+}
+
+function filterByStatus(status) {
+    location.href = `/Manipulacoes?status=${status}`;
+}
+</script>
+}

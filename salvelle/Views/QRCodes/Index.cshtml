@@ -1,0 +1,402 @@
+﻿@{
+    ViewData["Title"] = "QR Codes do Estabelecimento";
+    Layout = "_Layout";
+    
+    var qrcodes = ViewBag.QRCodes as List<Models.EstablishmentQRCode> ?? new();
+    var establishment = ViewBag.Establishment as Models.Establishment;
+}
+
+<style>
+    .qrcode-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+        transition: all 0.2s;
+    }
+    .qrcode-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+    
+    .qrcode-image {
+        width: 150px;
+        height: 150px;
+        background: var(--bg-subtle);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+    }
+    .qrcode-image img {
+        max-width: 100%;
+        max-height: 100%;
+    }
+    
+    .qrcode-code {
+        font-family: monospace;
+        font-size: 18px;
+        font-weight: bold;
+        color: var(--petrol-500);
+        text-align: center;
+        margin-bottom: 8px;
+    }
+    
+    .qrcode-name {
+        text-align: center;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+    
+    .qrcode-stats {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin: 16px 0;
+        font-size: 13px;
+        color: var(--ink-3);
+    }
+    
+    .qrcode-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 16px;
+    }
+    .empty-state i {
+        font-size: 64px;
+        color: var(--rule);
+        margin-bottom: 20px;
+    }
+    
+    .create-card {
+        background: var(--petrol-500);
+        color: white;
+        border-radius: 16px;
+        padding: 32px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .create-card:hover {
+        transform: scale(1.02);
+    }
+    .create-card i {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+    
+    .badge-active { background: var(--ok-soft); color: #065f46; }
+    .badge-inactive { background: var(--danger-soft); color: var(--danger); }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-qr-code me-2"></i>QR Codes do Estabelecimento</h4>
+            <p class="text-muted mb-0">Gere QR Codes para seus clientes acessarem o portal</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+            <i class="bi bi-plus-lg me-1"></i>Novo QR Code
+        </button>
+    </div>
+
+    <!-- Info Card -->
+    <div class="alert alert-info d-flex align-items-center mb-4">
+        <i class="bi bi-info-circle me-3 fs-4"></i>
+        <div>
+            <strong>Como funciona:</strong> Gere QR Codes e coloque como adesivos em locais visíveis (balcão, vitrine, receituários).
+            Quando o cliente escanear, será direcionado automaticamente para o portal da <strong>@establishment?.NomeFantasia</strong>.
+        </div>
+    </div>
+
+    <!-- QR Codes Grid -->
+    @if (qrcodes.Any())
+    {
+        <div class="row">
+            @foreach (var qr in qrcodes)
+            {
+                <div class="col-md-4 col-lg-3">
+                    <div class="qrcode-card">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="badge @(qr.IsActive ? "badge-active" : "badge-inactive")">
+                                @(qr.IsActive ? "Ativo" : "Inativo")
+                            </span>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="editQRCode('@qr.Id', '@qr.Name', '@qr.Description')">
+                                            <i class="bi bi-pencil me-2"></i>Editar
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="toggleStatus('@qr.Id', @(qr.IsActive ? "false" : "true"))">
+                                            <i class="bi bi-toggle-off me-2"></i>@(qr.IsActive ? "Desativar" : "Ativar")
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="#" onclick="deleteQRCode('@qr.Id')">
+                                            <i class="bi bi-trash me-2"></i>Excluir
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="qrcode-image" id="qr-image-@qr.Id">
+                            <div class="spinner-border spinner-border-sm text-primary"></div>
+                        </div>
+                        
+                        <div class="qrcode-code">@qr.Code</div>
+                        <div class="qrcode-name">@qr.Name</div>
+                        
+                        @if (!string.IsNullOrEmpty(qr.Description))
+                        {
+                            <p class="text-center text-muted small mb-0">@qr.Description</p>
+                        }
+                        
+                        <div class="qrcode-stats">
+                            <span><i class="bi bi-eye me-1"></i>@qr.ScanCount scans</span>
+                            @if (qr.LastScannedAt.HasValue)
+                            {
+                                <span><i class="bi bi-clock me-1"></i>@qr.LastScannedAt.Value.ToString("dd/MM")</span>
+                            }
+                        </div>
+                        
+                        <div class="qrcode-actions">
+                            <a href="/QRCodes/Print/@qr.Id" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-printer me-1"></i>Imprimir
+                            </a>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="downloadQRCode('@qr.Id', '@qr.Code')">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="bi bi-qr-code"></i>
+            <h5>Nenhum QR Code criado</h5>
+            <p class="text-muted mb-4">Crie seu primeiro QR Code para que seus clientes possam acessar o portal facilmente</p>
+            <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#createModal">
+                <i class="bi bi-plus-lg me-2"></i>Criar Primeiro QR Code
+            </button>
+        </div>
+    }
+</div>
+
+<!-- Modal Criar -->
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-qr-code me-2"></i>Novo QR Code</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nome (identificação interna)</label>
+                    <input type="text" id="createName" class="form-control" placeholder="Ex: Balcão Principal, Vitrine, etc.">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descrição (opcional)</label>
+                    <textarea id="createDescription" class="form-control" rows="2" 
+                              placeholder="Onde este QR Code será colocado..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="createQRCode()">
+                    <i class="bi bi-plus-lg me-1"></i>Criar QR Code
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar QR Code</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId">
+                <div class="mb-3">
+                    <label class="form-label">Nome</label>
+                    <input type="text" id="editName" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descrição</label>
+                    <textarea id="editDescription" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveQRCode()">
+                    <i class="bi bi-check-lg me-1"></i>Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Carregar imagens dos QR Codes
+        @foreach (var qr in qrcodes)
+        {
+            <text>loadQRCodeImage('@qr.Id');</text>
+        }
+    });
+    
+    async function loadQRCodeImage(id) {
+        try {
+            const response = await fetch(`/api/establishment-qrcodes/${id}/image-base64?size=150`, {
+                credentials: 'include'
+            });
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById(`qr-image-${id}`).innerHTML = 
+                    `<img src="${data.imageBase64}" alt="QR Code">`;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar QR Code:', error);
+        }
+    }
+    
+    async function createQRCode() {
+        const name = document.getElementById('createName').value;
+        const description = document.getElementById('createDescription').value;
+        
+        try {
+            const response = await fetch('/api/establishment-qrcodes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ name, description })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao criar QR Code');
+        }
+    }
+    
+    function editQRCode(id, name, description) {
+        document.getElementById('editId').value = id;
+        document.getElementById('editName').value = name;
+        document.getElementById('editDescription').value = description || '';
+        new bootstrap.Modal(document.getElementById('editModal')).show();
+    }
+    
+    async function saveQRCode() {
+        const id = document.getElementById('editId').value;
+        const name = document.getElementById('editName').value;
+        const description = document.getElementById('editDescription').value;
+        
+        try {
+            const response = await fetch(`/api/establishment-qrcodes/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ name, description })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao salvar');
+        }
+    }
+    
+    async function toggleStatus(id, isActive) {
+        try {
+            const response = await fetch(`/api/establishment-qrcodes/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ isActive: isActive === 'true' })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao atualizar status');
+        }
+    }
+    
+    async function deleteQRCode(id) {
+        if (!confirm('Excluir este QR Code? Os clientes que escanearem não serão mais direcionados.')) return;
+        
+        try {
+            const response = await fetch(`/api/establishment-qrcodes/${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('Erro ao excluir');
+        }
+    }
+    
+    async function downloadQRCode(id, code) {
+        try {
+            const response = await fetch(`/api/establishment-qrcodes/${id}/image?size=500`, {
+                credentials: 'include'
+            });
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `qrcode-${code}.png`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        } catch (error) {
+            alert('Erro ao baixar QR Code');
+        }
+    }
+</script>
+}

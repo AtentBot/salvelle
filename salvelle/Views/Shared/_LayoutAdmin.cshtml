@@ -1,0 +1,309 @@
+@{
+    var admin = ViewContext.HttpContext.Items["SaasAdmin"] as Models.SaasAdmin;
+    var currentPath = ViewContext.HttpContext.Request.Path.Value?.ToLower() ?? "";
+    var initials = string.IsNullOrEmpty(admin?.FullName) ? "A" : admin.FullName.Substring(0, 1).ToUpper();
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · Salvelle Admin</title>
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>@@import url('https://api.fontshare.com/v2/css?f[]=general-sans@@400,500,600&display=swap');</style>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@@1.11.2/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="~/css/design-system/tokens.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/design-system/components.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/salvelle-theme.css" asp-append-version="true">
+
+    <style>
+        .ds-admin-shell { display: grid; grid-template-columns: 244px 1fr; min-height: 100vh; }
+        .ds-admin-sidebar {
+            background: var(--ink);
+            color: rgba(255,255,255,.75);
+            padding: 14px 12px;
+            height: 100vh;
+            position: sticky; top: 0;
+            overflow-y: auto;
+            display: flex; flex-direction: column;
+        }
+        .ds-admin-sidebar::-webkit-scrollbar { width: 4px; }
+        .ds-admin-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
+
+        .ds-admin-brand {
+            display: flex; align-items: center; gap: 10px;
+            padding: 6px 8px 18px; text-decoration: none; color: #fff;
+            border-bottom: 1px solid rgba(255,255,255,.07);
+            margin-bottom: 14px;
+        }
+        .ds-admin-brand-glyph {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            background: rgba(255,255,255,.08);
+            display: grid; place-items: center;
+            flex-shrink: 0;
+        }
+        .ds-admin-brand-glyph svg { width: 24px; height: 24px; }
+        .ds-admin-brand-text { line-height: 1.15; }
+        .ds-admin-brand-text strong { display: block; font-family: var(--font-logo, "Cormorant Garamond", Georgia, serif); font-weight: 600; text-transform: uppercase; font-size: 18px; letter-spacing: 0.16em; color: #fff; }
+        .ds-admin-brand-text strong .accent { color: var(--amber-300); }
+        .ds-admin-brand-text span { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--petrol-300); }
+
+        .ds-admin-section {
+            font-family: var(--font-mono);
+            font-size: 10px; text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(255,255,255,.35);
+            padding: 14px 12px 4px;
+            font-weight: 500;
+        }
+        .ds-admin-link {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px; border-radius: var(--r-sm);
+            font-size: 13px; font-weight: 500;
+            color: rgba(255,255,255,.65);
+            text-decoration: none;
+            transition: all var(--t-fast);
+            margin: 1px 0;
+        }
+        .ds-admin-link i { font-size: 15px; opacity: .8; width: 18px; text-align: center; }
+        .ds-admin-link:hover { background: rgba(255,255,255,.06); color: #fff; }
+        .ds-admin-link.active {
+            background: color-mix(in srgb, var(--petrol-500) 28%, transparent);
+            color: #fff;
+        }
+        .ds-admin-link.active i { opacity: 1; color: var(--petrol-300); }
+
+        .ds-admin-footer { margin-top: auto; padding: 14px 4px 4px; border-top: 1px solid rgba(255,255,255,.07); }
+        .ds-admin-profile { display: flex; align-items: center; gap: 10px; padding: 4px 8px 12px; }
+        .ds-admin-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--petrol-500); color: #fff;
+            display: grid; place-items: center;
+            font-size: 13px; font-weight: 600;
+        }
+        .ds-admin-info { line-height: 1.25; font-size: 12px; }
+        .ds-admin-info strong { display: block; color: #fff; font-weight: 500; }
+        .ds-admin-info span { color: var(--petrol-300); font-size: 11px; }
+
+        .ds-admin-logout {
+            width: 100%; justify-content: center;
+            background: rgba(239,68,68,.08);
+            color: rgba(255,255,255,.7);
+            border: 1px solid rgba(239,68,68,.18);
+            font-size: 13px; padding: 8px 12px;
+            border-radius: var(--r-sm); cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px;
+            transition: all var(--t-fast);
+        }
+        .ds-admin-logout:hover { background: rgba(239,68,68,.18); color: #fca5a5; border-color: rgba(239,68,68,.35); }
+
+        .ds-admin-main { display: flex; flex-direction: column; min-width: 0; background: var(--bg); }
+        .ds-admin-topbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--rule);
+            padding: 14px 28px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+        }
+        .ds-admin-topbar-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+        .ds-admin-topbar h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 2px; color: var(--ink); }
+        .ds-admin-topbar p { margin: 0; font-size: 12px; color: var(--ink-3); }
+        .ds-admin-topbar-actions { display: flex; gap: 8px; }
+        .ds-admin-topbar-toggle {
+            display: none; background: transparent;
+            border: 1px solid var(--rule);
+            padding: 6px 9px; border-radius: var(--r-sm);
+            cursor: pointer; color: var(--ink-2);
+        }
+
+        .ds-admin-content { padding: 24px 32px; flex: 1; animation: dsFadeIn .22s ease; }
+        @@keyframes dsFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        canvas { max-height: 300px !important; }
+        .chart-container { position: relative; height: 280px; }
+
+        .stat-card {
+            background: var(--surface);
+            border-radius: var(--r-md);
+            padding: 20px;
+            border: 1px solid var(--rule);
+            box-shadow: var(--shadow-1);
+            transition: box-shadow var(--t-fast);
+        }
+        .stat-card:hover { box-shadow: var(--shadow-2); }
+        .stat-card .stat-icon {
+            width: 44px; height: 44px;
+            border-radius: var(--r-sm);
+            display: grid; place-items: center;
+            font-size: 18px; margin-bottom: 14px;
+        }
+        .stat-card .stat-icon.primary { background: var(--petrol-50); color: var(--petrol-500); }
+        .stat-card .stat-icon.success { background: var(--ok-soft); color: var(--ok); }
+        .stat-card .stat-icon.warning { background: var(--warn-soft); color: var(--warn); }
+        .stat-card .stat-icon.danger { background: var(--danger-soft); color: var(--danger); }
+        .stat-card .stat-value { font-size: 26px; font-weight: 600; color: var(--ink); line-height: 1; margin-bottom: 4px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+        .stat-card .stat-label { font-size: 12px; color: var(--ink-3); }
+        .stat-card .stat-change { font-size: 12px; margin-top: 8px; font-weight: 500; }
+        .stat-card .stat-change.positive { color: var(--ok); }
+        .stat-card .stat-change.negative { color: var(--danger); }
+
+        .admin-card {
+            background: var(--surface);
+            border-radius: var(--r-md);
+            box-shadow: var(--shadow-1);
+            border: 1px solid var(--rule);
+            margin-bottom: 24px;
+        }
+        .admin-card .card-header { background: transparent; padding: 14px 20px; border-bottom: 1px solid var(--rule); font-weight: 600; }
+        .admin-card .card-body { padding: 20px; }
+
+        .admin-table { width: 100%; font-size: 13px; }
+        .admin-table th { background: var(--bg-subtle); color: var(--ink-3); padding: 11px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; border-bottom: 1px solid var(--rule); }
+        .admin-table td { padding: 12px 14px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+        .admin-table tbody tr:hover { background: var(--bg-subtle); }
+
+        .status-badge {
+            padding: 3px 10px; border-radius: var(--r-pill);
+            font-size: 11px; font-weight: 500; letter-spacing: 0;
+        }
+        .status-badge.active { background: var(--ok-soft); color: var(--ok); }
+        .status-badge.trialing { background: var(--info-soft); color: var(--info); }
+        .status-badge.past-due { background: var(--warn-soft); color: var(--warn); }
+        .status-badge.canceled { background: var(--danger-soft); color: var(--danger); }
+        .status-badge.inactive { background: var(--bg-subtle); color: var(--ink-3); }
+
+        .ds-admin-overlay { display: none; position: fixed; inset: 0; background: rgba(11,18,32,.45); z-index: 90; }
+        .ds-admin-overlay.show { display: block; }
+
+        @@media (max-width: 992px) {
+            .ds-admin-shell { grid-template-columns: 1fr; }
+            .ds-admin-sidebar {
+                position: fixed; inset: 0 auto 0 0; width: 244px; z-index: 100;
+                transform: translateX(-100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+            }
+            .ds-admin-sidebar.show { transform: translateX(0); }
+            .ds-admin-topbar-toggle { display: inline-flex; align-items: center; }
+            .ds-admin-content { padding: 16px; }
+            .ds-admin-topbar { padding: 14px 16px; }
+        }
+    </style>
+</head>
+<body>
+@if (admin != null)
+{
+    <div class="ds-admin-overlay" id="adminOverlay" onclick="toggleAdminSidebar()"></div>
+    <div class="ds-admin-shell">
+        <aside class="ds-admin-sidebar" id="adminSidebar">
+            <a href="/admin/dashboard" class="ds-admin-brand">
+                <div class="ds-admin-brand-glyph">
+                    <svg viewBox="0 0 88 88" fill="none" aria-hidden="true">
+                        <text x="44" y="66" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif" font-weight="600" font-size="80" fill="#fff">S</text>
+                    </svg>
+                </div>
+                <div class="ds-admin-brand-text">
+                    <strong>Salvelle</strong>
+                    <span>Admin Panel</span>
+                </div>
+            </a>
+
+            <div class="ds-admin-section">Principal</div>
+            <a href="/admin/dashboard" class="ds-admin-link @(currentPath.Contains("/admin/dashboard") ? "active" : "")">
+                <i class="bi bi-grid-1x2-fill"></i>Dashboard
+            </a>
+
+            <div class="ds-admin-section">Gestão</div>
+            <a href="/admin/establishments" class="ds-admin-link @(currentPath.Contains("/admin/establishments") ? "active" : "")">
+                <i class="bi bi-building"></i>Estabelecimentos
+            </a>
+            <a href="/admin/subscriptions" class="ds-admin-link @(currentPath.Contains("/admin/subscriptions") ? "active" : "")">
+                <i class="bi bi-credit-card-2-front"></i>Assinaturas
+            </a>
+            <a href="/admin/plans" class="ds-admin-link @(currentPath.Contains("/admin/plans") ? "active" : "")">
+                <i class="bi bi-collection"></i>Planos
+            </a>
+
+            <div class="ds-admin-section">Financeiro</div>
+            <a href="/admin/invoices" class="ds-admin-link @(currentPath.Contains("/admin/invoices") ? "active" : "")">
+                <i class="bi bi-receipt"></i>Faturas
+            </a>
+            <a href="/admin/reports" class="ds-admin-link @(currentPath.Contains("/admin/reports") ? "active" : "")">
+                <i class="bi bi-graph-up-arrow"></i>Relatórios
+            </a>
+
+            <div class="ds-admin-section">Sistema</div>
+            <a href="/admin/support" class="ds-admin-link @(currentPath.Contains("/admin/support") ? "active" : "")">
+                <i class="bi bi-headset"></i>Suporte
+            </a>
+            <a href="/admin/settings" class="ds-admin-link @(currentPath.Contains("/admin/settings") ? "active" : "")">
+                <i class="bi bi-gear-fill"></i>Configurações
+            </a>
+
+            <div class="ds-admin-footer">
+                <div class="ds-admin-profile">
+                    <div class="ds-admin-avatar">@initials</div>
+                    <div class="ds-admin-info">
+                        <strong>@admin.FullName</strong>
+                        <span>@admin.Role</span>
+                    </div>
+                </div>
+                <button class="ds-admin-logout" onclick="adminLogout()">
+                    <i class="bi bi-box-arrow-right"></i>Sair
+                </button>
+            </div>
+        </aside>
+
+        <main class="ds-admin-main">
+            <header class="ds-admin-topbar">
+                <div class="ds-admin-topbar-left">
+                    <button class="ds-admin-topbar-toggle" onclick="toggleAdminSidebar()"><i class="bi bi-list"></i></button>
+                    <div>
+                        <h1>@ViewData["Title"]</h1>
+                        @if (ViewData["Subtitle"] != null) { <p>@ViewData["Subtitle"]</p> }
+                    </div>
+                </div>
+                <div class="ds-admin-topbar-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="location.reload()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+                    <a href="/" class="btn btn-secondary btn-sm" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i>Ver site</a>
+                </div>
+            </header>
+
+            <div class="ds-admin-content">
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+}
+else
+{
+    @RenderBody()
+}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function toggleAdminSidebar() {
+        document.getElementById('adminSidebar')?.classList.toggle('show');
+        document.getElementById('adminOverlay')?.classList.toggle('show');
+    }
+    async function adminLogout() {
+        try {
+            const r = await fetch('/api/admin/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+            window.location.href = '/admin/login';
+        } catch (e) { window.location.href = '/admin/login'; }
+    }
+    function formatCurrency(v) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v); }
+    function formatDate(d) { return d ? new Date(d).toLocaleDateString('pt-BR') : '-'; }
+    function formatDateTime(d) { return d ? new Date(d).toLocaleString('pt-BR') : '-'; }
+</script>
+
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

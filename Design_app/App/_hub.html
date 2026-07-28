@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Salvelle — Pacote de entrega</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88'><rect width='88' height='88' rx='18' fill='%230F6E78'/><path d='M30 26 H42 a10 10 0 0 1 10 10 V52 H42 a10 10 0 0 1 -10 -10 V26 Z' fill='white'/><rect x='52' y='26' width='14' height='8' rx='4' fill='white'/><rect x='52' y='38' width='10' height='7' rx='3.5' fill='white'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<style>@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=cabinet-grotesk@500,700,800&display=swap');</style>
+<link rel="stylesheet" href="ds/tokens.css">
+<link rel="stylesheet" href="ds/components.css">
+<style>
+  body { background: var(--bg); }
+  .hub-wrap { max-width: 1240px; margin: 0 auto; padding: 56px 48px 96px; }
+  .hub-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 48px; margin-bottom: 56px; padding-bottom: 32px; border-bottom: 1px solid var(--rule); }
+  .hub-brand { display: flex; align-items: center; gap: 14px; }
+  .hub-brand-mark { width: 44px; height: 44px; }
+  .hub-brand-name { font-family: var(--font-display); font-size: 28px; font-weight: 800; letter-spacing: -0.025em; line-height: 1; }
+  .hub-brand-name .accent { color: var(--petrol-500); }
+  .hub-meta { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; text-align: right; line-height: 1.7; }
+  .hub-meta b { color: var(--ink); font-weight: 500; }
+
+  .hub-lede { max-width: 720px; margin-bottom: 8px; }
+  .hub-lede h1 { font-family: var(--font-display); font-size: 44px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; margin: 0 0 20px; }
+  .hub-lede p { color: var(--ink-2); font-size: 17px; line-height: 1.6; margin: 0; }
+  .hub-lede p + p { margin-top: 12px; }
+  .hub-lede strong { color: var(--ink); font-weight: 600; }
+
+  .hub-section { margin-top: 64px; }
+  .hub-section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 20px; }
+  .hub-section-head .num { font-family: var(--font-mono); font-size: 12px; color: var(--petrol-500); letter-spacing: 0.08em; }
+  .hub-section-head h2 { font-family: var(--font-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+  .hub-section-head .for { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; margin-left: auto; }
+
+  .hub-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .hub-grid.two { grid-template-columns: repeat(2, 1fr); }
+  .hub-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 18px 20px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: all 120ms ease;
+  }
+  .hub-card:hover { border-color: var(--petrol-300); transform: translateY(-1px); box-shadow: var(--shadow-2); }
+  .hub-card .id { font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; }
+  .hub-card h3 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin: 2px 0 4px; }
+  .hub-card p { color: var(--ink-3); font-size: 13px; line-height: 1.5; margin: 0; }
+  .hub-card .chip { font-family: var(--font-mono); font-size: 10px; padding: 2px 8px; border-radius: 999px; background: var(--petrol-50); color: var(--petrol-700); width: fit-content; margin-top: 6px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .hub-card .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .hub-card .chip.gray { background: var(--bg-subtle); color: var(--ink-3); }
+
+  .notice {
+    background: var(--surface);
+    border: 1px solid var(--amber-100);
+    border-left: 3px solid var(--amber-500);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-top: 32px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .notice .label { font-family: var(--font-mono); font-size: 10px; color: var(--amber-700); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+  .notice p { font-size: 14px; color: var(--ink-2); line-height: 1.55; margin: 4px 0 0; }
+  .notice strong { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="hub-wrap">
+
+  <header class="hub-head">
+    <div class="hub-brand">
+      <svg class="hub-brand-mark" viewBox="0 0 88 88" fill="none">
+        <text x="44" y="68" text-anchor="middle" font-family="'Cormorant Garamond',serif" font-weight="600" font-size="80" fill="#0F6E78">S</text>
+      </svg>
+      <span class="hub-brand-name">Salvelle</span>
+    </div>
+    <div class="hub-meta">
+      Pacote de entrega · v1.0.0<br>
+      <b>03 mai 2026</b><br>
+      Para: <b>Time Design + Devs</b>
+    </div>
+  </header>
+
+  <div class="hub-lede">
+    <div class="eyebrow" style="margin-bottom: 16px;">README · Comece aqui</div>
+    <h1>Identidade Salvelle aplicada<br>+ pacote completo de handoff.</h1>
+    <p>
+      <strong>Frente 1 — Design.</strong> Identidade Salvelle aplicada às 11 telas do app.
+      Tokens, componentes e símbolo Cápsula-F prontos para revisão pelo time de design.
+    </p>
+    <p>
+      <strong>Frente 2 — Devs.</strong> Documentação técnica para transformar os mockups
+      em produto real: tokens em JSON, configuração Tailwind, requisitos de segurança,
+      conformidade Anvisa/LGPD, integrações e roadmap de implementação.
+    </p>
+  </div>
+
+  <div class="notice">
+    <div>
+      <div class="label">⚠ Aviso importante</div>
+      <p>
+        Este pacote contém <strong>mockups de design em alta fidelidade</strong>, não um produto
+        funcional. Os HTMLs são specs visuais executáveis — telas reais (com auth, banco,
+        integrações, fiscal, SNGPC) precisam ser construídas pelo time de engenharia
+        seguindo os documentos da seção Frente 2.
+      </p>
+    </div>
+  </div>
+
+  <!-- =================== FRENTE 1 =================== -->
+  <section class="hub-section">
+    <div class="hub-section-head">
+      <span class="num">FRENTE 01</span>
+      <h2>Telas com identidade Salvelle aplicada</h2>
+      <span class="for">Para: time de design</span>
+    </div>
+
+    <div class="hub-grid">
+      <a class="hub-card" href="index.html">
+        <div class="id">PÚBLICA · 01</div>
+        <h3>Landing</h3>
+        <p>Hero, recursos, depoimento, CTA, footer.</p>
+        <span class="chip">público</span>
+      </a>
+      <a class="hub-card" href="pricing.html">
+        <div class="id">PÚBLICA · 02</div>
+        <h3>Preços</h3>
+        <p>3 planos + comparativo + FAQ.</p>
+        <span class="chip">público</span>
+      </a>
+      <a class="hub-card" href="signup.html">
+        <div class="id">PÚBLICA · 03</div>
+        <h3>Cadastro</h3>
+        <p>Form de criação de conta.</p>
+        <span class="chip">público</span>
+      </a>
+      <a class="hub-card" href="login.html">
+        <div class="id">PÚBLICA · 04</div>
+        <h3>Entrar</h3>
+        <p>Login com e-mail e senha.</p>
+        <span class="chip">público</span>
+      </a>
+      <a class="hub-card" href="dashboard.html">
+        <div class="id">ADMIN · 01</div>
+        <h3>Dashboard</h3>
+        <p>KPIs, fila de manipulação, atividade.</p>
+        <span class="chip">auth</span>
+      </a>
+      <a class="hub-card" href="orders.html">
+        <div class="id">ADMIN · 02</div>
+        <h3>Pedidos</h3>
+        <p>Lista, filtros, status, drilldown.</p>
+        <span class="chip">auth</span>
+      </a>
+      <a class="hub-card" href="manipulation.html">
+        <div class="id">ADMIN · 03</div>
+        <h3>Manipulação</h3>
+        <p>Ordem de manipulação (RDC 67).</p>
+        <span class="chip">auth</span>
+      </a>
+      <a class="hub-card" href="weighing.html">
+        <div class="id">ADMIN · 04</div>
+        <h3>Pesagem</h3>
+        <p>Integração com balança, tolerância.</p>
+        <span class="chip">auth</span>
+      </a>
+      <a class="hub-card" href="pdv.html">
+        <div class="id">ADMIN · 05</div>
+        <h3>PDV</h3>
+        <p>Caixa, pagamento, NFC-e.</p>
+        <span class="chip">auth</span>
+      </a>
+      <a class="hub-card" href="ocr.html">
+        <div class="id">ADMIN · 06</div>
+        <h3>OCR de receita</h3>
+        <p>Reconhecimento + validação manual.</p>
+        <span class="chip">auth</span>
+      </a>
+      <a class="hub-card" href="purchases.html">
+        <div class="id">ADMIN · 07</div>
+        <h3>Pedidos de compra</h3>
+        <p>Fornecedores, cotação, recebimento.</p>
+        <span class="chip">auth</span>
+      </a>
+      <a class="hub-card" href="employees.html">
+        <div class="id">ADMIN · 08</div>
+        <h3>Equipe</h3>
+        <p>Farmacêuticos, RT, papéis.</p>
+        <span class="chip">auth</span>
+      </a>
+    </div>
+
+    <div class="hub-section-head" style="margin-top: 40px;">
+      <span class="num">DESIGN SYSTEM</span>
+      <h2>Tokens & componentes</h2>
+    </div>
+    <div class="hub-grid">
+      <a class="hub-card" href="ds/tokens.css">
+        <div class="id">DS · TOKENS</div>
+        <h3>tokens.css</h3>
+        <p>Cor, tipo, raio, sombra, espaçamento. Fonte da verdade visual.</p>
+        <span class="chip">CSS variables</span>
+      </a>
+      <a class="hub-card" href="ds/components.css">
+        <div class="id">DS · COMPONENTES</div>
+        <h3>components.css</h3>
+        <p>Botão, input, badge, card, tabela, sidebar, topbar.</p>
+        <span class="chip">CSS</span>
+      </a>
+      <a class="hub-card" href="../Salvelle Identity.html">
+        <div class="id">DS · IDENTIDADE</div>
+        <h3>Salvelle Identity</h3>
+        <p>Logo, paleta, tipografia, aplicações.</p>
+        <span class="chip">referência</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- =================== FRENTE 2 =================== -->
+  <section class="hub-section">
+    <div class="hub-section-head">
+      <span class="num">FRENTE 02</span>
+      <h2>Handoff para desenvolvimento</h2>
+      <span class="for">Para: time de devs</span>
+    </div>
+
+    <div class="hub-grid two">
+      <a class="hub-card" href="handoff/README.md">
+        <div class="id">DOC · 01</div>
+        <h3>README · Visão geral</h3>
+        <p>O que é cada arquivo, para quem é, e como usar este pacote.</p>
+        <span class="chip">comece aqui</span>
+      </a>
+      <a class="hub-card" href="handoff/ROADMAP.md">
+        <div class="id">DOC · 02</div>
+        <h3>Roadmap</h3>
+        <p>Plano faseado de implementação. ~27 semanas para go-live completo.</p>
+        <span class="chip">produto</span>
+      </a>
+      <a class="hub-card" href="handoff/SCREENS.md">
+        <div class="id">DOC · 03</div>
+        <h3>Mapa de telas</h3>
+        <p>Rotas, permissões, estados a implementar, telas que faltam desenhar.</p>
+        <span class="chip">dev + qa</span>
+      </a>
+      <a class="hub-card" href="handoff/SECURITY.md">
+        <div class="id">DOC · 04</div>
+        <h3>Segurança & LGPD</h3>
+        <p>Auth, MFA, criptografia, audit log, direitos do titular.</p>
+        <span class="chip warn">obrigatório</span>
+      </a>
+      <a class="hub-card" href="handoff/COMPLIANCE.md">
+        <div class="id">DOC · 05</div>
+        <h3>Compliance regulatório</h3>
+        <p>RDC 67, RDC 44, SNGPC, fiscal, responsabilidade técnica.</p>
+        <span class="chip warn">obrigatório</span>
+      </a>
+      <a class="hub-card" href="handoff/INTEGRATIONS.md">
+        <div class="id">DOC · 06</div>
+        <h3>Integrações externas</h3>
+        <p>OCR, balança, NFC-e, SNGPC, pagamento, WhatsApp.</p>
+        <span class="chip">dev</span>
+      </a>
+    </div>
+
+    <div class="hub-section-head" style="margin-top: 40px;">
+      <span class="num">DEV ASSETS</span>
+      <h2>Tokens prontos para código</h2>
+    </div>
+    <div class="hub-grid">
+      <a class="hub-card" href="handoff/tokens.json">
+        <div class="id">JSON</div>
+        <h3>tokens.json</h3>
+        <p>Tokens em formato W3C Design Tokens. Alimenta Style Dictionary.</p>
+        <span class="chip">dev</span>
+      </a>
+      <a class="hub-card" href="handoff/tailwind.config.js">
+        <div class="id">JS</div>
+        <h3>tailwind.config.js</h3>
+        <p>Configuração pronta para projetos Tailwind.</p>
+        <span class="chip">dev</span>
+      </a>
+      <a class="hub-card" href="ds/tokens.css">
+        <div class="id">CSS</div>
+        <h3>tokens.css</h3>
+        <p>Variáveis CSS — para projetos vanilla ou outros frameworks.</p>
+        <span class="chip">dev</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- =================== PRÓXIMOS PASSOS =================== -->
+  <section class="hub-section">
+    <div class="hub-section-head">
+      <span class="num">PRÓXIMOS PASSOS</span>
+      <h2>O que decidir antes de começar a codar</h2>
+    </div>
+    <div class="hub-grid">
+      <div class="hub-card" style="cursor: default;">
+        <div class="id">DECISÃO · 01</div>
+        <h3>Mercado-alvo</h3>
+        <p>SaaS multi-tenant ou software vertical para grupos de farmácias? Define arquitetura.</p>
+      </div>
+      <div class="hub-card" style="cursor: default;">
+        <div class="id">DECISÃO · 02</div>
+        <h3>Auth provider</h3>
+        <p>Build próprio ou Auth0 / Clerk / Supabase? Recomendação: comprar.</p>
+      </div>
+      <div class="hub-card" style="cursor: default;">
+        <div class="id">DECISÃO · 03</div>
+        <h3>OCR provider</h3>
+        <p>Define LGPD (transferência internacional). Azure BR-South é a opção mais simples.</p>
+      </div>
+      <div class="hub-card" style="cursor: default;">
+        <div class="id">DECISÃO · 04</div>
+        <h3>Farmácia-piloto</h3>
+        <p>Sem ela, fluxo magistral não fecha. Idealmente 1 farmácia operando há 1+ ano.</p>
+      </div>
+      <div class="hub-card" style="cursor: default;">
+        <div class="id">DECISÃO · 05</div>
+        <h3>RT consultor</h3>
+        <p>Sem farmacêutico responsável técnico revisando, COMPLIANCE.md fica no papel.</p>
+      </div>
+      <div class="hub-card" style="cursor: default;">
+        <div class="id">DECISÃO · 06</div>
+        <h3>Advogado sanitário</h3>
+        <p>Validar termo de uso, política de privacidade, retenção e arquivamento.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,418 @@
+@{
+    ViewData["Title"] = "Dashboard Executivo";
+    Layout = "_Layout";
+    var kpis = ViewBag.KPIs as DashboardKPIs;
+    var vendasUltimos7Dias = ViewBag.VendasUltimos7Dias as List<VendaDiaDto>;
+    var topFormulas = ViewBag.TopFormulas as List<TopFormulaDto>;
+    var vendasPorPagamento = ViewBag.VendasPorPagamento as List<VendaPorPagamentoDto>;
+    var establishment = ViewBag.Establishment as Models.Establishment;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">
+                <i class="bi bi-speedometer2 text-primary me-2"></i>
+                Dashboard Executivo
+            </h4>
+            <p class="text-muted mb-0">@establishment?.NomeFantasia - @BrazilTime.Now.ToString("MMMM yyyy")</p>
+        </div>
+        <div class="btn-group">
+            <a href="/Reports/Vendas" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-graph-up me-1"></i>Vendas
+            </a>
+            <a href="/Reports/Producao" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-gear me-1"></i>Produção
+            </a>
+            <a href="/Reports/Estoque" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-boxes me-1"></i>Estoque
+            </a>
+            <a href="/Reports/Financeiro" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-currency-dollar me-1"></i>Financeiro
+            </a>
+        </div>
+    </div>
+
+    <!-- KPIs Principais -->
+    <div class="row g-3 mb-4">
+        <!-- Vendas Hoje -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Vendas Hoje</p>
+                            <h3 class="mb-0 text-success">R$ @(kpis?.VendasHoje.ToString("N2") ?? "0,00")</h3>
+                        </div>
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="bi bi-cash-coin text-success fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">Mês: R$ @(kpis?.VendasMes.ToString("N2") ?? "0,00")</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ticket Médio -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Ticket Médio</p>
+                            <h3 class="mb-0 text-primary">R$ @(kpis?.TicketMedio.ToString("N2") ?? "0,00")</h3>
+                        </div>
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="bi bi-receipt text-primary fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">@(kpis?.TotalVendasMes ?? 0) vendas no mês</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ordens em Produção -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Em Produção</p>
+                            <h3 class="mb-0 text-warning">@(kpis?.OrdensEmProducao ?? 0)</h3>
+                        </div>
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="bi bi-gear-wide-connected text-warning fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">@(kpis?.OrdensPendentes ?? 0) pendentes</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertas de Estoque -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Alertas Estoque</p>
+                            @{
+                                var totalAlertas = (kpis?.ItensEstoqueBaixo ?? 0) + (kpis?.LotesVencendo ?? 0) + (kpis?.LotesVencidos ?? 0);
+                                var alertClass = totalAlertas > 0 ? "text-danger" : "text-success";
+                            }
+                            <h3 class="mb-0 @alertClass">@totalAlertas</h3>
+                        </div>
+                        <div class="rounded-circle @(totalAlertas > 0 ? "bg-danger" : "bg-success") bg-opacity-10 p-3">
+                            <i class="bi bi-exclamation-triangle @alertClass fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            @(kpis?.ItensEstoqueBaixo ?? 0) baixo | 
+                            @(kpis?.LotesVencendo ?? 0) vencendo
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Segunda Linha de KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-0 small opacity-75">Valor em Estoque</p>
+                            <h5 class="mb-0">R$ @(kpis?.ValorEstoque.ToString("N2") ?? "0,00")</h5>
+                        </div>
+                        <i class="bi bi-boxes fs-3 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-0 small opacity-75">Ordens Finalizadas (Mês)</p>
+                            <h5 class="mb-0">@(kpis?.OrdensFinalizadasMes ?? 0)</h5>
+                        </div>
+                        <i class="bi bi-check-circle fs-3 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm bg-info text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-0 small opacity-75">Clientes Ativos</p>
+                            <h5 class="mb-0">@(kpis?.TotalClientes ?? 0)</h5>
+                        </div>
+                        <i class="bi bi-people fs-3 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm bg-secondary text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-0 small opacity-75">Novos Clientes (Mês)</p>
+                            <h5 class="mb-0">@(kpis?.NovosClientesMes ?? 0)</h5>
+                        </div>
+                        <i class="bi bi-person-plus fs-3 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Gráfico de Vendas -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up me-2 text-primary"></i>
+                        Vendas - Últimos 7 dias
+                    </h6>
+                    <a href="/Reports/Vendas" class="btn btn-sm btn-outline-primary">Ver mais</a>
+                </div>
+                <div class="card-body">
+                    <canvas id="vendasChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formas de Pagamento -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-credit-card me-2 text-success"></i>
+                        Pagamentos do Mês
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @if (vendasPorPagamento != null && vendasPorPagamento.Any())
+                    {
+                        var total = vendasPorPagamento.Sum(v => v.Total);
+                        foreach (var pagamento in vendasPorPagamento)
+                        {
+                            var percent = total > 0 ? (pagamento.Total / total) * 100 : 0;
+                            var barColor = pagamento.MetodoPagamento switch
+                            {
+                                "DINHEIRO" => "bg-success",
+                                "PIX" => "bg-info",
+                                "CARTAO_CREDITO" => "bg-primary",
+                                "CARTAO_DEBITO" => "bg-warning",
+                                _ => "bg-secondary"
+                            };
+                            var metodoNome = pagamento.MetodoPagamento switch
+                            {
+                                "DINHEIRO" => "Dinheiro",
+                                "PIX" => "PIX",
+                                "CARTAO_CREDITO" => "Crédito",
+                                "CARTAO_DEBITO" => "Débito",
+                                _ => pagamento.MetodoPagamento
+                            };
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span>@metodoNome</span>
+                                    <span>R$ @pagamento.Total.ToString("N2") (@percent.ToString("N0")%)</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar @barColor" style="width: @percent%"></div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center mb-0">Sem dados</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-2">
+        <!-- Top Fórmulas -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-star me-2 text-warning"></i>
+                        Top 5 Fórmulas do Mês
+                    </h6>
+                    <a href="/Reports/Producao" class="btn btn-sm btn-outline-primary">Ver mais</a>
+                </div>
+                <div class="card-body p-0">
+                    @if (topFormulas != null && topFormulas.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="border-0">#</th>
+                                        <th class="border-0">Fórmula</th>
+                                        <th class="border-0 text-end">Quantidade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{ var rank = 1; }
+                                    @foreach (var formula in topFormulas)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (rank <= 3)
+                                                {
+                                                    var medalColor = rank == 1 ? "text-warning" : (rank == 2 ? "text-secondary" : "text-danger");
+                                                    <i class="bi bi-trophy-fill @medalColor"></i>
+                                                }
+                                                else
+                                                {
+                                                    @rank
+                                                }
+                                            </td>
+                                            <td>@formula.Nome</td>
+                                            <td class="text-end">
+                                                <span class="badge bg-primary">@formula.Quantidade</span>
+                                            </td>
+                                        </tr>
+                                        rank++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center py-4 mb-0">Nenhuma fórmula produzida este mês</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Ações Rápidas e Alertas -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightning me-2 text-warning"></i>
+                        Ações Rápidas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a href="/Manipulacoes/Kanban" class="btn btn-outline-primary w-100 py-3">
+                                <i class="bi bi-columns-gap d-block fs-4 mb-1"></i>
+                                Kanban Produção
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="/PDV" class="btn btn-outline-success w-100 py-3">
+                                <i class="bi bi-shop d-block fs-4 mb-1"></i>
+                                Abrir PDV
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="/Stock/LowStock" class="btn btn-outline-warning w-100 py-3">
+                                <i class="bi bi-exclamation-triangle d-block fs-4 mb-1"></i>
+                                Estoque Baixo
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="/Reports/SNGPC" class="btn btn-outline-danger w-100 py-3">
+                                <i class="bi bi-shield-exclamation d-block fs-4 mb-1"></i>
+                                SNGPC
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if ((kpis?.LotesVencidos ?? 0) > 0 || (kpis?.ItensEstoqueBaixo ?? 0) > 5)
+            {
+                <div class="card border-0 shadow-sm mt-3 border-start border-danger border-4">
+                    <div class="card-body">
+                        <h6 class="text-danger mb-3">
+                            <i class="bi bi-exclamation-octagon me-2"></i>
+                            Atenção Necessária
+                        </h6>
+                        @if ((kpis?.LotesVencidos ?? 0) > 0)
+                        {
+                            <div class="alert alert-danger py-2 mb-2">
+                                <i class="bi bi-calendar-x me-2"></i>
+                                @kpis?.LotesVencidos lote(s) vencido(s) precisam ser descartados
+                            </div>
+                        }
+                        @if ((kpis?.ItensEstoqueBaixo ?? 0) > 5)
+                        {
+                            <div class="alert alert-warning py-2 mb-0">
+                                <i class="bi bi-box-seam me-2"></i>
+                                @kpis?.ItensEstoqueBaixo itens com estoque crítico
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var ctx = document.getElementById('vendasChart').getContext('2d');
+    var vendasData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(vendasUltimos7Dias?.Select(v => new { 
+        label = v.DiaSemana, 
+        value = v.Total 
+    })));
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: vendasData.map(function(d) { return d.label; }),
+            datasets: [{
+                label: 'Vendas (R$)',
+                data: vendasData.map(function(d) { return d.value; }),
+                backgroundColor: 'rgba(37, 99, 235, 0.8)',
+                borderColor: 'rgba(37, 99, 235, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'R$ ' + value.toLocaleString('pt-BR');
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+}

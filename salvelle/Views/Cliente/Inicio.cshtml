@@ -1,0 +1,284 @@
+﻿@{
+    ViewData["Title"] = "Portal do Cliente";
+    Layout = null;
+    var customerName = ViewBag.CustomerName ?? "Cliente";
+    var firstName = customerName.ToString().Split(' ')[0];
+    var pharmacyName = ViewBag.PharmacyName ?? "Farmácia";
+    var cartCount = ViewBag.CartCount ?? 0;
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="var(--petrol-500)">
+    <title>@ViewData["Title"] - Salvelle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>@@import url('https://api.fontshare.com/v2/css?f[]=general-sans@@400,500,600&display=swap');</style>
+    <link rel="stylesheet" href="~/css/design-system/tokens.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/design-system/components.css" asp-append-version="true">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: var(--font-sans); background: var(--bg); color: var(--ink); min-height: 100vh; padding-bottom: 100px; margin: 0; }
+
+        /* Hero header: ink + radial petrol overlay (mesma linha do auth-aside / login admin) */
+        .hero-header { background: var(--ink); padding: 20px 20px 72px; position: relative; overflow: hidden; }
+        .hero-header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(900px 500px at 80% 100%, color-mix(in srgb, var(--petrol-500) 45%, transparent), transparent 70%); pointer-events: none; }
+        .hero-header > * { position: relative; z-index: 1; }
+
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .greeting { color: #fff; }
+        .greeting-text { font-size: 13px; opacity: 0.65; margin-bottom: 4px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; }
+        .greeting-name { font-size: 26px; font-weight: 600; letter-spacing: -0.025em; display: flex; align-items: center; gap: 8px; margin: 0; }
+        .greeting-name .wave { animation: wave 2s ease-in-out infinite; display: inline-block; }
+        @@keyframes wave { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(20deg); } 75% { transform: rotate(-10deg); } }
+
+        .header-actions { display: flex; gap: 10px; }
+        .header-btn { width: 40px; height: 40px; border-radius: var(--r-pill); background: rgba(255,255,255,0.10); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.16); color: #fff; display: grid; place-items: center; font-size: 18px; cursor: pointer; transition: all var(--t-fast); position: relative; text-decoration: none; }
+        .header-btn:hover { background: rgba(255,255,255,0.18); }
+        .header-btn .badge { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; background: var(--danger); border-radius: 50%; font-size: 10px; font-weight: 600; display: grid; place-items: center; border: 2px solid var(--ink); color: #fff; }
+
+        .pharmacy-selector { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.10); backdrop-filter: blur(10px); padding: 8px 14px; border-radius: var(--r-pill); border: 1px solid rgba(255,255,255,0.16); color: #fff; font-size: 13px; font-weight: 500; cursor: pointer; transition: all var(--t-fast); margin-bottom: 18px; width: fit-content; }
+        .pharmacy-selector:hover { background: rgba(255,255,255,0.18); }
+
+        .search-container { position: relative; }
+        .search-box { background: var(--surface); border-radius: var(--r-md); padding: 14px 18px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-3); cursor: pointer; transition: all var(--t-fast); border: 1px solid var(--rule); }
+        .search-box:hover { box-shadow: 0 24px 48px -12px rgba(11,18,32,.22); }
+        .search-box i { font-size: 18px; color: var(--ink-3); }
+        .search-box span { flex: 1; color: var(--ink-3); font-size: 14px; }
+
+        .main-content { padding: 0 20px; margin-top: -32px; position: relative; z-index: 20; }
+
+        .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 24px; }
+        .action-card { background: var(--surface); border-radius: var(--r-md); padding: 18px 14px; text-align: center; cursor: pointer; transition: all var(--t-fast); position: relative; overflow: hidden; border: 1px solid var(--rule); text-decoration: none; color: var(--ink); box-shadow: var(--shadow-1); }
+        .action-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--petrol-500); transform: scaleX(0); transition: transform var(--t-base); transform-origin: left; }
+        .action-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); border-color: var(--petrol-100); }
+        .action-card:hover::before { transform: scaleX(1); }
+        .action-card.featured { background: var(--petrol-500); color: #fff; border-color: var(--petrol-500); }
+        .action-card.featured::before { display: none; }
+        .action-card .badge-new { position: absolute; top: 8px; right: 8px; background: var(--amber-500); color: #fff; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: var(--r-pill); text-transform: uppercase; letter-spacing: 0.04em; }
+        .action-icon { width: 50px; height: 50px; border-radius: var(--r-sm); background: var(--bg-subtle); display: grid; place-items: center; font-size: 22px; margin: 0 auto 10px; color: var(--petrol-500); transition: all var(--t-fast); }
+        .action-card:hover .action-icon { background: var(--petrol-50); }
+        .action-card.featured .action-icon { background: rgba(255,255,255,0.18); color: #fff; }
+        .action-card.receita .action-icon { background: var(--warn-soft); color: var(--amber-700); }
+        .action-card.formula .action-icon { background: var(--petrol-50); color: var(--controlled-black); }
+        .action-card.catalogo .action-icon { background: var(--ok-soft); color: var(--ok); }
+        .action-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; letter-spacing: -0.005em; }
+        .action-subtitle { font-size: 11px; color: var(--ink-3); }
+        .action-card.featured .action-subtitle { color: rgba(255,255,255,0.75); }
+
+        .promo-banner { background: var(--ok); border-radius: var(--r-lg); padding: 22px; margin-bottom: 24px; position: relative; overflow: hidden; cursor: pointer; transition: transform var(--t-fast); text-decoration: none; display: block; box-shadow: var(--shadow-1); }
+        .promo-banner::before { content: ''; position: absolute; inset: 0; background: radial-gradient(500px 250px at 95% 100%, rgba(255,255,255,.18), transparent 70%); }
+        .promo-banner:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+        .promo-content { position: relative; z-index: 1; color: #fff; }
+        .promo-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.18); padding: 4px 10px; border-radius: var(--r-pill); font-size: 11px; font-weight: 600; margin-bottom: 10px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; }
+        .promo-title { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 6px; }
+        .promo-description { font-size: 13px; opacity: 0.9; margin-bottom: 14px; }
+        .promo-btn { display: inline-flex; align-items: center; gap: 6px; background: #fff; color: var(--ok); padding: 8px 16px; border-radius: var(--r-pill); font-weight: 600; font-size: 13px; }
+
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .section-title { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+        .section-link { color: var(--petrol-500); font-size: 13px; font-weight: 500; text-decoration: none; display: flex; align-items: center; gap: 4px; }
+        .section-link:hover { color: var(--petrol-700); }
+
+        .categories-scroll { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 24px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .categories-scroll::-webkit-scrollbar { display: none; }
+        .category-item { flex: 0 0 auto; text-align: center; cursor: pointer; transition: transform var(--t-fast); text-decoration: none; color: var(--ink); }
+        .category-item:hover { transform: translateY(-2px); }
+        .category-icon { width: 60px; height: 60px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--rule); display: grid; place-items: center; font-size: 24px; margin-bottom: 6px; color: var(--petrol-500); box-shadow: var(--shadow-1); }
+        .category-name { font-size: 11px; font-weight: 500; color: var(--ink-2); }
+
+        .order-card { background: var(--surface); border-radius: var(--r-md); padding: 14px; margin-bottom: 10px; border: 1px solid var(--rule); cursor: pointer; transition: all var(--t-fast); }
+        .order-card:hover { box-shadow: var(--shadow-2); border-color: var(--petrol-200); }
+        .order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .order-info h4 { font-size: 14px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.005em; }
+        .order-info p { font-size: 12px; color: var(--ink-3); margin: 0; }
+        .order-status { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: var(--r-pill); font-size: 11px; font-weight: 500; }
+        .order-status.em-producao { background: var(--warn-soft); color: var(--warn); }
+        .order-status.pronto { background: var(--ok-soft); color: var(--ok); }
+        .order-progress { display: flex; gap: 4px; margin-bottom: 10px; }
+        .progress-step { flex: 1; height: 3px; background: var(--rule); border-radius: var(--r-pill); }
+        .progress-step.active { background: var(--petrol-500); }
+        .progress-step.completed { background: var(--ok); }
+        .order-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid var(--rule); }
+        .order-eta { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); }
+        .order-eta i { color: var(--petrol-500); }
+        .order-track-btn { background: var(--petrol-500); color: #fff; padding: 6px 14px; border-radius: var(--r-pill); font-size: 12px; font-weight: 500; border: none; cursor: pointer; }
+        .order-track-btn:hover { background: var(--petrol-600); }
+
+        .empty-state { text-align: center; padding: 40px 22px; background: var(--surface); border-radius: var(--r-md); border: 2px dashed var(--rule); }
+        .empty-icon { width: 70px; height: 70px; border-radius: 50%; background: var(--bg-subtle); display: grid; place-items: center; font-size: 28px; color: var(--ink-3); margin: 0 auto 12px; }
+        .empty-title { font-size: 16px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 6px; }
+        .empty-text { font-size: 13px; color: var(--ink-3); margin: 0 0 18px; }
+        .empty-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--petrol-500); color: #fff; padding: 12px 24px; border-radius: var(--r-pill); font-weight: 500; font-size: 13px; text-decoration: none; }
+        .empty-btn:hover { background: var(--petrol-600); color: #fff; }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); border-top: 1px solid var(--rule); padding: 8px 16px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); display: flex; justify-content: space-around; z-index: 50; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 14px; border-radius: var(--r-sm); text-decoration: none; color: var(--ink-3); position: relative; }
+        .nav-item.active { color: var(--petrol-500); }
+        .nav-item.active::before { content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 22px; height: 3px; background: var(--petrol-500); border-radius: var(--r-pill); }
+        .nav-item:hover { color: var(--petrol-500); }
+        .nav-item i { font-size: 20px; }
+        .nav-item span { font-size: 11px; font-weight: 500; }
+        .nav-item.cart-nav .badge { position: absolute; top: 2px; right: 8px; width: 16px; height: 16px; background: var(--danger); border-radius: 50%; font-size: 9px; font-weight: 600; display: grid; place-items: center; color: #fff; }
+
+        .fab-container { position: fixed; bottom: 88px; right: 18px; z-index: 49; }
+        .fab-btn { width: 54px; height: 54px; border-radius: 50%; background: var(--petrol-500); color: #fff; border: none; display: grid; place-items: center; font-size: 22px; cursor: pointer; box-shadow: var(--shadow-3); transition: transform var(--t-fast); }
+        .fab-btn:hover { transform: scale(1.06); background: var(--petrol-600); }
+
+        @@media (min-width: 768px) { body { max-width: 480px; margin: 0 auto; box-shadow: var(--shadow-3); } .bottom-nav { max-width: 480px; left: 50%; transform: translateX(-50%); } }
+    </style>
+</head>
+<body>
+    <header class="hero-header">
+        <div class="header-top">
+            <div class="greeting">
+                <p class="greeting-text" id="greetingText">Olá!</p>
+                <h1 class="greeting-name">@firstName <span class="wave">👋</span></h1>
+            </div>
+            <div class="header-actions">
+                <a href="/Cliente/Notificacoes" class="header-btn"><i class="bi bi-bell"></i><span class="badge">3</span></a>
+                <a href="/Cliente/Perfil" class="header-btn"><i class="bi bi-person"></i></a>
+            </div>
+        </div>
+        <div class="pharmacy-selector" onclick="location.href='/Cliente/Estabelecimentos'">
+            <i class="bi bi-building"></i><span>@pharmacyName</span><i class="bi bi-chevron-down"></i>
+        </div>
+        <div class="search-container">
+            <div class="search-box" onclick="location.href='/Cliente/Buscar'">
+                <i class="bi bi-search"></i><span>O que você precisa hoje?</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <section class="quick-actions">
+            <a href="/Cliente/EnviarReceita" class="action-card receita">
+                <div class="action-icon"><i class="bi bi-camera"></i></div>
+                <h3 class="action-title">Receita</h3>
+                <p class="action-subtitle">Enviar para orçar</p>
+            </a>
+            <a href="/Cliente/MinhaFormula" class="action-card formula featured">
+                <span class="badge-new">Novo</span>
+                <div class="action-icon"><i class="bi bi-stars"></i></div>
+                <h3 class="action-title">Fórmula</h3>
+                <p class="action-subtitle">Personalizada</p>
+            </a>
+            <a href="/Cliente/Catalogo" class="action-card catalogo">
+                <div class="action-icon"><i class="bi bi-grid-3x3-gap"></i></div>
+                <h3 class="action-title">Catálogo</h3>
+                <p class="action-subtitle">Ver produtos</p>
+            </a>
+        </section>
+
+        <a href="/Cliente/MeusCupons" class="promo-banner">
+            <div class="promo-content">
+                <div class="promo-tag"><i class="bi bi-lightning-fill"></i>Oferta especial</div>
+                <h2 class="promo-title">15% OFF na primeira fórmula</h2>
+                <p class="promo-description">Use o código PRIMEIRA15 e ganhe desconto exclusivo!</p>
+                <span class="promo-btn">Ver cupons <i class="bi bi-arrow-right"></i></span>
+            </div>
+        </a>
+
+        <section id="activeOrders">
+            <div class="section-header">
+                <h2 class="section-title">Pedidos em andamento</h2>
+                <a href="/Cliente/MeusPedidos" class="section-link">Ver todos <i class="bi bi-chevron-right"></i></a>
+            </div>
+            <div id="ordersContainer">
+                <!-- Carregado via JS ou empty state -->
+            </div>
+        </section>
+
+        <section>
+            <div class="section-header"><h2 class="section-title">Categorias</h2></div>
+            <div class="categories-scroll">
+                <a href="/Cliente/Catalogo?categoria=dermatologicos" class="category-item"><div class="category-icon">🧴</div><span class="category-name">Dermatológicos</span></a>
+                <a href="/Cliente/Catalogo?categoria=capilar" class="category-item"><div class="category-icon">💇</div><span class="category-name">Capilares</span></a>
+                <a href="/Cliente/Catalogo?categoria=hormonal" class="category-item"><div class="category-icon">💊</div><span class="category-name">Hormonais</span></a>
+                <a href="/Cliente/Catalogo?categoria=vitaminas" class="category-item"><div class="category-icon">🍊</div><span class="category-name">Vitaminas</span></a>
+                <a href="/Cliente/Catalogo?categoria=emagrecimento" class="category-item"><div class="category-icon">🏃</div><span class="category-name">Emagrecimento</span></a>
+                <a href="/Cliente/Catalogo?categoria=suplementos" class="category-item"><div class="category-icon">💪</div><span class="category-name">Suplementos</span></a>
+            </div>
+        </section>
+
+        <section id="emptyState" style="display: none;">
+            <div class="empty-state">
+                <div class="empty-icon"><i class="bi bi-bag-plus"></i></div>
+                <h3 class="empty-title">Faça seu primeiro pedido!</h3>
+                <p class="empty-text">Envie uma receita ou explore nosso catálogo de produtos manipulados.</p>
+                <a href="/Cliente/EnviarReceita" class="empty-btn"><i class="bi bi-camera"></i>Começar agora</a>
+            </div>
+        </section>
+    </main>
+
+    <div class="fab-container">
+        <button class="fab-btn" onclick="location.href='/Cliente/EnviarReceita'" title="Enviar Receita"><i class="bi bi-plus-lg"></i></button>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="/Cliente/Inicio" class="nav-item active"><i class="bi bi-house-fill"></i><span>Início</span></a>
+        <a href="/Cliente/Buscar" class="nav-item"><i class="bi bi-search"></i><span>Buscar</span></a>
+        <a href="/Cliente/MeusPedidos" class="nav-item"><i class="bi bi-bag"></i><span>Pedidos</span></a>
+        <a href="/Cliente/Carrinho" class="nav-item cart-nav"><i class="bi bi-cart3"></i><span>Carrinho</span>@if((int)cartCount > 0){<span class="badge">@cartCount</span>}</a>
+        <a href="/Cliente/Perfil" class="nav-item"><i class="bi bi-person"></i><span>Perfil</span></a>
+    </nav>
+
+    <script>
+        function updateGreeting() {
+            const hour = new Date().getHours();
+            let greeting = 'Olá!';
+            if (hour >= 5 && hour < 12) greeting = 'Bom dia!';
+            else if (hour >= 12 && hour < 18) greeting = 'Boa tarde!';
+            else greeting = 'Boa noite!';
+            document.getElementById('greetingText').textContent = greeting;
+        }
+        updateGreeting();
+
+        async function loadActiveOrders() {
+            const container = document.getElementById('ordersContainer');
+            try {
+                const response = await fetch('/api/cliente/orders/active');
+                const data = await response.json();
+                if (data.success && data.orders?.length > 0) {
+                    container.innerHTML = data.orders.map(order => {
+                        // Determinar classe e ícone do status
+                        const statusConfig = {
+                            'PENDING': { class: 'pendente', icon: 'bi-hourglass-split', steps: [true, false, false, false] },
+                            'CONFIRMED': { class: 'confirmado', icon: 'bi-check-circle', steps: [true, true, false, false] },
+                            'PREPARING': { class: 'em-producao', icon: 'bi-gear-fill', steps: [true, true, true, false] },
+                            'READY': { class: 'pronto', icon: 'bi-check-circle-fill', steps: [true, true, true, true] }
+                        };
+                        const config = statusConfig[order.status] || statusConfig['PENDING'];
+                        
+                        return `
+                        <div class="order-card" onclick="location.href='/Cliente/Pedido/${order.id}'">
+                            <div class="order-header">
+                                <div class="order-info"><h4>Pedido #${order.orderNumber}</h4><p>${order.description || 'Fórmula personalizada'}</p></div>
+                                <span class="order-status ${config.class}"><i class="bi ${config.icon}"></i>${order.statusDisplay}</span>
+                            </div>
+                            <div class="order-progress">${config.steps.map((completed, i) => 
+                                `<div class="progress-step ${completed ? (i === config.steps.filter(s=>s).length - 1 ? 'active' : 'completed') : ''}"></div>`
+                            ).join('')}</div>
+                            <div class="order-footer">
+                                <div class="order-eta"><i class="bi bi-clock"></i>Previsão: ${order.eta || '3 dias úteis'}</div>
+                                <button class="order-track-btn">Acompanhar</button>
+                            </div>
+                        </div>
+                    `}).join('');
+                } else {
+                    document.getElementById('activeOrders').style.display = 'none';
+                    document.getElementById('emptyState').style.display = 'block';
+                }
+            } catch (e) {
+                document.getElementById('activeOrders').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'block';
+            }
+        }
+        loadActiveOrders();
+    </script>
+</body>
+</html>

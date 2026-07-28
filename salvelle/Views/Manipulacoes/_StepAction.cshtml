@@ -1,0 +1,731 @@
+﻿@model Models.Pharmacy.ManipulationOrder
+
+@{
+    var status = Model.Status ?? "PENDENTE";
+}
+
+@switch (status)
+{
+    case "PENDENTE":
+    case "AGUARDANDO_PRODUCAO":
+    case "EM_PRODUCAO":
+        <!-- Etapa: SEPARAÇÃO - Primeiro passo do workflow -->
+        <div class="text-center">
+            <i class="bi bi-box-seam text-info" style="font-size: 4rem;"></i>
+            <h5 class="mt-3">1. Separação de Materiais</h5>
+            <p class="text-muted">Separe todas as matérias-primas necessárias para esta manipulação.</p>
+            
+            <div class="alert alert-info text-start">
+                <strong><i class="bi bi-info-circle me-2"></i>O que fazer:</strong>
+                <ol class="mb-0 mt-2">
+                    <li>Verifique a lista de componentes abaixo</li>
+                    <li>Separe cada matéria-prima do estoque</li>
+                    <li>Confirme os lotes utilizados (FEFO)</li>
+                    <li>Clique em "Iniciar Separação" para registrar</li>
+                </ol>
+            </div>
+            
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Área de Separação</label>
+                            <select class="form-select" id="areaSeparacao">
+                                <option value="AREA_PRINCIPAL">Área Principal</option>
+                                <option value="AREA_CONTROLADOS">Área de Controlados</option>
+                                <option value="AREA_REFRIGERADOS">Área de Refrigerados</option>
+                                <option value="AREA_LIQUIDOS">Área de Líquidos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Responsável</label>
+                            <input type="text" class="form-control" id="responsavel" value="" placeholder="Nome do operador" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Observações</label>
+                <textarea class="form-control" id="stepObservations" rows="2" placeholder="Observações da separação (opcional)"></textarea>
+            </div>
+            
+            <button class="btn btn-primary btn-lg px-5" onclick="startSeparacao()">
+                <i class="bi bi-play-fill me-2"></i>Iniciar Separação
+            </button>
+        </div>
+        
+        <script>
+        function startSeparacao() {
+            const areaSeparacao = document.getElementById('areaSeparacao').value;
+            const observations = document.getElementById('stepObservations').value;
+            
+            // Preparar dados simplificados (sem itens específicos por enquanto)
+            const data = {
+                areaSeparacao: areaSeparacao,
+                observations: observations,
+                startTime: new Date().toISOString(),
+                items: [] // Será preenchido automaticamente pela API
+            };
+            
+            executeStep('separacao', data);
+        }
+        </script>
+        break;
+
+    case "SEPARACAO":
+        <!-- Etapa: PESAGEM -->
+        <div class="text-center">
+            <i class="bi bi-speedometer text-primary" style="font-size: 4rem;"></i>
+            <h5 class="mt-3">2. Pesagem dos Componentes</h5>
+            <p class="text-muted">Pese cada componente conforme a fórmula utilizando balança calibrada.</p>
+            
+            <div class="alert alert-warning text-start">
+                <strong><i class="bi bi-exclamation-triangle me-2"></i>Importante:</strong>
+                <ul class="mb-0 mt-2">
+                    <li>Utilize balança calibrada e verificada</li>
+                    <li>Registre temperatura e umidade do ambiente</li>
+                    <li>Tolerância de desvio: ±5% (alertar se maior)</li>
+                    <li>Componentes controlados requerem dupla conferência</li>
+                </ul>
+            </div>
+            
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Balança Utilizada</label>
+                            <select class="form-select" id="scaleId">
+                                <option value="BAL001">Balança Analítica #1 (0.0001g)</option>
+                                <option value="BAL002">Balança Semi-Analítica #2 (0.01g)</option>
+                                <option value="BAL003">Balança de Precisão #3 (0.1g)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Temperatura (°C)</label>
+                            <input type="number" class="form-control" id="envTemp" value="22" step="0.1">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Umidade (%)</label>
+                            <input type="number" class="form-control" id="envHumidity" value="55" step="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Observações</label>
+                <textarea class="form-control" id="stepObservations" rows="2"></textarea>
+            </div>
+            
+            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                <a href="/Manipulacoes/Weighing/@Model.Id" class="btn btn-outline-primary btn-lg">
+                    <i class="bi bi-ui-checks me-2"></i>Pesagem Detalhada
+                </a>
+                <button class="btn btn-primary btn-lg" onclick="startPesagem()">
+                    <i class="bi bi-check-lg me-2"></i>Confirmar Pesagem Rápida
+                </button>
+            </div>
+        </div>
+        
+        <script>
+        function startPesagem() {
+            executeStep('pesagem', {
+                scaleId: document.getElementById('scaleId').value,
+                scaleName: document.getElementById('scaleId').selectedOptions[0].text,
+                environmentTemperature: parseFloat(document.getElementById('envTemp').value),
+                environmentHumidity: parseFloat(document.getElementById('envHumidity').value),
+                components: [] // Simplificado
+            });
+        }
+        </script>
+        break;
+
+    case "PESAGEM":
+        <!-- Etapa: MISTURA -->
+        <div class="text-center">
+            <i class="bi bi-arrow-repeat text-purple" style="font-size: 4rem; color: var(--controlled-black);"></i>
+            <h5 class="mt-3">3. Mistura / Manipulação</h5>
+            <p class="text-muted">Execute a mistura conforme o procedimento operacional padrão (POP).</p>
+            
+            <div class="alert alert-info text-start">
+                <strong><i class="bi bi-info-circle me-2"></i>Procedimento:</strong>
+                <ol class="mb-0 mt-2">
+                    <li>Adicione os componentes na ordem correta</li>
+                    <li>Utilize o método de mistura adequado</li>
+                    <li>Observe o tempo mínimo de homogeneização</li>
+                    <li>Verifique aspecto visual da mistura</li>
+                </ol>
+            </div>
+            
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Método de Mistura</label>
+                            <select class="form-select" id="mixingMethod">
+                                <option value="MANUAL">Manual (Grau e Pistilo)</option>
+                                <option value="MECANICO">Mecânico (Misturador)</option>
+                                <option value="HOMOGENEIZADOR">Homogeneizador</option>
+                                <option value="AGITADOR">Agitador Magnético</option>
+                                <option value="ULTRASOM">Ultrassom</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Equipamento</label>
+                            <input type="text" class="form-control" id="equipment" placeholder="Ex: Grau de porcelana 100ml">
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label">Tempo de Mistura (min)</label>
+                            <input type="number" class="form-control" id="mixingDuration" value="15">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Velocidade (se aplicável)</label>
+                            <select class="form-select" id="mixingSpeed">
+                                <option value="">N/A</option>
+                                <option value="BAIXA">Baixa</option>
+                                <option value="MEDIA">Média</option>
+                                <option value="ALTA">Alta</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Observações</label>
+                <textarea class="form-control" id="stepObservations" rows="2" placeholder="Aspecto da mistura, intercorrências..."></textarea>
+            </div>
+            
+            <button class="btn btn-primary btn-lg px-5" onclick="startMistura()">
+                <i class="bi bi-check-lg me-2"></i>Concluir Mistura
+            </button>
+        </div>
+        
+        <script>
+        function startMistura() {
+            executeStep('mistura', {
+                mixingMethod: document.getElementById('mixingMethod').value,
+                equipment: document.getElementById('equipment').value,
+                mixingDuration: parseInt(document.getElementById('mixingDuration').value),
+                mixingSpeed: document.getElementById('mixingSpeed').value
+            });
+        }
+        </script>
+        break;
+
+    case "MISTURA":
+        <!-- Etapa: ENVASE -->
+        <div class="text-center">
+            <i class="bi bi-droplet" style="font-size: 4rem; color: var(--danger);"></i>
+            <h5 class="mt-3">4. Envase do Produto</h5>
+            <p class="text-muted">Envase o produto na embalagem adequada e gere o lote.</p>
+            
+            <div class="alert alert-info text-start">
+                <strong><i class="bi bi-info-circle me-2"></i>Verificações:</strong>
+                <ul class="mb-0 mt-2">
+                    <li>Embalagem adequada ao tipo de produto</li>
+                    <li>Quantidade envasada vs. esperada (rendimento)</li>
+                    <li>Número de lote único e rastreável</li>
+                    <li>Data de validade calculada corretamente</li>
+                </ul>
+            </div>
+            
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de Embalagem</label>
+                            <select class="form-select" id="packagingType">
+                                <option value="POTE_PLASTICO">Pote Plástico</option>
+                                <option value="POTE_VIDRO">Pote Vidro</option>
+                                <option value="BISNAGA">Bisnaga</option>
+                                <option value="FRASCO_GOTAS">Frasco Conta-Gotas</option>
+                                <option value="FRASCO_SPRAY">Frasco Spray</option>
+                                <option value="SACHE">Sachê</option>
+                                <option value="CAPSULA">Cápsulas</option>
+                                <option value="ENVELOPE">Envelope</option>
+                                <option value="AMPOLA">Ampola</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Quantidade Envasada</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="packagedQuantity" value="@Model.QuantityToProduce">
+                                <span class="input-group-text">@Model.Unit</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <label class="form-label">Número do Lote</label>
+                            <input type="text" class="form-control" id="batchNumber" value="@($"L{BrazilTime.Now:yyyyMMddHHmm}")">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Data Fabricação</label>
+                            <input type="date" class="form-control" id="manufacturingDate" value="@BrazilTime.Now.ToString("yyyy-MM-dd")">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Data Validade</label>
+                            <input type="date" class="form-control" id="expiryDate" value="@BrazilTime.Now.AddMonths(6).ToString("yyyy-MM-dd")">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Observações</label>
+                <textarea class="form-control" id="stepObservations" rows="2"></textarea>
+            </div>
+            
+            <button class="btn btn-primary btn-lg px-5" onclick="startEnvase()">
+                <i class="bi bi-check-lg me-2"></i>Concluir Envase
+            </button>
+        </div>
+        
+        <script>
+        function startEnvase() {
+            executeStep('envase', {
+                packagingType: document.getElementById('packagingType').value,
+                packagedQuantity: parseFloat(document.getElementById('packagedQuantity').value),
+                batchNumber: document.getElementById('batchNumber').value,
+                manufacturingDate: document.getElementById('manufacturingDate').value,
+                expiryDate: document.getElementById('expiryDate').value
+            });
+        }
+        </script>
+        break;
+
+    case "ENVASE":
+        <!-- Etapa: ROTULAGEM -->
+        <div class="text-center">
+            <i class="bi bi-tag text-warning" style="font-size: 4rem;"></i>
+            <h5 class="mt-3">5. Rotulagem</h5>
+            <p class="text-muted">Aplique o rótulo com todas as informações obrigatórias da ANVISA.</p>
+            
+            <div class="alert alert-warning text-start">
+                <strong><i class="bi bi-exclamation-triangle me-2"></i>Informações Obrigatórias:</strong>
+                <ul class="mb-0 mt-2">
+                    <li>Nome do produto/fórmula</li>
+                    <li>Composição qualitativa e quantitativa</li>
+                    <li>Número do lote e data de validade</li>
+                    <li>Nome e CRF do farmacêutico responsável</li>
+                    <li>Modo de uso e conservação</li>
+                    <li>Nome do prescritor e paciente</li>
+                </ul>
+            </div>
+            
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Número do Lote</label>
+                            <input type="text" class="form-control" id="batchNumber" readonly value="@($"L{BrazilTime.Now:yyyyMMddHHmm}")">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Data Fabricação</label>
+                            <input type="date" class="form-control" id="manufacturingDate" readonly value="@BrazilTime.Now.ToString("yyyy-MM-dd")">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Data Validade</label>
+                            <input type="date" class="form-control" id="expiryDate" readonly value="@BrazilTime.Now.AddMonths(6).ToString("yyyy-MM-dd")">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Informações Adicionais no Rótulo</label>
+                        <textarea class="form-control" id="additionalInfo" rows="2" placeholder="Ex: Conservar em local fresco e seco. Manter fora do alcance de crianças."></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Observações</label>
+                <textarea class="form-control" id="stepObservations" rows="2"></textarea>
+            </div>
+            
+            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                <button class="btn btn-outline-secondary btn-lg" onclick="printLabel()">
+                    <i class="bi bi-printer me-2"></i>Imprimir Rótulo
+                </button>
+                <button class="btn btn-primary btn-lg" onclick="startRotulagem()">
+                    <i class="bi bi-check-lg me-2"></i>Concluir Rotulagem
+                </button>
+            </div>
+        </div>
+        
+        <script>
+        function printLabel() {
+            // Abrir janela de impressão de rótulo
+            window.open(`/api/ManipulationOrders/@Model.Id/label`, '_blank');
+        }
+        function startRotulagem() {
+            executeStep('rotulagem', {
+                batchNumber: document.getElementById('batchNumber').value,
+                manufacturingDate: document.getElementById('manufacturingDate').value,
+                expiryDate: document.getElementById('expiryDate').value,
+                additionalInfo: document.getElementById('additionalInfo').value
+            });
+        }
+        </script>
+        break;
+
+    case "ROTULAGEM":
+        <!-- Etapa: CONFERÊNCIA -->
+        <div class="text-center">
+            <i class="bi bi-check2-square" style="font-size: 4rem; color: var(--ok);"></i>
+            <h5 class="mt-3">6. Conferência Final</h5>
+            <p class="text-muted">Verifique todos os itens antes da aprovação do farmacêutico RT.</p>
+            
+            <div class="alert alert-info text-start">
+                <strong><i class="bi bi-info-circle me-2"></i>Checklist de Conferência:</strong>
+                <p class="mb-0 mt-2">Marque todos os itens abaixo após verificação.</p>
+            </div>
+            
+            <div class="card bg-light mb-3">
+                <div class="card-body text-start">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="checkPesagem" onchange="checkAllItems()">
+                        <label class="form-check-label" for="checkPesagem">
+                            <strong>Pesagem conferida</strong> - Valores correspondem à ficha de pesagem
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="checkRotulo" onchange="checkAllItems()">
+                        <label class="form-check-label" for="checkRotulo">
+                            <strong>Rótulo correto</strong> - Todas as informações obrigatórias legíveis
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="checkEmbalagem" onchange="checkAllItems()">
+                        <label class="form-check-label" for="checkEmbalagem">
+                            <strong>Embalagem íntegra</strong> - Sem vazamentos ou defeitos
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="checkAspecto" onchange="checkAllItems()">
+                        <label class="form-check-label" for="checkAspecto">
+                            <strong>Aspecto visual adequado</strong> - Cor, odor e consistência normais
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="checkQuantidade" onchange="checkAllItems()">
+                        <label class="form-check-label" for="checkQuantidade">
+                            <strong>Quantidade correta</strong> - Conforme prescrito
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Observações da Conferência</label>
+                <textarea class="form-control" id="stepObservations" rows="2" placeholder="Anote qualquer observação relevante..."></textarea>
+            </div>
+            
+            <button class="btn btn-primary btn-lg px-5" onclick="startConferencia()" id="btnConferencia" disabled>
+                <i class="bi bi-check-lg me-2"></i>Concluir Conferência
+            </button>
+            <p class="text-muted small mt-2">* Marque todos os itens para habilitar o botão</p>
+        </div>
+        
+        <script>
+        function checkAllItems() {
+            const checks = ['checkPesagem', 'checkRotulo', 'checkEmbalagem', 'checkAspecto', 'checkQuantidade'];
+            const allChecked = checks.every(id => document.getElementById(id).checked);
+            document.getElementById('btnConferencia').disabled = !allChecked;
+        }
+        
+        function startConferencia() {
+            executeStep('conferencia', {
+                itensVerificados: true,
+                pesagemConferida: document.getElementById('checkPesagem').checked,
+                rotuloCorreto: document.getElementById('checkRotulo').checked,
+                embalagemIntegra: document.getElementById('checkEmbalagem').checked,
+                aspectoAdequado: document.getElementById('checkAspecto').checked,
+                quantidadeCorreta: document.getElementById('checkQuantidade').checked
+            });
+        }
+        </script>
+        break;
+
+    case "CONFERENCIA":
+        <!-- Etapa: APROVAÇÃO DO FARMACÊUTICO -->
+        <div class="text-center">
+            <i class="bi bi-patch-check text-success" style="font-size: 4rem;"></i>
+            <h5 class="mt-3">7. Aprovação do Farmacêutico RT</h5>
+            <p class="text-muted">Última etapa! O farmacêutico responsável técnico deve aprovar a manipulação.</p>
+            
+            <div class="alert alert-success text-start">
+                <strong><i class="bi bi-shield-check me-2"></i>Requisitos para Aprovação:</strong>
+                <ul class="mb-0 mt-2">
+                    <li>Conferência concluída sem pendências</li>
+                    <li>Farmacêutico com CRF ativo</li>
+                    <li>Assinatura digital ou física no sistema</li>
+                </ul>
+            </div>
+            
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Farmacêutico Responsável</label>
+                            <select class="form-select" id="farmaceuticoId" onchange="loadCRF()">
+                                <option value="">Selecione o farmacêutico...</option>
+                                <!-- Carregado via JS -->
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">CRF</label>
+                            <input type="text" class="form-control" id="crf" readonly placeholder="Automático">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Observações Finais</label>
+                <textarea class="form-control" id="stepObservations" rows="2" placeholder="Observações do farmacêutico (opcional)"></textarea>
+            </div>
+            
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <button class="btn btn-outline-danger btn-lg" onclick="rejectOrder()">
+                    <i class="bi bi-x-lg me-2"></i>Rejeitar
+                </button>
+                <button class="btn btn-success btn-lg px-5" onclick="approveOrder()" id="btnAprovar" disabled>
+                    <i class="bi bi-check-lg me-2"></i>Aprovar e Finalizar
+                </button>
+            </div>
+        </div>
+        
+        <script>
+        document.addEventListener('DOMContentLoaded', loadFarmaceuticos);
+        
+        async function loadFarmaceuticos() {
+            try {
+                // Buscar farmacêuticos RT
+                const response = await fetch('/api/Employees?pageSize=100');
+                const result = await response.json();
+                const select = document.getElementById('farmaceuticoId');
+                
+                if (result.items) {
+                    result.items
+                        .filter(e => e.jobPosition === 'PHARMACIST' || e.jobPosition === 'PHARMACIST_RT' || e.jobPosition === 'OWNER')
+                        .forEach(f => {
+                            const opt = document.createElement('option');
+                            opt.value = f.id;
+                            opt.textContent = f.fullName;
+                            opt.dataset.crf = f.professionalRegistration || 'N/A';
+                            select.appendChild(opt);
+                        });
+                }
+            } catch (e) { 
+                console.error('Erro ao carregar farmacêuticos:', e); 
+            }
+        }
+        
+        function loadCRF() {
+            const select = document.getElementById('farmaceuticoId');
+            const opt = select.selectedOptions[0];
+            document.getElementById('crf').value = opt?.dataset?.crf || '';
+            document.getElementById('btnAprovar').disabled = !select.value;
+        }
+        
+        async function approveOrder() {
+            const farmaceuticoId = document.getElementById('farmaceuticoId').value;
+            const crf = document.getElementById('crf').value;
+            
+            if (!farmaceuticoId) {
+                alert('Selecione o farmacêutico responsável');
+                return;
+            }
+            
+            if (!confirm('Confirma a APROVAÇÃO desta manipulação?\n\nEsta ação é irreversível.')) return;
+            
+            try {
+                const response = await fetch(`/api/ManipulationWorkflow/${orderId}/approve-final`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        aprovado: true,
+                        farmaceuticoId: farmaceuticoId,
+                        farmaceuticoNome: document.getElementById('farmaceuticoId').selectedOptions[0].text,
+                        crf: crf,
+                        observacoes: document.getElementById('stepObservations').value
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success || response.ok) {
+                    alert('✅ Manipulação APROVADA com sucesso!\n\nA ordem foi finalizada e está pronta para expedição.');
+                    location.href = '/Manipulacoes/Kanban';
+                } else {
+                    alert('❌ Erro: ' + (result.message || 'Falha ao aprovar'));
+                }
+            } catch (error) {
+                alert('Erro: ' + error.message);
+            }
+        }
+        
+        function rejectOrder() {
+            const motivo = prompt('Motivo da REJEIÇÃO (obrigatório - mínimo 10 caracteres):');
+            if (!motivo || motivo.length < 10) {
+                alert('Informe um motivo válido com pelo menos 10 caracteres.');
+                return;
+            }
+            
+            if (!confirm('Confirma a REJEIÇÃO desta manipulação?\n\nMotivo: ' + motivo)) return;
+            
+            fetch(`/api/ManipulationWorkflow/${orderId}/approve-final`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    aprovado: false,
+                    motivoReprovacao: motivo,
+                    farmaceuticoId: document.getElementById('farmaceuticoId').value || null,
+                    observacoes: document.getElementById('stepObservations').value
+                })
+            }).then(r => r.json()).then(result => {
+                alert('❌ ' + (result.message || 'Manipulação rejeitada'));
+                location.href = '/Manipulacoes';
+            }).catch(e => alert('Erro: ' + e.message));
+        }
+        </script>
+        break;
+
+    case "APROVADO":
+    case "FINALIZADO":
+        <!-- FINALIZADO - Pronto para expedição -->
+        <div class="text-center">
+            <div class="mb-4">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+            </div>
+            <h4 class="text-success mb-3">✓ Manipulação Finalizada!</h4>
+            <p class="text-muted mb-4">
+                Esta ordem foi concluída com sucesso e está pronta para expedição ao cliente.
+            </p>
+            
+            <div class="card bg-light mb-4" style="max-width: 400px; margin: 0 auto;">
+                <div class="card-body">
+                    <div class="row text-start">
+                        <div class="col-6 mb-2"><strong>Ordem:</strong></div>
+                        <div class="col-6 mb-2">@Model.OrderNumber</div>
+                        <div class="col-6 mb-2"><strong>Cliente:</strong></div>
+                        <div class="col-6 mb-2">@Model.CustomerName</div>
+                        <div class="col-6 mb-2"><strong>Conclusão:</strong></div>
+                        <div class="col-6 mb-2">@(Model.CompletionDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                <a href="/Manipulacoes/FichaPesagem/@Model.Id" target="_blank" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-printer me-2"></i>Imprimir Documentos
+                </a>
+                <a href="/Manipulacoes/Kanban" class="btn btn-primary btn-lg">
+                    <i class="bi bi-kanban me-2"></i>Voltar ao Kanban
+                </a>
+            </div>
+        </div>
+        break;
+
+    case "CANCELADO":
+        <!-- CANCELADO -->
+        <div class="text-center">
+            <div class="mb-4">
+                <i class="bi bi-x-circle-fill text-danger" style="font-size: 5rem;"></i>
+            </div>
+            <h4 class="text-danger mb-3">Ordem Cancelada</h4>
+            <p class="text-muted mb-4">
+                Esta ordem de manipulação foi cancelada e não pode ser continuada.
+            </p>
+            
+            @if (!string.IsNullOrEmpty(Model.SpecialInstructions) && Model.SpecialInstructions.Contains("[CANCELADO]"))
+            {
+                <div class="alert alert-warning text-start" style="max-width: 500px; margin: 0 auto;">
+                    <strong><i class="bi bi-exclamation-triangle me-2"></i>Motivo do Cancelamento:</strong>
+                    <p class="mb-0 mt-2">@Model.SpecialInstructions.Split("[CANCELADO]").Last().Trim()</p>
+                </div>
+            }
+            
+            <div class="mt-4">
+                <a href="/Manipulacoes" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-arrow-left me-2"></i>Voltar à Lista
+                </a>
+            </div>
+        </div>
+        break;
+
+    case "REJEITADO":
+        <!-- REJEITADO -->
+        <div class="text-center">
+            <div class="mb-4">
+                <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 5rem;"></i>
+            </div>
+            <h4 class="text-warning mb-3">Manipulação Rejeitada</h4>
+            <p class="text-muted mb-4">
+                Esta manipulação foi rejeitada pelo farmacêutico e requer ações corretivas.
+            </p>
+            
+            @if (!string.IsNullOrEmpty(Model.QualityNotes))
+            {
+                <div class="alert alert-danger text-start" style="max-width: 500px; margin: 0 auto;">
+                    <strong><i class="bi bi-x-circle me-2"></i>Motivo da Rejeição:</strong>
+                    <p class="mb-0 mt-2">@Model.QualityNotes</p>
+                </div>
+            }
+            
+            <div class="mt-4 d-flex gap-2 justify-content-center">
+                <a href="/Manipulacoes" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-arrow-left me-2"></i>Voltar
+                </a>
+                <button class="btn btn-warning btn-lg" onclick="alert('Funcionalidade de refazer em desenvolvimento')">
+                    <i class="bi bi-arrow-repeat me-2"></i>Refazer Manipulação
+                </button>
+            </div>
+        </div>
+        break;
+
+    default:
+        <!-- STATUS NÃO MAPEADO - Fallback -->
+        <div class="text-center">
+            <div class="mb-4">
+                <i class="bi bi-question-circle text-secondary" style="font-size: 4rem;"></i>
+            </div>
+            <h5 class="mb-3">Status: @Model.Status</h5>
+            <p class="text-muted mb-4">
+                Este status não está mapeado no fluxo visual. 
+                Use os botões abaixo para prosseguir manualmente.
+            </p>
+            
+            <div class="alert alert-info">
+                <strong>Status atual:</strong> @Model.Status
+                <br>
+                <small>Se este é um status válido, entre em contato com o suporte técnico.</small>
+            </div>
+            
+            <div class="d-flex gap-2 justify-content-center flex-wrap mt-4">
+                <button class="btn btn-primary" onclick="forceStartSeparacao()">
+                    <i class="bi bi-play-fill me-2"></i>Iniciar Separação
+                </button>
+                <a href="/Manipulacoes" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Voltar
+                </a>
+            </div>
+        </div>
+        
+        <script>
+        function forceStartSeparacao() {
+            if (confirm('Deseja iniciar o fluxo de produção a partir da SEPARAÇÃO?')) {
+                executeStep('separacao', {
+                    areaSeparacao: 'AREA_PRINCIPAL',
+                    observations: 'Início forçado do fluxo',
+                    startTime: new Date().toISOString(),
+                    items: []
+                });
+            }
+        }
+        </script>
+        break;
+}

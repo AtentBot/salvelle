@@ -1,0 +1,234 @@
+﻿@{
+    ViewData["Title"] = "Cadastro Concluído";
+    Layout = null;
+    var sessionId = ViewBag.SessionId ?? "";
+    var establishmentName = ViewBag.EstablishmentName ?? "";
+    var planName = ViewBag.PlanName ?? "";
+    var trialEndDate = ViewBag.TrialEndDate ?? DateTime.UtcNow.AddDays(14).ToString("dd/MM/yyyy");
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Cadastro Concluído - Salvelle</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/signup.css"/>
+    <style>
+        .success-card {
+            background: white;
+            border-radius: 20px;
+            padding: 50px 40px;
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .success-icon {
+            width: 100px;
+            height: 100px;
+            background: var(--ok);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            animation: scaleIn 0.5s ease-out;
+        }
+        .success-icon i {
+            font-size: 50px;
+            color: white;
+        }
+        @@keyframes scaleIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .success-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--ink-2);
+            margin-bottom: 15px;
+        }
+        .success-subtitle {
+            color: var(--ink-3);
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+        .trial-info-box {
+            background: var(--petrol-50);
+            border: 1px solid var(--petrol-100);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .trial-info-box h5 {
+            color: var(--petrol-500);
+            margin-bottom: 15px;
+        }
+        .trial-info-box p {
+            color: var(--ink-2);
+            margin: 0;
+        }
+        .trial-date {
+            font-weight: bold;
+            color: var(--petrol-500);
+            font-size: 1.2rem;
+        }
+        .info-list {
+            text-align: left;
+            margin: 30px 0;
+        }
+        .info-list-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--rule);
+        }
+        .info-list-item:last-child {
+            border-bottom: none;
+        }
+        .info-list-item i {
+            color: var(--ok);
+            font-size: 1.2rem;
+            margin-right: 15px;
+            margin-top: 2px;
+        }
+        .info-list-item .info-content h6 {
+            margin: 0 0 3px 0;
+            color: var(--ink-2);
+        }
+        .info-list-item .info-content p {
+            margin: 0;
+            color: var(--ink-3);
+            font-size: 0.9rem;
+        }
+        .btn-login {
+            background: var(--petrol-500);
+            border: none;
+            color: white;
+            padding: 15px 50px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(108, 99, 255, 0.4);
+            color: white;
+        }
+        .confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 1000;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--petrol-500);
+            top: -10px;
+            animation: confetti-fall 3s ease-out forwards;
+        }
+        @@keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="signup-wrapper">
+    <div class="container py-5">
+        <div class="success-card">
+            <div class="success-icon">
+                <i class="bi bi-check-lg"></i>
+            </div>
+            
+            <h1 class="success-title">Bem-vindo ao Salvelle!</h1>
+            <p class="success-subtitle">Seu cadastro foi concluído com sucesso</p>
+
+            <div class="trial-info-box">
+                <h5><i class="bi bi-gift me-2"></i>Período de Teste Ativo</h5>
+                <p>Você tem acesso completo a todas as funcionalidades até:</p>
+                <p class="trial-date mt-2">@trialEndDate</p>
+                <p class="mt-2 small text-muted">
+                    Cancele a qualquer momento antes desta data e não será cobrado.
+                </p>
+            </div>
+
+            <div class="info-list">
+                <div class="info-list-item">
+                    <i class="bi bi-building"></i>
+                    <div class="info-content">
+                        <h6>Estabelecimento</h6>
+                        <p>@establishmentName</p>
+                    </div>
+                </div>
+                <div class="info-list-item">
+                    <i class="bi bi-box-seam"></i>
+                    <div class="info-content">
+                        <h6>Plano Selecionado</h6>
+                        <p>@planName</p>
+                    </div>
+                </div>
+                <div class="info-list-item">
+                    <i class="bi bi-credit-card"></i>
+                    <div class="info-content">
+                        <h6>Cobrança</h6>
+                        <p>Primeira cobrança apenas após o período de teste</p>
+                    </div>
+                </div>
+            </div>
+
+            <a href="/login" class="btn btn-login">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Acessar o Sistema
+            </a>
+
+            <p class="mt-4 text-muted small">
+                <i class="bi bi-envelope me-1"></i>
+                Enviamos um e-mail de confirmação com os detalhes do seu cadastro.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Confetti -->
+<div class="confetti" id="confetti"></div>
+
+<script>
+// Confetti animation
+function createConfetti() {
+    const confettiContainer = document.getElementById('confetti');
+    const colors = ['var(--petrol-500)', 'var(--ok)', 'var(--amber-500)', 'var(--danger)', 'var(--info)'];
+    
+    for (let i = 0; i < 50; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = Math.random() * 2 + 's';
+        piece.style.animationDuration = (Math.random() * 2 + 2) + 's';
+        confettiContainer.appendChild(piece);
+    }
+    
+    // Remove confetti after animation
+    setTimeout(() => {
+        confettiContainer.innerHTML = '';
+    }, 5000);
+}
+
+// Run confetti on page load
+createConfetti();
+</script>
+@await Html.PartialAsync("_SupportChat")
+</body>
+</html>

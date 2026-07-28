@@ -1,0 +1,597 @@
+@{
+    ViewData["Title"] = "Detalhes do Estabelecimento";
+    ViewData["Subtitle"] = "Visualizar e gerenciar estabelecimento";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/dashboard">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/admin/establishments">Estabelecimentos</a></li>
+        <li class="breadcrumb-item active">Detalhes</li>
+    </ol>
+</nav>
+
+<!-- Loading -->
+<div id="loadingState" class="text-center py-5">
+    <div class="spinner-border text-primary mb-3"></div>
+    <p class="text-muted">Carregando dados do estabelecimento...</p>
+</div>
+
+<!-- Error -->
+<div id="errorState" class="text-center py-5" style="display: none;">
+    <i class="bi bi-exclamation-triangle text-danger fs-1"></i>
+    <h5 class="mt-3">Erro ao carregar estabelecimento</h5>
+    <p class="text-muted" id="errorMessage">Estabelecimento não encontrado</p>
+    <a href="/admin/establishments" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left me-2"></i>Voltar para lista
+    </a>
+</div>
+
+<!-- Content -->
+<div id="contentState" style="display: none;">
+    <!-- Header Card -->
+    <div class="admin-card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-1" id="nomeFantasia">-</h4>
+                    <p class="text-muted mb-0" id="razaoSocial">-</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <span class="status-badge fs-6" id="statusBadge">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Info Principal -->
+        <div class="col-lg-8">
+            <!-- Dados da Empresa -->
+            <div class="admin-card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-building me-2"></i>Dados da Empresa</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <small class="text-muted d-block">CNPJ</small>
+                                <strong id="cnpj">-</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <small class="text-muted d-block">E-mail</small>
+                                <span id="email">-</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <small class="text-muted d-block">WhatsApp</small>
+                                <span id="whatsapp">-</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <small class="text-muted d-block">Localização</small>
+                                <span id="location">-</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <small class="text-muted d-block">Cadastrado em</small>
+                                <span id="createdAt">-</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <small class="text-muted d-block">Funcionários</small>
+                                <strong id="employeesCount">0</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assinatura -->
+            <div class="admin-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-credit-card me-2"></i>Assinatura</h6>
+                    <a href="#" id="btnViewSubscription" class="btn btn-sm btn-outline-primary" style="display: none;">
+                        Ver detalhes
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div id="noSubscription" class="text-center text-muted py-4">
+                        <i class="bi bi-credit-card-2-back fs-1 d-block mb-2"></i>
+                        Nenhuma assinatura encontrada
+                    </div>
+                    <div id="subscriptionInfo" style="display: none;">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="border rounded p-3 text-center">
+                                    <small class="text-muted d-block">Plano</small>
+                                    <strong class="fs-5" id="planName">-</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="border rounded p-3 text-center">
+                                    <small class="text-muted d-block">Valor</small>
+                                    <strong class="fs-5 text-success" id="subscriptionAmount">-</strong>
+                                    <small class="text-muted" id="billingCycle"></small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="border rounded p-3 text-center">
+                                    <small class="text-muted d-block">Status</small>
+                                    <span class="status-badge" id="subscriptionStatus">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="border rounded p-3">
+                                    <small class="text-muted d-block">Período Atual</small>
+                                    <span id="currentPeriod">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="border rounded p-3">
+                                    <small class="text-muted d-block">Trial</small>
+                                    <span id="trialInfo">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Faturas Recentes -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-receipt me-2"></i>Faturas Recentes</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Vencimento</th>
+                                    <th>Pago em</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoicesTable">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">Nenhuma fatura</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="col-lg-4">
+            <div class="admin-card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Ações</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-warning" id="btnBlock" onclick="showBlockModal()">
+                            <i class="bi bi-lock me-2"></i>Bloquear Estabelecimento
+                        </button>
+                        <button type="button" class="btn btn-outline-success" id="btnUnblock" onclick="unblockEstablishment()" style="display: none;">
+                            <i class="bi bi-unlock me-2"></i>Desbloquear Estabelecimento
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="showDeleteModal()">
+                            <i class="bi bi-trash me-2"></i>Excluir Estabelecimento
+                        </button>
+                        <hr>
+                        <a href="/admin/establishments" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Voltar para Lista
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Card -->
+            <div class="admin-card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Resumo</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Onboarding</span>
+                        <span id="onboardingStatus">-</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Funcionários</span>
+                        <strong id="employeesCountSide">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Cliente desde</span>
+                        <span id="memberSince">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Bloquear -->
+<div class="modal fade" id="blockModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bloquear Estabelecimento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    O estabelecimento perderá acesso ao sistema imediatamente.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Motivo do bloqueio</label>
+                    <textarea class="form-control" id="blockReason" rows="3" placeholder="Informe o motivo..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="confirmBlock()">
+                    <i class="bi bi-lock me-2"></i>Confirmar Bloqueio
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Excluir -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Excluir Estabelecimento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+                </div>
+                <p>O estabelecimento será desativado e a assinatura cancelada.</p>
+                <p>Digite <strong>EXCLUIR</strong> para confirmar:</p>
+                <input type="text" class="form-control" id="deleteConfirmInput" placeholder="EXCLUIR">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                    <i class="bi bi-trash me-2"></i>Excluir Permanentemente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const establishmentId = '@ViewBag.EstablishmentId';
+    let currentData = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadEstablishment();
+    });
+
+    async function loadEstablishment() {
+        try {
+            const response = await fetch(`/api/admin/establishments/${establishmentId}`);
+            
+            if (!response.ok) {
+                throw new Error('Estabelecimento não encontrado');
+            }
+
+            currentData = await response.json();
+            renderEstablishment(currentData);
+
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('contentState').style.display = 'block';
+        } catch (error) {
+            console.error('Erro:', error);
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorMessage').textContent = error.message;
+            document.getElementById('errorState').style.display = 'block';
+        }
+    }
+
+    function renderEstablishment(data) {
+        const est = data.establishment;
+        
+        // Header
+        document.getElementById('nomeFantasia').textContent = est.nomeFantasia || '-';
+        document.getElementById('razaoSocial').textContent = est.razaoSocial || '-';
+
+        // Status Badge
+        const statusBadge = document.getElementById('statusBadge');
+        if (est.isActive) {
+            statusBadge.textContent = 'Ativo';
+            statusBadge.className = 'status-badge fs-6 active';
+            document.getElementById('btnBlock').style.display = 'block';
+            document.getElementById('btnUnblock').style.display = 'none';
+        } else {
+            statusBadge.textContent = 'Bloqueado';
+            statusBadge.className = 'status-badge fs-6 canceled';
+            document.getElementById('btnBlock').style.display = 'none';
+            document.getElementById('btnUnblock').style.display = 'block';
+        }
+
+        // Dados da empresa
+        document.getElementById('cnpj').textContent = formatCNPJ(est.cnpj) || '-';
+        document.getElementById('email').textContent = est.email || '-';
+        document.getElementById('whatsapp').textContent = formatPhone(est.whatsApp) || '-';
+        document.getElementById('location').textContent = est.city && est.state 
+            ? `${est.city} - ${est.state}` 
+            : '-';
+        document.getElementById('createdAt').textContent = formatDateTime(est.createdAt);
+        document.getElementById('employeesCount').textContent = data.employeesCount || 0;
+
+        // Sidebar stats
+        document.getElementById('onboardingStatus').innerHTML = est.onboardingCompleted 
+            ? '<span class="badge bg-success">Completo</span>' 
+            : '<span class="badge bg-warning">Pendente</span>';
+        document.getElementById('employeesCountSide').textContent = data.employeesCount || 0;
+        document.getElementById('memberSince').textContent = formatDate(est.createdAt);
+
+        // Subscription
+        if (est.subscription) {
+            const sub = est.subscription;
+            document.getElementById('noSubscription').style.display = 'none';
+            document.getElementById('subscriptionInfo').style.display = 'block';
+            document.getElementById('btnViewSubscription').style.display = 'inline-block';
+            document.getElementById('btnViewSubscription').href = `/admin/subscriptions/${sub.id}`;
+
+            document.getElementById('planName').textContent = sub.planName || '-';
+            document.getElementById('subscriptionAmount').textContent = formatCurrency(sub.amount);
+            document.getElementById('billingCycle').textContent = sub.billingCycle === 'YEARLY' ? '/ano' : '/mês';
+            
+            const subStatus = document.getElementById('subscriptionStatus');
+            subStatus.textContent = getStatusLabel(sub.status);
+            subStatus.className = `status-badge ${getStatusClass(sub.status)}`;
+
+            document.getElementById('currentPeriod').textContent = 
+                `${formatDate(sub.currentPeriodStart)} - ${formatDate(sub.currentPeriodEnd)}`;
+            document.getElementById('trialInfo').textContent = sub.trialEnd 
+                ? `Até ${formatDate(sub.trialEnd)}` 
+                : 'Sem trial';
+        }
+
+        // Invoices
+        renderInvoices(data.recentInvoices || []);
+    }
+
+    function renderInvoices(invoices) {
+        const tbody = document.getElementById('invoicesTable');
+
+        if (!invoices || invoices.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">
+                        <i class="bi bi-receipt fs-3 d-block mb-2"></i>
+                        Nenhuma fatura encontrada
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = invoices.map(inv => `
+            <tr>
+                <td>${formatDate(inv.createdAt)}</td>
+                <td><strong>${formatCurrency(inv.amount)}</strong></td>
+                <td>
+                    <span class="badge ${inv.status === 'PAID' ? 'bg-success' : 'bg-warning'}">
+                        ${inv.status === 'PAID' ? 'Paga' : 'Pendente'}
+                    </span>
+                </td>
+                <td>${formatDate(inv.dueDate)}</td>
+                <td>${inv.paidAt ? formatDate(inv.paidAt) : '-'}</td>
+            </tr>
+        `).join('');
+    }
+
+    function showBlockModal() {
+        document.getElementById('blockReason').value = '';
+        new bootstrap.Modal(document.getElementById('blockModal')).show();
+    }
+
+    async function confirmBlock() {
+        const reason = document.getElementById('blockReason').value;
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Bloqueando...';
+
+        try {
+            const response = await fetch(`/api/admin/establishments/${establishmentId}/block`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason })
+            });
+
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('blockModal')).hide();
+                showToast('Estabelecimento bloqueado com sucesso!', 'success');
+                loadEstablishment();
+            } else {
+                const error = await response.json();
+                showToast('Erro: ' + (error.message || 'Erro ao bloquear'), 'danger');
+            }
+        } catch (error) {
+            showToast('Erro ao bloquear estabelecimento', 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-lock me-2"></i>Confirmar Bloqueio';
+        }
+    }
+
+    async function unblockEstablishment() {
+        if (!confirm('Deseja desbloquear este estabelecimento?')) return;
+
+        const btn = document.getElementById('btnUnblock');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Desbloqueando...';
+
+        try {
+            const response = await fetch(`/api/admin/establishments/${establishmentId}/unblock`, {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                showToast('Estabelecimento desbloqueado com sucesso!', 'success');
+                loadEstablishment();
+            } else {
+                const error = await response.json();
+                showToast('Erro: ' + (error.message || 'Erro ao desbloquear'), 'danger');
+            }
+        } catch (error) {
+            showToast('Erro ao desbloquear estabelecimento', 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-unlock me-2"></i>Desbloquear Estabelecimento';
+        }
+    }
+
+    function showDeleteModal() {
+        document.getElementById('deleteConfirmInput').value = '';
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+
+    async function confirmDelete() {
+        const confirmText = document.getElementById('deleteConfirmInput').value;
+        if (confirmText !== 'EXCLUIR') {
+            showToast('Digite EXCLUIR para confirmar', 'warning');
+            return;
+        }
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Excluindo...';
+
+        try {
+            const response = await fetch(`/api/admin/establishments/${establishmentId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                showToast('Estabelecimento excluído com sucesso!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/admin/establishments';
+                }, 1500);
+            } else {
+                const error = await response.json();
+                showToast('Erro: ' + (error.message || 'Erro ao excluir'), 'danger');
+            }
+        } catch (error) {
+            showToast('Erro ao excluir estabelecimento', 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-trash me-2"></i>Excluir Permanentemente';
+        }
+    }
+
+    function showToast(message, type = 'info') {
+        let container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '1100';
+            document.body.appendChild(container);
+        }
+
+        const toastId = 'toast-' + Date.now();
+        const iconMap = {
+            success: 'bi-check-circle-fill text-success',
+            danger: 'bi-x-circle-fill text-danger',
+            warning: 'bi-exclamation-triangle-fill text-warning',
+            info: 'bi-info-circle-fill text-primary'
+        };
+
+        const toastHtml = `
+            <div id="${toastId}" class="toast align-items-center border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi ${iconMap[type] || iconMap.info} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', toastHtml);
+        const toastEl = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    function getStatusClass(status) {
+        switch (status?.toUpperCase()) {
+            case 'ACTIVE': return 'active';
+            case 'TRIALING': return 'trialing';
+            case 'PAST_DUE': return 'past-due';
+            case 'CANCELED': return 'canceled';
+            default: return 'inactive';
+        }
+    }
+
+    function getStatusLabel(status) {
+        switch (status?.toUpperCase()) {
+            case 'ACTIVE': return 'Ativa';
+            case 'TRIALING': return 'Trial';
+            case 'PAST_DUE': return 'Inadimplente';
+            case 'CANCELED': return 'Cancelada';
+            default: return '-';
+        }
+    }
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleDateString('pt-BR');
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleString('pt-BR');
+    }
+
+    function formatCNPJ(cnpj) {
+        if (!cnpj) return null;
+        cnpj = cnpj.replace(/\D/g, '');
+        if (cnpj.length !== 14) return cnpj;
+        return cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    }
+
+    function formatPhone(phone) {
+        if (!phone) return null;
+        phone = phone.replace(/\D/g, '');
+        if (phone.length === 11) {
+            return phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        }
+        if (phone.length === 10) {
+            return phone.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+        }
+        return phone;
+    }
+</script>
+}

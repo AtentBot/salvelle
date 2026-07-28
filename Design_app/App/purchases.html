@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Salvelle — Pedidos de compra</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88'><rect width='88' height='88' rx='18' fill='%230F6E78'/><path d='M30 26 H42 a10 10 0 0 1 10 10 V52 H42 a10 10 0 0 1 -10 -10 V26 Z' fill='white'/><rect x='52' y='26' width='14' height='8' rx='4' fill='white'/><rect x='52' y='38' width='10' height='7' rx='3.5' fill='white'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<style>@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=cabinet-grotesk@500,700,800&display=swap');</style>
+<link rel="stylesheet" href="ds/tokens.css">
+<link rel="stylesheet" href="ds/components.css">
+<style>
+  .purchase-grid { display: grid; grid-template-columns: 1fr 360px; gap: 20px; }
+  .alert-strip { background: var(--surface); border: 1px solid color-mix(in oklch, var(--warn) 30%, var(--rule)); border-left: 3px solid var(--warn); border-radius: var(--r-md); padding: 14px 20px; display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
+  .alert-strip svg { color: var(--warn); flex-shrink: 0; }
+  .alert-strip .num { font-family: var(--font-mono); font-size: 28px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .alert-strip .text { font-size: 13px; color: var(--ink-2); }
+  .alert-strip .text b { color: var(--ink); font-weight: 500; }
+  .alert-strip .actions { margin-left: auto; }
+  .vendor-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  .vendor-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); padding: 16px 18px; }
+  .vendor-name { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .vendor-meta { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  .vendor-stats { display: flex; gap: 16px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--rule); }
+  .vendor-stats .s .l { font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); }
+  .vendor-stats .s .v { font-size: 14px; font-weight: 500; color: var(--ink); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+  .reorder-table th { font-size: 11px; padding: 10px 14px; }
+  .reorder-table td { padding: 12px 14px; vertical-align: middle; }
+  .reorder-table .item-name { font-weight: 500; color: var(--ink); }
+  .reorder-table .item-meta { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  .stock-bar { width: 100px; height: 6px; background: var(--rule); border-radius: 3px; position: relative; overflow: hidden; }
+  .stock-bar .fill { height: 100%; }
+  .stock-bar .fill.low { background: var(--warn); }
+  .stock-bar .fill.out { background: var(--danger); }
+  .stock-bar .fill.ok { background: var(--ok); }
+  .stock-num { display: flex; gap: 8px; align-items: center; font-family: var(--font-mono); font-size: 12px; }
+
+  .draft-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); display: flex; flex-direction: column; }
+  .draft-card .head { padding: 16px 20px; border-bottom: 1px solid var(--rule); }
+  .draft-card .head h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.015em; }
+  .draft-card .head p { margin: 2px 0 0; font-size: 12px; color: var(--ink-3); }
+  .draft-list { flex: 1; padding: 8px 0; max-height: 380px; overflow: auto; }
+  .draft-row { padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--rule); }
+  .draft-row:last-child { border-bottom: none; }
+  .draft-row .l { font-size: 12px; }
+  .draft-row .l .name { font-weight: 500; color: var(--ink); }
+  .draft-row .l .meta { color: var(--ink-3); font-size: 11px; margin-top: 2px; }
+  .draft-row .qty-pill { display: flex; align-items: center; gap: 0; border: 1px solid var(--rule); border-radius: var(--r-xs); overflow: hidden; }
+  .draft-row .qty-pill button { width: 24px; height: 24px; background: var(--surface); border: none; cursor: pointer; color: var(--ink-3); }
+  .draft-row .qty-pill .v { width: 36px; text-align: center; font-family: var(--font-mono); font-size: 12px; }
+  .draft-totals { padding: 16px 20px; border-top: 1px solid var(--rule); background: var(--bg-subtle); }
+  .draft-totals .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+  .draft-totals .row .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .draft-totals .row.total { font-weight: 600; padding-top: 12px; margin-top: 8px; border-top: 1px solid var(--rule); }
+  .draft-totals .row.total .v { font-size: 18px; }
+  .draft-actions { padding: 14px 20px; border-top: 1px solid var(--rule); }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/shell.jsx"></script>
+<script type="text/babel" data-presets="react">
+function App() {
+  return (
+    <div className="app-shell">
+      <Sidebar active="purchases" />
+      <div className="app-main">
+        <Topbar />
+        <div className="app-content">
+          <PageHead
+            breadcrumb="CADASTRO · PEDIDOS DE COMPRA"
+            title="Pedidos de compra"
+            subtitle="Reposição de insumos sugerida com base no consumo dos últimos 30 dias."
+            actions={<>
+              <button className="btn btn-secondary"><Icon name="archive"/>Histórico</button>
+              <button className="btn btn-secondary"><Icon name="download"/>Exportar</button>
+              <button className="btn btn-primary"><Icon name="plus"/>Nova ordem</button>
+            </>}
+          />
+
+          <div className="alert-strip">
+            <Icon name="bell"/>
+            <div className="num">8</div>
+            <div className="text"><b>insumos abaixo do estoque mínimo</b><div style={{color:'var(--ink-3)', fontSize:12, marginTop:2}}>Sugerimos comprar com 3 fornecedores. Sem compras urgentes nas próximas 72h.</div></div>
+            <div className="actions"><button className="btn btn-amber">Revisar sugestão</button></div>
+          </div>
+
+          <div className="vendor-grid">
+            <div className="vendor-card">
+              <div className="vendor-name">Galena Química</div>
+              <div className="vendor-meta">Insumos farmacêuticos · São Paulo · CNPJ 04.•••.•••/0001</div>
+              <div className="vendor-stats">
+                <div className="s"><div className="l">Itens em compra</div><div className="v">5</div></div>
+                <div className="s"><div className="l">Lead time</div><div className="v">3 dias</div></div>
+                <div className="s"><div className="l">Total previsto</div><div className="v">R$ 1.842</div></div>
+              </div>
+            </div>
+            <div className="vendor-card">
+              <div className="vendor-name">Pharma Special</div>
+              <div className="vendor-meta">Excipientes e veículos · Diadema · CNPJ 12.•••.•••/0001</div>
+              <div className="vendor-stats">
+                <div className="s"><div className="l">Itens em compra</div><div className="v">2</div></div>
+                <div className="s"><div className="l">Lead time</div><div className="v">2 dias</div></div>
+                <div className="s"><div className="l">Total previsto</div><div className="v">R$ 624</div></div>
+              </div>
+            </div>
+            <div className="vendor-card">
+              <div className="vendor-name">Embalafarma</div>
+              <div className="vendor-meta">Embalagens e frascaria · Guarulhos · CNPJ 22.•••.•••/0001</div>
+              <div className="vendor-stats">
+                <div className="s"><div className="l">Itens em compra</div><div className="v">1</div></div>
+                <div className="s"><div className="l">Lead time</div><div className="v">5 dias</div></div>
+                <div className="s"><div className="l">Total previsto</div><div className="v">R$ 280</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="purchase-grid">
+            <div>
+              <div className="card-header" style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
+                <h3 style={{margin:0, fontSize:15, fontWeight:600, letterSpacing:'-0.015em'}}>Insumos para reposição</h3>
+                <div className="row" style={{gap:8}}>
+                  <button className="btn btn-secondary btn-sm"><Icon name="filter"/>Filtros</button>
+                  <select className="select" style={{width:160, height:32, fontSize:12}}><option>Todos os fornecedores</option><option>Galena</option></select>
+                </div>
+              </div>
+
+              <div className="table-wrap">
+                <table className="table reorder-table">
+                  <thead><tr>
+                    <th style={{width:30}}><input type="checkbox" defaultChecked/></th>
+                    <th>Insumo</th>
+                    <th>Estoque</th>
+                    <th>Consumo/30d</th>
+                    <th>Sugerido</th>
+                    <th>Fornecedor</th>
+                    <th className="num">Custo prev.</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr>
+                      <td><input type="checkbox" defaultChecked/></td>
+                      <td><div className="item-name">Tretinoína 0,025%</div><div className="item-meta">DCB 4521 · Cosmético</div></td>
+                      <td><div className="stock-num"><div className="stock-bar"><div className="fill out" style={{width:'8%'}}/></div>8 g</div></td>
+                      <td className="mono">68 g</td>
+                      <td className="mono" style={{color:'var(--ink)', fontWeight:500}}>100 g</td>
+                      <td>Galena</td>
+                      <td className="num">R$ 412,00</td>
+                    </tr>
+                    <tr>
+                      <td><input type="checkbox" defaultChecked/></td>
+                      <td><div className="item-name">Bupropiona Cloridrato</div><div className="item-meta">DCB 1457 · Lista B · Controlado</div></td>
+                      <td><div className="stock-num"><div className="stock-bar"><div className="fill low" style={{width:'24%'}}/></div>124 g</div></td>
+                      <td className="mono">340 g</td>
+                      <td className="mono" style={{color:'var(--ink)', fontWeight:500}}>500 g</td>
+                      <td>Galena</td>
+                      <td className="num">R$ 680,00</td>
+                    </tr>
+                    <tr>
+                      <td><input type="checkbox" defaultChecked/></td>
+                      <td><div className="item-name">Lactose monohidratada</div><div className="item-meta">DCB 0089 · Veículo</div></td>
+                      <td><div className="stock-num"><div className="stock-bar"><div className="fill low" style={{width:'18%'}}/></div>240 g</div></td>
+                      <td className="mono">1.400 g</td>
+                      <td className="mono" style={{color:'var(--ink)', fontWeight:500}}>3 kg</td>
+                      <td>Pharma Special</td>
+                      <td className="num">R$ 168,00</td>
+                    </tr>
+                    <tr>
+                      <td><input type="checkbox" defaultChecked/></td>
+                      <td><div className="item-name">Frasco âmbar 60mL</div><div className="item-meta">Embalagem · com tampa</div></td>
+                      <td><div className="stock-num"><div className="stock-bar"><div className="fill low" style={{width:'30%'}}/></div>42 un</div></td>
+                      <td className="mono">96 un</td>
+                      <td className="mono" style={{color:'var(--ink)', fontWeight:500}}>150 un</td>
+                      <td>Embalafarma</td>
+                      <td className="num">R$ 280,00</td>
+                    </tr>
+                    <tr>
+                      <td><input type="checkbox"/></td>
+                      <td><div className="item-name">Hidroquinona</div><div className="item-meta">DCB 4612 · Cosmético</div></td>
+                      <td><div className="stock-num"><div className="stock-bar"><div className="fill ok" style={{width:'62%'}}/></div>62 g</div></td>
+                      <td className="mono">36 g</td>
+                      <td className="mono muted">—</td>
+                      <td>—</td>
+                      <td className="num muted">—</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="draft-card">
+              <div className="head">
+                <h3>Rascunho de pedido</h3>
+                <p>Galena Química · 4 itens selecionados</p>
+              </div>
+              <div className="draft-list">
+                <div className="draft-row">
+                  <div className="l"><div className="name">Tretinoína 0,025%</div><div className="meta">100g · R$ 4,12 / g</div></div>
+                  <div className="qty-pill"><button>−</button><span className="v">100g</span><button>+</button></div>
+                </div>
+                <div className="draft-row">
+                  <div className="l"><div className="name">Bupropiona Cloridrato</div><div className="meta">500g · R$ 1,36 / g</div></div>
+                  <div className="qty-pill"><button>−</button><span className="v">500g</span><button>+</button></div>
+                </div>
+                <div className="draft-row">
+                  <div className="l"><div className="name">Lactose monohidratada</div><div className="meta">3kg · R$ 56 / kg</div></div>
+                  <div className="qty-pill"><button>−</button><span className="v">3kg</span><button>+</button></div>
+                </div>
+                <div className="draft-row">
+                  <div className="l"><div className="name">Estearato de magnésio</div><div className="meta">500g · R$ 0,84 / g</div></div>
+                  <div className="qty-pill"><button>−</button><span className="v">500g</span><button>+</button></div>
+                </div>
+                <div className="draft-row">
+                  <div className="l"><div className="name">Frasco âmbar 60mL</div><div className="meta">150 un · R$ 1,87 / un</div></div>
+                  <div className="qty-pill"><button>−</button><span className="v">150</span><button>+</button></div>
+                </div>
+              </div>
+              <div className="draft-totals">
+                <div className="row"><span>Subtotal</span><span className="v">R$ 1.840,00</span></div>
+                <div className="row"><span>Frete previsto</span><span className="v">R$ 0,00</span></div>
+                <div className="row"><span style={{color:'var(--ok)'}}>Desconto Galena (5%)</span><span className="v" style={{color:'var(--ok)'}}>−R$ 92,00</span></div>
+                <div className="row total"><span>Total</span><span className="v">R$ 1.748,00</span></div>
+              </div>
+              <div className="draft-actions">
+                <button className="btn btn-primary" style={{width:'100%', justifyContent:'center'}}><Icon name="truck"/>Enviar pedido por e-mail</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

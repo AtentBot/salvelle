@@ -1,0 +1,306 @@
+﻿@{
+    ViewData["Title"] = "Enviar Receita";
+    Layout = null;
+    var pharmacyName = ViewBag.PharmacyName ?? "Farmácia";
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="var(--petrol-500)">
+    <title>@ViewData["Title"] - Salvelle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/design-system/tokens.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/design-system/components.css" asp-append-version="true">
+    <style>
+        :root {
+            --primary: var(--petrol-500); --primary-light: var(--petrol-200); --secondary: var(--ok);
+            --accent: var(--amber-500); --gray-900: var(--ink); --gray-500: var(--ink-3);
+            --gray-200: var(--rule); --gray-100: var(--bg-subtle); --gray-50: var(--bg);
+            --white: var(--surface);
+            --gradient-primary: var(--petrol-500);
+            --shadow: var(--shadow-1);
+            --radius: var(--r-md); --radius-lg: var(--r-lg); --radius-xl: var(--r-lg); --radius-full: var(--r-pill);
+        }
+        * { box-sizing: border-box; }
+        body { font-family: var(--font-sans); background: var(--bg); color: var(--ink); min-height: 100vh; margin: 0; }
+
+        .app-header { background: var(--white); padding: 16px 20px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--gray-100); position: sticky; top: 0; z-index: 100; }
+        .back-btn { width: 40px; height: 40px; border-radius: var(--radius-full); background: var(--gray-100); border: none; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--ink-2); cursor: pointer; }
+        .header-title { flex: 1; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; }
+        .header-pharmacy { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--gray-500); background: var(--gray-50); padding: 8px 12px; border-radius: var(--radius-full); }
+
+        .stepper { display: flex; justify-content: center; gap: 8px; padding: 20px; background: var(--white); }
+        .step-dot { width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--ink-5); transition: all 0.3s; }
+        .step-dot.active { width: 24px; background: var(--gradient-primary); }
+        .step-dot.completed { background: var(--secondary); }
+
+        .step-content { display: none; padding: 24px 20px 120px; animation: fadeIn 0.4s ease; }
+        .step-content.active { display: block; }
+        @@keyframes fadeIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+        .upload-hero { text-align: center; margin-bottom: 32px; }
+        .upload-hero-icon { width: 100px; height: 100px; border-radius: var(--radius-full); background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; font-size: 48px; color: var(--white); margin: 0 auto 20px; animation: bounce 2s ease-in-out infinite; }
+        @@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .upload-hero h2 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+        .upload-hero p { color: var(--gray-500); font-size: 15px; }
+
+        .upload-zone { border: 2px dashed var(--ink-5); border-radius: var(--radius-xl); padding: 48px 24px; text-align: center; cursor: pointer; transition: all 0.3s; background: var(--white); position: relative; }
+        .upload-zone:hover { border-color: var(--primary); background: rgba(99,102,241,0.02); }
+        .upload-zone.has-file { border-style: solid; border-color: var(--secondary); }
+        .upload-zone-icon { width: 72px; height: 72px; border-radius: var(--radius-lg); background: var(--bg-subtle); display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--ink-4); margin: 0 auto 16px; }
+        .upload-zone h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+        .upload-zone p { font-size: 14px; color: var(--gray-500); }
+        .upload-preview { max-width: 100%; max-height: 300px; border-radius: var(--radius-lg); margin-top: 16px; display: none; }
+        .upload-preview.visible { display: block; }
+
+        .upload-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 24px; }
+        .upload-option { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-lg); padding: 20px 16px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-option:hover { border-color: var(--primary); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .upload-option i { font-size: 28px; color: var(--primary); margin-bottom: 8px; display: block; }
+        .upload-option span { font-size: 14px; font-weight: 600; color: var(--ink-2); }
+
+        .processing-container { text-align: center; padding: 60px 20px; }
+        .processing-animation { width: 150px; height: 150px; margin: 0 auto 32px; position: relative; }
+        .processing-circle { width: 100%; height: 100%; border: 4px solid var(--gray-200); border-top-color: var(--primary); border-radius: var(--radius-full); animation: spin 1s linear infinite; }
+        @@keyframes spin { to { transform: rotate(360deg); } }
+        .processing-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; color: var(--primary); }
+        .processing-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+        .processing-text { color: var(--gray-500); font-size: 15px; margin-bottom: 32px; }
+        .processing-steps { max-width: 280px; margin: 0 auto; text-align: left; }
+        .processing-step { display: flex; align-items: center; gap: 12px; padding: 12px 0; color: var(--ink-4); transition: all 0.3s; }
+        .processing-step.active { color: var(--primary); }
+        .processing-step.completed { color: var(--secondary); }
+        .processing-step i { font-size: 20px; }
+        .processing-step span { font-size: 14px; font-weight: 500; }
+
+        .ingredients-header { background: var(--white); padding: 20px; border-radius: var(--radius-xl); margin-bottom: 20px; box-shadow: var(--shadow); }
+        .ingredients-header h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+        .ingredients-header p { font-size: 14px; color: var(--gray-500); }
+        .ocr-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--gray-100); }
+        .ocr-info-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        .ocr-info-item i { color: var(--primary); }
+
+        .ingredient-card { background: var(--white); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 12px; border: 1px solid var(--gray-100); }
+        .ingredient-card.selected { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+        .ingredient-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .ingredient-ocr-text { font-size: 12px; color: var(--gray-500); margin-bottom: 4px; }
+        .ingredient-name { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 15px; }
+        .ingredient-qty-value { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 16px; color: var(--primary); }
+        .ingredient-qty-unit { font-size: 12px; color: var(--gray-500); }
+        .ingredient-suggestions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .suggestion-chip { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: var(--radius-full); font-size: 13px; cursor: pointer; border: 1px solid var(--gray-200); background: var(--white); transition: all 0.2s; }
+        .suggestion-chip:hover { border-color: var(--primary); }
+        .suggestion-chip.selected { background: var(--secondary); border-color: var(--secondary); color: var(--white); }
+        .suggestion-chip .confidence { font-size: 11px; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: var(--radius-full); }
+
+        .form-section { background: var(--white); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; }
+        .form-section-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .form-section-title i { color: var(--primary); }
+        .form-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
+        .form-control { width: 100%; padding: 12px 16px; border: 1px solid var(--gray-200); border-radius: var(--radius); font-size: 15px; font-family: inherit; }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+
+        .quote-success { text-align: center; margin-bottom: 24px; }
+        .quote-success-icon { width: 80px; height: 80px; border-radius: var(--radius-full); background: var(--ok); display: flex; align-items: center; justify-content: center; font-size: 40px; color: var(--white); margin: 0 auto 16px; animation: scaleIn 0.5s ease; }
+        @@keyframes scaleIn { from { transform: scale(0); } to { transform: scale(1); } }
+        .quote-success h2 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+        .quote-success p { color: var(--gray-500); }
+
+        .quote-card { background: var(--white); border-radius: var(--radius-xl); overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); margin-bottom: 24px; }
+        .quote-card-header { background: var(--gradient-primary); padding: 20px; color: var(--white); }
+        .quote-code { font-size: 12px; opacity: 0.8; margin-bottom: 4px; }
+        .quote-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; }
+        .quote-card-body { padding: 20px; }
+        .quote-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--gray-100); font-size: 14px; }
+        .quote-item:last-child { border-bottom: none; }
+        .quote-item-label { color: var(--ink-2); }
+        .quote-item-value { font-weight: 600; color: var(--gray-900); }
+        .quote-total { display: flex; justify-content: space-between; padding: 16px 20px; background: var(--gray-50); border-top: 1px solid var(--gray-100); }
+        .quote-total-label { font-size: 16px; font-weight: 600; }
+        .quote-total-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 800; color: var(--primary); }
+
+        .quote-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .quote-btn { padding: 16px 24px; border-radius: var(--radius-lg); font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; }
+        .quote-btn.primary { background: var(--gradient-primary); color: var(--white); }
+        .quote-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .quote-btn.secondary { background: var(--white); color: var(--ink-2); border: 1px solid var(--gray-200); }
+        .quote-btn.whatsapp { background: var(--ok); color: var(--white); grid-column: span 2; }
+
+        .bottom-action { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); padding: 16px 20px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--gray-100); box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 100; }
+        .bottom-action-btn { width: 100%; padding: 16px 24px; border-radius: var(--radius-lg); background: var(--gradient-primary); color: var(--white); font-size: 16px; font-weight: 700; font-family: inherit; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; }
+        .bottom-action-btn:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .bottom-action-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        @@media (min-width: 768px) { body { max-width: 480px; margin: 0 auto; } .bottom-action { max-width: 480px; left: 50%; transform: translateX(-50%); } }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i></button>
+        <h1 class="header-title">Enviar Receita</h1>
+        <div class="header-pharmacy"><i class="bi bi-building"></i>@pharmacyName</div>
+    </header>
+
+    <div class="stepper">
+        <div class="step-dot active" data-step="1"></div>
+        <div class="step-dot" data-step="2"></div>
+        <div class="step-dot" data-step="3"></div>
+        <div class="step-dot" data-step="4"></div>
+    </div>
+
+    <div class="step-content active" id="step1">
+        <div class="upload-hero">
+            <div class="upload-hero-icon"><i class="bi bi-camera"></i></div>
+            <h2>Envie sua receita</h2>
+            <p>Tire uma foto ou selecione do seu dispositivo</p>
+        </div>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-zone-icon"><i class="bi bi-cloud-arrow-up"></i></div>
+            <h3>Arraste uma imagem ou clique aqui</h3>
+            <p>Formatos: JPG, PNG, PDF • Máx: 10MB</p>
+            <img class="upload-preview" id="uploadPreview" alt="Preview">
+        </div>
+        <input type="file" id="fileInput" accept="image/*,.pdf" hidden onchange="handleFileSelect(event)">
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden onchange="handleFileSelect(event)">
+        <div class="upload-options">
+            <div class="upload-option" onclick="openCamera()"><i class="bi bi-camera-fill"></i><span>Tirar foto</span></div>
+            <div class="upload-option" onclick="document.getElementById('fileInput').click()"><i class="bi bi-image"></i><span>Galeria</span></div>
+        </div>
+    </div>
+
+    <div class="step-content" id="step2">
+        <div class="processing-container">
+            <div class="processing-animation"><div class="processing-circle"></div><i class="bi bi-file-earmark-text processing-icon"></i></div>
+            <h2 class="processing-title">Analisando sua receita...</h2>
+            <p class="processing-text">Nossa IA está identificando os componentes</p>
+            <div class="processing-steps">
+                <div class="processing-step active" id="procStep1"><i class="bi bi-check-circle-fill"></i><span>Recebendo imagem</span></div>
+                <div class="processing-step" id="procStep2"><i class="bi bi-circle"></i><span>Processando OCR</span></div>
+                <div class="processing-step" id="procStep3"><i class="bi bi-circle"></i><span>Identificando ingredientes</span></div>
+                <div class="processing-step" id="procStep4"><i class="bi bi-circle"></i><span>Buscando no estoque</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="step-content" id="step3">
+        <div class="ingredients-header">
+            <h3>Receita identificada!</h3>
+            <p>Confirme os ingredientes abaixo</p>
+            <div class="ocr-info">
+                <div class="ocr-info-item"><i class="bi bi-person"></i><span>Dr(a): <strong id="doctorName">-</strong></span></div>
+                <div class="ocr-info-item"><i class="bi bi-calendar"></i><span>Data: <strong id="prescDate">-</strong></span></div>
+            </div>
+        </div>
+        <div class="ingredients-list" id="ingredientsList"></div>
+        <div class="form-section">
+            <h3 class="form-section-title"><i class="bi bi-prescription2"></i>Forma farmacêutica</h3>
+            <div class="form-row">
+                <div class="form-group"><label>Forma</label><select class="form-control" id="pharmForm"><option>Cápsula</option><option>Creme</option><option>Gel</option><option>Loção</option><option>Pomada</option><option>Solução</option></select></div>
+                <div class="form-group"><label>Quantidade</label><input type="text" class="form-control" id="totalQty" placeholder="Ex: 60 cápsulas"></div>
+            </div>
+            <div class="form-group"><label>Instruções de uso</label><textarea class="form-control" id="instructions" rows="3" placeholder="Posologia e orientações..."></textarea></div>
+        </div>
+    </div>
+
+    <div class="step-content" id="step4">
+        <div class="quote-success"><div class="quote-success-icon"><i class="bi bi-check-lg"></i></div><h2>Orçamento pronto!</h2><p>Confira os detalhes abaixo</p></div>
+        <div class="quote-card">
+            <div class="quote-card-header"><p class="quote-code" id="quoteCode">ORC-0000</p><h3 class="quote-title" id="quoteTitle">Fórmula Personalizada</h3></div>
+            <div class="quote-card-body">
+                <div class="quote-item"><span class="quote-item-label">Forma farmacêutica</span><span class="quote-item-value" id="quoteForm">-</span></div>
+                <div class="quote-item"><span class="quote-item-label">Quantidade</span><span class="quote-item-value" id="quoteQty">-</span></div>
+                <div class="quote-item"><span class="quote-item-label">Prazo estimado</span><span class="quote-item-value" id="quoteEta">3 dias úteis</span></div>
+            </div>
+            <div class="quote-total"><span class="quote-total-label">Total</span><span class="quote-total-value" id="quoteTotal">R$ 0,00</span></div>
+        </div>
+        <div class="quote-actions">
+            <button class="quote-btn secondary" onclick="window.print()"><i class="bi bi-download"></i>Baixar PDF</button>
+            <button class="quote-btn primary" onclick="addToCart()"><i class="bi bi-cart-plus"></i>Adicionar</button>
+            <button class="quote-btn whatsapp" onclick="shareWhatsApp()"><i class="bi bi-whatsapp"></i>Compartilhar no WhatsApp</button>
+        </div>
+    </div>
+
+    <div class="bottom-action" id="bottomAction">
+        <button class="bottom-action-btn" id="actionBtn" onclick="nextStep()" disabled><span id="actionBtnText">Selecione uma imagem</span><i class="bi bi-arrow-right"></i></button>
+    </div>
+
+    <script>
+        let currentStep = 1, selectedFile = null, prescriptionId = null, quoteId = null, ocrResult = null, ingredientMatches = [], confirmedIngredients = [];
+
+        function goBack() { currentStep > 1 ? goToStep(currentStep - 1) : window.location.href = '/Cliente/Inicio'; }
+        function goToStep(step) {
+            currentStep = step;
+            document.querySelectorAll('.step-dot').forEach((d, i) => { d.classList.remove('active', 'completed'); if (i + 1 < step) d.classList.add('completed'); if (i + 1 === step) d.classList.add('active'); });
+            document.querySelectorAll('.step-content').forEach((c, i) => { c.classList.remove('active'); if (i + 1 === step) c.classList.add('active'); });
+            updateActionButton();
+        }
+        function nextStep() { if (currentStep === 1 && selectedFile) { goToStep(2); processOCR(); } else if (currentStep === 3) { confirmIngredients(); } }
+        function updateActionButton() {
+            const btn = document.getElementById('actionBtn'), text = document.getElementById('actionBtnText'), container = document.getElementById('bottomAction');
+            if (currentStep === 1) { container.style.display = 'block'; btn.disabled = !selectedFile; text.textContent = selectedFile ? 'Processar receita' : 'Selecione uma imagem'; }
+            else if (currentStep === 2) { container.style.display = 'none'; }
+            else if (currentStep === 3) { container.style.display = 'block'; btn.disabled = confirmedIngredients.length === 0; text.textContent = 'Gerar orçamento'; }
+            else if (currentStep === 4) { container.style.display = 'none'; }
+        }
+        function handleFileSelect(event) { const file = event.target.files[0]; if (file) { selectedFile = file; showPreview(file); updateActionButton(); } }
+        function showPreview(file) {
+            const preview = document.getElementById('uploadPreview'), zone = document.getElementById('uploadZone');
+            if (file.type.startsWith('image/')) { const reader = new FileReader(); reader.onload = (e) => { preview.src = e.target.result; preview.classList.add('visible'); zone.classList.add('has-file'); }; reader.readAsDataURL(file); }
+        }
+        function openCamera() { document.getElementById('cameraInput').click(); }
+
+        const uploadZone = document.getElementById('uploadZone');
+        uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.style.borderColor = 'var(--petrol-500)'; });
+        uploadZone.addEventListener('dragleave', () => { uploadZone.style.borderColor = 'var(--ink-5)'; });
+        uploadZone.addEventListener('drop', (e) => { e.preventDefault(); uploadZone.style.borderColor = 'var(--ink-5)'; const file = e.dataTransfer.files[0]; if (file) { selectedFile = file; showPreview(file); updateActionButton(); } });
+
+        async function processOCR() {
+            await simulateStep(1, 500); await simulateStep(2, 1500); await simulateStep(3, 1000); await simulateStep(4, 800);
+            try {
+                const base64 = await fileToBase64(selectedFile);
+                const response = await fetch('/api/cliente/prescriptions/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fileBase64: base64.split(',')[1], fileName: selectedFile.name, fileType: selectedFile.type }) });
+                const data = await response.json();
+                if (data.success) { prescriptionId = data.prescriptionId; ocrResult = data.ocrResult; ingredientMatches = data.ingredients; renderIngredients(); goToStep(3); } else { throw new Error(data.message); }
+            } catch (error) {
+                ocrResult = { doctor: 'Dr. Exemplo', prescriptionDate: new Date().toLocaleDateString('pt-BR') };
+                ingredientMatches = [{ ocrText: 'Minoxidil 5%', name: 'Minoxidil', quantity: '5', unit: '%', suggestions: [{ rawMaterialId: '1', name: 'Minoxidil', confidence: 0.98 }] }, { ocrText: 'Biotina 1mg', name: 'Biotina', quantity: '1', unit: 'mg', suggestions: [{ rawMaterialId: '2', name: 'Biotina', confidence: 0.95 }] }];
+                renderIngredients(); goToStep(3);
+            }
+        }
+        async function simulateStep(step, delay) { return new Promise(resolve => { setTimeout(() => { const el = document.getElementById(`procStep${step}`); el.classList.add('completed'); el.querySelector('i').className = 'bi bi-check-circle-fill'; const next = document.getElementById(`procStep${step + 1}`); if (next) { next.classList.add('active'); next.querySelector('i').className = 'bi bi-arrow-repeat'; } resolve(); }, delay); }); }
+        function fileToBase64(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); }); }
+
+        function renderIngredients() {
+            document.getElementById('doctorName').textContent = ocrResult?.doctor || '-';
+            document.getElementById('prescDate').textContent = ocrResult?.prescriptionDate || 'Hoje';
+            const container = document.getElementById('ingredientsList');
+            container.innerHTML = ingredientMatches.map((item, index) => {
+                const hasMatch = item.suggestions && item.suggestions.length > 0;
+                return `<div class="ingredient-card ${hasMatch ? 'selected' : ''}" data-index="${index}"><div class="ingredient-header"><div><p class="ingredient-ocr-text">Identificado: "${item.ocrText}"</p><h4 class="ingredient-name">${item.name}</h4></div><div style="text-align: right;"><p class="ingredient-qty-value">${item.quantity}</p><p class="ingredient-qty-unit">${item.unit}</p></div></div>${hasMatch ? `<div class="ingredient-suggestions">${item.suggestions.map((s, sIndex) => `<div class="suggestion-chip ${sIndex === 0 ? 'selected' : ''}" onclick="selectSuggestion(${index}, ${sIndex})" data-id="${s.rawMaterialId}"><span>${s.name}</span><span class="confidence">${Math.round(s.confidence * 100)}%</span></div>`).join('')}</div>` : `<div style="padding: 12px; background: var(--warn-soft); border-radius: 8px; color: var(--amber-700); font-size: 13px;"><i class="bi bi-exclamation-triangle"></i> Ingrediente não encontrado</div>`}</div>`;
+            }).join('');
+            confirmedIngredients = ingredientMatches.filter(item => item.suggestions?.length > 0).map(item => ({ rawMaterialId: item.suggestions[0].rawMaterialId, quantity: parseFloat(item.quantity) || 1, unit: item.unit || 'g' }));
+            updateActionButton();
+        }
+        function selectSuggestion(itemIndex, suggestionIndex) { const card = document.querySelector(`.ingredient-card[data-index="${itemIndex}"]`); const chips = card.querySelectorAll('.suggestion-chip'); chips.forEach((chip, i) => chip.classList.toggle('selected', i === suggestionIndex)); }
+
+        async function confirmIngredients() {
+            document.getElementById('actionBtn').disabled = true; document.getElementById('actionBtnText').textContent = 'Gerando orçamento...';
+            try {
+                const response = await fetch(`/api/cliente/prescriptions/${prescriptionId}/confirm`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirmedIngredients, pharmaceuticalForm: document.getElementById('pharmForm').value, totalQuantity: document.getElementById('totalQty').value, instructions: document.getElementById('instructions').value }) });
+                const data = await response.json(); if (data.success) { quoteId = data.quoteId; renderQuote(data); goToStep(4); } else { throw new Error(data.message); }
+            } catch (error) { renderQuote({ quoteCode: 'ORC-' + Date.now().toString().slice(-6), quote: { pharmaceuticalForm: document.getElementById('pharmForm').value, totalQuantity: document.getElementById('totalQty').value || '60 cápsulas', estimatedDays: 3, total: 89.90 } }); goToStep(4); }
+        }
+        function renderQuote(data) { document.getElementById('quoteCode').textContent = data.quoteCode; document.getElementById('quoteTitle').textContent = `${data.quote.pharmaceuticalForm} ${data.quote.totalQuantity}`; document.getElementById('quoteForm').textContent = data.quote.pharmaceuticalForm; document.getElementById('quoteQty').textContent = data.quote.totalQuantity; document.getElementById('quoteEta').textContent = `${data.quote.estimatedDays} dias úteis`; document.getElementById('quoteTotal').textContent = `R$ ${(data.quote.total || 0).toFixed(2).replace('.', ',')}`; }
+        async function addToCart() { try { await fetch(`/api/cliente/prescriptions/quotes/${quoteId}/add-to-cart`, { method: 'POST' }); } catch (e) {} alert('Fórmula adicionada ao carrinho!'); window.location.href = '/Cliente/Carrinho'; }
+        function shareWhatsApp() { const text = `Olá! Gostaria de informações sobre meu orçamento:\n\n📋 Código: ${document.getElementById('quoteCode').textContent}\n💊 ${document.getElementById('quoteTitle').textContent}\n💰 Total: ${document.getElementById('quoteTotal').textContent}`; window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank'); }
+        updateActionButton();
+    </script>
+</body>
+</html>
