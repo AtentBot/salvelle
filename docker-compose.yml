@@ -10,6 +10,13 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - ASPNETCORE_HTTPS_PORT=8443
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      # Segredos injetados pelo Portainer (stack env) — nao versionar valores aqui.
+      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
+      - OpenAI__ApiKey=${OPENAI_API_KEY}
+      - AtentBot__ApiKey=${ATENTBOT_API_KEY}
+      # Config publica (pode ficar versionada).
+      - AllowedHosts=*
+      - AppSettings__PortalUrl=https://app.salvelle.com
     deploy:
       replicas: 2
       update_config:
@@ -25,7 +32,7 @@ services:
         - "traefik.enable=true"
 
         # Router HTTPS
-        - "traefik.http.routers.salvelle.rule=Host(`salvelle.atentbot.com`)"
+        - "traefik.http.routers.salvelle.rule=Host(`salvelle.com`) || Host(`www.salvelle.com`)"
         - "traefik.http.routers.salvelle.entrypoints=websecure"
         - "traefik.http.routers.salvelle.tls=true"
         - "traefik.http.routers.salvelle.tls.certresolver=le"
