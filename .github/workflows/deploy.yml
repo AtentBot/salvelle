@@ -1,18 +1,3 @@
-# =============================================================================
-# TEMPLATE do workflow de CI/CD do deploy (Salvelle).
-#
-# Este arquivo NAO roda como Action enquanto estiver neste caminho. Ele foi
-# versionado aqui porque o push do arquivo ativo (.github/workflows/deploy.yml)
-# exige o escopo OAuth `workflow` no token do GitHub.
-#
-# Para ATIVAR:
-#   gh auth refresh -s workflow          # (interativo, concede o escopo)
-#   git mv .github/deploy.yml.template .github/workflows/deploy.yml
-#   git commit -m "Ativa workflow de CI/CD do deploy"
-#   git push
-#
-# Ou copie este conteudo para .github/workflows/deploy.yml pela UI do GitHub.
-# =============================================================================
 name: Build & Deploy
 
 on:
