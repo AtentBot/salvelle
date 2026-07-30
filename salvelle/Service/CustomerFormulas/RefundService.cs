@@ -68,89 +68,90 @@ public class RefundService
     /// </summary>
     public async Task<bool> ProcessRefundAsync(Guid refundId)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
-
-        try
+        return await _context.Database.ExecuteInTransactionAsync<bool>(async transaction =>
         {
-            var refund = await _context.Refunds
-                .Include(r => r.CustomerFormula)
-                .FirstOrDefaultAsync(r => r.Id == refundId);
-
-            if (refund == null)
-                return false;
-
-            if (refund.Status != "PENDENTE")
-                throw new Exception($"Reembolso não está pendente. Status atual: {refund.Status}");
-
-            // 1. Atualizar status para processando
-            refund.Status = "PROCESSADO";
-            refund.ProcessedAt = DateTime.UtcNow;
-
-            // 2. Processar reembolso no gateway de pagamento
-            // TODO: Implementar integração com gateway real
-            var paymentSuccess = await ProcessPaymentGatewayRefundAsync(
-                refund.OnlineOrderId,
-                refund.Amount
-            );
-
-            if (paymentSuccess)
+            try
             {
-                // 3. Atualizar status para concluído
-                refund.Status = "CONCLUIDO";
-                refund.CompletedAt = DateTime.UtcNow;
+                var refund = await _context.Refunds
+                    .Include(r => r.CustomerFormula)
+                    .FirstOrDefaultAsync(r => r.Id == refundId);
 
-                // 4. Atualizar CustomerFormula
-                if (refund.CustomerFormula != null)
+                if (refund == null)
+                    return false;
+
+                if (refund.Status != "PENDENTE")
+                    throw new Exception($"Reembolso não está pendente. Status atual: {refund.Status}");
+
+                // 1. Atualizar status para processando
+                refund.Status = "PROCESSADO";
+                refund.ProcessedAt = DateTime.UtcNow;
+
+                // 2. Processar reembolso no gateway de pagamento
+                // TODO: Implementar integração com gateway real
+                var paymentSuccess = await ProcessPaymentGatewayRefundAsync(
+                    refund.OnlineOrderId,
+                    refund.Amount
+                );
+
+                if (paymentSuccess)
                 {
-                    refund.CustomerFormula.RefundedAt = DateTime.UtcNow;
-                    refund.CustomerFormula.RefundAmount = refund.Amount;
-                    refund.CustomerFormula.UpdatedAt = DateTime.UtcNow;
+                    // 3. Atualizar status para concluído
+                    refund.Status = "CONCLUIDO";
+                    refund.CompletedAt = DateTime.UtcNow;
+
+                    // 4. Atualizar CustomerFormula
+                    if (refund.CustomerFormula != null)
+                    {
+                        refund.CustomerFormula.RefundedAt = DateTime.UtcNow;
+                        refund.CustomerFormula.RefundAmount = refund.Amount;
+                        refund.CustomerFormula.UpdatedAt = DateTime.UtcNow;
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    _logger.LogInformation(
+                        "Reembolso {RefundId} processado com sucesso. Valor: R$ {Amount}",
+                        refundId, refund.Amount);
+
+                    // 5. Notificar cliente (TODO: Implementar WhatsApp)
+                    // await _whatsappService.SendRefundCompletedAsync(refund);
+
+                    return true;
+                }
+                else
+                {
+                    // Falha no gateway
+                    refund.Status = "FALHOU";
+                    refund.FailureReason = "Falha ao processar reembolso no gateway de pagamento";
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    _logger.LogError(
+                        "Falha ao processar reembolso {RefundId} no gateway",
+                        refundId);
+
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Erro ao processar reembolso {RefundId}", refundId);
+
+                // Marcar como falho
+                var refund = await _context.Refunds.FindAsync(refundId);
+                if (refund != null)
+                {
+                    refund.Status = "FALHOU";
+                    refund.FailureReason = ex.Message;
+                    await _context.SaveChangesAsync();
                 }
 
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                _logger.LogInformation(
-                    "Reembolso {RefundId} processado com sucesso. Valor: R$ {Amount}",
-                    refundId, refund.Amount);
-
-                // 5. Notificar cliente (TODO: Implementar WhatsApp)
-                // await _whatsappService.SendRefundCompletedAsync(refund);
-
-                return true;
+                throw;
             }
-            else
-            {
-                // Falha no gateway
-                refund.Status = "FALHOU";
-                refund.FailureReason = "Falha ao processar reembolso no gateway de pagamento";
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                _logger.LogError(
-                    "Falha ao processar reembolso {RefundId} no gateway",
-                    refundId);
-
-                return false;
-            }
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Erro ao processar reembolso {RefundId}", refundId);
-
-            // Marcar como falho
-            var refund = await _context.Refunds.FindAsync(refundId);
-            if (refund != null)
-            {
-                refund.Status = "FALHOU";
-                refund.FailureReason = ex.Message;
-                await _context.SaveChangesAsync();
-            }
-
-            throw;
-        }
+        });
     }
 
     /// <summary>

@@ -213,8 +213,8 @@ public class QuoteApprovalController : ControllerBase
         if (employeeId == Guid.Empty)
             return Unauthorized(QuoteApiResponse<ApproveAndSellResultDto>.Error("Sessão inválida"));
 
-        using var transaction = await _context.Database.BeginTransactionAsync();
-
+        return await _context.Database.ExecuteInTransactionAsync<ActionResult<QuoteApiResponse<ApproveAndSellResultDto>>>(async transaction =>
+        {
         try
         {
             var order = await _context.ManipulationOrders
@@ -401,6 +401,7 @@ public class QuoteApprovalController : ControllerBase
             _logger.LogError(ex, "Erro ao aprovar ordem {OrderId}", id);
             return StatusCode(500, QuoteApiResponse<ApproveAndSellResultDto>.Error("Erro interno"));
         }
+        });
     }
 
     [HttpPost("manipulation-orders/{id}/approve-for-billing")]

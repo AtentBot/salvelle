@@ -19,7 +19,8 @@ public class SaleService
         Guid establishmentId,
         Guid employeeId)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        return await _context.Database.ExecuteInTransactionAsync<(bool Success, string Message, Sale? Sale)>(async transaction =>
+        {
         try
         {
             // Verificar cliente se informado
@@ -30,7 +31,7 @@ public class SaleService
                                   c.EstablishmentId == establishmentId);
 
                 if (!customerExists)
-                    return (false, "Cliente não encontrado", null);
+                    return (false, "Cliente nï¿½o encontrado", null);
             }
 
             // Calcular valores
@@ -54,7 +55,7 @@ public class SaleService
             if (changeAmount < 0)
                 return (false, "Valor pago insuficiente", null);
 
-            // Gerar código
+            // Gerar cï¿½digo
             var code = await GenerateSaleCodeAsync(establishmentId);
 
             var sale = new Sale
@@ -121,7 +122,7 @@ public class SaleService
                     }
                 }
 
-                // Atualizar status da prescrição se vinculada
+                // Atualizar status da prescriï¿½ï¿½o se vinculada
                 if (itemDto.PrescriptionId.HasValue)
                 {
                     var prescription = await _context.Prescriptions
@@ -145,6 +146,7 @@ public class SaleService
             await transaction.RollbackAsync();
             return (false, $"Erro ao registrar venda: {ex.Message}", null);
         }
+        });
     }
 
     public async Task<(bool Success, string Message)> CancelSaleAsync(
@@ -153,7 +155,8 @@ public class SaleService
         Guid establishmentId,
         Guid employeeId)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        return await _context.Database.ExecuteInTransactionAsync<(bool Success, string Message)>(async transaction =>
+        {
         try
         {
             var sale = await _context.Sales
@@ -162,10 +165,10 @@ public class SaleService
                                          s.EstablishmentId == establishmentId);
 
             if (sale == null)
-                return (false, "Venda não encontrada");
+                return (false, "Venda nï¿½o encontrada");
 
             if (sale.Status == "CANCELADA")
-                return (false, "Venda já está cancelada");
+                return (false, "Venda jï¿½ estï¿½ cancelada");
 
             // Reverter status das OMs
             foreach (var item in sale.Items)
@@ -201,6 +204,7 @@ public class SaleService
             await transaction.RollbackAsync();
             return (false, $"Erro ao cancelar venda: {ex.Message}");
         }
+        });
     }
 
     public async Task<DailySalesReportDto> GetDailySalesReportAsync(

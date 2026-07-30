@@ -21,7 +21,8 @@ public class PurchaseOrderService
         Guid establishmentId,
         Guid employeeId)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        return await _context.Database.ExecuteInTransactionAsync<(bool Success, string Message, PurchaseOrder? Order)>(async transaction =>
+        {
         try
         {
             var supplier = await _context.Suppliers
@@ -98,6 +99,7 @@ public class PurchaseOrderService
             await transaction.RollbackAsync();
             return (false, $"Erro ao criar pedido: {ex.Message}", null);
         }
+        });
     }
 
     public async Task<(bool Success, string Message)> ApprovePurchaseOrderAsync(
@@ -153,7 +155,8 @@ public class PurchaseOrderService
         Guid establishmentId,
         Guid employeeId)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        return await _context.Database.ExecuteInTransactionAsync<(bool Success, string Message)>(async transaction =>
+        {
         try
         {
             var order = await _context.PurchaseOrders
@@ -264,6 +267,7 @@ public class PurchaseOrderService
             await transaction.RollbackAsync();
             return (false, $"Erro ao receber pedido: {ex.Message}");
         }
+        });
     }
 
     public async Task<(bool Success, string Message)> CancelPurchaseOrderAsync(

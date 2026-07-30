@@ -19,7 +19,8 @@ public class FormulaService
         Guid establishmentId,
         Guid employeeId)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        return await _context.Database.ExecuteInTransactionAsync<(bool Success, string Message, Formula? Formula)>(async transaction =>
+        {
         try
         {
             // Verificar duplicidade de nome
@@ -29,18 +30,18 @@ public class FormulaService
                               f.IsActive);
 
             if (exists)
-                return (false, "Já existe uma fórmula ativa com este nome", null);
+                return (false, "Jï¿½ existe uma fï¿½rmula ativa com este nome", null);
 
-            // Validar matérias-primas
+            // Validar matï¿½rias-primas
             var rawMaterialIds = dto.Components.Select(c => c.RawMaterialId).Distinct().ToList();
             var rawMaterials = await _context.RawMaterials
                 .Where(r => rawMaterialIds.Contains(r.Id) && r.EstablishmentId == establishmentId)
                 .ToListAsync();
 
             if (rawMaterials.Count != rawMaterialIds.Count)
-                return (false, "Uma ou mais matérias-primas não encontradas", null);
+                return (false, "Uma ou mais matï¿½rias-primas nï¿½o encontradas", null);
 
-            // Gerar código único
+            // Gerar cï¿½digo ï¿½nico
             var code = await GenerateFormulaCodeAsync(establishmentId);
 
             var formula = new Formula
@@ -90,13 +91,14 @@ public class FormulaService
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return (true, "Fórmula criada com sucesso", formula);
+            return (true, "Fï¿½rmula criada com sucesso", formula);
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            return (false, $"Erro ao criar fórmula: {ex.Message}", null);
+            return (false, $"Erro ao criar fï¿½rmula: {ex.Message}", null);
         }
+        });
     }
 
     public async Task<(bool Success, string Message)> UpdateFormulaAsync(
@@ -105,7 +107,8 @@ public class FormulaService
         Guid establishmentId,
         Guid employeeId)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        return await _context.Database.ExecuteInTransactionAsync<(bool Success, string Message)>(async transaction =>
+        {
         try
         {
             var formula = await _context.Formulas
@@ -113,7 +116,7 @@ public class FormulaService
                 .FirstOrDefaultAsync(f => f.Id == formulaId && f.EstablishmentId == establishmentId);
 
             if (formula == null)
-                return (false, "Fórmula não encontrada");
+                return (false, "Fï¿½rmula nï¿½o encontrada");
 
             // Verificar duplicidade de nome (exceto ela mesma)
             var exists = await _context.Formulas
@@ -123,18 +126,18 @@ public class FormulaService
                               f.IsActive);
 
             if (exists)
-                return (false, "Já existe outra fórmula ativa com este nome");
+                return (false, "Jï¿½ existe outra fï¿½rmula ativa com este nome");
 
-            // Validar matérias-primas
+            // Validar matï¿½rias-primas
             var rawMaterialIds = dto.Components.Select(c => c.RawMaterialId).Distinct().ToList();
             var rawMaterials = await _context.RawMaterials
                 .Where(r => rawMaterialIds.Contains(r.Id) && r.EstablishmentId == establishmentId)
                 .ToListAsync();
 
             if (rawMaterials.Count != rawMaterialIds.Count)
-                return (false, "Uma ou mais matérias-primas não encontradas");
+                return (false, "Uma ou mais matï¿½rias-primas nï¿½o encontradas");
 
-            // Atualizar fórmula
+            // Atualizar fï¿½rmula
             formula.Name = dto.Name;
             formula.Description = dto.Description;
             formula.Category = dto.Category.ToUpper();
@@ -176,13 +179,14 @@ public class FormulaService
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return (true, "Fórmula atualizada com sucesso");
+            return (true, "Fï¿½rmula atualizada com sucesso");
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            return (false, $"Erro ao atualizar fórmula: {ex.Message}");
+            return (false, $"Erro ao atualizar fï¿½rmula: {ex.Message}");
         }
+        });
     }
 
     public async Task<(bool Success, string Message)> DeleteFormulaAsync(
@@ -193,14 +197,14 @@ public class FormulaService
             .FirstOrDefaultAsync(f => f.Id == formulaId && f.EstablishmentId == establishmentId);
 
         if (formula == null)
-            return (false, "Fórmula não encontrada");
+            return (false, "Fï¿½rmula nï¿½o encontrada");
 
         // Soft delete
         formula.IsActive = false;
         formula.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
-        return (true, "Fórmula desativada com sucesso");
+        return (true, "Fï¿½rmula desativada com sucesso");
     }
 
     public async Task<(bool Success, string Message, Formula? Formula)> DuplicateFormulaAsync(
@@ -208,7 +212,8 @@ public class FormulaService
         Guid establishmentId,
         Guid employeeId)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        return await _context.Database.ExecuteInTransactionAsync<(bool Success, string Message, Formula? Formula)>(async transaction =>
+        {
         try
         {
             var original = await _context.Formulas
@@ -216,7 +221,7 @@ public class FormulaService
                 .FirstOrDefaultAsync(f => f.Id == formulaId && f.EstablishmentId == establishmentId);
 
             if (original == null)
-                return (false, "Fórmula original não encontrada", null);
+                return (false, "Fï¿½rmula original nï¿½o encontrada", null);
 
             var code = await GenerateFormulaCodeAsync(establishmentId);
 
@@ -224,7 +229,7 @@ public class FormulaService
             {
                 EstablishmentId = establishmentId,
                 Code = code,
-                Name = $"{original.Name} (Cópia)",
+                Name = $"{original.Name} (Cï¿½pia)",
                 Description = original.Description,
                 Category = original.Category,
                 PharmaceuticalForm = original.PharmaceuticalForm,
@@ -266,13 +271,14 @@ public class FormulaService
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return (true, "Fórmula duplicada com sucesso", newFormula);
+            return (true, "Fï¿½rmula duplicada com sucesso", newFormula);
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            return (false, $"Erro ao duplicar fórmula: {ex.Message}", null);
+            return (false, $"Erro ao duplicar fï¿½rmula: {ex.Message}", null);
         }
+        });
     }
 
     public async Task<FormulaCostCalculationDto> CalculateFormulaCostAsync(
@@ -285,7 +291,7 @@ public class FormulaService
             .FirstOrDefaultAsync(f => f.Id == formulaId && f.EstablishmentId == establishmentId);
 
         if (formula == null)
-            throw new Exception("Fórmula não encontrada");
+            throw new Exception("Fï¿½rmula nï¿½o encontrada");
 
         var componentsCost = new List<ComponentCostDto>();
         decimal totalCost = 0;

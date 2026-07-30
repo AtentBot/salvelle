@@ -671,7 +671,8 @@ public class ClienteOrdersApiController : ControllerBase
         };
 
         // Persistência em transação — UPDATE atômico de estoque evita race condition (TOCTOU)
-        using var tx = await _context.Database.BeginTransactionAsync();
+        return await _context.Database.ExecuteInTransactionAsync<IActionResult>(async tx =>
+        {
         try
         {
             foreach (var item in cart.Items!.Where(i => i.ProductId.HasValue))
@@ -764,6 +765,7 @@ public class ClienteOrdersApiController : ControllerBase
             orderId = order.Id,
             orderNumber = order.OrderNumber,
             message = "Pedido criado com sucesso! Aguardando confirmação da farmácia."
+        });
         });
     }
 

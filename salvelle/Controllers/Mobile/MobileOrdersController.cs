@@ -184,68 +184,80 @@ public class MobileOrdersController : ControllerBase
 
         }
 
-        // Persistência em transação — o UPDATE atômico de estoque evita race condition (TOCTOU)
-        using var tx = await _db.Database.BeginTransactionAsync();
-        try
+        // Persistência em transação — o UPDATE atômico de estoque evita race condition (TOCTOU).
+        // A transação manual precisa rodar DENTRO da execution strategy porque o EF Core está
+        // configurado com EnableRetryOnFailure (Program.cs); iniciar uma transação fora dela lança
+        // "NpgsqlRetryingExecutionStrategy does not support user-initiated transactions".
+        // A lambda devolve um ActionResult != null para abortar (ex.: estoque insuficiente) ou null em sucesso.
+        var strategy = _db.Database.CreateExecutionStrategy();
+        var abortResult = await strategy.ExecuteAsync<ActionResult?>(async () =>
         {
-            foreach (var cartItem in cart.Items)
+            using var tx = await _db.Database.BeginTransactionAsync();
+            try
             {
-                var product = await _db.CatalogProducts
-                    .FirstOrDefaultAsync(p => p.Id == cartItem.ProductId
-                                           && p.StockQuantity >= cartItem.Quantity
-                                           && p.IsActive);
-                if (product == null)
+                foreach (var cartItem in cart.Items)
                 {
-                    await tx.RollbackAsync();
-                    return BadRequest(ApiResponse.ErrorResponse($"Produto '{cartItem.DisplayName}' sem estoque suficiente"));
+                    var product = await _db.CatalogProducts
+                        .FirstOrDefaultAsync(p => p.Id == cartItem.ProductId
+                                               && p.StockQuantity >= cartItem.Quantity
+                                               && p.IsActive);
+                    if (product == null)
+                    {
+                        await tx.RollbackAsync();
+                        return BadRequest(ApiResponse.ErrorResponse($"Produto '{cartItem.DisplayName}' sem estoque suficiente"));
+                    }
+                    product.StockQuantity -= cartItem.Quantity;
+                    product.TotalSold += cartItem.Quantity;
                 }
-                product.StockQuantity -= cartItem.Quantity;
-                product.TotalSold += cartItem.Quantity;
-            }
 
-            _db.OnlineOrders.Add(order);
+                _db.OnlineOrders.Add(order);
 
-            // Registrar uso do cupom (dentro da transação para consistência)
-            if (appliedCoupon != null)
-            {
-                appliedCoupon.UsedCount += 1;
-                _db.CouponUsages.Add(new CouponUsage
+                // Registrar uso do cupom (dentro da transação para consistência)
+                if (appliedCoupon != null)
                 {
-                    Id = Guid.NewGuid(),
-                    CouponId = appliedCoupon.Id,
-                    CustomerId = customerId.Value,
+                    appliedCoupon.UsedCount += 1;
+                    _db.CouponUsages.Add(new CouponUsage
+                    {
+                        Id = Guid.NewGuid(),
+                        CouponId = appliedCoupon.Id,
+                        CustomerId = customerId.Value,
+                        OrderId = order.Id,
+                        DiscountApplied = discountAmount,
+                        UsedAt = DateTime.UtcNow
+                    });
+                }
+
+                // Registrar transação da plataforma
+                await _commission.RegisterTransactionAsync(
+                    order.Id, request.EstablishmentId, customerId.Value, orderTotal, commissionRate);
+
+                // Criar estimativa de entrega
+                var estimate = new DeliveryEstimate
+                {
                     OrderId = order.Id,
-                    DiscountApplied = discountAmount,
-                    UsedAt = DateTime.UtcNow
-                });
+                    EstimatedMinutes = pharmacy.AverageDeliveryMinutes,
+                    EstimatedDeliveryAt = DateTime.UtcNow.AddMinutes(pharmacy.AverageDeliveryMinutes),
+                    Status = "ESTIMADO"
+                };
+                _db.DeliveryEstimates.Add(estimate);
+
+                // Limpar carrinho
+                cart.Status = "CONVERTED";
+                cart.UpdatedAt = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync();
+                await tx.CommitAsync();
+                return null;
             }
-
-            // Registrar transação da plataforma
-            await _commission.RegisterTransactionAsync(
-                order.Id, request.EstablishmentId, customerId.Value, orderTotal, commissionRate);
-
-            // Criar estimativa de entrega
-            var estimate = new DeliveryEstimate
+            catch
             {
-                OrderId = order.Id,
-                EstimatedMinutes = pharmacy.AverageDeliveryMinutes,
-                EstimatedDeliveryAt = DateTime.UtcNow.AddMinutes(pharmacy.AverageDeliveryMinutes),
-                Status = "ESTIMADO"
-            };
-            _db.DeliveryEstimates.Add(estimate);
+                await tx.RollbackAsync();
+                throw;
+            }
+        });
 
-            // Limpar carrinho
-            cart.Status = "CONVERTED";
-            cart.UpdatedAt = DateTime.UtcNow;
-
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
-        }
-        catch
-        {
-            await tx.RollbackAsync();
-            throw;
-        }
+        if (abortResult != null)
+            return abortResult;
 
         _logger.LogInformation("Pedido {OrderNumber} criado para farmácia {PharmacyId}, comissão {Rate:P}",
             order.OrderNumber, request.EstablishmentId, commissionRate);

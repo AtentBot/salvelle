@@ -22,11 +22,11 @@ public class WeighingStepService
         Guid manipulationOrderId,
         WeighingStepRequestDto request)
     {
-        await using var transaction = await _context.Database.BeginTransactionAsync();
-
-        try
+        return await _context.Database.ExecuteInTransactionAsync<(bool success, string? error, WeighingStepResponseDto? result)>(async transaction =>
         {
-            // 1. Validar ordem de manipulação
+            try
+            {
+                // 1. Validar ordem de manipulação
             var order = await _context.ManipulationOrders
                 .Include(o => o.Formula)
                     .ThenInclude(f => f!.Components)
@@ -259,11 +259,12 @@ public class WeighingStepService
 
             return (true, null, response);
         }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Erro ao processar etapa de pesagem - Ordem: {OrderId}", manipulationOrderId);
-            return (false, $"Erro ao processar pesagem: {ex.Message}", null);
-        }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Erro ao processar etapa de pesagem - Ordem: {OrderId}", manipulationOrderId);
+                return (false, $"Erro ao processar pesagem: {ex.Message}", null);
+            }
+        });
     }
 }

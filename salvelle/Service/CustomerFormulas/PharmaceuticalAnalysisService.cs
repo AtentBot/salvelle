@@ -70,87 +70,88 @@ public class PharmaceuticalAnalysisService
         Guid pharmacistId,
         PharmaceuticalAnalysisDto dto)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
-
-        try
+        return await _context.Database.ExecuteInTransactionAsync<bool>(async transaction =>
         {
-            var formula = await _context.CustomerFormulas
-                .Include(cf => cf.ProductSubType)
-                .FirstOrDefaultAsync(cf => cf.Id == formulaId);
-
-            if (formula == null)
-                return false;
-
-            if (formula.Status != "EM_ANALISE" && formula.Status != "AGUARDANDO_ANALISE")
-                throw new Exception($"Fórmula não pode ser aprovada. Status atual: {formula.Status}");
-
-            // 1. Atualizar fórmula
-            formula.Status = "APROVADO";
-            formula.PharmacistId = pharmacistId;
-            formula.PharmaceuticalAnalysis = dto.Analysis;
-            formula.ApprovedAt = DateTime.UtcNow;
-            formula.RequiresPrescription = dto.RequiresPrescription;
-            formula.EstimatedShelfLifeDays = dto.EstimatedShelfLifeDays;
-            formula.UpdatedAt = DateTime.UtcNow;
-
-            // 2. Criar ManipulationOrder automaticamente
-            var manipOrder = new Models.Pharmacy.ManipulationOrder
+            try
             {
-                Id = Guid.NewGuid(),
-                OrderNumber = await GenerateManipulationCodeAsync(formula.EstablishmentId),
-                EstablishmentId = formula.EstablishmentId,
-                // CustomerId = formula.CustomerId, // Ajustar conforme modelo real
-                // CustomerFormulaId = formula.Id,
-                Status = "PENDING",
-                QuantityToProduce = formula.Quantity,
-                Unit = formula.Unit,
-                CustomerName = formula.CustomerName,
-                OrderDate = DateTime.UtcNow,
-                ExpectedDate = DateTime.UtcNow.AddDays(7),
-                RequestedByEmployeeId = pharmacistId,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+                var formula = await _context.CustomerFormulas
+                    .Include(cf => cf.ProductSubType)
+                    .FirstOrDefaultAsync(cf => cf.Id == formulaId);
 
-            _context.ManipulationOrders.Add(manipOrder);
+                if (formula == null)
+                    return false;
 
-            formula.ManipulationOrderId = manipOrder.Id;
-            formula.Status = "EM_PRODUCAO";
+                if (formula.Status != "EM_ANALISE" && formula.Status != "AGUARDANDO_ANALISE")
+                    throw new Exception($"Fórmula não pode ser aprovada. Status atual: {formula.Status}");
 
-            // 3. TODO: Atualizar OnlineOrderItem quando sistema de pedidos estiver integrado
-            // if (formula.OnlineOrderId.HasValue)
-            // {
-            //     // Ajustar conforme modelo real OnlineOrderItem
-            // }
+                // 1. Atualizar fórmula
+                formula.Status = "APROVADO";
+                formula.PharmacistId = pharmacistId;
+                formula.PharmaceuticalAnalysis = dto.Analysis;
+                formula.ApprovedAt = DateTime.UtcNow;
+                formula.RequiresPrescription = dto.RequiresPrescription;
+                formula.EstimatedShelfLifeDays = dto.EstimatedShelfLifeDays;
+                formula.UpdatedAt = DateTime.UtcNow;
 
-            // 4. Criar log de aprovação
-            var log = new PharmaceuticalAnalysisLog
+                // 2. Criar ManipulationOrder automaticamente
+                var manipOrder = new Models.Pharmacy.ManipulationOrder
+                {
+                    Id = Guid.NewGuid(),
+                    OrderNumber = await GenerateManipulationCodeAsync(formula.EstablishmentId),
+                    EstablishmentId = formula.EstablishmentId,
+                    // CustomerId = formula.CustomerId, // Ajustar conforme modelo real
+                    // CustomerFormulaId = formula.Id,
+                    Status = "PENDING",
+                    QuantityToProduce = formula.Quantity,
+                    Unit = formula.Unit,
+                    CustomerName = formula.CustomerName,
+                    OrderDate = DateTime.UtcNow,
+                    ExpectedDate = DateTime.UtcNow.AddDays(7),
+                    RequestedByEmployeeId = pharmacistId,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.ManipulationOrders.Add(manipOrder);
+
+                formula.ManipulationOrderId = manipOrder.Id;
+                formula.Status = "EM_PRODUCAO";
+
+                // 3. TODO: Atualizar OnlineOrderItem quando sistema de pedidos estiver integrado
+                // if (formula.OnlineOrderId.HasValue)
+                // {
+                //     // Ajustar conforme modelo real OnlineOrderItem
+                // }
+
+                // 4. Criar log de aprovação
+                var log = new PharmaceuticalAnalysisLog
+                {
+                    Id = Guid.NewGuid(),
+                    CustomerFormulaId = formulaId,
+                    PharmacistId = pharmacistId,
+                    ActionType = "APPROVED",
+                    Analysis = dto.Analysis,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.PharmaceuticalAnalysisLogs.Add(log);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation(
+                    "Fórmula {Code} aprovada pelo farmacêutico {PharmacistId}",
+                    formula.Code, pharmacistId);
+
+                return true;
+            }
+            catch (Exception ex)
             {
-                Id = Guid.NewGuid(),
-                CustomerFormulaId = formulaId,
-                PharmacistId = pharmacistId,
-                ActionType = "APPROVED",
-                Analysis = dto.Analysis,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.PharmaceuticalAnalysisLogs.Add(log);
-
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            _logger.LogInformation(
-                "Fórmula {Code} aprovada pelo farmacêutico {PharmacistId}",
-                formula.Code, pharmacistId);
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Erro ao aprovar fórmula {FormulaId}", formulaId);
-            throw;
-        }
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Erro ao aprovar fórmula {FormulaId}", formulaId);
+                throw;
+            }
+        });
     }
 
     public async Task<bool> RejectFormulaAsync(
@@ -158,55 +159,56 @@ public class PharmaceuticalAnalysisService
         Guid pharmacistId,
         string rejectionReason)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
-
-        try
+        return await _context.Database.ExecuteInTransactionAsync<bool>(async transaction =>
         {
-            var formula = await _context.CustomerFormulas.FindAsync(formulaId);
-
-            if (formula == null)
-                return false;
-
-            if (formula.Status != "EM_ANALISE" && formula.Status != "AGUARDANDO_ANALISE")
-                throw new Exception($"Fórmula não pode ser reprovada. Status atual: {formula.Status}");
-
-            formula.Status = "REPROVADO";
-            formula.PharmacistId = pharmacistId;
-            formula.RejectedAt = DateTime.UtcNow;
-            formula.RejectionReason = rejectionReason;
-            formula.UpdatedAt = DateTime.UtcNow;
-
-            // Criar reembolso automaticamente (será processado depois)
-            // TODO: Implementar RefundService quando disponível
-            // var refund = await _refundService.CreateRefundAsync(formula.Id, formula.PaidAmount ?? 0);
-
-            var log = new PharmaceuticalAnalysisLog
+            try
             {
-                Id = Guid.NewGuid(),
-                CustomerFormulaId = formulaId,
-                PharmacistId = pharmacistId,
-                ActionType = "REJECTED",
-                Analysis = rejectionReason,
-                CreatedAt = DateTime.UtcNow
-            };
+                var formula = await _context.CustomerFormulas.FindAsync(formulaId);
 
-            _context.PharmaceuticalAnalysisLogs.Add(log);
+                if (formula == null)
+                    return false;
 
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
+                if (formula.Status != "EM_ANALISE" && formula.Status != "AGUARDANDO_ANALISE")
+                    throw new Exception($"Fórmula não pode ser reprovada. Status atual: {formula.Status}");
 
-            _logger.LogInformation(
-                "Fórmula {Code} reprovada pelo farmacêutico {PharmacistId}. Motivo: {Reason}",
-                formula.Code, pharmacistId, rejectionReason);
+                formula.Status = "REPROVADO";
+                formula.PharmacistId = pharmacistId;
+                formula.RejectedAt = DateTime.UtcNow;
+                formula.RejectionReason = rejectionReason;
+                formula.UpdatedAt = DateTime.UtcNow;
 
-            return true;
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Erro ao reprovar fórmula {FormulaId}", formulaId);
-            throw;
-        }
+                // Criar reembolso automaticamente (será processado depois)
+                // TODO: Implementar RefundService quando disponível
+                // var refund = await _refundService.CreateRefundAsync(formula.Id, formula.PaidAmount ?? 0);
+
+                var log = new PharmaceuticalAnalysisLog
+                {
+                    Id = Guid.NewGuid(),
+                    CustomerFormulaId = formulaId,
+                    PharmacistId = pharmacistId,
+                    ActionType = "REJECTED",
+                    Analysis = rejectionReason,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.PharmaceuticalAnalysisLogs.Add(log);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation(
+                    "Fórmula {Code} reprovada pelo farmacêutico {PharmacistId}. Motivo: {Reason}",
+                    formula.Code, pharmacistId, rejectionReason);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Erro ao reprovar fórmula {FormulaId}", formulaId);
+                throw;
+            }
+        });
     }
 
     public async Task<bool> RequestAdjustmentAsync(

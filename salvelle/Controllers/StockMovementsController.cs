@@ -185,7 +185,8 @@ public class StockMovementsController : ControllerBase
         [FromQuery] Guid employeeId,
         [FromQuery] Guid establishmentId)
     {
-        using var transaction = await _db.Database.BeginTransactionAsync();
+        return await _db.Database.ExecuteInTransactionAsync<IActionResult>(async transaction =>
+        {
 
         try
         {
@@ -226,7 +227,7 @@ public class StockMovementsController : ControllerBase
 
             _db.Batches.Add(batch);
 
-            // Criar movimentação
+            // Criar movimentaï¿½ï¿½o
             var movement = new StockMovement
             {
                 Id = Guid.NewGuid(),
@@ -271,6 +272,7 @@ public class StockMovementsController : ControllerBase
             _logger.LogError(ex, "Error creating stock entry");
             return StatusCode(500, new { message = "Error creating entry", error = ex.Message });
         }
+        });
     }
 
     // POST: api/stockmovements/saida
@@ -280,7 +282,8 @@ public class StockMovementsController : ControllerBase
         [FromQuery] Guid employeeId,
         [FromQuery] Guid establishmentId)
     {
-        using var transaction = await _db.Database.BeginTransactionAsync();
+        return await _db.Database.ExecuteInTransactionAsync<IActionResult>(async transaction =>
+        {
 
         try
         {
@@ -304,7 +307,7 @@ public class StockMovementsController : ControllerBase
             if (material.CurrentStock < request.Quantity)
                 return BadRequest(new { message = "Insufficient stock" });
 
-            // Criar movimentação
+            // Criar movimentaï¿½ï¿½o
             var movement = new StockMovement
             {
                 Id = Guid.NewGuid(),
@@ -354,6 +357,7 @@ public class StockMovementsController : ControllerBase
             _logger.LogError(ex, "Error creating stock exit");
             return StatusCode(500, new { message = "Error creating exit", error = ex.Message });
         }
+        });
     }
 
     // POST: api/stockmovements/ajuste
@@ -363,7 +367,8 @@ public class StockMovementsController : ControllerBase
         [FromQuery] Guid employeeId,
         [FromQuery] Guid establishmentId)
     {
-        using var transaction = await _db.Database.BeginTransactionAsync();
+        return await _db.Database.ExecuteInTransactionAsync<IActionResult>(async transaction =>
+        {
 
         try
         {
@@ -384,7 +389,7 @@ public class StockMovementsController : ControllerBase
             if (newMaterialStock < 0)
                 return BadRequest(new { message = "Resulting stock cannot be negative" });
 
-            // Criar movimentação
+            // Criar movimentaï¿½ï¿½o
             var movement = new StockMovement
             {
                 Id = Guid.NewGuid(),
@@ -431,6 +436,7 @@ public class StockMovementsController : ControllerBase
             _logger.LogError(ex, "Error creating stock adjustment");
             return StatusCode(500, new { message = "Error creating adjustment", error = ex.Message });
         }
+        });
     }
 
     // POST: api/stockmovements/perda
@@ -440,7 +446,8 @@ public class StockMovementsController : ControllerBase
         [FromQuery] Guid employeeId,
         [FromQuery] Guid establishmentId)
     {
-        using var transaction = await _db.Database.BeginTransactionAsync();
+        return await _db.Database.ExecuteInTransactionAsync<IActionResult>(async transaction =>
+        {
 
         try
         {
@@ -460,7 +467,7 @@ public class StockMovementsController : ControllerBase
 
             var reason = $"[{request.LossType}] {request.Reason}";
 
-            // Criar movimentação
+            // Criar movimentaï¿½ï¿½o
             var movement = new StockMovement
             {
                 Id = Guid.NewGuid(),
@@ -512,6 +519,7 @@ public class StockMovementsController : ControllerBase
             _logger.LogError(ex, "Error registering stock loss");
             return StatusCode(500, new { message = "Error registering loss", error = ex.Message });
         }
+        });
     }
 
     // POST: api/stockmovements/manipulacao
@@ -521,7 +529,8 @@ public class StockMovementsController : ControllerBase
         [FromQuery] Guid employeeId,
         [FromQuery] Guid establishmentId)
     {
-        using var transaction = await _db.Database.BeginTransactionAsync();
+        return await _db.Database.ExecuteInTransactionAsync<IActionResult>(async transaction =>
+        {
 
         try
         {
@@ -553,7 +562,7 @@ public class StockMovementsController : ControllerBase
                 if (material.CurrentStock < item.Quantity)
                     return BadRequest(new { message = $"Insufficient stock for {material.Name}" });
 
-                // Criar movimentação
+                // Criar movimentaï¿½ï¿½o
                 var movement = new StockMovement
                 {
                     Id = Guid.NewGuid(),
@@ -599,6 +608,7 @@ public class StockMovementsController : ControllerBase
             _logger.LogError(ex, "Error registering manipulation consumption");
             return StatusCode(500, new { message = "Error registering consumption", error = ex.Message });
         }
+        });
     }
 
     // GET: api/stockmovements/stats

@@ -25,16 +25,16 @@ public class BatchQualityService
             .FirstOrDefaultAsync(b => b.Id == batchId);
 
         if (batch == null)
-            return (false, "Lote não encontrado");
+            return (false, "Lote nï¿½o encontrado");
 
         if (batch.RawMaterial?.EstablishmentId != establishmentId)
-            return (false, "Lote não pertence a este estabelecimento");
+            return (false, "Lote nï¿½o pertence a este estabelecimento");
 
         if (batch.Status?.ToUpper() != "QUARENTENA")
-            return (false, $"Lote não pode ser aprovado no status {batch.Status}");
+            return (false, $"Lote nï¿½o pode ser aprovado no status {batch.Status}");
 
         if (batch.ExpiryDate <= DateTime.UtcNow)
-            return (false, "Lote vencido não pode ser aprovado");
+            return (false, "Lote vencido nï¿½o pode ser aprovado");
 
         batch.Status = "APROVADO";
         batch.CertificateNumber = dto.CertificateNumber;
@@ -52,56 +52,58 @@ public class BatchQualityService
         Guid establishmentId,
         Guid employeeId)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
-        try
+        return await _context.Database.ExecuteInTransactionAsync<(bool Success, string Message)>(async transaction =>
         {
-            var batch = await _context.Batches
-                .Include(b => b.RawMaterial)
-                .FirstOrDefaultAsync(b => b.Id == batchId);
-
-            if (batch == null)
-                return (false, "Lote não encontrado");
-
-            if (batch.RawMaterial?.EstablishmentId != establishmentId)
-                return (false, "Lote não pertence a este estabelecimento");
-
-            if (batch.Status?.ToUpper() != "QUARENTENA")
-                return (false, $"Lote não pode ser reprovado no status {batch.Status}");
-
-            batch.Status = "REPROVADO";
-            batch.QualityNotes = $"REPROVADO: {dto.Reason}";
-            if (!string.IsNullOrWhiteSpace(dto.QualityNotes))
-                batch.QualityNotes += $" | {dto.QualityNotes}";
-            batch.ApprovalDate = DateTime.UtcNow;
-            batch.ApprovedByEmployeeId = employeeId;
-            batch.CurrentQuantity = 0;
-
-            var stockMovement = new StockMovement
+            try
             {
-                BatchId = batch.Id,
-                EstablishmentId = establishmentId,
-                RawMaterialId = batch.RawMaterialId,
-                MovementType = "PERDA",
-                Quantity = batch.ReceivedQuantity,
-                StockBefore = batch.ReceivedQuantity,
-                StockAfter = 0,
-                MovementDate = DateTime.UtcNow,
-                Reason = $"Lote reprovado: {dto.Reason}",
-                PerformedByEmployeeId = employeeId,
-                CreatedAt = DateTime.UtcNow
-            };
+                var batch = await _context.Batches
+                    .Include(b => b.RawMaterial)
+                    .FirstOrDefaultAsync(b => b.Id == batchId);
 
-            _context.StockMovements.Add(stockMovement);
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
+                if (batch == null)
+                    return (false, "Lote nï¿½o encontrado");
 
-            return (true, "Lote reprovado e descartado");
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            return (false, $"Erro ao reprovar lote: {ex.Message}");
-        }
+                if (batch.RawMaterial?.EstablishmentId != establishmentId)
+                    return (false, "Lote nï¿½o pertence a este estabelecimento");
+
+                if (batch.Status?.ToUpper() != "QUARENTENA")
+                    return (false, $"Lote nï¿½o pode ser reprovado no status {batch.Status}");
+
+                batch.Status = "REPROVADO";
+                batch.QualityNotes = $"REPROVADO: {dto.Reason}";
+                if (!string.IsNullOrWhiteSpace(dto.QualityNotes))
+                    batch.QualityNotes += $" | {dto.QualityNotes}";
+                batch.ApprovalDate = DateTime.UtcNow;
+                batch.ApprovedByEmployeeId = employeeId;
+                batch.CurrentQuantity = 0;
+
+                var stockMovement = new StockMovement
+                {
+                    BatchId = batch.Id,
+                    EstablishmentId = establishmentId,
+                    RawMaterialId = batch.RawMaterialId,
+                    MovementType = "PERDA",
+                    Quantity = batch.ReceivedQuantity,
+                    StockBefore = batch.ReceivedQuantity,
+                    StockAfter = 0,
+                    MovementDate = DateTime.UtcNow,
+                    Reason = $"Lote reprovado: {dto.Reason}",
+                    PerformedByEmployeeId = employeeId,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.StockMovements.Add(stockMovement);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return (true, "Lote reprovado e descartado");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return (false, $"Erro ao reprovar lote: {ex.Message}");
+            }
+        });
     }
 
     public async Task<QuarantineSummaryDto> GetQuarantineSummaryAsync(Guid establishmentId)

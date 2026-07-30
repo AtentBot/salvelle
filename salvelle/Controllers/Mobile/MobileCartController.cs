@@ -99,60 +99,117 @@ public class MobileCartController : ControllerBase
         if (pharmacy == null)
             return BadRequest(ApiResponse.ErrorResponse("Farmácia não está aceitando pedidos no momento"));
 
-        // Buscar ou criar carrinho
-        var cart = await _db.CustomerCarts
-            .Include(c => c.Items)
-            .FirstOrDefaultAsync(c => c.CustomerId == customerId.Value && c.Status == "ACTIVE");
-
-        if (cart != null && cart.EstablishmentId != request.EstablishmentId)
+        // Resolver o carrinho e gravar o item ATOMICAMENTE.
+        //
+        // Dois cuidados que já custaram bugs em produção:
+        //  1) O índice único é (CustomerId, EstablishmentId): pode já existir UMA linha para esta
+        //     farmácia — inclusive CONVERTED de um pedido anterior. Inserir um carrinho novo sem
+        //     checar isso viola o índice (23505) e quebra a recompra na mesma farmácia. Então
+        //     reaproveitamos a linha da farmácia destino quando ela existir.
+        //  2) NÃO carregamos os itens no change tracker (nada de Include(c => c.Items)) e limpamos
+        //     itens antigos com ExecuteDelete (SQL direto). Se um DELETE de item antigo e o INSERT
+        //     do item novo caíssem no mesmo SaveChanges pelo mesmo carrinho pai, o EF troca as
+        //     identidades e emite um DELETE do item recém-criado (afeta 0 linhas -> 500).
+        //  3) Tudo dentro de ExecuteInTransactionAsync: roda sob a execution strategy do EF
+        //     (EnableRetryOnFailure) e é atômico — nada de estado meio-gravado se algo falhar.
+        var (novoCartId, erro) = await _db.Database.ExecuteInTransactionAsync(async tx =>
         {
-            // Carrinho de outra farmácia — limpar
-            _db.CustomerCartItems.RemoveRange(cart.Items);
-            cart.EstablishmentId = request.EstablishmentId;
-            cart.Items.Clear();
-        }
+            var activeCart = await _db.CustomerCarts
+                .FirstOrDefaultAsync(c => c.CustomerId == customerId.Value && c.Status == "ACTIVE");
 
-        if (cart == null)
-        {
-            cart = new CustomerCart
+            CustomerCart cart;
+            var reaproveitou = false;
+
+            if (activeCart != null && activeCart.EstablishmentId == request.EstablishmentId)
             {
-                Id = Guid.NewGuid(),
-                CustomerId = customerId.Value,
-                EstablishmentId = request.EstablishmentId,
-                Status = "ACTIVE",
-                CreatedAt = DateTime.UtcNow
-            };
-            _db.CustomerCarts.Add(cart);
-        }
-
-        // Verificar se item já existe
-        var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == request.ProductId);
-        if (existingItem != null)
-        {
-            var newQty = existingItem.Quantity + request.Quantity;
-            if (newQty > 99)
-                return BadRequest(ApiResponse.ErrorResponse("Quantidade máxima por item é 99."));
-            existingItem.Quantity = newQty;
-            existingItem.UpdatedAt = DateTime.UtcNow;
-        }
-        else
-        {
-            var item = new CustomerCartItem
+                // Já há carrinho ativo nesta farmácia — apenas somar o item.
+                cart = activeCart;
+            }
+            else
             {
-                Id = Guid.NewGuid(),
-                CartId = cart.Id,
-                ProductId = product.Id,
-                // ProductName is computed via DisplayName
-                UnitPrice = product.CurrentPrice,
-                Quantity = request.Quantity,
-                Notes = request.Notes,
-                CreatedAt = DateTime.UtcNow
-            };
-            cart.Items.Add(item);
-        }
+                // Existe alguma linha (qualquer status) para a farmácia destino? Reaproveitá-la respeita o índice.
+                var cartDaFarmacia = await _db.CustomerCarts
+                    .FirstOrDefaultAsync(c => c.CustomerId == customerId.Value
+                                              && c.EstablishmentId == request.EstablishmentId);
 
-        cart.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
+                if (cartDaFarmacia != null)
+                {
+                    // Reativa a linha existente (ex.: CONVERTED após pedido) e zera itens antigos.
+                    await _db.CustomerCartItems.Where(i => i.CartId == cartDaFarmacia.Id).ExecuteDeleteAsync();
+                    cartDaFarmacia.Status = "ACTIVE";
+                    cart = cartDaFarmacia;
+                    reaproveitou = true;
+                }
+                else if (activeCart != null)
+                {
+                    // Troca de farmácia sem linha pré-existente no destino — repontar o carrinho ativo.
+                    await _db.CustomerCartItems.Where(i => i.CartId == activeCart.Id).ExecuteDeleteAsync();
+                    activeCart.EstablishmentId = request.EstablishmentId;
+                    cart = activeCart;
+                    reaproveitou = true;
+                }
+                else
+                {
+                    // Cliente sem carrinho — criar novo.
+                    cart = new CustomerCart
+                    {
+                        Id = Guid.NewGuid(),
+                        CustomerId = customerId.Value,
+                        EstablishmentId = request.EstablishmentId,
+                        Status = "ACTIVE",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _db.CustomerCarts.Add(cart);
+                }
+
+                // Se havia um carrinho ativo de OUTRA farmácia e passamos a usar outra linha,
+                // abandona o antigo para não deixar dois carrinhos ativos (quebraria o GetCart).
+                if (activeCart != null && !ReferenceEquals(activeCart, cart) && activeCart.Status == "ACTIVE")
+                {
+                    await _db.CustomerCartItems.Where(i => i.CartId == activeCart.Id).ExecuteDeleteAsync();
+                    activeCart.Status = "ABANDONED";
+                }
+            }
+
+            // Somar em item existente ou inserir um novo. Consulta direta na tabela (não pela navegação):
+            // num carrinho reaproveitado os itens acabaram de ser apagados, então existingItem será null.
+            var existingItem = reaproveitou
+                ? null
+                : await _db.CustomerCartItems
+                    .FirstOrDefaultAsync(i => i.CartId == cart.Id && i.ProductId == request.ProductId);
+
+            if (existingItem != null)
+            {
+                var newQty = existingItem.Quantity + request.Quantity;
+                if (newQty > 99)
+                    // Sem commit -> a transação faz rollback (nada foi gravado ainda neste caminho).
+                    return ((Guid?)null, "Quantidade máxima por item é 99.");
+                existingItem.Quantity = newQty;
+                existingItem.UpdatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                _db.CustomerCartItems.Add(new CustomerCartItem
+                {
+                    Id = Guid.NewGuid(),
+                    CartId = cart.Id,
+                    ProductId = product.Id,
+                    // ProductName is computed via DisplayName
+                    UnitPrice = product.CurrentPrice,
+                    Quantity = request.Quantity,
+                    Notes = request.Notes,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            cart.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+            return ((Guid?)cart.Id, (string?)null);
+        });
+
+        if (erro != null)
+            return BadRequest(ApiResponse.ErrorResponse(erro));
 
         return await GetCart();
     }

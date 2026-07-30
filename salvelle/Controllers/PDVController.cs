@@ -791,7 +791,8 @@ public class PDVController : ControllerBase
         if (dto.Items == null || !dto.Items.Any())
             return BadRequest(ApiResponse<UnifiedSaleResultDto>.ErrorResponse("Nenhum item na venda"));
 
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        return await _context.Database.ExecuteInTransactionAsync<ActionResult<ApiResponse<UnifiedSaleResultDto>>>(async transaction =>
+        {
         try
         {
             // Validar itens controlados
@@ -1013,6 +1014,7 @@ public class PDVController : ControllerBase
             await transaction.RollbackAsync();
             return BadRequest(ApiResponse<UnifiedSaleResultDto>.ErrorResponse("Erro ao processar venda: " + ex.Message));
         }
+        });
     }
 
     // ================================================================

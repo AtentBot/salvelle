@@ -33,7 +33,8 @@ public class StockService
         string? prescriptionNumber = null,
         string? notificationNumber = null)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        return await _context.Database.ExecuteInTransactionAsync<(bool Success, string Message, StockMovement? Movement)>(async transaction =>
+        {
         try
         {
             // Validar matéria-prima
@@ -118,6 +119,7 @@ public class StockService
             await transaction.RollbackAsync();
             return (false, $"Erro ao registrar movimentação: {ex.Message}", null);
         }
+        });
     }
 
     public async Task<decimal> GetCurrentStockAsync(Guid rawMaterialId, Guid? batchId, Guid establishmentId)

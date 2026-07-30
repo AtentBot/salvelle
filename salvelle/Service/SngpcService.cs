@@ -19,19 +19,20 @@ public class SngpcService
         Guid establishmentId,
         Guid employeeId)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        return await _context.Database.ExecuteInTransactionAsync<(bool Success, string Message, ControlledSubstanceMovement? Movement)>(async transaction =>
+        {
         try
         {
-            // Buscar matéria-prima
+            // Buscar matï¿½ria-prima
             var rawMaterial = await _context.RawMaterials
                 .FirstOrDefaultAsync(r => r.Id == dto.RawMaterialId &&
                                          r.EstablishmentId == establishmentId);
 
             if (rawMaterial == null)
-                return (false, "Matéria-prima não encontrada", null);
+                return (false, "Matï¿½ria-prima nï¿½o encontrada", null);
 
             if (rawMaterial.ControlType == "COMUM")
-                return (false, "Matéria-prima não é controlada", null);
+                return (false, "Matï¿½ria-prima nï¿½o ï¿½ controlada", null);
 
             // Calcular saldo atual
             var currentBalance = await GetCurrentBalanceAsync(
@@ -44,14 +45,14 @@ public class SngpcService
                 "ENTRADA" => currentBalance + dto.Quantity,
                 "SAIDA" => currentBalance - dto.Quantity,
                 "PERDA" => currentBalance - dto.Quantity,
-                "AJUSTE" => dto.Quantity, // O valor é o saldo final
+                "AJUSTE" => dto.Quantity, // O valor ï¿½ o saldo final
                 _ => currentBalance
             };
 
             if (newBalance < 0 && dto.MovementType != "AJUSTE")
                 return (false, "Saldo insuficiente", null);
 
-            // Criar movimentação
+            // Criar movimentaï¿½ï¿½o
             var movement = new ControlledSubstanceMovement
             {
                 EstablishmentId = establishmentId,
@@ -92,13 +93,14 @@ public class SngpcService
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return (true, "Movimentação registrada com sucesso", movement);
+            return (true, "Movimentaï¿½ï¿½o registrada com sucesso", movement);
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            return (false, $"Erro ao registrar movimentação: {ex.Message}", null);
+            return (false, $"Erro ao registrar movimentaï¿½ï¿½o: {ex.Message}", null);
         }
+        });
     }
 
     public async Task<(bool Success, string Message, List<ControlledSubstanceBalance> Balances)> GenerateBalancesAsync(
@@ -110,7 +112,7 @@ public class SngpcService
         {
             var balances = new List<ControlledSubstanceBalance>();
 
-            // Buscar todas as matérias-primas controladas
+            // Buscar todas as matï¿½rias-primas controladas
             var query = _context.RawMaterials
                 .Where(r => r.EstablishmentId == establishmentId &&
                            r.ControlType != "COMUM");
@@ -122,7 +124,7 @@ public class SngpcService
 
             foreach (var material in controlledMaterials)
             {
-                // Calcular movimentações do período
+                // Calcular movimentaï¿½ï¿½es do perï¿½odo
                 var movements = await _context.Set<ControlledSubstanceMovement>()
                     .Where(m => m.EstablishmentId == establishmentId &&
                                m.RawMaterialId == material.Id &&
@@ -166,11 +168,11 @@ public class SngpcService
             }
 
             await _context.SaveChangesAsync();
-            return (true, $"{balances.Count} balanço(s) gerado(s) com sucesso", balances);
+            return (true, $"{balances.Count} balanï¿½o(s) gerado(s) com sucesso", balances);
         }
         catch (Exception ex)
         {
-            return (false, $"Erro ao gerar balanços: {ex.Message}", new List<ControlledSubstanceBalance>());
+            return (false, $"Erro ao gerar balanï¿½os: {ex.Message}", new List<ControlledSubstanceBalance>());
         }
     }
 
@@ -185,10 +187,10 @@ public class SngpcService
                                      b.EstablishmentId == establishmentId);
 
         if (balance == null)
-            return (false, "Balanço não encontrado");
+            return (false, "Balanï¿½o nï¿½o encontrado");
 
         if (balance.Status == "FECHADO")
-            return (false, "Balanço já está fechado");
+            return (false, "Balanï¿½o jï¿½ estï¿½ fechado");
 
         balance.PhysicalBalance = dto.PhysicalBalance;
         balance.Difference = dto.PhysicalBalance - balance.FinalBalance;
@@ -200,7 +202,7 @@ public class SngpcService
             balance.Observations = dto.Observations;
 
         await _context.SaveChangesAsync();
-        return (true, "Balanço fechado com sucesso");
+        return (true, "Balanï¿½o fechado com sucesso");
     }
 
     public async Task<(bool Success, string Message, SpecialPrescriptionControl? Control)> RegisterSpecialPrescriptionAsync(
@@ -210,14 +212,14 @@ public class SngpcService
     {
         try
         {
-            // Verificar se número já existe
+            // Verificar se nï¿½mero jï¿½ existe
             var exists = await _context.Set<SpecialPrescriptionControl>()
                 .AnyAsync(s => s.EstablishmentId == establishmentId &&
                               s.PrescriptionNumber == dto.PrescriptionNumber &&
                               s.PrescriptionType == dto.PrescriptionType.ToUpper());
 
             if (exists)
-                return (false, "Receita já cadastrada", null);
+                return (false, "Receita jï¿½ cadastrada", null);
 
             // Calcular validade
             var validityDate = dto.PrescriptionType.ToUpper() switch
@@ -283,8 +285,8 @@ public class SngpcService
         if (!string.IsNullOrWhiteSpace(controlledList))
             movements = movements.Where(m => m.ControlledList == controlledList).ToList();
 
-        // TODO: Implementar geração XML conforme padrão ANVISA
-        // Por enquanto, retornar XML básico
+        // TODO: Implementar geraï¿½ï¿½o XML conforme padrï¿½o ANVISA
+        // Por enquanto, retornar XML bï¿½sico
         var xml = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
 <SNGPC>
     <Periodo>
