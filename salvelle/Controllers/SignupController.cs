@@ -127,8 +127,8 @@ public class SignupController : ControllerBase
             if (plan == null)
                 return BadRequest(new { message = "Plano não encontrado ou inativo" });
 
-            if (string.IsNullOrEmpty(plan.StripePriceIdMonthly))
-                return BadRequest(new { message = "Plano não configurado para pagamentos. Configure o StripePriceId no painel admin." });
+            // O Price ID é resolvido depois de sabermos o ambiente do gateway ativo
+            // (Sandbox = preços de teste, Production = preços live) — ver abaixo.
 
             // ═══════════════════════════════════════════════════════════════════
             // BUSCAR API KEY DO BANCO (PaymentGatewayConfig)
@@ -160,6 +160,18 @@ public class SignupController : ControllerBase
                 return BadRequest(new { message = "Configuração de pagamento inválida." });
             }
 
+            // Resolver o Price ID conforme o ambiente do gateway (Sandbox=teste, Production=live)
+            // e o ciclo de cobrança solicitado (MONTHLY/YEARLY)
+            var billingCycle = string.Equals(dto.BillingCycle, "YEARLY", StringComparison.OrdinalIgnoreCase)
+                ? "YEARLY" : "MONTHLY";
+            var priceId = plan.GetStripePriceId(stripeConfig.Environment, billingCycle);
+            if (string.IsNullOrEmpty(priceId))
+            {
+                var ambiente = stripeConfig.Environment == GatewayEnvironment.Sandbox ? "teste" : "produção";
+                _logger.LogError("Plano {PlanId} sem Stripe Price ID para o ambiente {Env}", plan.Id, stripeConfig.Environment);
+                return BadRequest(new { message = $"Plano não configurado para pagamentos no ambiente de {ambiente}. Configure o Stripe Price ID no painel admin." });
+            }
+
             // Configurar Stripe com a chave do banco
             StripeConfiguration.ApiKey = secretKey;
 
@@ -176,7 +188,7 @@ public class SignupController : ControllerBase
                 {
                     new SessionLineItemOptions
                     {
-                        Price = plan.StripePriceIdMonthly,
+                        Price = priceId,
                         Quantity = 1
                     }
                 },
@@ -188,14 +200,16 @@ public class SignupController : ControllerBase
                     {
                         { "establishment_id", dto.EstablishmentId.ToString() },
                         { "plan_id", dto.PlanId.ToString() },
-                        { "gateway_config_id", stripeConfig.Id.ToString() }
+                        { "gateway_config_id", stripeConfig.Id.ToString() },
+                        { "billing_cycle", billingCycle }
                     }
                 },
                 Metadata = new Dictionary<string, string>
                 {
                     { "establishment_id", dto.EstablishmentId.ToString() },
                     { "plan_id", dto.PlanId.ToString() },
-                    { "gateway_config_id", stripeConfig.Id.ToString() }
+                    { "gateway_config_id", stripeConfig.Id.ToString() },
+                    { "billing_cycle", billingCycle }
                 },
                 SuccessUrl = $"{baseUrl}/signup/success?session_id={{CHECKOUT_SESSION_ID}}",
                 CancelUrl = $"{baseUrl}/signup/select-plan?establishmentId={dto.EstablishmentId}&canceled=true",
@@ -274,4 +288,5 @@ public class CreateTrialCheckoutDto
 {
     public Guid EstablishmentId { get; set; }
     public Guid PlanId { get; set; }
+    public string BillingCycle { get; set; } = "MONTHLY";
 }

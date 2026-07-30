@@ -10917,6 +10917,16 @@ namespace Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("stripe_price_id_yearly");
 
+                    b.Property<string>("StripePriceIdMonthlyTest")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("stripe_price_id_monthly_test");
+
+                    b.Property<string>("StripePriceIdYearlyTest")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("stripe_price_id_yearly_test");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");

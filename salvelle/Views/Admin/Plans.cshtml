@@ -106,20 +106,37 @@
                                     </div>
                                 </div>
                                 <div class="card-body">
+                                    <div class="small text-muted mb-1"><i class="bi bi-broadcast me-1"></i>Produção (Live)</div>
                                     <div class="row g-2">
                                         <div class="col-md-6">
-                                            <label class="form-label small">Price ID Mensal</label>
-                                            <input type="text" class="form-control form-control-sm font-monospace" 
-                                                   id="stripePriceMonthly" placeholder="price_1Qab..." 
+                                            <label class="form-label small">Price ID Mensal (Live)</label>
+                                            <input type="text" class="form-control form-control-sm font-monospace"
+                                                   id="stripePriceMonthly" placeholder="price_1Qab..."
                                                    onchange="updateGatewayBadges()">
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label small">Price ID Anual</label>
-                                            <input type="text" class="form-control form-control-sm font-monospace" 
+                                            <label class="form-label small">Price ID Anual (Live)</label>
+                                            <input type="text" class="form-control form-control-sm font-monospace"
                                                    id="stripePriceYearly" placeholder="price_1Qab..."
                                                    onchange="updateGatewayBadges()">
                                         </div>
                                     </div>
+                                    <div class="small text-muted mt-2 mb-1"><i class="bi bi-flask me-1"></i>Teste (Sandbox)</div>
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label small">Price ID Mensal (Teste)</label>
+                                            <input type="text" class="form-control form-control-sm font-monospace"
+                                                   id="stripePriceMonthlyTest" placeholder="price_1Tst..."
+                                                   onchange="updateGatewayBadges()">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">Price ID Anual (Teste)</label>
+                                            <input type="text" class="form-control form-control-sm font-monospace"
+                                                   id="stripePriceYearlyTest" placeholder="price_1Tst..."
+                                                   onchange="updateGatewayBadges()">
+                                        </div>
+                                    </div>
+                                    <div class="form-text small mt-1">O switch de ambiente (Settings → Modo de Pagamento) decide quais preços são usados: Teste usa os de Sandbox, Produção usa os Live.</div>
                                     <a href="https://dashboard.stripe.com/products" target="_blank" class="small text-muted">
                                         <i class="bi bi-box-arrow-up-right me-1"></i>Abrir Stripe Dashboard
                                     </a>
@@ -341,6 +358,8 @@
         // Limpar campos de gateway
         document.getElementById('stripePriceMonthly').value = '';
         document.getElementById('stripePriceYearly').value = '';
+        document.getElementById('stripePriceMonthlyTest').value = '';
+        document.getElementById('stripePriceYearlyTest').value = '';
         document.getElementById('mpPlanMonthly').value = '';
         document.getElementById('mpPlanYearly').value = '';
         document.getElementById('abacatePlanMonthly').value = '';
@@ -372,6 +391,8 @@
                 // Gateway IDs
                 document.getElementById('stripePriceMonthly').value = plan.stripePriceIdMonthly || '';
                 document.getElementById('stripePriceYearly').value = plan.stripePriceIdYearly || '';
+                document.getElementById('stripePriceMonthlyTest').value = plan.stripePriceIdMonthlyTest || '';
+                document.getElementById('stripePriceYearlyTest').value = plan.stripePriceIdYearlyTest || '';
                 document.getElementById('mpPlanMonthly').value = plan.mercadoPagoPlanIdMonthly || '';
                 document.getElementById('mpPlanYearly').value = plan.mercadoPagoPlanIdYearly || '';
                 document.getElementById('abacatePlanMonthly').value = plan.abacatepayPlanIdMonthly || '';
@@ -390,6 +411,8 @@
     function updateGatewayBadges() {
         const stripeM = document.getElementById('stripePriceMonthly').value;
         const stripeY = document.getElementById('stripePriceYearly').value;
+        const stripeMt = document.getElementById('stripePriceMonthlyTest').value;
+        const stripeYt = document.getElementById('stripePriceYearlyTest').value;
         const mpM = document.getElementById('mpPlanMonthly').value;
         const mpY = document.getElementById('mpPlanYearly').value;
         const abacateM = document.getElementById('abacatePlanMonthly').value;
@@ -400,7 +423,7 @@
         const mpBadge = document.getElementById('mpBadge');
         const abacateBadge = document.getElementById('abacateBadge');
         
-        if (stripeM || stripeY) {
+        if (stripeM || stripeY || stripeMt || stripeYt) {
             stripeBadge.className = 'badge bg-success';
             stripeBadge.textContent = 'Configurado';
         } else {
@@ -448,6 +471,8 @@
             // Gateway IDs
             stripePriceIdMonthly: document.getElementById('stripePriceMonthly').value || null,
             stripePriceIdYearly: document.getElementById('stripePriceYearly').value || null,
+            stripePriceIdMonthlyTest: document.getElementById('stripePriceMonthlyTest').value || null,
+            stripePriceIdYearlyTest: document.getElementById('stripePriceYearlyTest').value || null,
             mercadoPagoPlanIdMonthly: document.getElementById('mpPlanMonthly').value || null,
             mercadoPagoPlanIdYearly: document.getElementById('mpPlanYearly').value || null,
             abacatepayPlanIdMonthly: document.getElementById('abacatePlanMonthly').value || null,

@@ -72,6 +72,32 @@
                 </button>
             </div>
             <div class="card-body">
+                <!-- ════ CONTROLE DE MODO: TESTE / PRODUÇÃO (Stripe) ════ -->
+                <div id="paymentModeCard" class="border rounded p-3 mb-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <div class="fw-semibold mb-1">
+                                <i class="bi bi-toggles me-2"></i>Modo de Pagamento (Stripe)
+                            </div>
+                            <div class="small text-muted" id="paymentModeHint">Carregando...</div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span id="paymentModeBadge" class="badge bg-secondary fs-6">—</span>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-warning btn-sm" id="btnModeSandbox"
+                                        onclick="setPaymentMode(1)">
+                                    <i class="bi bi-bug me-1"></i>Teste
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" id="btnModeProduction"
+                                        onclick="setPaymentMode(2)">
+                                    <i class="bi bi-shield-check me-1"></i>Produção
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="paymentModeWarning" class="alert alert-warning mt-3 mb-0 py-2 small d-none"></div>
+                </div>
+
                 <!-- Tabs Sandbox/Produção -->
                 <ul class="nav nav-tabs mb-4" id="gatewayTabs" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -643,7 +669,81 @@ loadAdmins();
         
         loadProfile();
         loadGateways();
+        loadPaymentMode();
     });
+
+    // ════════════════════════════════════════════════════════════════════
+    // MODO DE PAGAMENTO (TESTE / PRODUÇÃO)
+    // ════════════════════════════════════════════════════════════════════
+    async function loadPaymentMode() {
+        const badge = document.getElementById('paymentModeBadge');
+        const hint = document.getElementById('paymentModeHint');
+        const warn = document.getElementById('paymentModeWarning');
+        const btnSbx = document.getElementById('btnModeSandbox');
+        const btnPrd = document.getElementById('btnModeProduction');
+        try {
+            const r = await fetch('/api/admin/payment-gateways/mode?gatewayType=1');
+            if (!r.ok) throw new Error();
+            const m = await r.json();
+
+            // Badge do modo atual
+            if (m.activeEnvironment === 'Production') {
+                badge.className = 'badge bg-danger fs-6';
+                badge.innerHTML = '<i class="bi bi-shield-check me-1"></i>PRODUÇÃO';
+                hint.textContent = 'Pagamentos reais estão sendo processados.';
+            } else if (m.activeEnvironment === 'Sandbox') {
+                badge.className = 'badge bg-warning text-dark fs-6';
+                badge.innerHTML = '<i class="bi bi-bug me-1"></i>TESTE';
+                hint.textContent = 'Ambiente de teste — nenhuma cobrança real é feita (use cartões de teste).';
+            } else {
+                badge.className = 'badge bg-secondary fs-6';
+                badge.textContent = 'Nenhum ativo';
+                hint.textContent = 'Nenhum gateway Stripe ativo. Cadastre e ative um ambiente.';
+            }
+
+            // Habilita/realça os botões conforme prontidão
+            btnSbx.disabled = !m.sandbox.exists || !m.sandbox.hasSecretKey;
+            btnSbx.title = btnSbx.disabled ? 'Cadastre o Stripe Sandbox com Secret Key' : '';
+            btnSbx.classList.toggle('active', m.activeEnvironment === 'Sandbox');
+
+            const prodReady = m.production.exists && m.production.hasSecretKey && m.production.testPassed;
+            btnPrd.disabled = !prodReady;
+            btnPrd.title = !m.production.exists ? 'Cadastre o Stripe de Produção'
+                : !m.production.hasSecretKey ? 'Configure a Secret Key de produção'
+                : !m.production.testPassed ? 'Teste a conexão de produção com sucesso antes de ativar'
+                : '';
+            btnPrd.classList.toggle('active', m.activeEnvironment === 'Production');
+
+            // Alertas
+            const msgs = [];
+            if (m.multipleActive) msgs.push('⚠ Há mais de um gateway Stripe ativo — estado inconsistente. Selecione um modo para normalizar.');
+            if (m.production.exists && !m.production.testPassed) msgs.push('Produção ainda não passou no teste de conexão.');
+            if (msgs.length) { warn.classList.remove('d-none'); warn.innerHTML = msgs.join('<br>'); }
+            else warn.classList.add('d-none');
+        } catch {
+            hint.textContent = 'Não foi possível carregar o modo de pagamento.';
+            badge.className = 'badge bg-secondary fs-6';
+            badge.textContent = 'erro';
+        }
+    }
+
+    async function setPaymentMode(environment) {
+        const label = environment === 2 ? 'PRODUÇÃO (pagamentos reais)' : 'TESTE (Sandbox)';
+        if (!confirm(`Alternar o modo de pagamento para ${label}?`)) return;
+        try {
+            const r = await fetch('/api/admin/payment-gateways/mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gatewayType: 1, environment })
+            });
+            const d = await r.json();
+            alert(d.message || (r.ok ? 'Modo alterado.' : 'Erro ao alterar modo.'));
+            loadPaymentMode();
+            loadGateways();
+        } catch {
+            alert('Erro ao alterar modo de pagamento.');
+        }
+    }
 
     // ════════════════════════════════════════════════════════════════════
     // CARREGAR GATEWAYS

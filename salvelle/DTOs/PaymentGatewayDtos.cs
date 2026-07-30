@@ -249,3 +249,14 @@ public class WebhookLogFilterDto
     public int Skip { get; set; } = 0;
     public int Take { get; set; } = 20;
 }
+
+/// <summary>
+/// DTO para alternar o modo de pagamento (Sandbox/Produção) de um gateway.
+/// Ativar um ambiente ativa/torna padrão o config desse ambiente e desativa os demais do mesmo gateway,
+/// garantindo que exista sempre exatamente um config ativo por tipo de gateway.
+/// </summary>
+public class SetPaymentModeDto
+{
+    public PaymentGatewayType GatewayType { get; set; } = PaymentGatewayType.Stripe;
+    public GatewayEnvironment Environment { get; set; }
+}

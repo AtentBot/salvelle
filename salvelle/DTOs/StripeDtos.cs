@@ -15,6 +15,8 @@ public class SubscriptionPlanDto
     // Gateway IDs
     public string? StripePriceIdMonthly { get; set; }
     public string? StripePriceIdYearly { get; set; }
+    public string? StripePriceIdMonthlyTest { get; set; }
+    public string? StripePriceIdYearlyTest { get; set; }
     public string? MercadoPagoPlanIdMonthly { get; set; }
     public string? MercadoPagoPlanIdYearly { get; set; }
     public string? AbacatepayPlanIdMonthly { get; set; }
@@ -32,10 +34,13 @@ public class CreatePlanDto
     public Dictionary<string, bool>? Features { get; set; }
     public bool IsActive { get; set; } = true;
     
-    // Gateway IDs - Stripe
+    // Gateway IDs - Stripe (produção/live)
     public string? StripePriceIdMonthly { get; set; }
     public string? StripePriceIdYearly { get; set; }
-    
+    // Gateway IDs - Stripe (teste/sandbox)
+    public string? StripePriceIdMonthlyTest { get; set; }
+    public string? StripePriceIdYearlyTest { get; set; }
+
     // Gateway IDs - MercadoPago
     public string? MercadoPagoPlanIdMonthly { get; set; }
     public string? MercadoPagoPlanIdYearly { get; set; }
@@ -90,6 +95,8 @@ public class UpdateGatewayIdsDto
 {
     public string? StripePriceIdMonthly { get; set; }
     public string? StripePriceIdYearly { get; set; }
+    public string? StripePriceIdMonthlyTest { get; set; }
+    public string? StripePriceIdYearlyTest { get; set; }
     public string? MercadoPagoPlanIdMonthly { get; set; }
     public string? MercadoPagoPlanIdYearly { get; set; }
     public string? AbacatepayPlanIdMonthly { get; set; }

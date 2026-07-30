@@ -258,7 +258,7 @@ public class SubscriptionPortalController : Controller
             }
 
             var newPlan = await _context.Set<SubscriptionPlan>().FindAsync(planId);
-            if (newPlan == null || string.IsNullOrEmpty(newPlan.StripePriceIdMonthly))
+            if (newPlan == null)
             {
                 TempData["Error"] = "Plano não encontrado";
                 return RedirectToAction("Index");
@@ -273,17 +273,20 @@ public class SubscriptionPortalController : Controller
                 return RedirectToAction("Index");
             }
 
+            // Resolver o preço conforme o ambiente do gateway (Sandbox=teste, Production=live)
+            var priceId = newPlan.GetStripePriceId(stripeConfig.Environment, subscription.BillingCycle);
+            if (string.IsNullOrEmpty(priceId))
+            {
+                TempData["Error"] = "Plano não configurado para pagamentos neste ambiente";
+                return RedirectToAction("Index");
+            }
+
             var secretKey = _encryption.Decrypt(stripeConfig.SecretKeyEncrypted ?? "");
             StripeConfiguration.ApiKey = secretKey;
 
             // Buscar subscription atual no Stripe
             var subService = new Stripe.SubscriptionService();
             var stripeSub = await subService.GetAsync(subscription.StripeSubscriptionId);
-
-            // Atualizar para novo preço
-            var priceId = subscription.BillingCycle == "YEARLY" && !string.IsNullOrEmpty(newPlan.StripePriceIdYearly)
-                ? newPlan.StripePriceIdYearly
-                : newPlan.StripePriceIdMonthly;
 
             await subService.UpdateAsync(subscription.StripeSubscriptionId, new Stripe.SubscriptionUpdateOptions
             {

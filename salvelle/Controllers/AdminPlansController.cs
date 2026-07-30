@@ -43,6 +43,8 @@ public class AdminPlansController : ControllerBase
                 p.Features,
                 p.StripePriceIdMonthly,
                 p.StripePriceIdYearly,
+                p.StripePriceIdMonthlyTest,
+                p.StripePriceIdYearlyTest,
                 p.MercadoPagoPlanIdMonthly,
                 p.MercadoPagoPlanIdYearly,
                 p.AbacatepayPlanIdMonthly,
@@ -79,6 +81,8 @@ public class AdminPlansController : ControllerBase
             plan.Features,
             plan.StripePriceIdMonthly,
             plan.StripePriceIdYearly,
+            plan.StripePriceIdMonthlyTest,
+            plan.StripePriceIdYearlyTest,
             plan.MercadoPagoPlanIdMonthly,
             plan.MercadoPagoPlanIdYearly,
             plan.AbacatepayPlanIdMonthly,
@@ -118,6 +122,8 @@ public class AdminPlansController : ControllerBase
                 // Gateway IDs
                 StripePriceIdMonthly = dto.StripePriceIdMonthly?.Trim(),
                 StripePriceIdYearly = dto.StripePriceIdYearly?.Trim(),
+                StripePriceIdMonthlyTest = dto.StripePriceIdMonthlyTest?.Trim(),
+                StripePriceIdYearlyTest = dto.StripePriceIdYearlyTest?.Trim(),
                 MercadoPagoPlanIdMonthly = dto.MercadoPagoPlanIdMonthly?.Trim(),
                 MercadoPagoPlanIdYearly = dto.MercadoPagoPlanIdYearly?.Trim(),
                 AbacatepayPlanIdMonthly = dto.AbacatepayPlanIdMonthly?.Trim(),
@@ -185,9 +191,17 @@ public class AdminPlansController : ControllerBase
                     ? null : dto.StripePriceIdMonthly.Trim();
             
             if (dto.StripePriceIdYearly != null)
-                plan.StripePriceIdYearly = string.IsNullOrWhiteSpace(dto.StripePriceIdYearly) 
+                plan.StripePriceIdYearly = string.IsNullOrWhiteSpace(dto.StripePriceIdYearly)
                     ? null : dto.StripePriceIdYearly.Trim();
-            
+
+            if (dto.StripePriceIdMonthlyTest != null)
+                plan.StripePriceIdMonthlyTest = string.IsNullOrWhiteSpace(dto.StripePriceIdMonthlyTest)
+                    ? null : dto.StripePriceIdMonthlyTest.Trim();
+
+            if (dto.StripePriceIdYearlyTest != null)
+                plan.StripePriceIdYearlyTest = string.IsNullOrWhiteSpace(dto.StripePriceIdYearlyTest)
+                    ? null : dto.StripePriceIdYearlyTest.Trim();
+
             // MercadoPago
             if (dto.MercadoPagoPlanIdMonthly != null)
                 plan.MercadoPagoPlanIdMonthly = string.IsNullOrWhiteSpace(dto.MercadoPagoPlanIdMonthly) 
@@ -242,9 +256,17 @@ public class AdminPlansController : ControllerBase
                     ? null : dto.StripePriceIdMonthly.Trim();
             
             if (dto.StripePriceIdYearly != null)
-                plan.StripePriceIdYearly = string.IsNullOrWhiteSpace(dto.StripePriceIdYearly) 
+                plan.StripePriceIdYearly = string.IsNullOrWhiteSpace(dto.StripePriceIdYearly)
                     ? null : dto.StripePriceIdYearly.Trim();
-            
+
+            if (dto.StripePriceIdMonthlyTest != null)
+                plan.StripePriceIdMonthlyTest = string.IsNullOrWhiteSpace(dto.StripePriceIdMonthlyTest)
+                    ? null : dto.StripePriceIdMonthlyTest.Trim();
+
+            if (dto.StripePriceIdYearlyTest != null)
+                plan.StripePriceIdYearlyTest = string.IsNullOrWhiteSpace(dto.StripePriceIdYearlyTest)
+                    ? null : dto.StripePriceIdYearlyTest.Trim();
+
             // MercadoPago
             if (dto.MercadoPagoPlanIdMonthly != null)
                 plan.MercadoPagoPlanIdMonthly = string.IsNullOrWhiteSpace(dto.MercadoPagoPlanIdMonthly) 

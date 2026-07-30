@@ -60,6 +60,15 @@ public class SubscriptionPlan
     [MaxLength(255)]
     public string? StripePriceIdYearly { get; set; }
 
+    // Price IDs do ambiente de TESTE (Sandbox). Os campos sem sufixo acima são os de PRODUÇÃO (Live).
+    [Column("stripe_price_id_monthly_test")]
+    [MaxLength(255)]
+    public string? StripePriceIdMonthlyTest { get; set; }
+
+    [Column("stripe_price_id_yearly_test")]
+    [MaxLength(255)]
+    public string? StripePriceIdYearlyTest { get; set; }
+
     [Column("is_active")]
     public bool IsActive { get; set; } = true;
 
@@ -70,4 +79,24 @@ public class SubscriptionPlan
     public DateTime UpdatedAt { get; set; }
 
     public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
+
+    /// <summary>
+    /// Retorna o Stripe Price ID correto conforme o ambiente do gateway ativo
+    /// (Sandbox = preços de teste, Production = preços live) e o ciclo de cobrança
+    /// (MONTHLY/YEARLY). Cai para o mensal quando o anual não está configurado.
+    /// </summary>
+    public string? GetStripePriceId(GatewayEnvironment environment, string? billingCycle)
+    {
+        var yearly = string.Equals(billingCycle, "YEARLY", StringComparison.OrdinalIgnoreCase);
+        if (environment == GatewayEnvironment.Sandbox)
+        {
+            return yearly && !string.IsNullOrWhiteSpace(StripePriceIdYearlyTest)
+                ? StripePriceIdYearlyTest
+                : StripePriceIdMonthlyTest;
+        }
+
+        return yearly && !string.IsNullOrWhiteSpace(StripePriceIdYearly)
+            ? StripePriceIdYearly
+            : StripePriceIdMonthly;
+    }
 }

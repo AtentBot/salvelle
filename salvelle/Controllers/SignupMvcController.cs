@@ -27,7 +27,7 @@ public class SignupMvcController : Controller
     /// Passo 1: Formulário de cadastro do estabelecimento
     /// </summary>
     [HttpGet("/signup")]
-    public async Task<IActionResult> Index([FromQuery] Guid? planId = null)
+    public async Task<IActionResult> Index([FromQuery(Name = "plan")] Guid? planId = null)
     {
         var plans = await _context.Set<SubscriptionPlan>()
             .Where(p => p.IsActive)
@@ -205,10 +205,29 @@ public class SignupMvcController : Controller
                 Expand = new List<string> { "subscription", "customer" }
             });
 
+            // ═══════════════════════════════════════════════════════════════════
+            // VALIDAÇÃO DE SEGURANÇA: só ativar se o checkout foi REALMENTE concluído.
+            // Sem isso, qualquer um poderia bater em /signup/success?session_id=<sessão aberta>
+            // e ganhar (ou renovar) um trial gratuito sem pagar. Em modo subscription com
+            // trial não há cobrança imediata (payment_status = no_payment_required), mas o
+            // Stripe só cria a subscription e marca status=complete quando o checkout é
+            // finalizado — então exigimos ambos.
+            // ═══════════════════════════════════════════════════════════════════
+            if (session.Status != "complete" || string.IsNullOrEmpty(session.SubscriptionId))
+            {
+                _logger.LogWarning(
+                    "Ativação recusada: sessão {SessionId} não concluída (status={Status}, payment_status={PaymentStatus}, subscription={Sub})",
+                    session_id, session.Status, session.PaymentStatus, session.SubscriptionId);
+                TempData["ErrorMessage"] = "Pagamento ainda não confirmado. Se você concluiu o checkout, aguarde alguns instantes e recarregue a página.";
+                return Redirect("/signup");
+            }
+
             // Extrair IDs dos metadados
             var establishmentIdStr = session.Metadata.GetValueOrDefault("establishment_id");
             var planIdStr = session.Metadata.GetValueOrDefault("plan_id");
             var gatewayConfigIdStr = session.Metadata.GetValueOrDefault("gateway_config_id");
+            var billingCycle = string.Equals(session.Metadata.GetValueOrDefault("billing_cycle"), "YEARLY", StringComparison.OrdinalIgnoreCase)
+                ? "YEARLY" : "MONTHLY";
 
             if (!Guid.TryParse(establishmentIdStr, out var establishmentId) ||
                 !Guid.TryParse(planIdStr, out var planId))
@@ -256,7 +275,7 @@ public class SignupMvcController : Controller
                         ExternalCustomerId = session.CustomerId,
                         GatewayConfigId = gatewayConfigId,
                         Status = "TRIALING",
-                        BillingCycle = "MONTHLY",
+                        BillingCycle = billingCycle,
                         TrialStart = DateTime.UtcNow,
                         TrialEnd = trialEnd,
                         CurrentPeriodStart = DateTime.UtcNow,
@@ -276,6 +295,7 @@ public class SignupMvcController : Controller
                     subscription.ExternalCustomerId = session.CustomerId;
                     subscription.GatewayConfigId = gatewayConfigId;
                     subscription.Status = "TRIALING";
+                    subscription.BillingCycle = billingCycle;
                     subscription.TrialStart = DateTime.UtcNow;
                     subscription.TrialEnd = trialEnd;
                     subscription.CurrentPeriodStart = DateTime.UtcNow;

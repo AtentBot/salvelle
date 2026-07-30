@@ -495,6 +495,129 @@ public class AdminPaymentGatewaysController : ControllerBase
         }
     }
 
+    // ==================== MODO DE PAGAMENTO (TESTE/PRODUÇÃO) ====================
+
+    /// <summary>
+    /// Retorna o modo de pagamento atual (ambiente do gateway ativo) e a prontidão
+    /// de cada ambiente para o tipo de gateway informado (padrão: Stripe).
+    /// </summary>
+    [HttpGet("mode")]
+    public async Task<IActionResult> GetMode([FromQuery] PaymentGatewayType gatewayType = PaymentGatewayType.Stripe)
+    {
+        try
+        {
+            var configs = await _context.Set<PaymentGatewayConfig>()
+                .Where(g => g.GatewayType == gatewayType)
+                .ToListAsync();
+
+            var activeConfigs = configs.Where(c => c.IsActive).ToList();
+            var active = activeConfigs.FirstOrDefault();
+            var sandbox = configs.FirstOrDefault(c => c.Environment == GatewayEnvironment.Sandbox);
+            var production = configs.FirstOrDefault(c => c.Environment == GatewayEnvironment.Production);
+
+            object DescribeEnv(PaymentGatewayConfig? c) => new
+            {
+                exists = c != null,
+                id = c?.Id,
+                hasSecretKey = c != null && !string.IsNullOrEmpty(c.SecretKeyEncrypted),
+                testStatus = c?.LastTestStatus?.ToString(),
+                testPassed = c?.LastTestStatus == ConnectionTestStatus.Success,
+                isActive = c?.IsActive ?? false
+            };
+
+            return Ok(new
+            {
+                gatewayType = gatewayType.ToString(),
+                activeEnvironment = active?.Environment.ToString(),   // null = nenhum ativo
+                // Sinaliza estado inconsistente (mais de um ativo) para a UI alertar
+                multipleActive = activeConfigs.Count > 1,
+                sandbox = DescribeEnv(sandbox),
+                production = DescribeEnv(production)
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao buscar modo de pagamento");
+            return StatusCode(500, new { message = "Erro ao buscar dados" });
+        }
+    }
+
+    /// <summary>
+    /// Alterna o modo de pagamento entre Sandbox (teste) e Produção para um tipo de gateway.
+    /// Ativa+define como padrão o config do ambiente escolhido e desativa os demais do mesmo tipo,
+    /// garantindo exatamente UM config ativo por gateway (invariante que todas as consultas de checkout assumem).
+    /// </summary>
+    [HttpPost("mode")]
+    public async Task<IActionResult> SetMode([FromBody] SetPaymentModeDto dto)
+    {
+        if (!IsSuperAdmin())
+            return StatusCode(403, new { message = "Acesso negado. Requer perfil SUPER_ADMIN." });
+
+        try
+        {
+            var configs = await _context.Set<PaymentGatewayConfig>()
+                .Where(g => g.GatewayType == dto.GatewayType)
+                .ToListAsync();
+
+            var target = configs.FirstOrDefault(c => c.Environment == dto.Environment);
+            if (target == null)
+                return BadRequest(new
+                {
+                    message = $"Nenhum gateway {dto.GatewayType} configurado para {dto.Environment}. Cadastre-o antes de ativar este modo."
+                });
+
+            if (string.IsNullOrEmpty(target.SecretKeyEncrypted))
+                return BadRequest(new
+                {
+                    message = $"O gateway {dto.GatewayType} de {dto.Environment} não possui Secret Key configurada."
+                });
+
+            // Guarda-corpo: só permite entrar em Produção após um teste de conexão bem-sucedido.
+            if (dto.Environment == GatewayEnvironment.Production &&
+                target.LastTestStatus != ConnectionTestStatus.Success)
+            {
+                return BadRequest(new
+                {
+                    message = "Teste a conexão do gateway de Produção com sucesso antes de ativar o modo produção."
+                });
+            }
+
+            var adminId = GetCurrentAdminId();
+
+            // Invariante: exatamente UM config ativo (e padrão) por tipo de gateway.
+            foreach (var c in configs)
+            {
+                var shouldBeActive = c.Id == target.Id;
+                if (c.IsActive != shouldBeActive || c.IsDefault != shouldBeActive)
+                {
+                    c.IsActive = shouldBeActive;
+                    c.IsDefault = shouldBeActive;
+                    c.UpdatedAt = DateTime.UtcNow;
+                    c.UpdatedByAdminId = adminId;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogWarning(
+                "MODO DE PAGAMENTO alterado: {GatewayType} agora em {Environment} por admin {AdminId}",
+                dto.GatewayType, dto.Environment, adminId);
+
+            return Ok(new
+            {
+                message = dto.Environment == GatewayEnvironment.Production
+                    ? "Modo PRODUÇÃO ativado. Pagamentos reais serão processados."
+                    : "Modo TESTE (Sandbox) ativado. Nenhuma cobrança real será feita.",
+                activeEnvironment = dto.Environment.ToString()
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao alterar modo de pagamento");
+            return StatusCode(500, new { message = "Erro ao alterar modo de pagamento" });
+        }
+    }
+
     // ==================== LOGS DE WEBHOOK ====================
 
     /// <summary>

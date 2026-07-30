@@ -101,7 +101,7 @@ function renderPricingCards(billingCycle) {
                     </div>
 
                     <div class="pricing-footer">
-                        <a href="/Signup?planId=${plan.id}&cycle=${billingCycle}"
+                        <a href="/Signup?plan=${plan.id}&cycle=${billingCycle}"
                            class="btn ${isFeatured ? 'btn-plan' : 'btn-outline-primary'} btn-plan">
                             Começar Agora
                         </a>

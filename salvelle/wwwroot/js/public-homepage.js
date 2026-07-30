@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const planId = btn.dataset.planId;
                 if (planId) {
                     const cycle = isYearly ? 'yearly' : 'monthly';
-                    btn.href = `/signup?planId=${planId}&cycle=${cycle}`;
+                    btn.href = `/signup?plan=${planId}&cycle=${cycle}`;
                 }
             });
         });
