@@ -46,7 +46,7 @@ public class MobileSearchController : ControllerBase
         var productsQuery = _db.CatalogProducts
             .Include(p => p.Category)
             .Include(p => p.Establishment)
-            .Where(p => p.IsActive && p.IsMarketplaceVisible
+            .Where(p => p.IsActive && p.IsMarketplaceVisible && !p.IsControlled && !p.RequiresPrescription
                         && p.Establishment != null && p.Establishment.IsMarketplaceActive);
 
         if (!string.IsNullOrEmpty(query))
@@ -166,7 +166,8 @@ public class MobileSearchController : ControllerBase
                 Id = c.Id,
                 Name = c.Name,
                 ProductCount = _db.CatalogProducts.Count(p =>
-                    p.CategoryId == c.Id && p.IsActive && p.IsMarketplaceVisible)
+                    p.CategoryId == c.Id && p.IsActive && p.IsMarketplaceVisible
+                    && !p.IsControlled && !p.RequiresPrescription)
             })
             .Where(c => c.ProductCount > 0)
             .OrderBy(c => c.Name)

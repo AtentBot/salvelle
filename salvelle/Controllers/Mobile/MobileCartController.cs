@@ -93,6 +93,12 @@ public class MobileCartController : ControllerBase
         if (product.StockQuantity <= 0)
             return BadRequest(ApiResponse.ErrorResponse("Produto fora de estoque"));
 
+        // Portaria 344/98: controlado ou sob prescrição não pode ser vendido OTC pelo marketplace.
+        if (product.IsControlled || product.RequiresPrescription)
+            return BadRequest(ApiResponse.ErrorResponse(
+                "Este medicamento é controlado ou exige receita e não pode ser comprado pelo "
+                + "marketplace. Procure a farmácia diretamente, com a prescrição."));
+
         // Validar farmácia destino antes de trocar o carrinho
         var pharmacy = await _db.Establishments
             .FirstOrDefaultAsync(e => e.Id == request.EstablishmentId && e.IsMarketplaceActive && e.AcceptingOrders);

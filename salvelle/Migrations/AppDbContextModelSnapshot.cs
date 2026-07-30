@@ -973,6 +973,10 @@ namespace Migrations
                     b.Property<bool>("IsBestSeller")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsControlled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_controlled");
+
                     b.Property<bool>("IsHighlight")
                         .HasColumnType("boolean");
 
@@ -992,6 +996,10 @@ namespace Migrations
 
                     b.Property<decimal?>("PromotionalPrice")
                         .HasColumnType("decimal(10,2)");
+
+                    b.Property<bool>("RequiresPrescription")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_prescription");
 
                     b.Property<string>("SearchKeywords")
                         .HasMaxLength(500)

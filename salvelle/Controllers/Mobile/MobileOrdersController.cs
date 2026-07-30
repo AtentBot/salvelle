@@ -59,6 +59,13 @@ public class MobileOrdersController : ControllerBase
 
             if (item.Product == null || !item.Product.IsActive || item.Product.StockQuantity < item.Quantity)
                 return BadRequest(ApiResponse.ErrorResponse($"Produto '{item.DisplayName}' indisponível ou sem estoque"));
+
+            // Portaria 344/98: barreira defensiva — controlado/sob prescrição não sai pelo marketplace,
+            // mesmo que tenha entrado no carrinho antes de o produto ser marcado como controlado.
+            if (item.Product.IsControlled || item.Product.RequiresPrescription)
+                return BadRequest(ApiResponse.ErrorResponse(
+                    $"'{item.DisplayName}' é controlado ou exige receita e não pode ser vendido pelo "
+                    + "marketplace. Remova-o do carrinho e procure a farmácia com a prescrição."));
         }
 
         // Verificar valor mínimo

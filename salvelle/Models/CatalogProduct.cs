@@ -63,6 +63,18 @@ public class CatalogProduct
 
     public bool IsMarketplaceVisible { get; set; } = true;
 
+    // ========== CONTROLE SANITÁRIO (Portaria 344/98) ==========
+    /// <summary>
+    /// Substância controlada (Portaria 344). Medicamento controlado NÃO pode ser vendido OTC
+    /// pelo marketplace: é ocultado das listagens e bloqueado no carrinho/checkout.
+    /// </summary>
+    [Column("is_controlled")]
+    public bool IsControlled { get; set; } = false;
+
+    /// <summary>Exige receita médica para dispensação (bloqueia a compra OTC no marketplace).</summary>
+    [Column("requires_prescription")]
+    public bool RequiresPrescription { get; set; } = false;
+
     [MaxLength(500)]
     public string? SearchKeywords { get; set; }
 

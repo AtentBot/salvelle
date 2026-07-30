@@ -38,7 +38,8 @@ public class MobilePharmaciesController : ControllerBase
             {
                 Establishment = e,
                 ProductCount = _db.CatalogProducts.Count(p =>
-                    p.EstablishmentId == e.Id && p.IsActive && p.IsMarketplaceVisible)
+                    p.EstablishmentId == e.Id && p.IsActive && p.IsMarketplaceVisible
+                    && !p.IsControlled && !p.RequiresPrescription)
             })
             .ToListAsync();
 
@@ -116,14 +117,16 @@ public class MobilePharmaciesController : ControllerBase
                 Id = c.Id,
                 Name = c.Name,
                 ProductCount = _db.CatalogProducts.Count(p =>
-                    p.CategoryId == c.Id && p.IsActive && p.IsMarketplaceVisible)
+                    p.CategoryId == c.Id && p.IsActive && p.IsMarketplaceVisible
+                    && !p.IsControlled && !p.RequiresPrescription)
             })
             .Where(c => c.ProductCount > 0)
             .ToListAsync();
 
         var featuredProducts = await _db.CatalogProducts
             .Include(p => p.Category)
-            .Where(p => p.EstablishmentId == id && p.IsActive && p.IsMarketplaceVisible)
+            .Where(p => p.EstablishmentId == id && p.IsActive && p.IsMarketplaceVisible
+                        && !p.IsControlled && !p.RequiresPrescription)
             .OrderByDescending(p => p.IsHighlight)
             .ThenByDescending(p => p.TotalSold)
             .Take(10)
@@ -174,7 +177,8 @@ public class MobilePharmaciesController : ControllerBase
 
         var query = _db.CatalogProducts
             .Include(p => p.Category)
-            .Where(p => p.EstablishmentId == id && p.IsActive && p.IsMarketplaceVisible);
+            .Where(p => p.EstablishmentId == id && p.IsActive && p.IsMarketplaceVisible
+                        && !p.IsControlled && !p.RequiresPrescription);
 
         if (categoryId.HasValue)
             query = query.Where(p => p.CategoryId == categoryId.Value);
