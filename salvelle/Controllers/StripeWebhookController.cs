@@ -274,8 +274,10 @@ public class StripeWebhookController : ControllerBase
         var stripeInvoice = stripeEvent.Data.Object as Stripe.Invoice;
         if (stripeInvoice == null) return;
 
-        // Stripe.NET 48.x: SubscriptionId foi movido para Parent.SubscriptionDetails.Subscription.Id
-        var subscriptionId = stripeInvoice.Parent?.SubscriptionDetails?.Subscription?.Id;
+        // Stripe.NET 48.x+: a subscription vem em Parent.SubscriptionDetails. Em webhooks ela
+        // chega como string (não expandida), então o objeto .Subscription é null — usar o
+        // acessor de id expansível .SubscriptionId, senão o handler faz early-return silencioso.
+        var subscriptionId = stripeInvoice.Parent?.SubscriptionDetails?.SubscriptionId;
         if (string.IsNullOrEmpty(subscriptionId)) return;
 
         var subscription = await _context.Subscriptions
@@ -336,8 +338,10 @@ public class StripeWebhookController : ControllerBase
         var stripeInvoice = stripeEvent.Data.Object as Stripe.Invoice;
         if (stripeInvoice == null) return;
 
-        // Stripe.NET 48.x: SubscriptionId foi movido para Parent.SubscriptionDetails.Subscription.Id
-        var subscriptionId = stripeInvoice.Parent?.SubscriptionDetails?.Subscription?.Id;
+        // Stripe.NET 48.x+: a subscription vem em Parent.SubscriptionDetails. Em webhooks ela
+        // chega como string (não expandida), então o objeto .Subscription é null — usar o
+        // acessor de id expansível .SubscriptionId, senão o handler faz early-return silencioso.
+        var subscriptionId = stripeInvoice.Parent?.SubscriptionDetails?.SubscriptionId;
         if (string.IsNullOrEmpty(subscriptionId)) return;
 
         var subscription = await _context.Subscriptions
