@@ -120,6 +120,7 @@ public class EmployeeAuthMiddleware
             "/api/auth/login",
             "/api/auth/logout",
             "/api/auth/register",
+            "/api/auth/verify-2fa",                  // Conclusão do 2FA usa tempToken, não sessão
             "/api/employees/login",
             "/api/employees/generate-hash",
             "/api/establishment/login",
@@ -227,6 +228,14 @@ public class EmployeeAuthMiddleware
             {
                 _logger.LogWarning("Establishment inativo: {EstablishmentId}", session.Employee.EstablishmentId);
                 return SessionValidationResult.Fail("Estabelecimento inativo");
+            }
+
+            // 2FA obrigatório e ainda não verificado: é uma "meia-sessão", não vale como autenticada.
+            // Backstop contra qualquer fluxo de login que emita sessão antes de concluir o 2FA.
+            if (session.RequiresTwoFactor && !session.TwoFactorVerified)
+            {
+                _logger.LogWarning("Sessão com 2FA pendente barrada em rota protegida: {EmployeeId}", session.EmployeeId);
+                return SessionValidationResult.Fail("Verificação em duas etapas pendente. Conclua o login.");
             }
 
             session.LastActivityAt = DateTime.UtcNow;

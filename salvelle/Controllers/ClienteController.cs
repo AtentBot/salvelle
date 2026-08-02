@@ -82,16 +82,19 @@ public class ClienteController : Controller
     [HttpGet("Login")]
     public IActionResult Login([FromQuery] string? returnUrl = null, [FromQuery] Guid? estabelecimento = null)
     {
+        // Só aceitar URLs locais: bloqueia open redirect e XSS via returnUrl
+        var safeReturnUrl = (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)) ? returnUrl : null;
+
         // Se já está logado, redireciona
         var session = GetCurrentSession();
         if (session != null)
         {
-            if (!string.IsNullOrEmpty(returnUrl))
-                return Redirect(returnUrl);
+            if (!string.IsNullOrEmpty(safeReturnUrl))
+                return Redirect(safeReturnUrl);
             return RedirectToAction("Inicio");
         }
 
-        ViewBag.ReturnUrl = returnUrl;
+        ViewBag.ReturnUrl = safeReturnUrl;
         ViewBag.EstabelecimentoId = estabelecimento;
         
         // Se veio de QR Code, buscar nome da farmácia

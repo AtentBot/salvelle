@@ -550,7 +550,9 @@ public class ChangeEmployeePasswordDto
 {
     public string? CurrentPassword { get; set; }
     public string NewPassword { get; set; } = null!;
-    public bool IsAdminReset { get; set; }
+    // IsAdminReset foi REMOVIDO: era controlado pelo cliente e permitia pular a senha atual
+    // (vetor de account takeover). O reset administrativo agora é derivado no servidor a partir
+    // do papel do solicitante e de o alvo não ser ele próprio. Ver EmployeesController.ChangePassword.
 }
 
 /// <summary>

@@ -252,9 +252,12 @@ builder.Services.AddAuthentication(options =>
     {
         var jwtSettings = builder.Configuration.GetSection("Jwt");
         var jwtKey = jwtSettings["Key"];
-        if (string.IsNullOrWhiteSpace(jwtKey))
+        if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey == "__SET_VIA_ENV_VAR__")
             throw new InvalidOperationException(
-                "JWT:Key não configurado. Defina a variável de ambiente JWT__KEY ou configure appsettings.");
+                "JWT:Key não configurado. Defina a variável de ambiente JWT__KEY com uma chave forte (o placeholder do appsettings não é aceito).");
+        if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
+            throw new InvalidOperationException(
+                "JWT:Key fraca: use ao menos 32 bytes (256 bits) para HMAC-SHA256.");
 
         options.TokenValidationParameters = new TokenValidationParameters
         {

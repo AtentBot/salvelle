@@ -40,6 +40,19 @@ public class EmployeesController : ControllerBase
         _logger = logger;
     }
 
+    // ==================== AUTORIZAÇÃO (RH) ====================
+    /// <summary>Funcionário autenticado injetado pelo EmployeeAuthMiddleware.</summary>
+    private Employee? CurrentEmployee => HttpContext.Items["Employee"] as Employee;
+
+    /// <summary>Cargos com poder de RH: criar/editar/desligar/redefinir senha de funcionários.</summary>
+    private static readonly string[] HrAdminCodes = { "owner", "manager" };
+
+    private static bool IsHrAdmin(Employee? e) =>
+        e?.JobPosition != null && HrAdminCodes.Contains(e.JobPosition.Code, StringComparer.OrdinalIgnoreCase);
+
+    private static bool IsOwner(Employee? e) =>
+        e?.JobPosition != null && string.Equals(e.JobPosition.Code, "owner", StringComparison.OrdinalIgnoreCase);
+
     // ==================== LOGIN DO FUNCION�RIO ====================
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
@@ -99,6 +112,22 @@ public class EmployeesController : ControllerBase
             // Resetar tentativas falhas
             employee.FailedLoginAttempts = 0;
             employee.LockedUntil = null;
+
+            // 2FA habilitado: NÃO emitir sessão utilizável por aqui. Emitir sessão com
+            // TwoFactorVerified=false seria um bypass — o middleware barra meia-sessão, mas
+            // este endpoint não conduz o desafio 2FA. O acesso só é liberado pelo fluxo
+            // /api/auth/login + /api/auth/verify-2fa (código enviado + token temporário).
+            if (employee.TwoFactorEnabled)
+            {
+                await _db.SaveChangesAsync(); // persiste o reset de tentativas falhas
+                _logger.LogInformation(
+                    "Login de {FullName} exige 2FA — sessão não emitida por /api/employees/login", employee.FullName);
+                return Ok(new
+                {
+                    requiresTwoFactor = true,
+                    message = "Verificação em duas etapas necessária. Conclua o login pelo fluxo de 2FA."
+                });
+            }
 
             // Criar sess�o
             var session = new EmployeeSession
@@ -183,8 +212,14 @@ public class EmployeesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateEmployeeDto dto)
     {
-        // TODO: Verificar permiss�es do token (implementar na Fase 2)
-        // if (!await HasPermission("employees.create")) return Forbid();
+        var caller = CurrentEmployee;
+        if (caller == null)
+            return Unauthorized(new { error = "Não autenticado" });
+        if (!IsHrAdmin(caller))
+            return Forbid();
+
+        // Tenant é SEMPRE o do funcionário logado — nunca confiar no corpo da requisição
+        dto.EstablishmentId = caller.EstablishmentId;
 
         // Validar e limpar CPF
         var cpf = DocumentValidator.RemoveFormatting(dto.Cpf);
@@ -209,12 +244,17 @@ public class EmployeesController : ControllerBase
         if (!isPasswordValid)
             return BadRequest(new { error = "Senha inv�lida", details = passwordErrors });
 
-        // Verificar se cargo existe
+        // Verificar se cargo existe (dentro do próprio estabelecimento)
         var jobPosition = await _db.JobPositions
-            .FirstOrDefaultAsync(jp => jp.Id == dto.JobPositionId && jp.IsActive);
+            .FirstOrDefaultAsync(jp => jp.Id == dto.JobPositionId && jp.IsActive
+                && jp.EstablishmentId == caller.EstablishmentId);
 
         if (jobPosition == null)
             return BadRequest(new { error = "Cargo n�o encontrado ou inativo" });
+
+        // Somente OWNER pode criar outro OWNER (evita escalada por manager)
+        if (string.Equals(jobPosition.Code, "owner", StringComparison.OrdinalIgnoreCase) && !IsOwner(caller))
+            return Forbid();
 
         // Verificar se estabelecimento existe
         var establishment = await _db.Establishments
@@ -306,7 +346,7 @@ public class EmployeesController : ControllerBase
             // Auditoria
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
-            CreatedBy = Guid.Parse("00000000-0000-0000-0000-000000000000") // TODO: Pegar do token na Fase 2
+            CreatedBy = caller.Id
         };
 
         _db.Employees.Add(employee);
@@ -531,9 +571,15 @@ public class EmployeesController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEmployeeDto dto)
     {
+        var caller = CurrentEmployee;
+        if (caller == null)
+            return Unauthorized(new { error = "Não autenticado" });
+        if (!IsHrAdmin(caller))
+            return Forbid();
+
         var employee = await _db.Employees
             .Include(e => e.JobPosition)
-            .FirstOrDefaultAsync(e => e.Id == id);
+            .FirstOrDefaultAsync(e => e.Id == id && e.EstablishmentId == caller.EstablishmentId);
 
         if (employee == null)
             return NotFound(new { error = "Funcion�rio n�o encontrado" });
@@ -594,7 +640,13 @@ public class EmployeesController : ControllerBase
         // Mudan�a de cargo
         if (dto.JobPositionId.HasValue && dto.JobPositionId != employee.JobPositionId)
         {
-            var newJobPosition = await _db.JobPositions.FindAsync(dto.JobPositionId);
+            // Somente o OWNER altera cargos; ninguém altera o próprio cargo (anti-escalada)
+            if (!IsOwner(caller) || employee.Id == caller.Id)
+                return Forbid();
+
+            var newJobPosition = await _db.JobPositions
+                .FirstOrDefaultAsync(jp => jp.Id == dto.JobPositionId.Value
+                    && jp.EstablishmentId == caller.EstablishmentId);
             if (newJobPosition == null || !newJobPosition.IsActive)
                 return BadRequest(new { error = "Cargo n�o encontrado ou inativo" });
 
@@ -644,12 +696,28 @@ public class EmployeesController : ControllerBase
     [HttpPost("{id}/change-password")]
     public async Task<IActionResult> ChangePassword(Guid id, [FromBody] ChangeEmployeePasswordDto dto)
     {
-        var employee = await _db.Employees.FindAsync(id);
+        var caller = CurrentEmployee;
+        if (caller == null)
+            return Unauthorized(new { error = "Não autenticado" });
+
+        var isSelf = id == caller.Id;
+
+        // Redefinir a senha de OUTRO funcionário exige papel de RH.
+        // O flag IsAdminReset do corpo NÃO é mais confiável (era o vetor de account takeover):
+        // reset administrativo é derivado do fato de o alvo não ser o próprio solicitante.
+        if (!isSelf && !IsHrAdmin(caller))
+            return Forbid();
+
+        // Alvo sempre restrito ao estabelecimento do solicitante (isolamento multi-tenant)
+        var employee = await _db.Employees
+            .FirstOrDefaultAsync(e => e.Id == id && e.EstablishmentId == caller.EstablishmentId);
         if (employee == null)
             return NotFound(new { error = "Funcion�rio n�o encontrado" });
 
-        // Verificar senha atual (se n�o for reset administrativo)
-        if (!dto.IsAdminReset)
+        var isAdminReset = !isSelf;
+
+        // O próprio funcionário SEMPRE precisa comprovar a senha atual; reset de RH não.
+        if (!isAdminReset)
         {
             if (string.IsNullOrEmpty(dto.CurrentPassword))
                 return BadRequest(new { error = "Senha atual � obrigat�ria" });
@@ -667,12 +735,14 @@ public class EmployeesController : ControllerBase
         employee.PasswordHash = Argon2.Hash(dto.NewPassword);
         employee.PasswordCreatedAt = DateTime.UtcNow;
         employee.PasswordLastChanged = DateTime.UtcNow;
-        employee.RequirePasswordChange = false;
+        // Reset administrativo obriga troca no próximo login; troca própria não.
+        employee.RequirePasswordChange = isAdminReset;
         employee.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
 
-        _logger.LogInformation("Senha do funcion�rio {Id} alterada com sucesso", id);
+        _logger.LogInformation("Senha do funcion�rio {Id} alterada por {CallerId} (adminReset={IsAdminReset})",
+            id, caller.Id, isAdminReset);
 
         return Ok(new { message = "Senha alterada com sucesso" });
     }
@@ -681,7 +751,14 @@ public class EmployeesController : ControllerBase
     [HttpPost("{id}/deactivate")]
     public async Task<IActionResult> Deactivate(Guid id, [FromBody] DeactivateEmployeeDto dto)
     {
-        var employee = await _db.Employees.FindAsync(id);
+        var caller = CurrentEmployee;
+        if (caller == null)
+            return Unauthorized(new { error = "Não autenticado" });
+        if (!IsHrAdmin(caller))
+            return Forbid();
+
+        var employee = await _db.Employees
+            .FirstOrDefaultAsync(e => e.Id == id && e.EstablishmentId == caller.EstablishmentId);
         if (employee == null)
             return NotFound(new { error = "Funcion�rio n�o encontrado" });
 
@@ -713,7 +790,14 @@ public class EmployeesController : ControllerBase
     [HttpPost("{id}/reactivate")]
     public async Task<IActionResult> Reactivate(Guid id)
     {
-        var employee = await _db.Employees.FindAsync(id);
+        var caller = CurrentEmployee;
+        if (caller == null)
+            return Unauthorized(new { error = "Não autenticado" });
+        if (!IsHrAdmin(caller))
+            return Forbid();
+
+        var employee = await _db.Employees
+            .FirstOrDefaultAsync(e => e.Id == id && e.EstablishmentId == caller.EstablishmentId);
         if (employee == null)
             return NotFound(new { error = "Funcion�rio n�o encontrado" });
 

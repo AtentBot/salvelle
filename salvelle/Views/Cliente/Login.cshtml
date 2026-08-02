@@ -89,7 +89,9 @@
 
 @section Scripts {
 <script>
-    const returnUrl = '@Html.Raw(returnUrl ?? "/Cliente/Inicio")';
+    // JSON-encoded no servidor: seguro em contexto JS (fecha o XSS refletido via returnUrl).
+    // O controller já garante que só URLs locais chegam aqui.
+    const returnUrl = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(returnUrl ?? "/Cliente/Inicio"));
     
     function formatPhone(input) {
         let value = input.value.replace(/\D/g, '');
