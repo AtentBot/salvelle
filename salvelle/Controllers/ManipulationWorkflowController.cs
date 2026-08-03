@@ -30,22 +30,22 @@ public class ManipulationWorkflowController : ControllerBase
         _httpContextAccessor = httpContextAccessor;
     }
 
-    // Métodos auxiliares para pegar informações do contexto
+    // Métodos auxiliares para pegar informações do contexto.
+    // Tenant e ator vêm SEMPRE do funcionário autenticado pelo EmployeeAuthMiddleware
+    // (HttpContext.Items["Employee"]). Cookie/query são forjáveis — nunca usar como fonte
+    // de EstablishmentId/EmployeeId (era IDOR cross-tenant: bastava setar o cookie da vítima).
     private Guid GetEstablishmentId()
     {
-        // Pega do cookie/claim/header - ajuste conforme sua implementação
-        var establishmentIdStr = _httpContextAccessor.HttpContext?.Request.Cookies["EstablishmentId"];
-        if (Guid.TryParse(establishmentIdStr, out var establishmentId))
-            return establishmentId;
+        if (HttpContext.Items["Employee"] is Employee employee)
+            return employee.EstablishmentId;
 
         throw new UnauthorizedAccessException("EstablishmentId nao encontrado na sessao");
     }
 
     private Guid GetEmployeeId()
     {
-        var employeeIdStr = _httpContextAccessor.HttpContext?.Request.Cookies["EmployeeId"];
-        if (Guid.TryParse(employeeIdStr, out var employeeId))
-            return employeeId;
+        if (HttpContext.Items["Employee"] is Employee employee)
+            return employee.Id;
 
         throw new UnauthorizedAccessException("EmployeeId nao encontrado na sessao");
     }

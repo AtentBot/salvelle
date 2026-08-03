@@ -388,15 +388,23 @@ public class EmployeesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
+        var caller = CurrentEmployee;
+        if (caller == null)
+            return Unauthorized(new { error = "Não autenticado" });
+
+        // Só o próprio funcionário ou RH (owner/manager) vê o cadastro completo
+        // (salário, dados bancários, RG). O escopo de tenant fecha o IDOR cross-tenant.
+        var isSelf = id == caller.Id;
+        if (!isSelf && !IsHrAdmin(caller))
+            return Forbid();
+
         var employee = await _db.Employees
             .Include(e => e.Establishment)
             .Include(e => e.JobPosition)
-            .FirstOrDefaultAsync(e => e.Id == id);
+            .FirstOrDefaultAsync(e => e.Id == id && e.EstablishmentId == caller.EstablishmentId);
 
         if (employee == null)
             return NotFound(new { error = "Funcion�rio n�o encontrado" });
-
-        // TODO: Verificar permiss�es (se pode ver dados de outros funcion�rios)
 
         // Retornar no formato que a view Details.cshtml espera
         return Ok(new
@@ -425,7 +433,7 @@ public class EmployeesController : ControllerBase
             // Dados Pessoais (no n�vel raiz para a view)
             fullName = employee.FullName,
             socialName = employee.SocialName,
-            cpf = employee.Cpf, // Sem formata��o para permitir formata��o no frontend
+            cpf = MaskCpf(employee.Cpf), // Mascarado: PII. CPF completo não trafega no detalhe.
             rg = employee.Rg,
             rgIssuer = employee.RgIssuer,
             rgIssueDate = employee.RgIssueDate,
@@ -494,7 +502,6 @@ public class EmployeesController : ControllerBase
     // ==================== LISTAR FUNCION�RIOS ====================
     [HttpGet]
     public async Task<IActionResult> List(
-        [FromQuery] Guid? establishmentId,
         [FromQuery] string? status,
         [FromQuery] Guid? jobPositionId,
         [FromQuery] int skip = 0,
@@ -505,8 +512,9 @@ public class EmployeesController : ControllerBase
         if (currentEmployee == null)
             return Unauthorized(new { error = "N�o autenticado" });
 
-        // Se n�o especificou estabelecimento, usa o do funcion�rio logado
-        var estId = establishmentId ?? currentEmployee.EstablishmentId;
+        // Tenant SEMPRE do funcionário logado; ignora qualquer establishmentId do cliente
+        // (evita enumeração cross-tenant via ?establishmentId=).
+        var estId = currentEmployee.EstablishmentId;
 
         var query = _db.Employees
             .Include(e => e.JobPosition)

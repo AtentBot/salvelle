@@ -17,11 +17,14 @@ public class PaymentService
     public async Task<(bool Success, string Message, SalePayment? Payment)> AddPaymentToSaleAsync(
         Guid saleId,
         CreatePaymentDto dto,
-        Guid employeeId)
+        Guid employeeId,
+        Guid establishmentId)
     {
+        // Escopo de tenant: sem o filtro, registrava-se pagamento contra a venda de
+        // outra farmácia (IDOR de escrita, muda status da venda alheia).
         var sale = await _context.Sales
             .Include(s => s.Payments)
-            .FirstOrDefaultAsync(s => s.Id == saleId);
+            .FirstOrDefaultAsync(s => s.Id == saleId && s.EstablishmentId == establishmentId);
 
         if (sale == null)
             return (false, "Venda não encontrada", null);
@@ -243,11 +246,13 @@ public class PaymentService
         };
     }
 
-    public async Task<(bool Success, string Message)> CancelPaymentAsync(Guid paymentId, Guid employeeId)
+    public async Task<(bool Success, string Message)> CancelPaymentAsync(Guid paymentId, Guid employeeId, Guid establishmentId)
     {
+        // Escopo de tenant (via Sale) para o estorno não atravessar farmácias.
         var payment = await _context.SalePayments
             .Include(p => p.Sale)
-            .FirstOrDefaultAsync(p => p.Id == paymentId);
+            .FirstOrDefaultAsync(p => p.Id == paymentId
+                && p.Sale!.EstablishmentId == establishmentId);
 
         if (payment == null)
             return (false, "Pagamento não encontrado");

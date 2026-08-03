@@ -37,8 +37,10 @@ public class ManipulationDocumentService
     /// <summary>
     /// Gera a ficha de manipulação para uso no laboratório
     /// </summary>
-    public async Task<byte[]> GenerateManipulationSheetAsync(Guid orderId)
+    public async Task<byte[]> GenerateManipulationSheetAsync(Guid orderId, Guid establishmentId)
     {
+        // Escopo de tenant obrigatório: o PDF expõe PII do paciente (nome, telefone,
+        // prescritor, composição). Sem o filtro, enumerar orderId vazava documento alheio.
         var order = await _context.ManipulationOrders
             .Include(o => o.Establishment)
             .Include(o => o.Formula)
@@ -46,7 +48,7 @@ public class ManipulationDocumentService
                     .ThenInclude(c => c.RawMaterial)
             .Include(o => o.Steps)
                 .ThenInclude(s => s.PerformedByEmployee)
-            .FirstOrDefaultAsync(o => o.Id == orderId);
+            .FirstOrDefaultAsync(o => o.Id == orderId && o.EstablishmentId == establishmentId);
 
         if (order == null)
             throw new InvalidOperationException("Ordem não encontrada");
@@ -252,15 +254,16 @@ public class ManipulationDocumentService
     /// <summary>
     /// Gera o certificado de manipulação para entregar ao cliente
     /// </summary>
-    public async Task<byte[]> GenerateCertificateAsync(Guid orderId)
+    public async Task<byte[]> GenerateCertificateAsync(Guid orderId, Guid establishmentId)
     {
+        // Escopo de tenant obrigatório (PII do paciente) — ver GenerateManipulationSheetAsync.
         var order = await _context.ManipulationOrders
             .Include(o => o.Establishment)
             .Include(o => o.Formula)
                 .ThenInclude(f => f!.Components)
                     .ThenInclude(c => c.RawMaterial)
             .Include(o => o.ApprovedByPharmacist)
-            .FirstOrDefaultAsync(o => o.Id == orderId);
+            .FirstOrDefaultAsync(o => o.Id == orderId && o.EstablishmentId == establishmentId);
 
         if (order == null)
             throw new InvalidOperationException("Ordem não encontrada");

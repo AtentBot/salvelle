@@ -151,10 +151,14 @@ public class PaymentsController : ControllerBase
         [FromBody] ConfirmPaymentDto dto)
     {
         var employeeId = GetEmployeeId();
+        var establishmentId = GetEstablishmentId();
 
+        // Escopo de tenant: SalePayment não tem EstablishmentId; escopo via Sale.
+        // Sem isto, tenant A confirmava/cancelava pagamento de tenant B (IDOR de escrita).
         var payment = await _context.SalePayments
             .Include(p => p.Sale)
-            .FirstOrDefaultAsync(p => p.Id == paymentId);
+            .FirstOrDefaultAsync(p => p.Id == paymentId
+                && p.Sale!.EstablishmentId == establishmentId);
 
         if (payment == null)
             return NotFound(ApiResponse<PaymentDto>.ErrorResponse("Pagamento não encontrado"));
@@ -215,6 +219,7 @@ public class PaymentsController : ControllerBase
         [FromBody] BatchConfirmDto dto)
     {
         var employeeId = GetEmployeeId();
+        var establishmentId = GetEstablishmentId();
         var confirmed = 0;
         var errors = new List<string>();
 
@@ -222,7 +227,8 @@ public class PaymentsController : ControllerBase
         {
             var payment = await _context.SalePayments
                 .Include(p => p.Sale)
-                .FirstOrDefaultAsync(p => p.Id == paymentId);
+                .FirstOrDefaultAsync(p => p.Id == paymentId
+                    && p.Sale!.EstablishmentId == establishmentId);
 
             if (payment == null)
             {
@@ -277,10 +283,12 @@ public class PaymentsController : ControllerBase
         [FromBody] CancelPaymentDto? dto = null)
     {
         var employeeId = GetEmployeeId();
+        var establishmentId = GetEstablishmentId();
 
         var payment = await _context.SalePayments
             .Include(p => p.Sale)
-            .FirstOrDefaultAsync(p => p.Id == paymentId);
+            .FirstOrDefaultAsync(p => p.Id == paymentId
+                && p.Sale!.EstablishmentId == establishmentId);
 
         if (payment == null)
             return NotFound(ApiResponse<string>.ErrorResponse("Pagamento não encontrado"));
@@ -322,6 +330,7 @@ public class PaymentsController : ControllerBase
         [FromBody] BatchCancelDto dto)
     {
         var employeeId = GetEmployeeId();
+        var establishmentId = GetEstablishmentId();
         var cancelled = 0;
         var errors = new List<string>();
 
@@ -329,7 +338,8 @@ public class PaymentsController : ControllerBase
         {
             var payment = await _context.SalePayments
                 .Include(p => p.Sale)
-                .FirstOrDefaultAsync(p => p.Id == paymentId);
+                .FirstOrDefaultAsync(p => p.Id == paymentId
+                    && p.Sale!.EstablishmentId == establishmentId);
 
             if (payment == null)
             {
@@ -379,8 +389,9 @@ public class PaymentsController : ControllerBase
         [FromBody] CreatePaymentDto dto)
     {
         var employeeId = GetEmployeeId();
+        var establishmentId = GetEstablishmentId();
 
-        var result = await _paymentService.AddPaymentToSaleAsync(saleId, dto, employeeId);
+        var result = await _paymentService.AddPaymentToSaleAsync(saleId, dto, employeeId, establishmentId);
 
         if (!result.Success || result.Payment == null)
             return BadRequest(ApiResponse<PaymentDto>.ErrorResponse(result.Message));

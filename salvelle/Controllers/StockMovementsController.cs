@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Data;
 using Models.Pharmacy;
+using Models.Employees;
 using DTOs;
 
 namespace Controllers;
@@ -19,10 +20,16 @@ public class StockMovementsController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Funcionário autenticado (EmployeeAuthMiddleware). Fonte ÚNICA de tenant/ator.
+    /// Antes, EstablishmentId/EmployeeId vinham da query-string — forjáveis (IDOR: ler e
+    /// escrever estoque de qualquer farmácia informando o GUID alheio).
+    /// </summary>
+    private Employee? GetEmployee() => HttpContext.Items["Employee"] as Employee;
+
     // GET: api/stockmovements
     [HttpGet]
     public async Task<ActionResult<StockMovementListResponse>> GetMovements(
-        [FromQuery] Guid? establishmentId,
         [FromQuery] Guid? rawMaterialId,
         [FromQuery] Guid? batchId,
         [FromQuery] string? movementType,
@@ -39,15 +46,18 @@ public class StockMovementsController : ControllerBase
             if (pageSize < 1) pageSize = 50;
             if (pageSize > 100) pageSize = 100;
 
+            var employee = GetEmployee();
+            if (employee == null)
+                return Unauthorized(new { message = "Não autenticado" });
+
+            // Tenant SEMPRE da sessão; o antigo ?establishmentId= permitia varrer
+            // movimentações de qualquer farmácia.
             var query = _db.StockMovements
                 .Include(sm => sm.RawMaterial)
                 .Include(sm => sm.Batch)
                 .Include(sm => sm.PerformedByEmployee)
                 .Include(sm => sm.AuthorizedByEmployee)
-                .AsQueryable();
-
-            if (establishmentId.HasValue)
-                query = query.Where(sm => sm.EstablishmentId == establishmentId.Value);
+                .Where(sm => sm.EstablishmentId == employee.EstablishmentId);
 
             if (rawMaterialId.HasValue)
                 query = query.Where(sm => sm.RawMaterialId == rawMaterialId.Value);
@@ -134,12 +144,16 @@ public class StockMovementsController : ControllerBase
     {
         try
         {
+            var employee = GetEmployee();
+            if (employee == null)
+                return Unauthorized(new { message = "Não autenticado" });
+
             var movement = await _db.StockMovements
                 .Include(sm => sm.RawMaterial)
                 .Include(sm => sm.Batch)
                 .Include(sm => sm.PerformedByEmployee)
                 .Include(sm => sm.AuthorizedByEmployee)
-                .FirstOrDefaultAsync(sm => sm.Id == id);
+                .FirstOrDefaultAsync(sm => sm.Id == id && sm.EstablishmentId == employee.EstablishmentId);
 
             if (movement == null)
                 return NotFound(new { message = "Movement not found" });
@@ -181,20 +195,26 @@ public class StockMovementsController : ControllerBase
     // POST: api/stockmovements/entrada
     [HttpPost("entrada")]
     public async Task<IActionResult> EntradaEstoque(
-        [FromBody] EntradaEstoqueRequest request,
-        [FromQuery] Guid employeeId,
-        [FromQuery] Guid establishmentId)
+        [FromBody] EntradaEstoqueRequest request)
     {
+        var employee = GetEmployee();
+        if (employee == null)
+            return Unauthorized(new { message = "Não autenticado" });
+        var employeeId = employee.Id;
+        var establishmentId = employee.EstablishmentId;
+
         return await _db.Database.ExecuteInTransactionAsync<IActionResult>(async transaction =>
         {
 
         try
         {
-            var material = await _db.RawMaterials.FindAsync(request.RawMaterialId);
+            var material = await _db.RawMaterials
+                .FirstOrDefaultAsync(m => m.Id == request.RawMaterialId && m.EstablishmentId == establishmentId);
             if (material == null)
                 return NotFound(new { message = "Raw material not found" });
 
-            var supplier = await _db.Suppliers.FindAsync(request.SupplierId);
+            var supplier = await _db.Suppliers
+                .FirstOrDefaultAsync(s => s.Id == request.SupplierId && s.EstablishmentId == establishmentId);
             if (supplier == null)
                 return NotFound(new { message = "Supplier not found" });
 
@@ -278,20 +298,26 @@ public class StockMovementsController : ControllerBase
     // POST: api/stockmovements/saida
     [HttpPost("saida")]
     public async Task<IActionResult> SaidaEstoque(
-        [FromBody] SaidaEstoqueRequest request,
-        [FromQuery] Guid employeeId,
-        [FromQuery] Guid establishmentId)
+        [FromBody] SaidaEstoqueRequest request)
     {
+        var employee = GetEmployee();
+        if (employee == null)
+            return Unauthorized(new { message = "Não autenticado" });
+        var employeeId = employee.Id;
+        var establishmentId = employee.EstablishmentId;
+
         return await _db.Database.ExecuteInTransactionAsync<IActionResult>(async transaction =>
         {
 
         try
         {
-            var material = await _db.RawMaterials.FindAsync(request.RawMaterialId);
+            var material = await _db.RawMaterials
+                .FirstOrDefaultAsync(m => m.Id == request.RawMaterialId && m.EstablishmentId == establishmentId);
             if (material == null)
                 return NotFound(new { message = "Raw material not found" });
 
-            var batch = await _db.Batches.FindAsync(request.BatchId);
+            var batch = await _db.Batches
+                .FirstOrDefaultAsync(b => b.Id == request.BatchId && b.RawMaterial!.EstablishmentId == establishmentId);
             if (batch == null)
                 return NotFound(new { message = "Batch not found" });
 
@@ -363,20 +389,26 @@ public class StockMovementsController : ControllerBase
     // POST: api/stockmovements/ajuste
     [HttpPost("ajuste")]
     public async Task<IActionResult> AjusteEstoque(
-        [FromBody] AjusteEstoqueRequest request,
-        [FromQuery] Guid employeeId,
-        [FromQuery] Guid establishmentId)
+        [FromBody] AjusteEstoqueRequest request)
     {
+        var employee = GetEmployee();
+        if (employee == null)
+            return Unauthorized(new { message = "Não autenticado" });
+        var employeeId = employee.Id;
+        var establishmentId = employee.EstablishmentId;
+
         return await _db.Database.ExecuteInTransactionAsync<IActionResult>(async transaction =>
         {
 
         try
         {
-            var material = await _db.RawMaterials.FindAsync(request.RawMaterialId);
+            var material = await _db.RawMaterials
+                .FirstOrDefaultAsync(m => m.Id == request.RawMaterialId && m.EstablishmentId == establishmentId);
             if (material == null)
                 return NotFound(new { message = "Raw material not found" });
 
-            var batch = await _db.Batches.FindAsync(request.BatchId);
+            var batch = await _db.Batches
+                .FirstOrDefaultAsync(b => b.Id == request.BatchId && b.RawMaterial!.EstablishmentId == establishmentId);
             if (batch == null)
                 return NotFound(new { message = "Batch not found" });
 
@@ -442,20 +474,26 @@ public class StockMovementsController : ControllerBase
     // POST: api/stockmovements/perda
     [HttpPost("perda")]
     public async Task<IActionResult> PerdaEstoque(
-        [FromBody] PerdaEstoqueRequest request,
-        [FromQuery] Guid employeeId,
-        [FromQuery] Guid establishmentId)
+        [FromBody] PerdaEstoqueRequest request)
     {
+        var employee = GetEmployee();
+        if (employee == null)
+            return Unauthorized(new { message = "Não autenticado" });
+        var employeeId = employee.Id;
+        var establishmentId = employee.EstablishmentId;
+
         return await _db.Database.ExecuteInTransactionAsync<IActionResult>(async transaction =>
         {
 
         try
         {
-            var material = await _db.RawMaterials.FindAsync(request.RawMaterialId);
+            var material = await _db.RawMaterials
+                .FirstOrDefaultAsync(m => m.Id == request.RawMaterialId && m.EstablishmentId == establishmentId);
             if (material == null)
                 return NotFound(new { message = "Raw material not found" });
 
-            var batch = await _db.Batches.FindAsync(request.BatchId);
+            var batch = await _db.Batches
+                .FirstOrDefaultAsync(b => b.Id == request.BatchId && b.RawMaterial!.EstablishmentId == establishmentId);
             if (batch == null)
                 return NotFound(new { message = "Batch not found" });
 
@@ -525,10 +563,14 @@ public class StockMovementsController : ControllerBase
     // POST: api/stockmovements/manipulacao
     [HttpPost("manipulacao")]
     public async Task<IActionResult> ConsumoManipulacao(
-        [FromBody] ConsumoManipulacaoRequest request,
-        [FromQuery] Guid employeeId,
-        [FromQuery] Guid establishmentId)
+        [FromBody] ConsumoManipulacaoRequest request)
     {
+        var employee = GetEmployee();
+        if (employee == null)
+            return Unauthorized(new { message = "Não autenticado" });
+        var employeeId = employee.Id;
+        var establishmentId = employee.EstablishmentId;
+
         return await _db.Database.ExecuteInTransactionAsync<IActionResult>(async transaction =>
         {
 
@@ -536,7 +578,8 @@ public class StockMovementsController : ControllerBase
         {
             var order = await _db.ManipulationOrders
                 .Include(mo => mo.Formula)
-                .FirstOrDefaultAsync(mo => mo.Id == request.ManipulationOrderId);
+                .FirstOrDefaultAsync(mo => mo.Id == request.ManipulationOrderId
+                    && mo.EstablishmentId == establishmentId);
 
             if (order == null)
                 return NotFound(new { message = "Manipulation order not found" });
@@ -545,11 +588,13 @@ public class StockMovementsController : ControllerBase
 
             foreach (var item in request.Items)
             {
-                var material = await _db.RawMaterials.FindAsync(item.RawMaterialId);
+                var material = await _db.RawMaterials
+                    .FirstOrDefaultAsync(m => m.Id == item.RawMaterialId && m.EstablishmentId == establishmentId);
                 if (material == null)
                     return NotFound(new { message = $"Raw material {item.RawMaterialId} not found" });
 
-                var batch = await _db.Batches.FindAsync(item.BatchId);
+                var batch = await _db.Batches
+                    .FirstOrDefaultAsync(b => b.Id == item.BatchId && b.RawMaterial!.EstablishmentId == establishmentId);
                 if (batch == null)
                     return NotFound(new { message = $"Batch {item.BatchId} not found" });
 
@@ -614,16 +659,17 @@ public class StockMovementsController : ControllerBase
     // GET: api/stockmovements/stats
     [HttpGet("stats")]
     public async Task<ActionResult<StockMovementStatsResponse>> GetStats(
-        [FromQuery] Guid? establishmentId,
         [FromQuery] DateTime? startDate,
         [FromQuery] DateTime? endDate)
     {
         try
         {
-            var query = _db.StockMovements.AsQueryable();
+            var employee = GetEmployee();
+            if (employee == null)
+                return Unauthorized(new { message = "Não autenticado" });
 
-            if (establishmentId.HasValue)
-                query = query.Where(sm => sm.EstablishmentId == establishmentId.Value);
+            var query = _db.StockMovements
+                .Where(sm => sm.EstablishmentId == employee.EstablishmentId);
 
             if (startDate.HasValue)
                 query = query.Where(sm => sm.MovementDate >= startDate.Value);
@@ -672,9 +718,15 @@ public class StockMovementsController : ControllerBase
     {
         try
         {
+            var employee = GetEmployee();
+            if (employee == null)
+                return Unauthorized(new { message = "Não autenticado" });
+
+            // Batch não tem EstablishmentId — escopo via RawMaterial da farmácia.
             var batch = await _db.Batches
                 .Include(b => b.RawMaterial)
-                .FirstOrDefaultAsync(b => b.Id == batchId);
+                .FirstOrDefaultAsync(b => b.Id == batchId
+                    && b.RawMaterial!.EstablishmentId == employee.EstablishmentId);
 
             if (batch == null)
                 return NotFound(new { message = "Batch not found" });
@@ -682,7 +734,7 @@ public class StockMovementsController : ControllerBase
             var movements = await _db.StockMovements
                 .Include(sm => sm.PerformedByEmployee)
                 .Include(sm => sm.AuthorizedByEmployee)
-                .Where(sm => sm.BatchId == batchId)
+                .Where(sm => sm.BatchId == batchId && sm.EstablishmentId == employee.EstablishmentId)
                 .OrderBy(sm => sm.MovementDate)
                 .Select(sm => new StockMovementDto
                 {
@@ -748,12 +800,18 @@ public class StockMovementsController : ControllerBase
     {
         try
         {
+            var employee = GetEmployee();
+            if (employee == null)
+                return Unauthorized(new { message = "Não autenticado" });
+
             var startDate = DateTime.UtcNow.AddDays(-days);
 
             var movements = await _db.StockMovements
                 .Include(sm => sm.Batch)
                 .Include(sm => sm.PerformedByEmployee)
-                .Where(sm => sm.RawMaterialId == rawMaterialId && sm.MovementDate >= startDate)
+                .Where(sm => sm.RawMaterialId == rawMaterialId
+                    && sm.EstablishmentId == employee.EstablishmentId
+                    && sm.MovementDate >= startDate)
                 .OrderByDescending(sm => sm.MovementDate)
                 .Select(sm => new StockMovementDto
                 {

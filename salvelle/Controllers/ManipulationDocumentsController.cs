@@ -23,6 +23,10 @@ public class ManipulationDocumentsController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>Tenant do funcionário autenticado (EmployeeAuthMiddleware). Null se não autenticado.</summary>
+    private Guid? CurrentEstablishmentId =>
+        (HttpContext.Items["Employee"] as Models.Employees.Employee)?.EstablishmentId;
+
     // ════════════════════════════════════════════════════════════════════════
     // FICHA DE MANIPULAÇÃO
     // ════════════════════════════════════════════════════════════════════════
@@ -36,8 +40,12 @@ public class ManipulationDocumentsController : ControllerBase
     {
         try
         {
-            var pdfBytes = await _documentService.GenerateManipulationSheetAsync(orderId);
-            
+            var establishmentId = CurrentEstablishmentId;
+            if (establishmentId == null)
+                return Unauthorized(new { success = false, error = "Não autenticado" });
+
+            var pdfBytes = await _documentService.GenerateManipulationSheetAsync(orderId, establishmentId.Value);
+
             _logger.LogInformation("Ficha de manipulação gerada para ordem {OrderId}", orderId);
             
             return File(pdfBytes, "application/pdf", $"ficha_manipulacao_{orderId:N}.pdf");
@@ -63,8 +71,12 @@ public class ManipulationDocumentsController : ControllerBase
     {
         try
         {
-            var pdfBytes = await _documentService.GenerateManipulationSheetAsync(orderId);
-            
+            var establishmentId = CurrentEstablishmentId;
+            if (establishmentId == null)
+                return Unauthorized(new { success = false, error = "Não autenticado" });
+
+            var pdfBytes = await _documentService.GenerateManipulationSheetAsync(orderId, establishmentId.Value);
+
             return File(pdfBytes, "application/pdf");
         }
         catch (InvalidOperationException ex)
@@ -91,8 +103,12 @@ public class ManipulationDocumentsController : ControllerBase
     {
         try
         {
-            var pdfBytes = await _documentService.GenerateCertificateAsync(orderId);
-            
+            var establishmentId = CurrentEstablishmentId;
+            if (establishmentId == null)
+                return Unauthorized(new { success = false, error = "Não autenticado" });
+
+            var pdfBytes = await _documentService.GenerateCertificateAsync(orderId, establishmentId.Value);
+
             _logger.LogInformation("Certificado de manipulação gerado para ordem {OrderId}", orderId);
             
             return File(pdfBytes, "application/pdf", $"certificado_manipulacao_{orderId:N}.pdf");
@@ -118,8 +134,12 @@ public class ManipulationDocumentsController : ControllerBase
     {
         try
         {
-            var pdfBytes = await _documentService.GenerateCertificateAsync(orderId);
-            
+            var establishmentId = CurrentEstablishmentId;
+            if (establishmentId == null)
+                return Unauthorized(new { success = false, error = "Não autenticado" });
+
+            var pdfBytes = await _documentService.GenerateCertificateAsync(orderId, establishmentId.Value);
+
             return File(pdfBytes, "application/pdf");
         }
         catch (InvalidOperationException ex)
@@ -146,8 +166,12 @@ public class ManipulationDocumentsController : ControllerBase
     {
         try
         {
-            var sheetBytes = await _documentService.GenerateManipulationSheetAsync(orderId);
-            var certificateBytes = await _documentService.GenerateCertificateAsync(orderId);
+            var establishmentId = CurrentEstablishmentId;
+            if (establishmentId == null)
+                return Unauthorized(new { success = false, error = "Não autenticado" });
+
+            var sheetBytes = await _documentService.GenerateManipulationSheetAsync(orderId, establishmentId.Value);
+            var certificateBytes = await _documentService.GenerateCertificateAsync(orderId, establishmentId.Value);
 
             using var memoryStream = new MemoryStream();
             using (var archive = new System.IO.Compression.ZipArchive(memoryStream, System.IO.Compression.ZipArchiveMode.Create, true))

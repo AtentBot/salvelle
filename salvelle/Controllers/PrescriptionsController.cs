@@ -397,10 +397,23 @@ public class PrescriptionsController : ControllerBase
     [HttpPost("{id}/files/{fileId}/parse")]
     public async Task<IActionResult> ParseFile(Guid id, Guid fileId)
     {
+        // Escopo de tenant: PrescriptionFile não tem EstablishmentId próprio — a posse
+        // é herdada da Prescription pai. Sem isto, qualquer sessão roda OCR e vaza a
+        // receita (PII) de outra farmácia informando id/fileId alheios.
+        var employeeId = GetEmployeeId();
+        if (!employeeId.HasValue)
+            return Unauthorized(new { message = "Sessão inválida" });
+
+        var establishmentId = await GetEstablishmentId(employeeId.Value);
+        if (!establishmentId.HasValue)
+            return NotFound(new { message = "Estabelecimento não encontrado" });
+
         try
         {
             var file = await _context.Set<PrescriptionFile>()
-                .FirstOrDefaultAsync(f => f.Id == fileId && f.PrescriptionId == id);
+                .FirstOrDefaultAsync(f => f.Id == fileId && f.PrescriptionId == id &&
+                    _context.Set<Prescription>().Any(p =>
+                        p.Id == f.PrescriptionId && p.EstablishmentId == establishmentId.Value));
 
             if (file == null)
                 return NotFound(new { message = "Arquivo não encontrado" });
@@ -426,7 +439,10 @@ public class PrescriptionsController : ControllerBase
         }
         catch (Exception ex)
         {
-            var file = await _context.Set<PrescriptionFile>().FindAsync(fileId);
+            var file = await _context.Set<PrescriptionFile>()
+                .FirstOrDefaultAsync(f => f.Id == fileId &&
+                    _context.Set<Prescription>().Any(p =>
+                        p.Id == f.PrescriptionId && p.EstablishmentId == establishmentId.Value));
             if (file != null)
             {
                 file.OcrStatus = "FAILED";
