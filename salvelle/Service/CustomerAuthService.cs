@@ -527,6 +527,14 @@ public class CustomerAuthService
         if (auth == null)
             return (false, "Telefone não encontrado.");
 
+        // Throttle de envio: impede spam de reset (flood no WhatsApp da vítima e
+        // zeragem repetida do contador de tentativas). Igual a ResendCodeAsync.
+        if (auth.LastVerificationSentAt.HasValue &&
+            auth.LastVerificationSentAt.Value.AddMinutes(1) > DateTime.UtcNow)
+        {
+            return (false, "Aguarde 1 minuto para solicitar novo código.");
+        }
+
         var (sent, sendMessage) = await SendVerificationCodeAsync(auth);
         if (!sent) return (false, sendMessage);
         return (true, "Código de recuperação enviado para seu WhatsApp.");
@@ -548,13 +556,27 @@ public class CustomerAuthService
         if (auth == null)
             return (false, "Telefone não encontrado.");
 
-        if (string.IsNullOrEmpty(dto.Code) || auth.VerificationCode != HashOtp(dto.Code, auth.Phone ?? "") || auth.VerificationCodeExpiresAt < DateTime.UtcNow)
+        // Rate-limit do OTP: sem o contador abaixo, o código de 6 dígitos (1M
+        // combinações) podia ser forçado por bruta neste endpoint sem qualquer
+        // bloqueio — takeover de conta via reset de senha. Espelha VerifyCodeAsync.
+        if (auth.VerificationAttempts >= MAX_VERIFICATION_ATTEMPTS)
+            return (false, "Muitas tentativas. Solicite um novo código.");
+
+        if (auth.VerificationCode == null || auth.VerificationCodeExpiresAt < DateTime.UtcNow)
             return (false, "Código inválido ou expirado.");
+
+        if (string.IsNullOrEmpty(dto.Code) || auth.VerificationCode != HashOtp(dto.Code, auth.Phone ?? ""))
+        {
+            auth.VerificationAttempts++;
+            await _context.SaveChangesAsync();
+            return (false, "Código inválido ou expirado.");
+        }
 
         auth.PasswordHash = HashPassword(dto.NewPassword);
         auth.PasswordCreatedAt = DateTime.UtcNow;
         auth.VerificationCode = null;
         auth.VerificationCodeExpiresAt = null;
+        auth.VerificationAttempts = 0;
         auth.IsVerified = true;
         await _context.SaveChangesAsync();
 
