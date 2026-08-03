@@ -462,8 +462,17 @@ public class PrescriptionsController : ControllerBase
     {
         try
         {
+            // Antes: sem autenticação e sem tenant — vazava o catálogo de insumos
+            // (nome/DCB/estoque) de qualquer farmácia.
+            var employeeId = GetEmployeeId();
+            if (!employeeId.HasValue)
+                return Unauthorized(new { message = "Sessão inválida" });
+            var establishmentId = await GetEstablishmentId(employeeId.Value);
+            if (!establishmentId.HasValue)
+                return NotFound(new { message = "Estabelecimento não encontrado" });
+
             var matcherService = HttpContext.RequestServices.GetRequiredService<IngredientMatcherService>();
-            var matches = await matcherService.FindMatchesAsync(items);
+            var matches = await matcherService.FindMatchesAsync(items, establishmentId.Value);
             return Ok(matches);
         }
         catch (Exception ex)

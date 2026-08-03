@@ -20,7 +20,7 @@ public class IngredientMatcherService
         _logger = logger;
     }
 
-    public async Task<IngredientMatchResponseDto> FindMatchesAsync(List<OcrItemDto> ocrItems)
+    public async Task<IngredientMatchResponseDto> FindMatchesAsync(List<OcrItemDto> ocrItems, Guid establishmentId)
     {
         _logger.LogInformation($"Finding matches for {ocrItems.Count} OCR items");
 
@@ -28,7 +28,7 @@ public class IngredientMatcherService
 
         foreach (var item in ocrItems)
         {
-            var suggestions = await FindSuggestionsAsync(item.Component);
+            var suggestions = await FindSuggestionsAsync(item.Component, establishmentId);
 
             matches.Add(new IngredientMatchDto
             {
@@ -43,16 +43,17 @@ public class IngredientMatcherService
         return new IngredientMatchResponseDto { Matches = matches };
     }
 
-    private async Task<List<RawMaterialSuggestionDto>> FindSuggestionsAsync(string searchTerm)
+    private async Task<List<RawMaterialSuggestionDto>> FindSuggestionsAsync(string searchTerm, Guid establishmentId)
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
             return new List<RawMaterialSuggestionDto>();
 
         var normalized = NormalizeText(searchTerm);
 
-        // Buscar todas as matérias-primas ativas
+        // Buscar as matérias-primas ativas DA FARMÁCIA — sem o filtro de tenant,
+        // sugeria catálogo (nome/DCB/estoque) de todas as farmácias.
         var rawMaterials = await _context.Set<RawMaterial>()
-            .Where(rm => rm.IsActive)
+            .Where(rm => rm.IsActive && rm.EstablishmentId == establishmentId)
             .Select(rm => new
             {
                 rm.Id,

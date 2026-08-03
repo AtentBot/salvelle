@@ -266,6 +266,9 @@ public partial class ManipulationOrdersController
     [HttpPost("{id}/steps/pesagem/check")]
     public async Task<ActionResult<ApiResponse>> CheckPesagem(Guid id, [FromBody] CheckPesagemDto dto)
     {
+        if (!await OrderInScope(id))
+            return NotFound(ApiResponse.ErrorResponse("Ordem não encontrada"));
+
         var step = await _context.ManipulationSteps
             .FirstOrDefaultAsync(s => s.ManipulationOrderId == id && s.StepType == "PESAGEM");
 
@@ -731,6 +734,9 @@ public partial class ManipulationOrdersController
     [HttpPost("{id}/steps/expedicao/confirm-delivery")]
     public async Task<ActionResult<ApiResponse>> ConfirmDelivery(Guid id, [FromBody] ConfirmDeliveryDto dto)
     {
+        if (!await OrderInScope(id))
+            return NotFound(ApiResponse.ErrorResponse("Ordem não encontrada"));
+
         var step = await _context.ManipulationSteps
             .FirstOrDefaultAsync(s => s.ManipulationOrderId == id && s.StepType == "EXPEDICAO");
 

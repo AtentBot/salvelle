@@ -111,10 +111,12 @@ public class PaymentService
         return (true, "Pagamento registrado com sucesso", payment);
     }
 
-    public async Task<List<PaymentDto>> GetSalePaymentsAsync(Guid saleId)
+    public async Task<List<PaymentDto>> GetSalePaymentsAsync(Guid saleId, Guid establishmentId)
     {
+        // Escopo de tenant via Sale: sem ele, listava pagamentos (métodos, NSU,
+        // PIX, bandeira) de vendas de outra farmácia informando o saleId alheio.
         return await _context.SalePayments
-            .Where(p => p.SaleId == saleId)
+            .Where(p => p.SaleId == saleId && p.Sale!.EstablishmentId == establishmentId)
             .Include(p => p.ProcessedByEmployee)
             .Select(p => new PaymentDto
             {
@@ -144,14 +146,14 @@ public class PaymentService
             .ToListAsync();
     }
 
-    public async Task<SaleWithPaymentsDto?> GetSaleWithPaymentsAsync(Guid saleId)
+    public async Task<SaleWithPaymentsDto?> GetSaleWithPaymentsAsync(Guid saleId, Guid establishmentId)
     {
         var sale = await _context.Sales
             .Include(s => s.Customer)
             .Include(s => s.CreatedByEmployee)
             .Include(s => s.Payments)
                 .ThenInclude(p => p.ProcessedByEmployee)
-            .FirstOrDefaultAsync(s => s.Id == saleId);
+            .FirstOrDefaultAsync(s => s.Id == saleId && s.EstablishmentId == establishmentId);
 
         if (sale == null)
             return null;

@@ -426,7 +426,8 @@ public class PaymentsController : ControllerBase
     [HttpGet("sales/{saleId}")]
     public async Task<ActionResult<ApiResponse<List<PaymentDto>>>> GetSalePayments(Guid saleId)
     {
-        var payments = await _paymentService.GetSalePaymentsAsync(saleId);
+        var establishmentId = GetEstablishmentId();
+        var payments = await _paymentService.GetSalePaymentsAsync(saleId, establishmentId);
         return Ok(ApiResponse<List<PaymentDto>>.SuccessResponse(payments));
     }
 
@@ -436,7 +437,8 @@ public class PaymentsController : ControllerBase
     [HttpGet("sales/{saleId}/details")]
     public async Task<ActionResult<ApiResponse<SaleWithPaymentsDto>>> GetSaleWithPayments(Guid saleId)
     {
-        var sale = await _paymentService.GetSaleWithPaymentsAsync(saleId);
+        var establishmentId = GetEstablishmentId();
+        var sale = await _paymentService.GetSaleWithPaymentsAsync(saleId, establishmentId);
 
         if (sale == null)
             return NotFound(ApiResponse<SaleWithPaymentsDto>.ErrorResponse("Venda não encontrada"));

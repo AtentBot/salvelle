@@ -154,7 +154,7 @@ public class ClientePrescriptionApiController : ControllerBase
                 LineNumber = 0
             }).ToList();
 
-            var matchResponse = await _matcherService.FindMatchesAsync(ocrItemsDto);
+            var matchResponse = await _matcherService.FindMatchesAsync(ocrItemsDto, session.CurrentEstablishmentId.Value);
 
             // Mapear resultados - usar Matches, não Results
             var matchResults = matchResponse.Matches?.Select(r => new IngredientMatchResultLocal

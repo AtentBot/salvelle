@@ -112,7 +112,7 @@ public class PrescriptionWorkflowService
 
                 // Chama o serviço de matching existente (IngredientMatcherService)
                 // Retorna IngredientMatchResponseDto com List<IngredientMatchDto>
-                var matchResponse = await _matcherService.FindMatchesAsync(ocrItems);
+                var matchResponse = await _matcherService.FindMatchesAsync(ocrItems, establishmentId);
 
                 // Converter IngredientMatchDto → IngredientMatchResultDto
                 // IngredientMatchDto (namespace DTOs) → IngredientMatchResultDto (namespace DTOs.Prescriptions)
