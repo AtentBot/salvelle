@@ -67,53 +67,89 @@ public class EstablishmentsController : ControllerBase
         });
     }
 
-    // 1) CADASTRO: cria establishment, gera 6 d�gitos, salva client_onboarding e envia WhatsApp
+    // Categoria padrão (Farmácia de Manipulação) — mesma usada por SignupService.
+    private static readonly Guid DefaultCategoryId = Guid.Parse("c0000000-0000-0000-0000-000000000001");
+
+    // 1) CADASTRO: cria establishment, gera 6 dígitos, salva client_onboarding e envia WhatsApp
     [HttpPost]
-    public async Task<ActionResult<Establishment>> Create([FromBody] Establishment input, CancellationToken ct)
+    public async Task<ActionResult<Establishment>> Create([FromBody] CreateEstablishmentRequest request, CancellationToken ct)
     {
-        // ? 1. Verifica se j� existe CNPJ igual
-        if (!string.IsNullOrWhiteSpace(input.Cnpj))
+        if (request == null)
+            return BadRequest(new { error = "invalid_body" });
+
+        var cnpj = request.Cnpj?.Trim();
+
+        // 1. Verifica se já existe CNPJ igual
+        if (!string.IsNullOrWhiteSpace(cnpj))
         {
-            var exists = await _db.Establishments
-                .AnyAsync(e => e.Cnpj == input.Cnpj.Trim(), ct);
+            var exists = await _db.Establishments.AnyAsync(e => e.Cnpj == cnpj, ct);
 
             if (exists)
                 return Conflict(new
                 {
                     error = "duplicate_cnpj",
-                    message = "J� temos um cliente cadastrado utilizando este CNPJ. Verifique seus dados ou entre em contato com o suporte."
+                    message = "Já temos um cliente cadastrado utilizando este CNPJ. Verifique seus dados ou entre em contato com o suporte."
                 });
         }
 
-        // ? 2. Metadados
-        input.Id = Guid.NewGuid(); // CORRE��O: Gerar um novo ID
-        input.CreatedAt = DateTime.UtcNow;
-        input.UpdatedAt = input.CreatedAt;
-        input.PasswordCreatedAt = DateTime.UtcNow;
-        input.PasswordLastRehash = null;
+        // 2. Perfil de acesso e categoria são definidos pela PLATAFORMA, nunca pelo cliente.
+        //    Antes o endpoint fazia bind da entidade Establishment inteira ([FromBody] Establishment),
+        //    permitindo mass assignment de AccessLevelId (escalada de privilégio via FK de papel),
+        //    CategoryId e flags de marketplace/geo. Agora aceitamos apenas uma allow-list.
+        var ownerAccessLevel = await _db.Set<AccessLevel>()
+            .FirstOrDefaultAsync(a => a.Code.ToLower() == "owner", ct);
+        if (ownerAccessLevel == null)
+            return StatusCode(500, new { error = "access_level_missing", message = "Configuração de perfil de acesso não encontrada. Contate o suporte." });
 
-        // ? 3. Senha em texto puro ? gera hash antes de usar o EF
-        if (!string.IsNullOrWhiteSpace(input.PasswordHash) && !input.PasswordHash.StartsWith("$argon2id$"))
+        // 3. Monta a entidade a partir dos campos seguros da requisição
+        var input = new Establishment
         {
-            var plain = input.PasswordHash;
-            input.PasswordHash = Argon2.Hash(plain);
+            Id = Guid.NewGuid(),
+            NomeFantasia = request.NomeFantasia?.Trim() ?? string.Empty,
+            RazaoSocial = request.RazaoSocial?.Trim() ?? string.Empty,
+            Cnpj = cnpj,
+            InscricaoEstadual = request.InscricaoEstadual?.Trim(),
+            Email = request.Email?.Trim(),
+            Phone = request.Phone?.Trim(),
+            WhatsApp = request.WhatsApp?.Trim(),
+            PostalCode = request.PostalCode?.Trim(),
+            Street = request.Street?.Trim(),
+            Number = request.Number?.Trim(),
+            Complement = request.Complement?.Trim(),
+            Neighborhood = request.Neighborhood?.Trim(),
+            City = request.City?.Trim(),
+            State = request.State?.Trim(),
+            Instagram = request.Instagram?.Trim(),
+            Facebook = request.Facebook?.Trim(),
+
+            // Campos controlados pela plataforma
+            AccessLevelId = ownerAccessLevel.Id,
+            CategoryId = DefaultCategoryId,
+            OnboardingCompleted = false,
+            IsActive = true,
+            SubscriptionStatus = null,
+            TrialEndsAt = null,
+            MaxEmployeesLimit = null,
+            MaxOrdersLimit = null,
+            FeaturesEnabled = null,
+            IsMarketplaceActive = false,
+            AverageRating = 0,
+            TotalRatings = 0,
+            StripeConnectAccountId = null,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            PasswordCreatedAt = DateTime.UtcNow,
+            PasswordLastRehash = null
+        };
+
+        // 4. Senha em texto puro → gera hash antes de persistir
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            input.PasswordHash = Argon2.Hash(request.Password);
             input.PasswordAlgorithm = "argon2id-v1";
         }
 
-        // Campos controlados pela plataforma — nunca aceitar valores do cliente
-        input.OnboardingCompleted = false;
-        input.IsActive = true;
-        input.SubscriptionStatus = null;
-        input.TrialEndsAt = null;
-        input.MaxEmployeesLimit = null;
-        input.MaxOrdersLimit = null;
-        input.FeaturesEnabled = null;
-        input.IsMarketplaceActive = false;
-        input.AverageRating = 0;
-        input.TotalRatings = 0;
-        input.StripeConnectAccountId = null;
-
-        // ? 5. Persist�ncia
+        // 5. Persistência
         _db.Establishments.Add(input);
         await _db.SaveChangesAsync(ct);
 
@@ -144,6 +180,30 @@ public class EstablishmentsController : ControllerBase
         await SendWhatsAppAsync(co.WhatsApp, msg, ct);
 
         return CreatedAtAction(nameof(Get), new { id = input.Id }, input);
+    }
+
+    // Allow-list de campos aceitos no cadastro público de establishment.
+    // Deliberadamente NÃO inclui AccessLevelId, CategoryId, flags de assinatura/
+    // marketplace, ratings, stripe, limites ou geo — todos definidos pela plataforma.
+    public class CreateEstablishmentRequest
+    {
+        public string NomeFantasia { get; set; } = string.Empty;
+        public string RazaoSocial { get; set; } = string.Empty;
+        public string? Cnpj { get; set; }
+        public string? InscricaoEstadual { get; set; }
+        public string? Email { get; set; }
+        public string? Phone { get; set; }
+        public string? WhatsApp { get; set; }
+        public string? PostalCode { get; set; }
+        public string? Street { get; set; }
+        public string? Number { get; set; }
+        public string? Complement { get; set; }
+        public string? Neighborhood { get; set; }
+        public string? City { get; set; }
+        public string? State { get; set; }
+        public string? Instagram { get; set; }
+        public string? Facebook { get; set; }
+        public string? Password { get; set; }
     }
 
     // 2) CONFIRMA��O: recebe c�digo de 6 d�gitos e finaliza onboarding
