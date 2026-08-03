@@ -78,9 +78,9 @@ public partial class ManipulationOrdersController
             var html = await service.GenerateWeighingSheetHtml(id);
             return Content(html, "text/html");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return BadRequest(ApiResponse<object>.ErrorResponse($"Erro ao gerar ficha: {ex.Message}"));
+            return BadRequest(ApiResponse<object>.ErrorResponse("Erro ao gerar ficha de pesagem"));
         }
     }
 

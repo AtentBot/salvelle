@@ -46,7 +46,7 @@ public class ClienteCartApiController : ControllerBase
     /// <param name="dto">Dados do produto (ProductId, Quantity)</param>
     /// <returns>Sucesso + total de itens no carrinho</returns>
     [HttpPost("add")]
-    public async Task<IActionResult> AddToCart([FromBody] AddProductToCartDto dto)
+    public async Task<IActionResult> AddToCart([FromBody] DTOs.Cart.AddProductToCartDto dto)
     {
         // 1. Validar autenticação
         var customer = HttpContext.Items["Customer"] as Customer;
@@ -59,6 +59,13 @@ public class ClienteCartApiController : ControllerBase
         }
 
         var establishmentId = session.CurrentEstablishmentId.Value;
+
+        // 1b. Validar quantidade (defesa em profundidade além do [Range] do DTO):
+        // quantidade 0/negativa passava pela checagem de estoque e gerava subtotal negativo.
+        if (dto.Quantity < 1 || dto.Quantity > 99)
+        {
+            return BadRequest(new { success = false, message = "Quantidade deve estar entre 1 e 99" });
+        }
 
         // 2. Validar produto
         var product = await _context.Set<CatalogProduct>()
@@ -179,6 +186,17 @@ public class ClienteCartApiController : ControllerBase
                 });
             }
 
+            // 2b. Validar quantidade da fórmula (defesa em profundidade além do [Range]):
+            // quantidade 0/negativa geraria preço/subtotal inválido.
+            if (dto.Quantity <= 0)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Quantidade da fórmula inválida"
+                });
+            }
+
             // 3. Validar dados obrigatórios
             if (dto.ProductTypeId == Guid.Empty || dto.ProductSubTypeId == Guid.Empty)
             {
@@ -274,7 +292,7 @@ public class ClienteCartApiController : ControllerBase
             return StatusCode(500, new
             {
                 success = false,
-                message = "Erro ao processar fórmula: " + ex.Message
+                message = "Erro ao processar fórmula"
             });
         }
     }
@@ -326,7 +344,16 @@ public class ClienteCartApiController : ControllerBase
 
         // 4. Atualizar quantidade
         var oldQuantity = item.Quantity;
-        item.Quantity += dto.Delta;
+        var newQuantity = item.Quantity + dto.Delta;
+
+        // Teto absoluto de 99 por item (espelha AddToCart / MobileCart); evita
+        // que um Delta inflado leve a quantidade a valores absurdos.
+        if (newQuantity > 99)
+        {
+            return BadRequest(new { success = false, message = "Quantidade máxima por item é 99" });
+        }
+
+        item.Quantity = newQuantity;
         item.UpdatedAt = DateTime.UtcNow;
 
         // 5. Se quantidade <= 0, remover item

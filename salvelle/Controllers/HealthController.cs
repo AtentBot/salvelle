@@ -171,7 +171,7 @@ public class HealthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Readiness check failed");
-            return StatusCode(503, new { ready = false, error = ex.Message });
+            return StatusCode(503, new { ready = false });
         }
     }
 

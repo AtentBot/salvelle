@@ -26,6 +26,19 @@ public class AuthController : ControllerBase
         _audit = audit;
     }
 
+    /// <summary>
+    /// Mascara identificadores (CPF/telefone) para não vazar PII nos logs.
+    /// Mantém só os 3 primeiros e 2 últimos caracteres; o resto vira '*'.
+    /// </summary>
+    private static string MaskIdentifier(string? identifier)
+    {
+        if (string.IsNullOrWhiteSpace(identifier))
+            return "(vazio)";
+        if (identifier.Length <= 5)
+            return new string('*', identifier.Length);
+        return $"{identifier[..3]}{new string('*', identifier.Length - 5)}{identifier[^2..]}";
+    }
+
     // ==================== LOGIN ====================
     [EnableRateLimiting("auth")]
     [HttpPost("login")]
@@ -46,14 +59,14 @@ public class AuthController : ControllerBase
 
             if (!result.Success)
             {
-                _logger.LogWarning("Login falhou para identificador: {Identifier}", dto.Identifier);
+                _logger.LogWarning("Login falhou para identificador: {Identifier}", MaskIdentifier(dto.Identifier));
                 return Unauthorized(result);
             }
 
             // Se requer 2FA, criar sessão pendente com token opaco (não expor identifier ao cliente)
             if (result.Requires2FA)
             {
-                _logger.LogInformation("Login requer 2FA para: {Identifier}", dto.Identifier);
+                _logger.LogInformation("Login requer 2FA para: {Identifier}", MaskIdentifier(dto.Identifier));
 
                 var employee2fa = await _context.Employees
                     .FirstOrDefaultAsync(e => e.Cpf == dto.Identifier || e.WhatsApp == dto.Identifier);
@@ -147,7 +160,8 @@ public class AuthController : ControllerBase
 
             if (!success)
             {
-                _logger.LogWarning("Verificação 2FA falhou: TempToken={TempToken}", dto.TempToken);
+                // NÃO logar o TempToken: é uma credencial viva do fluxo 2FA.
+                _logger.LogWarning("Verificação 2FA falhou para funcionário {EmployeeId}", employee.Id);
                 return BadRequest(new { message });
             }
 
@@ -240,7 +254,7 @@ public class AuthController : ControllerBase
             if (!validationResult.IsValid)
                 return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
 
-            _logger.LogInformation("Solicitação de recuperação de senha para: {Identifier}", dto.Identifier);
+            _logger.LogInformation("Solicitação de recuperação de senha para: {Identifier}", MaskIdentifier(dto.Identifier));
 
             var (success, message) = await _authService.RequestPasswordResetAsync(dto);
 
@@ -274,7 +288,7 @@ public class AuthController : ControllerBase
             if (!success)
                 return BadRequest(new { message });
 
-            _logger.LogInformation("Código de recuperação verificado para: {Identifier}", dto.Identifier);
+            _logger.LogInformation("Código de recuperação verificado para: {Identifier}", MaskIdentifier(dto.Identifier));
 
             return Ok(new { message });
         }
@@ -297,14 +311,14 @@ public class AuthController : ControllerBase
             if (!validationResult.IsValid)
                 return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
 
-            _logger.LogInformation("Redefinindo senha para: {Identifier}", dto.Identifier);
+            _logger.LogInformation("Redefinindo senha para: {Identifier}", MaskIdentifier(dto.Identifier));
 
             var (success, message) = await _authService.ResetPasswordAsync(dto);
 
             if (!success)
                 return BadRequest(new { message });
 
-            _logger.LogInformation("Senha redefinida com sucesso para: {Identifier}", dto.Identifier);
+            _logger.LogInformation("Senha redefinida com sucesso para: {Identifier}", MaskIdentifier(dto.Identifier));
 
             await _audit.LogAsync(HttpContext, "PASSWORD_RESET", "Employee", null, "Password reset completed");
 

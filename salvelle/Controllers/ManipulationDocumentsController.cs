@@ -53,7 +53,7 @@ public class ManipulationDocumentsController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Ordem {OrderId} não encontrada para gerar ficha", orderId);
-            return NotFound(new { success = false, error = ex.Message });
+            return NotFound(new { success = false });
         }
         catch (Exception ex)
         {
@@ -81,7 +81,7 @@ public class ManipulationDocumentsController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return NotFound(new { success = false, error = ex.Message });
+            return NotFound(new { success = false });
         }
         catch (Exception ex)
         {
@@ -116,7 +116,7 @@ public class ManipulationDocumentsController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Ordem {OrderId} não encontrada para gerar certificado", orderId);
-            return NotFound(new { success = false, error = ex.Message });
+            return NotFound(new { success = false });
         }
         catch (Exception ex)
         {
@@ -144,7 +144,7 @@ public class ManipulationDocumentsController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return NotFound(new { success = false, error = ex.Message });
+            return NotFound(new { success = false });
         }
         catch (Exception ex)
         {
@@ -198,7 +198,7 @@ public class ManipulationDocumentsController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return NotFound(new { success = false, error = ex.Message });
+            return NotFound(new { success = false });
         }
         catch (Exception ex)
         {

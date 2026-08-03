@@ -108,7 +108,7 @@ public class ManipulationStepsController : ControllerBase
                 "Erro ao gerar ficha de pesagem - Ordem: {OrderId}",
                 manipulationOrderId);
 
-            return StatusCode(500, new { message = "Erro ao gerar ficha de pesagem", error = ex.Message });
+            return StatusCode(500, new { message = "Erro ao gerar ficha de pesagem" });
         }
     }
 }

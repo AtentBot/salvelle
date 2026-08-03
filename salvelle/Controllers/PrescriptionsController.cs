@@ -15,11 +15,13 @@ public class PrescriptionsController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly PrescriptionService _service;
+    private readonly ILogger<PrescriptionsController> _logger;
 
-    public PrescriptionsController(AppDbContext context, PrescriptionService service)
+    public PrescriptionsController(AppDbContext context, PrescriptionService service, ILogger<PrescriptionsController> logger)
     {
         _context = context;
         _service = service;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -219,7 +221,8 @@ public class PrescriptionsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { success = false, message = $"Erro ao atualizar: {ex.Message}" });
+            _logger.LogError(ex, "Erro ao atualizar prescrição {Id}", id);
+            return StatusCode(500, new { success = false, message = "Erro ao atualizar prescrição" });
         }
     }
 
@@ -256,7 +259,8 @@ public class PrescriptionsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { success = false, message = $"Erro ao validar: {ex.Message}" });
+            _logger.LogError(ex, "Erro ao validar prescrição {Id}", id);
+            return StatusCode(500, new { success = false, message = "Erro ao validar prescrição" });
         }
     }
 
@@ -289,7 +293,8 @@ public class PrescriptionsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { success = false, message = $"Erro ao cancelar: {ex.Message}" });
+            _logger.LogError(ex, "Erro ao cancelar prescrição {Id}", id);
+            return StatusCode(500, new { success = false, message = "Erro ao cancelar prescrição" });
         }
     }
 
@@ -387,7 +392,7 @@ public class PrescriptionsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Erro", error = ex.Message });
+            return StatusCode(500, new { message = "Erro" });
         }
     }
 
@@ -450,7 +455,7 @@ public class PrescriptionsController : ControllerBase
                 file.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
             }
-            return StatusCode(500, new { message = "Erro OCR", error = ex.Message });
+            return StatusCode(500, new { message = "Erro OCR" });
         }
     }
 
@@ -477,7 +482,7 @@ public class PrescriptionsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Erro", error = ex.Message });
+            return StatusCode(500, new { message = "Erro" });
         }
     }
 

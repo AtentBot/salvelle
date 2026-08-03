@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace DTOs.Cart;
 
 // ====================================================================
@@ -11,6 +13,10 @@ namespace DTOs.Cart;
 public class AddProductToCartDto
 {
     public Guid ProductId { get; set; }
+
+    // Antes sem limite: quantidade 0/negativa passava pela checagem de estoque
+    // (StockQuantity < negativo é falso) e gerava subtotal negativo no carrinho.
+    [Range(1, 99, ErrorMessage = "Quantidade deve estar entre 1 e 99.")]
     public int Quantity { get; set; } = 1;
 }
 
@@ -29,6 +35,7 @@ public class AddFormulaToCartDto
     public string? ProductSubTypeName { get; set; }
     
     // Quantidade e unidade da fórmula
+    [Range(typeof(decimal), "0.01", "100000", ErrorMessage = "Quantidade da fórmula inválida.")]
     public decimal Quantity { get; set; } = 1;
     public string? Unit { get; set; } = "g";
     
@@ -73,6 +80,7 @@ public class UpdateCartItemDto
     /// <summary>
     /// Delta de quantidade: -1 para diminuir, +1 para aumentar
     /// </summary>
+    [Range(-99, 99, ErrorMessage = "Ajuste de quantidade fora do intervalo permitido.")]
     public int Delta { get; set; }
 }
 

@@ -134,7 +134,7 @@ public class StockMovementsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving stock movements");
-            return StatusCode(500, new { message = "Error retrieving movements", error = ex.Message });
+            return StatusCode(500, new { message = "Error retrieving movements" });
         }
     }
 
@@ -188,7 +188,7 @@ public class StockMovementsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving movement {MovementId}", id);
-            return StatusCode(500, new { message = "Error retrieving movement", error = ex.Message });
+            return StatusCode(500, new { message = "Error retrieving movement" });
         }
     }
 
@@ -290,7 +290,7 @@ public class StockMovementsController : ControllerBase
         {
             await transaction.RollbackAsync();
             _logger.LogError(ex, "Error creating stock entry");
-            return StatusCode(500, new { message = "Error creating entry", error = ex.Message });
+            return StatusCode(500, new { message = "Error creating entry" });
         }
         });
     }
@@ -381,7 +381,7 @@ public class StockMovementsController : ControllerBase
         {
             await transaction.RollbackAsync();
             _logger.LogError(ex, "Error creating stock exit");
-            return StatusCode(500, new { message = "Error creating exit", error = ex.Message });
+            return StatusCode(500, new { message = "Error creating exit" });
         }
         });
     }
@@ -466,7 +466,7 @@ public class StockMovementsController : ControllerBase
         {
             await transaction.RollbackAsync();
             _logger.LogError(ex, "Error creating stock adjustment");
-            return StatusCode(500, new { message = "Error creating adjustment", error = ex.Message });
+            return StatusCode(500, new { message = "Error creating adjustment" });
         }
         });
     }
@@ -555,7 +555,7 @@ public class StockMovementsController : ControllerBase
         {
             await transaction.RollbackAsync();
             _logger.LogError(ex, "Error registering stock loss");
-            return StatusCode(500, new { message = "Error registering loss", error = ex.Message });
+            return StatusCode(500, new { message = "Error registering loss" });
         }
         });
     }
@@ -651,7 +651,7 @@ public class StockMovementsController : ControllerBase
         {
             await transaction.RollbackAsync();
             _logger.LogError(ex, "Error registering manipulation consumption");
-            return StatusCode(500, new { message = "Error registering consumption", error = ex.Message });
+            return StatusCode(500, new { message = "Error registering consumption" });
         }
         });
     }
@@ -708,7 +708,7 @@ public class StockMovementsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving stock movement statistics");
-            return StatusCode(500, new { message = "Error retrieving statistics", error = ex.Message });
+            return StatusCode(500, new { message = "Error retrieving statistics" });
         }
     }
 
@@ -788,7 +788,7 @@ public class StockMovementsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving batch traceability {BatchId}", batchId);
-            return StatusCode(500, new { message = "Error retrieving traceability", error = ex.Message });
+            return StatusCode(500, new { message = "Error retrieving traceability" });
         }
     }
 
@@ -832,7 +832,7 @@ public class StockMovementsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving movements for raw material {RawMaterialId}", rawMaterialId);
-            return StatusCode(500, new { message = "Error retrieving movements", error = ex.Message });
+            return StatusCode(500, new { message = "Error retrieving movements" });
         }
     }
 }

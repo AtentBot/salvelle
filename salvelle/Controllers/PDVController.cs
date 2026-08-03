@@ -17,13 +17,15 @@ public class PDVController : ControllerBase
     private readonly SaleService _saleService;
     private readonly CashRegisterService _cashService;
     private readonly StockService _stockService;
+    private readonly ILogger<PDVController> _logger;
 
-    public PDVController(AppDbContext context)
+    public PDVController(AppDbContext context, ILogger<PDVController> logger)
     {
         _context = context;
         _saleService = new SaleService(context);
         _cashService = new CashRegisterService(context);
         _stockService = new StockService(context);
+        _logger = logger;
     }
 
     private Guid GetEstablishmentId()
@@ -1012,7 +1014,8 @@ public class PDVController : ControllerBase
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            return BadRequest(ApiResponse<UnifiedSaleResultDto>.ErrorResponse("Erro ao processar venda: " + ex.Message));
+            _logger.LogError(ex, "Erro ao processar venda no PDV");
+            return BadRequest(ApiResponse<UnifiedSaleResultDto>.ErrorResponse("Erro ao processar venda"));
         }
         });
     }

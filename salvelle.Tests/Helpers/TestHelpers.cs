@@ -54,6 +54,30 @@ public static class TestHelpers
     }
 
     /// <summary>
+    /// Configura HttpContext do portal do cliente (ClienteApi): injeta
+    /// Items["Customer"] e Items["CustomerSession"] como o middleware de sessão.
+    /// </summary>
+    public static void SetClienteCustomer(ControllerBase controller, Customer customer, Guid establishmentId)
+    {
+        var httpContext = new DefaultHttpContext();
+        httpContext.Items["Customer"] = customer;
+        httpContext.Items["CustomerSession"] = new CustomerSession
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = customer.Id,
+            CustomerAuthId = Guid.NewGuid(),
+            SessionToken = "test-token",
+            ExpiresAt = DateTime.UtcNow.AddHours(1),
+            IsActive = true,
+            CurrentEstablishmentId = establishmentId,
+        };
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
+    }
+
+    /// <summary>
     /// Configura HttpContext sem autenticação
     /// </summary>
     public static void SetUnauthenticated(ControllerBase controller)
