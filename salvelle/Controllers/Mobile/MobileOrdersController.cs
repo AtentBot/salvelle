@@ -222,7 +222,20 @@ public class MobileOrdersController : ControllerBase
                 // Registrar uso do cupom (dentro da transação para consistência)
                 if (appliedCoupon != null)
                 {
-                    appliedCoupon.UsedCount += 1;
+                    // Incremento ATÔMICO do contador: só incrementa se ainda houver usos
+                    // disponíveis. Substitui o read-modify-write (UsedCount += 1) sobre a entidade
+                    // carregada fora da transação (linha ~104), que sob concorrência permitia dois
+                    // pedidos passarem pela checagem de MaxUses e estourarem o limite do cupom.
+                    var couponRows = await _db.Coupons
+                        .Where(c => c.Id == appliedCoupon.Id && (c.MaxUses == null || c.UsedCount < c.MaxUses))
+                        .ExecuteUpdateAsync(s => s.SetProperty(c => c.UsedCount, c => c.UsedCount + 1));
+
+                    if (couponRows == 0)
+                    {
+                        await tx.RollbackAsync();
+                        return BadRequest(ApiResponse.ErrorResponse("Cupom esgotado."));
+                    }
+
                     _db.CouponUsages.Add(new CouponUsage
                     {
                         Id = Guid.NewGuid(),

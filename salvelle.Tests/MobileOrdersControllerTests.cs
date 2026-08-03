@@ -5,6 +5,7 @@ using DTOs;
 using DTOs.Mobile;
 using Models;
 using Models.Marketplace;
+using Models.Pharmacy;
 using Controllers.Mobile;
 using Service.Marketplace;
 using salvelle.Tests.Helpers;
@@ -295,6 +296,57 @@ public class MobileOrdersControllerTests : IDisposable
 
         Assert.Contains("Rua Teste", response.Data!.DeliveryAddress);
         Assert.Equal("DELIVERY", response.Data.DeliveryType);
+    }
+
+    // ==================== CUPOM (regressão race de resgate) ====================
+
+    private async Task<Coupon> SeedCoupon(int? maxUses, int usedCount = 0, decimal percentage = 10m)
+    {
+        var coupon = new Coupon
+        {
+            Id = Guid.NewGuid(),
+            EstablishmentId = _data.EstablishmentId,
+            Code = "PROMO10",
+            DiscountType = "PERCENTAGE",
+            DiscountPercentage = percentage,
+            ValidFrom = DateTime.UtcNow.AddDays(-1),
+            ValidUntil = DateTime.UtcNow.AddDays(1),
+            MaxUses = maxUses,
+            UsedCount = usedCount,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        _db.Coupons.Add(coupon);
+        await _db.SaveChangesAsync();
+        return coupon;
+    }
+
+    // NOTA: o caminho feliz (cupom válido → incremento) usa ExecuteUpdateAsync para um
+    // UPDATE condicional atômico (evita over-redemption sob concorrência no Npgsql). O
+    // provedor InMemory não traduz ExecuteUpdate, então esse caminho é validado apenas em
+    // produção/Npgsql — mesma limitação já aceita pelo ExecuteDeleteAsync em MobileCartController.
+    // Aqui cobrimos deterministicamente a REJEIÇÃO, que retorna antes do UPDATE atômico.
+
+    [Fact]
+    public async Task CreateOrder_CupomEsgotado_RejeitaSemDebitar()
+    {
+        await CreateActiveCart();
+        // Já no limite: IsValid=false → rejeitado antes de qualquer débito.
+        var coupon = await SeedCoupon(maxUses: 1, usedCount: 1);
+
+        var result = await _controller.CreateOrder(new CreateOrderRequest
+        {
+            EstablishmentId = _data.EstablishmentId,
+            DeliveryType = "PICKUP",
+            PaymentMethod = "PIX",
+            CouponCode = "PROMO10"
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        // Contador NÃO foi além do máximo e nenhum uso foi registrado.
+        var refreshed = await _db.Coupons.AsNoTracking().FirstAsync(c => c.Id == coupon.Id);
+        Assert.Equal(1, refreshed.UsedCount);
+        Assert.Equal(0, await _db.CouponUsages.CountAsync(u => u.CouponId == coupon.Id));
     }
 
     // ==================== GET ORDERS ====================
