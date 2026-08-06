@@ -90,12 +90,13 @@ public class QuotePricingService
                 + result.PackagingCost
                 + result.LaborCost;
 
-            // Aplicar desconto
-            result.DiscountPercentage = request.DiscountPercentage ?? 0;
+            // Aplicar desconto — clampado em [0,100] p/ nunca inflar o preço (desconto negativo)
+            // nem torná-lo negativo (desconto > 100). O valor vem do request e não era validado.
+            result.DiscountPercentage = Math.Clamp(request.DiscountPercentage ?? 0m, 0m, 100m);
             result.DiscountValue = result.Subtotal * (result.DiscountPercentage / 100);
 
-            // Calcular preço final
-            result.FinalPrice = result.Subtotal - result.DiscountValue;
+            // Calcular preço final (nunca negativo, independente da forma farmacêutica)
+            result.FinalPrice = Math.Max(0m, result.Subtotal - result.DiscountValue);
 
             // Verificar preço mínimo da forma farmacêutica
             if (request.PharmaceuticalFormId.HasValue && config.ApplyMinimumPrice)
