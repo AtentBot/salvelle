@@ -34,9 +34,11 @@ public class PharmaceuticalAnalysisService
             .ToListAsync();
     }
 
-    public async Task<bool> StartAnalysisAsync(Guid formulaId, Guid pharmacistId)
+    public async Task<bool> StartAnalysisAsync(Guid formulaId, Guid pharmacistId, Guid establishmentId)
     {
-        var formula = await _context.CustomerFormulas.FindAsync(formulaId);
+        // Isolamento multi-tenant: a fórmula tem de pertencer ao estabelecimento do solicitante.
+        var formula = await _context.CustomerFormulas
+            .FirstOrDefaultAsync(cf => cf.Id == formulaId && cf.EstablishmentId == establishmentId);
 
         if (formula == null || formula.Status != "AGUARDANDO_ANALISE")
             return false;
@@ -68,15 +70,17 @@ public class PharmaceuticalAnalysisService
     public async Task<bool> ApproveFormulaAsync(
         Guid formulaId,
         Guid pharmacistId,
+        Guid establishmentId,
         PharmaceuticalAnalysisDto dto)
     {
         return await _context.Database.ExecuteInTransactionAsync<bool>(async transaction =>
         {
             try
             {
+                // Isolamento multi-tenant: só aprova fórmula do próprio estabelecimento.
                 var formula = await _context.CustomerFormulas
                     .Include(cf => cf.ProductSubType)
-                    .FirstOrDefaultAsync(cf => cf.Id == formulaId);
+                    .FirstOrDefaultAsync(cf => cf.Id == formulaId && cf.EstablishmentId == establishmentId);
 
                 if (formula == null)
                     return false;
@@ -157,13 +161,16 @@ public class PharmaceuticalAnalysisService
     public async Task<bool> RejectFormulaAsync(
         Guid formulaId,
         Guid pharmacistId,
+        Guid establishmentId,
         string rejectionReason)
     {
         return await _context.Database.ExecuteInTransactionAsync<bool>(async transaction =>
         {
             try
             {
-                var formula = await _context.CustomerFormulas.FindAsync(formulaId);
+                // Isolamento multi-tenant: só reprova fórmula do próprio estabelecimento.
+                var formula = await _context.CustomerFormulas
+                    .FirstOrDefaultAsync(cf => cf.Id == formulaId && cf.EstablishmentId == establishmentId);
 
                 if (formula == null)
                     return false;
@@ -214,9 +221,12 @@ public class PharmaceuticalAnalysisService
     public async Task<bool> RequestAdjustmentAsync(
         Guid formulaId,
         Guid pharmacistId,
+        Guid establishmentId,
         string adjustmentReason)
     {
-        var formula = await _context.CustomerFormulas.FindAsync(formulaId);
+        // Isolamento multi-tenant: só ajusta fórmula do próprio estabelecimento.
+        var formula = await _context.CustomerFormulas
+            .FirstOrDefaultAsync(cf => cf.Id == formulaId && cf.EstablishmentId == establishmentId);
 
         if (formula == null)
             return false;
@@ -250,8 +260,14 @@ public class PharmaceuticalAnalysisService
         return true;
     }
 
-    public async Task<List<PharmaceuticalAnalysisLog>> GetAnalysisHistoryAsync(Guid formulaId)
+    public async Task<List<PharmaceuticalAnalysisLog>> GetAnalysisHistoryAsync(Guid formulaId, Guid establishmentId)
     {
+        // Isolamento multi-tenant: só devolve o histórico se a fórmula for do estabelecimento.
+        var pertence = await _context.CustomerFormulas
+            .AnyAsync(cf => cf.Id == formulaId && cf.EstablishmentId == establishmentId);
+        if (!pertence)
+            return new List<PharmaceuticalAnalysisLog>();
+
         return await _context.PharmaceuticalAnalysisLogs
             .Where(log => log.CustomerFormulaId == formulaId)
             .OrderByDescending(log => log.CreatedAt)

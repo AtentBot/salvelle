@@ -81,7 +81,7 @@ public class PharmaceuticalAnalysisController : ControllerBase
         try
         {
             var pharmacistId = GetCurrentUserId();
-            var success = await _analysisService.StartAnalysisAsync(id, pharmacistId);
+            var success = await _analysisService.StartAnalysisAsync(id, pharmacistId, GetEstablishmentId());
 
             if (!success)
                 return NotFound(ApiResponse<bool>.ErrorResponse("Fórmula não encontrada ou já em análise"));
@@ -111,6 +111,7 @@ public class PharmaceuticalAnalysisController : ControllerBase
             var success = await _analysisService.ApproveFormulaAsync(
                 dto.CustomerFormulaId,
                 pharmacistId,
+                GetEstablishmentId(),
                 dto
             );
 
@@ -145,6 +146,7 @@ public class PharmaceuticalAnalysisController : ControllerBase
             var success = await _analysisService.RejectFormulaAsync(
                 dto.CustomerFormulaId,
                 pharmacistId,
+                GetEstablishmentId(),
                 dto.RejectionReason
             );
 
@@ -179,6 +181,7 @@ public class PharmaceuticalAnalysisController : ControllerBase
             var success = await _analysisService.RequestAdjustmentAsync(
                 dto.CustomerFormulaId,
                 pharmacistId,
+                GetEstablishmentId(),
                 dto.AdjustmentRequest
             );
 
@@ -207,7 +210,7 @@ public class PharmaceuticalAnalysisController : ControllerBase
     {
         try
         {
-            var logs = await _analysisService.GetAnalysisHistoryAsync(formulaId);
+            var logs = await _analysisService.GetAnalysisHistoryAsync(formulaId, GetEstablishmentId());
 
             var result = logs.Select(log => new AnalysisLogDto
             {
