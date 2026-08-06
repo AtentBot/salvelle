@@ -278,22 +278,13 @@ public class PharmaceuticalAnalysisController : ControllerBase
 
     // ==================== MÉTODOS AUXILIARES ====================
 
-    private Guid GetEstablishmentId()
-    {
-        // TODO: Implementar lógica para obter EstablishmentId do usuário autenticado
-        return Guid.Parse("00000000-0000-0000-0000-000000000001");
-    }
+    // Funcionário autenticado (setado pelo EmployeeAuthMiddleware em HttpContext.Items["Employee"]).
+    private Models.Employees.Employee? CurrentEmployee =>
+        HttpContext.Items["Employee"] as Models.Employees.Employee;
 
-    private Guid GetCurrentUserId()
-    {
-        // TODO: Implementar lógica para obter ID do usuário autenticado
-        var userIdClaim = User.FindFirst("sub") ?? User.FindFirst("userId");
+    private Guid GetEstablishmentId() => CurrentEmployee?.EstablishmentId ?? Guid.Empty;
 
-        if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
-            return userId;
-
-        return Guid.Parse("00000000-0000-0000-0000-000000000001");
-    }
+    private Guid GetCurrentUserId() => CurrentEmployee?.Id ?? Guid.Empty;
 
     private string CalculatePriority(DateTime paidAt)
     {
