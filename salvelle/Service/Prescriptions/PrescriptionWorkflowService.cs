@@ -236,8 +236,14 @@ public class PrescriptionWorkflowService
         string? pixTransactionId = null,
         string? observations = null)
     {
+        return await _context.Database.ExecuteInTransactionAsync<(bool Success, string Message, Guid? SaleId, Guid? ManipulationOrderId)>(async transaction =>
+        {
         try
         {
+            // Cada tentativa da execution strategy começa com o tracker limpo (evita reinsert
+            // de entidades de uma tentativa anterior que falhou e foi revertida).
+            _context.ChangeTracker.Clear();
+
             // 1. Buscar e validar orçamento
             var quote = await _context.PrescriptionQuotes
                 .FirstOrDefaultAsync(q => q.Id == quoteId && q.EstablishmentId == establishmentId);
@@ -270,6 +276,23 @@ public class PrescriptionWorkflowService
             {
                 changeAmount = amountPaid - finalPrice;
             }
+
+            // 3.5 CAS atômico — reivindica a conversão com um status transitório.
+            //     Fecha a corrida "conversão concorrente -> venda/receita duplicada": só UMA
+            //     requisição tira o orçamento do estado aprovável enquanto SaleId é NULL; as
+            //     demais afetam 0 linhas (o 2o UPDATE bloqueia até o 1o commitar e reavalia o
+            //     WHERE contra o status já mudado). Sem migração. Reversível: se algo abaixo
+            //     falhar, o RollbackAsync desfaz a reivindicação.
+            var claimed = await _context.PrescriptionQuotes
+                .Where(q => q.Id == quoteId && q.EstablishmentId == establishmentId
+                         && q.SaleId == null
+                         && (q.Status == "APROVADO" || q.Status == "PENDENTE"))
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(q => q.Status, "CONVERTENDO")
+                    .SetProperty(q => q.UpdatedAt, DateTime.UtcNow));
+
+            if (claimed == 0)
+                return (false, "Este orçamento já foi convertido em venda.", (Guid?)null, (Guid?)null);
 
             // 4. Criar Ordem de Manipulação (apenas adiciona ao context, não salva)
             var order = await CreateManipulationOrderAsync(quote, employeeId, establishmentId);
@@ -323,20 +346,23 @@ public class PrescriptionWorkflowService
                 }
             }
 
-            // 11. Salvar TUDO de uma vez (atômico)
+            // 11. Salvar TUDO de uma vez + commit (atômico)
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             _logger.LogInformation(
                 "Orçamento {QuoteId} convertido em Venda {SaleId} e OM {OrderId}",
                 quoteId, sale.Id, order.Id);
 
-            return (true, "Venda realizada com sucesso!", sale.Id, order.Id);
+            return (true, "Venda realizada com sucesso!", (Guid?)sale.Id, (Guid?)order.Id);
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync();
             _logger.LogError(ex, "Erro ao converter orçamento {QuoteId} em venda", quoteId);
-            return (false, $"Erro ao processar venda: {ex.Message}", null, null);
+            return (false, $"Erro ao processar venda: {ex.Message}", (Guid?)null, (Guid?)null);
         }
+        });
     }
 
     /// <summary>
