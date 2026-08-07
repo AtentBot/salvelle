@@ -93,25 +93,33 @@ public class PharmaceuticalAnalysisService
         {
             try
             {
-                // Isolamento multi-tenant: só aprova fórmula do próprio estabelecimento.
-                var formula = await _context.CustomerFormulas
-                    .Include(cf => cf.ProductSubType)
-                    .FirstOrDefaultAsync(cf => cf.Id == formulaId && cf.EstablishmentId == establishmentId);
+                // 1. CAS atômico — reivindica a aprovação. Isolamento multi-tenant embutido no WHERE.
+                //    Fecha a corrida "aprovação concorrente -> ManipulationOrder duplicada": só UMA
+                //    requisição consegue flipar o status a partir de um estado aprovável; as demais
+                //    afetam 0 linhas (sob READ COMMITTED o 2º UPDATE bloqueia até o 1º commitar e
+                //    reavalia o WHERE contra o status já APROVADO). Sem migração/rowversion.
+                var claimed = await _context.CustomerFormulas
+                    .Where(cf => cf.Id == formulaId
+                              && cf.EstablishmentId == establishmentId
+                              && (cf.Status == "EM_ANALISE" || cf.Status == "AGUARDANDO_ANALISE"))
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(cf => cf.Status, "APROVADO")
+                        .SetProperty(cf => cf.PharmacistId, pharmacistId)
+                        .SetProperty(cf => cf.PharmaceuticalAnalysis, dto.Analysis)
+                        .SetProperty(cf => cf.ApprovedAt, DateTime.UtcNow)
+                        .SetProperty(cf => cf.RequiresPrescription, dto.RequiresPrescription)
+                        .SetProperty(cf => cf.EstimatedShelfLifeDays, dto.EstimatedShelfLifeDays)
+                        .SetProperty(cf => cf.UpdatedAt, DateTime.UtcNow));
 
-                if (formula == null)
+                if (claimed == 0)
+                    // Não existe / outro tenant, OU já aprovada por requisição concorrente.
+                    // Em qualquer caso NÃO cria OM duplicada; contrato de retorno = NotFound.
                     return false;
 
-                if (formula.Status != "EM_ANALISE" && formula.Status != "AGUARDANDO_ANALISE")
-                    throw new Exception($"Fórmula não pode ser aprovada. Status atual: {formula.Status}");
-
-                // 1. Atualizar fórmula
-                formula.Status = "APROVADO";
-                formula.PharmacistId = pharmacistId;
-                formula.PharmaceuticalAnalysis = dto.Analysis;
-                formula.ApprovedAt = DateTime.UtcNow;
-                formula.RequiresPrescription = dto.RequiresPrescription;
-                formula.EstimatedShelfLifeDays = dto.EstimatedShelfLifeDays;
-                formula.UpdatedAt = DateTime.UtcNow;
+                // Recarrega a fórmula (agora APROVADO) p/ montar a OM — só o vencedor do CAS chega aqui.
+                var formula = await _context.CustomerFormulas
+                    .Include(cf => cf.ProductSubType)
+                    .FirstAsync(cf => cf.Id == formulaId && cf.EstablishmentId == establishmentId);
 
                 // 2. Criar ManipulationOrder automaticamente
                 var manipOrder = new Models.Pharmacy.ManipulationOrder
