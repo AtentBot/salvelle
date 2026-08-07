@@ -272,7 +272,27 @@ public class EmployeeAuthMiddleware
         };
 
         if (session.Employee.JobPosition != null)
-            claims.Add(new Claim("JobPositionCode", session.Employee.JobPosition.Code));
+        {
+            var job = session.Employee.JobPosition;
+            claims.Add(new Claim("JobPositionCode", job.Code));
+
+            // Mapeia o cargo (JobPosition) para papéis de autorização (ClaimTypes.Role),
+            // que é o que o [Authorize(Roles=...)] avalia. Sem isto, controllers com
+            // [Authorize(Roles="FARMACEUTICO,ADMIN")] ficam INALCANÇÁVEIS pela sessão de
+            // staff (o único consumidor de Roles hoje é o PharmaceuticalAnalysisController).
+            // Papel = próprio Code (permite [Authorize(Roles="owner")] etc.).
+            claims.Add(new Claim(ClaimTypes.Role, job.Code));
+
+            // owner/manager administram o estabelecimento -> ADMIN.
+            var code = job.Code?.Trim().ToLowerInvariant();
+            if (code is "owner" or "manager")
+                claims.Add(new Claim(ClaimTypes.Role, "ADMIN"));
+
+            // Cargo que exige registro no Conselho de Farmácia (CRF) é o farmacêutico/RT.
+            if (job.RequiresCertification &&
+                (job.RequiredCertification?.Contains("CRF", StringComparison.OrdinalIgnoreCase) ?? false))
+                claims.Add(new Claim(ClaimTypes.Role, "FARMACEUTICO"));
+        }
 
         if (!string.IsNullOrEmpty(session.Employee.Email))
             claims.Add(new Claim(ClaimTypes.Email, session.Employee.Email));

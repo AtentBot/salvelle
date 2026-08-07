@@ -23,6 +23,19 @@ public class PharmaceuticalAnalysisService
         _logger = logger;
     }
 
+    /// <summary>
+    /// Dados do farmacêutico para o log de análise. PharmacistName/PharmacistCrf são NOT NULL
+    /// no PharmaceuticalAnalysisLog — sem preenchê-los, TODA ação (start/approve/reject/adjust)
+    /// estoura ao salvar. LACUNA DE MODELO: Employee não tem campo de CRF; usa-se "N/I" até o
+    /// cadastro de funcionário passar a capturar o registro no conselho.
+    /// </summary>
+    private async Task<(string Name, string Crf)> GetPharmacistInfoAsync(Guid pharmacistId)
+    {
+        var emp = await _context.Employees.AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == pharmacistId);
+        return (emp?.FullName ?? "Farmacêutico", "N/I");
+    }
+
     public async Task<List<CustomerFormula>> GetPendingFormulasAsync(Guid establishmentId)
     {
         return await _context.CustomerFormulas
@@ -47,11 +60,14 @@ public class PharmaceuticalAnalysisService
         formula.PharmacistId = pharmacistId;
         formula.UpdatedAt = DateTime.UtcNow;
 
+        var (pharmName, pharmCrf) = await GetPharmacistInfoAsync(pharmacistId);
         var log = new PharmaceuticalAnalysisLog
         {
             Id = Guid.NewGuid(),
             CustomerFormulaId = formulaId,
             PharmacistId = pharmacistId,
+            PharmacistName = pharmName,
+            PharmacistCrf = pharmCrf,
             ActionType = "STARTED",
             Analysis = "Análise iniciada",
             CreatedAt = DateTime.UtcNow
@@ -128,11 +144,14 @@ public class PharmaceuticalAnalysisService
                 // }
 
                 // 4. Criar log de aprovação
+                var (pharmName, pharmCrf) = await GetPharmacistInfoAsync(pharmacistId);
                 var log = new PharmaceuticalAnalysisLog
                 {
                     Id = Guid.NewGuid(),
                     CustomerFormulaId = formulaId,
                     PharmacistId = pharmacistId,
+                    PharmacistName = pharmName,
+                    PharmacistCrf = pharmCrf,
                     ActionType = "APPROVED",
                     Analysis = dto.Analysis,
                     CreatedAt = DateTime.UtcNow
@@ -188,11 +207,14 @@ public class PharmaceuticalAnalysisService
                 // TODO: Implementar RefundService quando disponível
                 // var refund = await _refundService.CreateRefundAsync(formula.Id, formula.PaidAmount ?? 0);
 
+                var (pharmName, pharmCrf) = await GetPharmacistInfoAsync(pharmacistId);
                 var log = new PharmaceuticalAnalysisLog
                 {
                     Id = Guid.NewGuid(),
                     CustomerFormulaId = formulaId,
                     PharmacistId = pharmacistId,
+                    PharmacistName = pharmName,
+                    PharmacistCrf = pharmCrf,
                     ActionType = "REJECTED",
                     Analysis = rejectionReason,
                     CreatedAt = DateTime.UtcNow
@@ -239,11 +261,14 @@ public class PharmaceuticalAnalysisService
         formula.PharmaceuticalAnalysis = adjustmentReason;
         formula.UpdatedAt = DateTime.UtcNow;
 
+        var (pharmName, pharmCrf) = await GetPharmacistInfoAsync(pharmacistId);
         var log = new PharmaceuticalAnalysisLog
         {
             Id = Guid.NewGuid(),
             CustomerFormulaId = formulaId,
             PharmacistId = pharmacistId,
+            PharmacistName = pharmName,
+            PharmacistCrf = pharmCrf,
             ActionType = "ADJUSTMENT_REQUESTED",
             Analysis = adjustmentReason,
             CreatedAt = DateTime.UtcNow
