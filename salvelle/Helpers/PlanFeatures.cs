@@ -34,6 +34,9 @@ public static class PlanFeatures
     /// <summary>Chave usada em HttpContext.Items para o dicionário de features do estabelecimento atual.</summary>
     public const string ContextItemsKey = "PlanFeatures";
 
+    // Case-insensitive para tolerar chaves em minúsculas no formato [{"name":..,"enabled":..}].
+    private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
+
     /// <summary>
     /// Parseia o JSON de features tratando os 3 formatos históricos:
     /// objeto {"k": true}, array ["k1","k2"], ou lista [{"name":"k","enabled":true}].
@@ -59,7 +62,7 @@ public static class PlanFeatures
 
         try
         {
-            var list = JsonSerializer.Deserialize<List<FeatureItem>>(featuresJson);
+            var list = JsonSerializer.Deserialize<List<FeatureItem>>(featuresJson, JsonOpts);
             if (list != null)
                 return list.Where(f => !string.IsNullOrEmpty(f.Name))
                            .ToDictionary(f => f.Name!, f => f.Enabled);
