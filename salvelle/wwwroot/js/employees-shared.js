@@ -78,12 +78,13 @@ const Format = {
     },
 
     /**
-     * Format CNPJ: 00.000.000/0000-00
+     * Format CNPJ: XX.XXX.XXX/XXXX-XX (alfanumérico, IN RFB nº 2.229/2024).
+     * Posições 1-12 aceitam [A-Z0-9]; os 2 DVs finais são numéricos.
      */
     cnpj(value) {
         if (!value) return '';
-        const digits = value.replace(/\D/g, '');
-        return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+        const norm = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 14);
+        return norm.replace(/^([A-Z0-9]{2})([A-Z0-9]{3})([A-Z0-9]{3})([A-Z0-9]{4})(\d{2})/, '$1.$2.$3/$4-$5');
     },
 
     /**

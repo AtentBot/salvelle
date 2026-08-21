@@ -176,7 +176,7 @@ public class AdminEstablishmentsController : ControllerBase
                 establishment.RazaoSocial = dto.RazaoSocial;
 
             if (!string.IsNullOrWhiteSpace(dto.Cnpj))
-                establishment.Cnpj = dto.Cnpj.Replace(".", "").Replace("/", "").Replace("-", "");
+                establishment.Cnpj = Helpers.DocumentValidator.NormalizeCnpj(dto.Cnpj);
 
             if (!string.IsNullOrWhiteSpace(dto.Email))
                 establishment.Email = dto.Email;

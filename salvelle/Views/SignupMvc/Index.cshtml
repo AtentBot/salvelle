@@ -150,12 +150,10 @@
 
     <script src="~/js/signup.js" asp-append-version="true"></script>
     <script>
-        // Máscaras
+        // Máscaras — CNPJ alfanumérico (usa formatCNPJ de signup.js).
         const cnpj = document.getElementById('cnpj');
         if (cnpj) cnpj.addEventListener('input', e => {
-            let v = e.target.value.replace(/\D/g, '').slice(0, 14);
-            v = v.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
-            e.target.value = v;
+            e.target.value = formatCNPJ(e.target.value);
         });
         const wa = document.getElementById('whatsapp');
         if (wa) wa.addEventListener('input', e => {

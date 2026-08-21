@@ -258,6 +258,9 @@ public class EmployeeAuthMiddleware
         context.Items["EmployeeJobPositionCode"] = session.Employee.JobPosition?.Code;
         context.Items["EstablishmentId"] = session.Employee.EstablishmentId;
         context.Items["SessionId"] = session.Id;
+        // Features do plano do estabelecimento (gating por nível de assinatura), já carregadas da sessão.
+        context.Items[Helpers.PlanFeatures.ContextItemsKey] =
+            Helpers.PlanFeatures.Parse(session.Employee.Establishment?.FeaturesEnabled);
     }
 
     private static void AddClaimsToUser(HttpContext context, EmployeeSession session)

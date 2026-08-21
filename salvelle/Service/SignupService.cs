@@ -81,10 +81,11 @@ public class SignupService
             if (!dto.Password.Any(char.IsUpper) || !dto.Password.Any(char.IsDigit))
                 return (false, "A senha deve conter pelo menos uma letra maiúscula e um número", null);
 
-            // Limpar CNPJ - remover formatação (pontos, barras, hífens)
+            // Limpar CNPJ - normaliza para o formato canônico (sem máscara, maiúsculo).
+            // Preserva letras: suporta CNPJ alfanumérico (IN RFB nº 2.229/2024).
             var cnpjLimpo = string.IsNullOrWhiteSpace(dto.Cnpj)
                 ? null
-                : new string(dto.Cnpj.Where(char.IsDigit).ToArray());
+                : Helpers.DocumentValidator.NormalizeCnpj(dto.Cnpj);
 
             // Limpar WhatsApp - remover formatação (parênteses, espaços, hífens)
             var whatsappLimpo = string.IsNullOrWhiteSpace(dto.WhatsApp)
@@ -120,7 +121,7 @@ public class SignupService
 
             // Buscar AccessLevel OWNER pelo Code (não depende de ID fixo)
             var ownerAccessLevel = await _context.Set<AccessLevel>()
-                .FirstOrDefaultAsync(a => a.Code == "OWNER");
+                .FirstOrDefaultAsync(a => a.Code.ToLower() == "owner");
 
             if (ownerAccessLevel == null)
                 return (false, "Configuração de perfil de acesso não encontrada. Contate o suporte.", null);
@@ -252,7 +253,11 @@ public class SignupService
             if (onboarding == null)
                 return (false, "Código inválido", null);
 
-            if ((DateTime.UtcNow - onboarding.CreatedAt).TotalMinutes > 10)
+            // CreatedAt é gravado como DateTime.UtcNow, mas com Npgsql.EnableLegacyTimestampBehavior
+            // (Program.cs) ele volta do banco em hora LOCAL da máquina. Sem normalizar para UTC,
+            // em máquina fora de UTC (ex.: dev em America/Sao_Paulo) a diferença estoura o fuso e
+            // o código "expira" imediatamente. ToUniversalTime() torna a comparação independente do fuso.
+            if ((DateTime.UtcNow - onboarding.CreatedAt.ToUniversalTime()).TotalMinutes > 10)
                 return (false, "Código expirado", null);
 
             if (onboarding.OnboardingCompleted)

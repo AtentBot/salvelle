@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const formData = {
                 nomeFantasia: document.getElementById('nomeFantasia').value.trim(),
                 razaoSocial: document.getElementById('razaoSocial').value.trim(),
-                cnpj: document.getElementById('cnpj').value.replace(/\D/g, ''),
+                cnpj: normalizeCNPJ(document.getElementById('cnpj').value),
                 whatsApp: document.getElementById('whatsapp').value.replace(/\D/g, ''),
                 email: document.getElementById('email').value.trim(),
                 planId: document.getElementById('planId')?.value || null,
@@ -445,43 +445,41 @@ function validateSignupForm() {
     return isValid;
 }
 
+// Pesos do Módulo 11 do CNPJ (IN RFB nº 2.229/2024 - alfanumérico).
+const CNPJ_PESOS = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+
+// Normaliza para o formato canônico: remove máscara e converte para MAIÚSCULO.
+// Preserva letras (suporta CNPJ alfanumérico); retrocompatível com numérico.
+function normalizeCNPJ(value) {
+    return (value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+// Calcula um dígito verificador para uma base de 12 ou 13 caracteres.
+// valor do caractere = ASCII - 48 ('0'..'9' => 0..9, 'A'..'Z' => 17..42).
+function cnpjDV(base) {
+    const pesos = CNPJ_PESOS.slice(CNPJ_PESOS.length - base.length);
+    let soma = 0;
+    for (let i = 0; i < base.length; i++) {
+        soma += (base.charCodeAt(i) - 48) * pesos[i];
+    }
+    const resto = soma % 11;
+    return String(resto < 2 ? 0 : 11 - resto);
+}
+
 function isValidCNPJ(cnpj) {
-    cnpj = cnpj.replace(/\D/g, '');
+    cnpj = normalizeCNPJ(cnpj);
 
-    if (cnpj.length !== 14) return false;
+    // 12 posições alfanuméricas (raiz + ordem) + 2 dígitos verificadores numéricos.
+    if (!/^[A-Z0-9]{12}[0-9]{2}$/.test(cnpj)) return false;
 
-    // Elimina CNPJs inválidos conhecidos
-    if (/^(\d)\1+$/.test(cnpj)) return false;
+    // Rejeita sequências repetidas (regra de negócio herdada da validação numérica).
+    const base = cnpj.slice(0, 12);
+    if (new Set(base).size === 1) return false;
 
-    // Valida DVs
-    let size = cnpj.length - 2;
-    let numbers = cnpj.substring(0, size);
-    let digits = cnpj.substring(size);
-    let sum = 0;
-    let pos = size - 7;
+    const d1 = cnpjDV(base);
+    const d2 = cnpjDV(base + d1);
 
-    for (let i = size; i >= 1; i--) {
-        sum += numbers.charAt(size - i) * pos--;
-        if (pos < 2) pos = 9;
-    }
-
-    let result = sum % 11 < 2 ? 0 : 11 - sum % 11;
-    if (result != digits.charAt(0)) return false;
-
-    size = size + 1;
-    numbers = cnpj.substring(0, size);
-    sum = 0;
-    pos = size - 7;
-
-    for (let i = size; i >= 1; i--) {
-        sum += numbers.charAt(size - i) * pos--;
-        if (pos < 2) pos = 9;
-    }
-
-    result = sum % 11 < 2 ? 0 : 11 - sum % 11;
-    if (result != digits.charAt(1)) return false;
-
-    return true;
+    return cnpj.slice(12) === d1 + d2;
 }
 
 function validatePasswordMatch() {
@@ -617,17 +615,18 @@ function isValidWhatsApp(phone) {
 // ============================================
 
 function formatCNPJ(value) {
-    value = value.replace(/\D/g, '');
+    // Posições 1-12 aceitam [A-Z0-9]; os 2 DVs finais só dígitos.
+    value = normalizeCNPJ(value);
     value = value.substring(0, 14);
 
     if (value.length > 12) {
-        value = value.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+        value = value.replace(/^([A-Z0-9]{2})([A-Z0-9]{3})([A-Z0-9]{3})([A-Z0-9]{4})(\d{2})/, '$1.$2.$3/$4-$5');
     } else if (value.length > 8) {
-        value = value.replace(/^(\d{2})(\d{3})(\d{3})(\d{0,4})/, '$1.$2.$3/$4');
+        value = value.replace(/^([A-Z0-9]{2})([A-Z0-9]{3})([A-Z0-9]{3})([A-Z0-9]{0,4})/, '$1.$2.$3/$4');
     } else if (value.length > 5) {
-        value = value.replace(/^(\d{2})(\d{3})(\d{0,3})/, '$1.$2.$3');
+        value = value.replace(/^([A-Z0-9]{2})([A-Z0-9]{3})([A-Z0-9]{0,3})/, '$1.$2.$3');
     } else if (value.length > 2) {
-        value = value.replace(/^(\d{2})(\d{0,3})/, '$1.$2');
+        value = value.replace(/^([A-Z0-9]{2})([A-Z0-9]{0,3})/, '$1.$2');
     }
 
     return value;

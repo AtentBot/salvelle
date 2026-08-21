@@ -106,6 +106,7 @@ public class RelatoriosController : Controller
     /// GET /Relatorios/Financeiro ou /Reports/Financeiro
     /// </summary>
     [HttpGet("Financeiro")]
+    [Filters.RequireFeature(Helpers.PlanFeatureKeys.FinancialReports)]
     public IActionResult Financeiro()
     {
         if (!IsAuthenticated())
@@ -121,6 +122,7 @@ public class RelatoriosController : Controller
     /// GET /Relatorios/SNGPC ou /Reports/SNGPC
     /// </summary>
     [HttpGet("SNGPC")]
+    [Filters.RequireFeature(Helpers.PlanFeatureKeys.SngpcIntegration)]
     public IActionResult SNGPC()
     {
         if (!IsAuthenticated())
@@ -151,6 +153,7 @@ public class RelatoriosController : Controller
     /// GET /Relatorios/Rendimento ou /Reports/Rendimento
     /// </summary>
     [HttpGet("Rendimento")]
+    [Filters.RequireFeature(Helpers.PlanFeatureKeys.AdvancedAnalytics)]
     public IActionResult Rendimento()
     {
         if (!IsAuthenticated())

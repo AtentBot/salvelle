@@ -248,8 +248,9 @@ public class SuppliersController : ControllerBase
         if (!await HasSupplierManagementPermission(employee))
             return StatusCode(403, new { error = "Sem permissão para gerenciar fornecedores" });
 
-        var cnpj = RemoveFormatting(dto.Cnpj);
-        if (string.IsNullOrEmpty(cnpj) || cnpj.Length != 14)
+        // Normaliza (preserva letras) e valida com a rotina única (numérico legado + alfanumérico).
+        var cnpj = Helpers.DocumentValidator.NormalizeCnpj(dto.Cnpj);
+        if (!Helpers.DocumentValidator.IsValidCnpj(cnpj))
             return BadRequest(new { error = "CNPJ inválido" });
 
         var existingSupplier = await _db.Suppliers

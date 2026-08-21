@@ -337,8 +337,14 @@
                     <a class="ds-nav-sub @(currentPath == "/reports/vendas" ? "active" : "")" href="/Reports/Vendas"><i class="bi bi-graph-up"></i>Vendas</a>
                     <a class="ds-nav-sub @(currentPath == "/reports/producao" ? "active" : "")" href="/Reports/Producao"><i class="bi bi-gear"></i>Produção</a>
                     <a class="ds-nav-sub @(currentPath == "/reports/estoque" ? "active" : "")" href="/Reports/Estoque"><i class="bi bi-boxes"></i>Estoque</a>
-                    <a class="ds-nav-sub @(currentPath == "/reports/financeiro" ? "active" : "")" href="/Reports/Financeiro"><i class="bi bi-currency-dollar"></i>Financeiro</a>
-                    <a class="ds-nav-sub @(currentPath == "/reports/sngpc" ? "active" : "")" href="/Reports/SNGPC"><i class="bi bi-shield-exclamation"></i>SNGPC / ANVISA</a>
+                    @if (Context.HasPlanFeature(PlanFeatureKeys.FinancialReports))
+                    {
+                        <a class="ds-nav-sub @(currentPath == "/reports/financeiro" ? "active" : "")" href="/Reports/Financeiro"><i class="bi bi-currency-dollar"></i>Financeiro</a>
+                    }
+                    @if (Context.HasPlanFeature(PlanFeatureKeys.SngpcIntegration))
+                    {
+                        <a class="ds-nav-sub @(currentPath == "/reports/sngpc" ? "active" : "")" href="/Reports/SNGPC"><i class="bi bi-shield-exclamation"></i>SNGPC / ANVISA</a>
+                    }
                 </div>
             }
 
