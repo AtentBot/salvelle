@@ -7,7 +7,9 @@ using Models.Pharmacy;
 
 namespace Models.Employees;
 
-[Index(nameof(Cpf), IsUnique = true)]
+// Multi-tenant: Cpf NÃO é mais único global (a mesma pessoa pode estar em várias lojas).
+// A unicidade de login vive em UserIdentity.Cpf; aqui garantimos 1 vínculo por (identidade, loja).
+[Index(nameof(Cpf))]
 [Index(nameof(EstablishmentId))]
 [Index(nameof(JobPositionId))]
 [Index(nameof(Status))]
@@ -16,10 +18,17 @@ public class Employee
     [Key]
     public Guid Id { get; set; } = Guid.NewGuid();
 
+    // ==================== IDENTIDADE (multi-tenant) ====================
+    // Vínculo com a credencial única da pessoa. Nullable durante a migração/backfill.
+    public Guid? IdentityId { get; set; }
+
+    [ForeignKey(nameof(IdentityId))]
+    public UserIdentity? Identity { get; set; }
+
     // ==================== VÍNCULO COM ESTABELECIMENTO ====================
     [Required]
     public Guid EstablishmentId { get; set; }
-    
+
     [ForeignKey(nameof(EstablishmentId))]
     public Establishment? Establishment { get; set; }
 

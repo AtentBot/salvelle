@@ -22,6 +22,14 @@ public class EmployeeSession
     [ForeignKey(nameof(EmployeeId))]
     public Employee? Employee { get; set; }
 
+    // ==================== ESTABELECIMENTO ATIVO (multi-tenant) ====================
+    // Loja atualmente selecionada na sessão. Trocável via "trocar-estabelecimento".
+    // Nullable durante a migração; após backfill = o EstablishmentId do employee da sessão.
+    public Guid? CurrentEstablishmentId { get; set; }
+
+    [ForeignKey(nameof(CurrentEstablishmentId))]
+    public Models.Establishment? CurrentEstablishment { get; set; }
+
     // ==================== TOKEN ====================
     [Required, MaxLength(128)]
     public string Token { get; set; } = default!;

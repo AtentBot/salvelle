@@ -126,6 +126,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<EmployeeSession> EmployeeSessions => Set<EmployeeSession>();
+    public DbSet<UserIdentity> Identities => Set<UserIdentity>();
     public DbSet<JobPosition> JobPositions => Set<JobPosition>();
     public DbSet<EmployeeJobHistory> EmployeeJobHistories => Set<EmployeeJobHistory>();
     public DbSet<EmployeeBenefit> EmployeeBenefits => Set<EmployeeBenefit>();
@@ -400,6 +401,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // ──────────────────────────────────────────────────────────────────
+        // MULTI-TENANT: identidade (credencial única) ↔ vínculos (employees),
+        // e estabelecimento ativo da sessão. Restrict/NoAction para evitar
+        // múltiplos caminhos de cascade a partir de Establishment.
+        // ──────────────────────────────────────────────────────────────────
+        modelBuilder.Entity<Models.Employees.Employee>()
+            .HasOne(e => e.Identity)
+            .WithMany(i => i.Memberships)
+            .HasForeignKey(e => e.IdentityId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Models.Employees.EmployeeSession>()
+            .HasOne(s => s.CurrentEstablishment)
+            .WithMany()
+            .HasForeignKey(s => s.CurrentEstablishmentId)
+            .OnDelete(DeleteBehavior.NoAction);
 
         // ──────────────────────────────────────────────────────────────────
         // PAYMENT GATEWAY CONFIG

@@ -11,9 +11,15 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
         builder.ToTable("employees");
 
         // Índices
+        // Multi-tenant: Cpf NÃO é mais único global (a mesma pessoa pode atuar em várias lojas).
+        // A unicidade de login vive em UserIdentity.Cpf; aqui só indexamos p/ busca.
         builder.HasIndex(e => e.Cpf)
-            .IsUnique()
             .HasDatabaseName("ix_employees_cpf");
+
+        // Um vínculo por (identidade, estabelecimento).
+        builder.HasIndex(e => new { e.IdentityId, e.EstablishmentId })
+            .IsUnique()
+            .HasDatabaseName("ix_employees_identity_establishment");
 
         builder.HasIndex(e => e.EstablishmentId)
             .HasDatabaseName("ix_employees_establishment_id");
