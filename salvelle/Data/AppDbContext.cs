@@ -94,6 +94,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     /// Assinaturas ativas/canceladas dos estabelecimentos
     /// </summary>
     public DbSet<Subscription> Subscriptions { get; set; } = null!;
+    public DbSet<SubscriptionCancellation> SubscriptionCancellations { get; set; } = null!;
 
     /// <summary>
     /// Faturas de cobrança da assinatura SaaS (Farmácia → Salvelle via Stripe)

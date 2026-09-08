@@ -326,20 +326,37 @@
                 <div class="modal-body">
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Atenção!</strong> Ao cancelar, você perderá acesso às funcionalidades premium ao final do período atual.
+                        <strong>Atenção!</strong> Você mantém acesso até o fim do período já pago —
+                        <strong>não há novas cobranças</strong> a partir daí. A cobrança é por período
+                        mensal fechado, então <strong>não há reembolso proporcional</strong> do período atual.
                     </div>
-                    
+
                     <div class="mb-3">
-                        <label class="form-label">Por que você está cancelando? (opcional)</label>
-                        <select class="form-select" name="reason">
-                            <option value="">Selecione um motivo</option>
-                            <option value="price">Preço muito alto</option>
-                            <option value="not_using">Não estou usando</option>
-                            <option value="missing_features">Falta de funcionalidades</option>
-                            <option value="competitor">Vou usar outro sistema</option>
-                            <option value="closing">Estou fechando a farmácia</option>
-                            <option value="other">Outro motivo</option>
-                        </select>
+                        <label class="form-label">Por que você está cancelando? <span class="text-muted">(opcional)</span></label>
+                        <div class="form-text mb-2">Pode marcar mais de uma opção. Isso nos ajuda a melhorar.</div>
+                        @{
+                            var cancelReasons = new (string Code, string Label)[]
+                            {
+                                ("price", "Preço / muito caro"),
+                                ("missing_features", "Faltam funcionalidades que preciso"),
+                                ("found_better", "Encontrei uma solução melhor"),
+                                ("not_using", "Não estou usando / não preciso mais"),
+                                ("difficulty", "Dificuldade de uso / problemas técnicos"),
+                            };
+                        }
+                        @foreach (var r in cancelReasons)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="reasons" value="@r.Code" id="reason_@r.Code">
+                                <label class="form-check-label" for="reason_@r.Code">@r.Label</label>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="cancelComment">Quer nos contar mais? <span class="text-muted">(opcional)</span></label>
+                        <textarea class="form-control" id="cancelComment" name="comment" rows="3"
+                                  maxlength="4000" placeholder="Conte o que motivou o cancelamento..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">

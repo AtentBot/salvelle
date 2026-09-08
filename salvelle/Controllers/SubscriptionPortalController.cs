@@ -121,7 +121,7 @@ public class SubscriptionPortalController : Controller
     /// </summary>
     [ValidateAntiForgeryToken]
     [HttpPost("/minha-assinatura/cancelar")]
-    public async Task<IActionResult> RequestCancellation([FromForm] string? reason)
+    public async Task<IActionResult> RequestCancellation([FromForm] List<string>? reasons, [FromForm] string? comment)
     {
         var establishment = HttpContext.Items["Establishment"] as Establishment;
         if (establishment == null)
@@ -159,13 +159,33 @@ public class SubscriptionPortalController : Controller
             });
 
             subscription.CancelAtPeriodEnd = true;
+            subscription.CanceledAt = DateTime.UtcNow;
             subscription.UpdatedAt = DateTime.UtcNow;
+
+            // Histórico do cancelamento (questionário opcional: razões + comentário livre).
+            var reasonCodes = (reasons ?? new List<string>())
+                .Where(r => !string.IsNullOrWhiteSpace(r))
+                .Select(r => r.Trim())
+                .ToList();
+            _context.SubscriptionCancellations.Add(new SubscriptionCancellation
+            {
+                EstablishmentId = establishment.Id,
+                SubscriptionId = subscription.Id,
+                Reasons = reasonCodes.Count > 0 ? string.Join(",", reasonCodes) : null,
+                Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim(),
+                CanceledByEmployeeId = HttpContext.Items["EmployeeId"] as Guid?,
+                PeriodEnd = subscription.CurrentPeriodEnd,
+                CreatedAt = DateTime.UtcNow
+            });
+
             await _context.SaveChangesAsync();
 
-            _logger.LogWarning("Cancelamento solicitado: {EstablishmentId} - Motivo: {Reason}", 
-                establishment.Id, reason ?? "Não informado");
+            _logger.LogWarning("Cancelamento solicitado: {EstablishmentId} - Razões: {Reasons} - Comentário: {HasComment}",
+                establishment.Id,
+                reasonCodes.Count > 0 ? string.Join(",", reasonCodes) : "não informado",
+                !string.IsNullOrWhiteSpace(comment));
 
-            TempData["Success"] = "Cancelamento agendado. Você terá acesso até o fim do período atual.";
+            TempData["Success"] = "Cancelamento agendado. Você terá acesso até o fim do período atual (sem novas cobranças).";
             return RedirectToAction("Index");
         }
         catch (Exception ex)
