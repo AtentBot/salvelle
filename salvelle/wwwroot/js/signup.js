@@ -89,6 +89,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Store for next step
                     sessionStorage.setItem('signupWhatsApp', formData.whatsApp);
                     sessionStorage.setItem('signupEstablishmentId', data.establishmentId);
+                    // Plano escolhido na Pricing: carrega até o checkout (cartão) no fim do signup.
+                    if (formData.planId) {
+                        sessionStorage.setItem('signupPlanId', formData.planId);
+                    } else {
+                        sessionStorage.removeItem('signupPlanId');
+                    }
 
                     showAlert('success', 'Cadastro realizado! Enviamos um código para seu WhatsApp.');
 
