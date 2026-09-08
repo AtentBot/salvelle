@@ -291,8 +291,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Sucesso! Redirecionar para login
-                    window.location.href = '/Account/Login?success=1&message=' + encodeURIComponent('Cadastro finalizado! Faça login com seu CPF.');
+            // Sucesso! Card-upfront: ir direto ao checkout do Stripe (cartao + trial 14d)
+            // com o plano escolhido na Pricing. Sem plano guardado ou se o checkout
+            // falhar, cai no select-plan (que tambem leva ao checkout com cartao).
+            const planId = sessionStorage.getItem('signupPlanId');
+            if (planId) {
+                try {
+                    const co = await fetch('/api/signup/create-checkout-session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ establishmentId: establishmentId, planId: planId })
+                    });
+                    const coData = await co.json();
+                    if (co.ok && coData.checkoutUrl) {
+                        sessionStorage.removeItem('signupPlanId');
+                        window.location.href = coData.checkoutUrl;
+                        return;
+                    }
+                    console.error('Falha ao criar checkout:', coData.message);
+                } catch (err) {
+                    console.error('Erro ao criar checkout:', err);
+                }
+            }
+            // Fallback: escolher plano (leva ao mesmo checkout com cartao)
+            window.location.href = '/signup/select-plan?establishmentId=' + encodeURIComponent(establishmentId);
 
         } catch (error) {
             console.error('Erro:', error);
