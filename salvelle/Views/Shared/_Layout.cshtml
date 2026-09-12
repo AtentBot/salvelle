@@ -376,6 +376,7 @@
                     <i class="bi bi-gear"></i><span>Configurações</span>
                 </button>
                 <div class="ds-submenu @(cfgOpen ? "show" : "")" id="configSubmenu">
+                    <a class="ds-nav-sub @(currentPath == "/minha-assinatura" ? "active" : "")" href="/minha-assinatura"><i class="bi bi-credit-card"></i>Minha Assinatura</a>
                     <a class="ds-nav-sub @(currentPath == "/integracoes" ? "active" : "")" href="/Integracoes"><i class="bi bi-plug"></i>Integrações</a>
                     <a class="ds-nav-sub" href="/api/health/detailed" target="_blank"><i class="bi bi-heart-pulse"></i>Status</a>
                     <a class="ds-nav-sub" href="/api/health/diagnostics" target="_blank"><i class="bi bi-activity"></i>Diagnóstico</a>
