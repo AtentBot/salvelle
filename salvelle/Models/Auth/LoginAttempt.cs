@@ -4,6 +4,9 @@ using Models.Employees;
 
 namespace Models.Auth;
 
+// Convenção do projeto = snake_case; a tabela real (prod/dev) é "login_attempts".
+// Sem este [Table] o EF assumia "LoginAttempts" (Pascal) e quebrava login/signup.
+[Table("login_attempts")]
 public class LoginAttempt
 {
     [Key]
