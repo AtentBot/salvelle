@@ -257,6 +257,9 @@ public class EmployeeAuthMiddleware
         context.Items["EmployeeName"] = session.Employee.FullName;
         context.Items["EmployeeJobPositionCode"] = session.Employee.JobPosition?.Code;
         context.Items["EstablishmentId"] = session.Employee.EstablishmentId;
+        // Objeto Establishment (já carregado na sessão). Consumido por páginas como
+        // /minha-assinatura (SubscriptionPortalController), que sem isto redirecionava pro login.
+        context.Items["Establishment"] = session.Employee.Establishment;
         context.Items["SessionId"] = session.Id;
         // Features do plano do estabelecimento (gating por nível de assinatura), já carregadas da sessão.
         context.Items[Helpers.PlanFeatures.ContextItemsKey] =
