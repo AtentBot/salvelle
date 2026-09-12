@@ -151,16 +151,37 @@ public class SubscriptionPortalController : Controller
             var secretKey = _encryption.Decrypt(stripeConfig.SecretKeyEncrypted ?? "");
             StripeConfiguration.ApiKey = secretKey;
 
-            // Usar nome completo para evitar ambiguidade
+            // Trial abandonado tem tratamento diferente de período pago.
+            var isTrial = string.Equals(subscription.Status, "TRIALING", StringComparison.OrdinalIgnoreCase);
+
             var service = new Stripe.SubscriptionService();
-            await service.UpdateAsync(subscription.StripeSubscriptionId, new Stripe.SubscriptionUpdateOptions
+            if (isTrial)
             {
-                CancelAtPeriodEnd = true
-            });
+                // Em teste: cancela AGORA no Stripe (nunca houve cobrança) e revoga o acesso.
+                await service.CancelAsync(subscription.StripeSubscriptionId);
+            }
+            else
+            {
+                // Período pago: sem novas cobranças, mas mantém acesso até o fim do período
+                // (cobrança por período fechado, sem reembolso).
+                await service.UpdateAsync(subscription.StripeSubscriptionId, new Stripe.SubscriptionUpdateOptions
+                {
+                    CancelAtPeriodEnd = true
+                });
+            }
 
             subscription.CancelAtPeriodEnd = true;
             subscription.CanceledAt = DateTime.UtcNow;
             subscription.UpdatedAt = DateTime.UtcNow;
+
+            if (isTrial)
+            {
+                // Revoga o acesso imediatamente (não há período pago a honrar).
+                subscription.Status = "CANCELED";
+                establishment.SubscriptionStatus = "CANCELED";
+                establishment.IsActive = false;
+                establishment.UpdatedAt = DateTime.UtcNow;
+            }
 
             // Histórico do cancelamento (questionário opcional: razões + comentário livre).
             var reasonCodes = (reasons ?? new List<string>())
@@ -178,12 +199,36 @@ public class SubscriptionPortalController : Controller
                 CreatedAt = DateTime.UtcNow
             });
 
+            if (isTrial)
+            {
+                // Desloga todos os usuários do estabelecimento (acesso encerra em minutos).
+                var empIds = await _context.Employees
+                    .Where(e => e.EstablishmentId == establishment.Id)
+                    .Select(e => e.Id)
+                    .ToListAsync();
+                var activeSessions = await _context.EmployeeSessions
+                    .Where(s => empIds.Contains(s.EmployeeId) && s.IsActive)
+                    .ToListAsync();
+                foreach (var s in activeSessions)
+                {
+                    s.IsActive = false;
+                    s.RevokedAt = DateTime.UtcNow;
+                    s.RevocationReason = "Assinatura cancelada durante o período de teste";
+                }
+            }
+
             await _context.SaveChangesAsync();
 
-            _logger.LogWarning("Cancelamento solicitado: {EstablishmentId} - Razões: {Reasons} - Comentário: {HasComment}",
-                establishment.Id,
+            _logger.LogWarning("Cancelamento solicitado: {EstablishmentId} - Trial: {IsTrial} - Razões: {Reasons} - Comentário: {HasComment}",
+                establishment.Id, isTrial,
                 reasonCodes.Count > 0 ? string.Join(",", reasonCodes) : "não informado",
                 !string.IsNullOrWhiteSpace(comment));
+
+            if (isTrial)
+            {
+                TempData["Success"] = "Assinatura cancelada. Como você estava em período de teste, não há cobrança e o acesso foi encerrado.";
+                return RedirectToAction("Login", "Account");
+            }
 
             TempData["Success"] = "Cancelamento agendado. Você terá acesso até o fim do período atual (sem novas cobranças).";
             return RedirectToAction("Index");
