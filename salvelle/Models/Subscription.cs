@@ -61,6 +61,9 @@ public class Subscription
     [Column("canceled_at")]
     public DateTime? CanceledAt { get; set; }
 
+    [Column("trial_ending_reminder_sent_at")]
+    public DateTime? TrialEndingReminderSentAt { get; set; }
+
     [Column("created_at")]
     public DateTime CreatedAt { get; set; }
 

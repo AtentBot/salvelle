@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Data;
+using Service.Notifications;
 
 namespace Services.Jobs;
 
@@ -96,17 +97,20 @@ public class TrialExpirationJob : BackgroundService
     {
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var whatsApp = scope.ServiceProvider.GetRequiredService<WhatsAppService>();
 
         var now = DateTime.UtcNow;
         var threeDaysFromNow = now.AddDays(3);
 
-        // Buscar trials que vencem nos próximos 3 dias
+        // Buscar trials que vencem nos próximos 3 dias e que ainda não receberam o lembrete
         var endingSoon = await context.Subscriptions
             .Include(s => s.Establishment)
-            .Where(s => s.Status == "TRIALING" 
-                     && s.TrialEnd.HasValue 
+            .Include(s => s.SubscriptionPlan)
+            .Where(s => s.Status == "TRIALING"
+                     && s.TrialEnd.HasValue
                      && s.TrialEnd.Value > now
-                     && s.TrialEnd.Value <= threeDaysFromNow)
+                     && s.TrialEnd.Value <= threeDaysFromNow
+                     && s.TrialEndingReminderSentAt == null)
             .ToListAsync(ct);
 
         foreach (var subscription in endingSoon)
@@ -114,7 +118,7 @@ public class TrialExpirationJob : BackgroundService
             if (subscription.Establishment == null || !subscription.TrialEnd.HasValue) continue;
 
             var daysLeft = (int)(subscription.TrialEnd.Value - now).TotalDays;
-            
+
             _logger.LogInformation(
                 "Trial ending soon: {EstablishmentId} - {NomeFantasia} - {DaysLeft} dias restantes - Email: {Email}",
                 subscription.EstablishmentId,
@@ -122,9 +126,69 @@ public class TrialExpirationJob : BackgroundService
                 daysLeft,
                 subscription.Establishment.Email?.Length > 5 ? subscription.Establishment.Email[..2] + "***" + subscription.Establishment.Email[subscription.Establishment.Email.IndexOf('@')..] : "***");
 
-            // TODO: Integrar com serviço de notificação
-            // await _notificationService.SendTrialEndingNotification(subscription.Establishment, daysLeft);
+            // Enviar lembrete via WhatsApp (exatamente uma vez por assinatura)
+            var phone = subscription.Establishment.WhatsApp;
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                _logger.LogWarning(
+                    "Trial ending mas sem WhatsApp cadastrado: {EstablishmentId}",
+                    subscription.EstablishmentId);
+                continue;
+            }
+
+            var message = BuildTrialEndingMessage(subscription);
+
+            try
+            {
+                var (success, resultMessage) = await whatsApp.SendMessageAsync(phone, message);
+                if (success)
+                {
+                    subscription.TrialEndingReminderSentAt = now;
+                    await context.SaveChangesAsync(ct);
+                    _logger.LogInformation(
+                        "Lembrete de fim de trial enviado: {EstablishmentId}",
+                        subscription.EstablishmentId);
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "Falha ao enviar lembrete de fim de trial: {EstablishmentId} - {Result}",
+                        subscription.EstablishmentId, resultMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Erro ao enviar lembrete de fim de trial: {EstablishmentId}",
+                    subscription.EstablishmentId);
+            }
         }
+    }
+
+    /// <summary>
+    /// Monta a mensagem de lembrete de fim do período de teste.
+    /// </summary>
+    private static string BuildTrialEndingMessage(Models.Subscription subscription)
+    {
+        var nome = subscription.Establishment?.NomeFantasia ?? "";
+        var trialEnd = subscription.TrialEnd!.Value.ToLocalTime().ToString("dd/MM/yyyy");
+
+        var plan = subscription.SubscriptionPlan;
+        var yearly = string.Equals(subscription.BillingCycle, "YEARLY", StringComparison.OrdinalIgnoreCase);
+        var valor = plan == null
+            ? null
+            : (yearly ? plan.PriceYearly : plan.PriceMonthly).ToString("C", new System.Globalization.CultureInfo("pt-BR"));
+        var ciclo = yearly ? "ano" : "mês";
+
+        var cobranca = valor == null
+            ? $"A primeira cobrança acontecerá em {trialEnd}."
+            : $"A primeira cobrança de {valor}/{ciclo} acontecerá em {trialEnd}.";
+
+        return
+            $"Olá! Seu período de teste do Salvelle{(string.IsNullOrWhiteSpace(nome) ? "" : $" ({nome})")} termina em {trialEnd}.\n\n" +
+            $"{cobranca}\n\n" +
+            "Se quiser continuar, não precisa fazer nada — a assinatura segue automaticamente. " +
+            "Caso não queira continuar, cancele antes dessa data e você não será cobrado: https://salvelle.com/minha-assinatura";
     }
 }
 
