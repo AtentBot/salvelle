@@ -60,9 +60,16 @@ public class StripeWebhookController : ControllerBase
                 return BadRequest("Webhook secret não configurado");
             }
 
+            var signatureHeader = Request.Headers["Stripe-Signature"].ToString();
+            if (string.IsNullOrEmpty(signatureHeader))
+            {
+                _logger.LogWarning("Webhook sem header Stripe-Signature - rejeitando");
+                return BadRequest("Assinatura ausente");
+            }
+
             try
             {
-                stripeEvent = EventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], webhookSecret);
+                stripeEvent = EventUtility.ConstructEvent(json, signatureHeader, webhookSecret);
             }
             catch (StripeException ex)
             {
